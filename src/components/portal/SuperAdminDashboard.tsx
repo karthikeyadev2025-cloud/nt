@@ -8,13 +8,14 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
-import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
+import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager } from './features';
+import { LeadsWorkspace } from './leads-workflow';
 import { useToast } from '../../lib/toast';
 
 const PERMISSION_KEYS = [
-  'view_leads', 'manage_leads', 'create_leads',
+  'view_leads', 'manage_leads', 'create_leads', 'full_leads_view', 'bulk_assign_leads', 'approve_transfers',
   'view_tickets', 'manage_tickets', 'assign_tickets',
   'view_staff', 'manage_staff',
   'view_attendance', 'approve_leaves', 'approve_advances',
@@ -24,7 +25,7 @@ const PERMISSION_KEYS = [
 ];
 
 // ─────────────────────────────────────── Overview
-function Overview({ segments }: { segments: Segment[] }) {
+function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: () => void }) {
   const [stats, setStats] = useState<Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }>>({});
 
   useEffect(() => {
@@ -58,6 +59,10 @@ function Overview({ segments }: { segments: Segment[] }) {
 
   return (
     <div className="space-y-5">
+      <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-sky-500/10 border border-sky-700/40">
+        <p className="text-sky-200 text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
+        <button onClick={onAddStaff} className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold whitespace-nowrap">+ Onboard Employee</button>
+      </div>
       <div className="grid md:grid-cols-2 gap-5">
         <BirthdaysWidget />
         <PunctualityLeaderboard segments={segments} />
@@ -307,11 +312,13 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 }
 
 // ─────────────────────────────────────── Access Control (users × segments × permissions)
-function AccessControl({ segments }: { segments: Segment[] }) {
+function AccessControl({ segments, openSignal }: { segments: Segment[]; openSignal?: number }) {
   const [users, setUsers] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [showOnboard, setShowOnboard] = useState(false);
   const toast = useToast();
+
+  useEffect(() => { if (openSignal) setShowOnboard(true); }, [openSignal]);
 
   async function load() {
     const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
@@ -899,6 +906,7 @@ export default function SuperAdminDashboard() {
   const { user, signOut } = useAuth();
   const { segments } = useSegments();
   const [tab, setTab] = useState<Tab>('overview');
+  const [onboardSignal, setOnboardSignal] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const tabs: { id: Tab; label: string; icon: any }[] = [
@@ -958,11 +966,11 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
-        {tab === 'overview' && <Overview segments={segments} />}
+        {tab === 'overview' && <Overview segments={segments} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
         {tab === 'tickets' && <TicketsBoard segments={segments} />}
-        {tab === 'crm' && <LeadsBoard segments={segments} />}
+        {tab === 'crm' && <LeadsWorkspace segments={segments} />}
         {tab === 'hr' && <HRBoard segments={segments} />}
-        {tab === 'access' && <AccessControl segments={segments} />}
+        {tab === 'access' && <AccessControl segments={segments} openSignal={onboardSignal} />}
         {tab === 'segments' && <SegmentsManager onChanged={() => setRefreshKey(k => k + 1)} />}
         {tab === 'products' && <ProductsManager segments={segments} />}
         {tab === 'catalog' && <CatalogManager segments={segments} />}

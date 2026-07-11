@@ -83,3 +83,19 @@ Audit found the app had **zero user feedback on failure** — every save/create/
 - Files upload to a **private** storage bucket (`career-uploads`) — public can upload, only staff with `view_careers`/`manage_careers` can read them (via short-lived signed URLs, not public links).
 - **Super Admin/HR → Careers / Hiring** tab: post/edit/close job postings per segment with custom screening questions; review applications in a pipeline (New → Shortlisted → Interviewed → Hired/Rejected), view photo and download resume from the same panel.
 - `view_careers` / `manage_careers` are granted to the `hr` role by default and can be granted to anyone else via Access Control → Manage Access, same as every other permission.
+
+## Where to add staff
+Super Admin → **Overview** now has a banner shortcut "+ Onboard Employee" at the top, or go directly to **Access Control → + Onboard Employee**. That single wizard creates the account, salary, and documents together.
+
+## NIKKI Intro Animation
+Replaced the static loading spinner with a letter-by-letter reveal of "N-I-K-K-I" on every page load before the site/portal appears (`LoadingScreen.tsx`).
+
+## Telecaller Workflow (Excel bulk assign, click-to-call, counts-only dashboard, callback retention, executive handoff approval)
+- **Bulk Upload** (Super Admin CRM tab, or Manager's own portal if granted `bulk_assign_leads`): upload an Excel/CSV of leads (Name, Phone, Email, Notes columns), pick a segment, optionally assign the whole batch to one telecaller in one shot.
+- **Telecaller experience** is now fundamentally different from Manager/Admin — controlled by a new `full_leads_view` permission (on by default for manager/hr/executive, off for telecaller, overridable per-user in Access Control):
+  - **Off** → she sees a **counts-only dashboard** (queue size, calls made today, callbacks pending, converted this month, transfers awaiting approval — no raw data grid) plus her **own Call Queue**: only leads currently assigned to her.
+  - Each queue row has a **click-to-call** button (`tel:` link — opens the phone dialer directly).
+  - Logging an outcome is mandatory before a lead leaves her queue. **Callback Requested** keeps the lead in her queue (with the callback date shown, sorted to the top). Every other outcome (interested/not interested/no answer/converted) **releases the lead back to the pool** — it disappears from her queue and only a manager/admin can reassign it.
+  - She can also **request a handoff to a Field Executive** once an appointment is fixed — this doesn't move the lead directly; it creates a pending request that a **Manager or Super Admin must approve** before the executive actually receives it. Same mechanism across all three segments (CCTV/Digital Media/Software) since it's segment-agnostic on the shared `marketing_leads` table.
+- **Manager/Super Admin → CRM → Handoff Approvals**: review and approve/reject pending telecaller→executive requests; both sides get notified automatically.
+- All of this is permission-gated (`full_leads_view`, `bulk_assign_leads`, `approve_transfers`), so you decide per person — not hardcoded by role — via Access Control → Manage Access.

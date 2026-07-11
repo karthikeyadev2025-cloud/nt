@@ -3,9 +3,10 @@ import { LogOut, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
-import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
+import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
 import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard } from './features';
+import { TelecallerQueue, LeadsWorkspace } from './leads-workflow';
 
 // ─────────────────────────── Self-service: attendance
 function MyAttendance() {
@@ -209,7 +210,7 @@ export default function StaffPortal() {
     { id: 'profile', label: 'My Profile', icon: CreditCard, show: true },
     { id: 'swap', label: 'Shift Swap', icon: Repeat, show: true },
     { id: 'tickets', label: 'Tickets', icon: Ticket, show: hasPermission('view_tickets') },
-    { id: 'leads', label: 'Leads / CRM', icon: ClipboardList, show: hasPermission('view_leads') },
+    { id: 'leads', label: hasPermission('full_leads_view') ? 'Leads / CRM' : 'My Call Queue', icon: ClipboardList, show: hasPermission('view_leads') },
     { id: 'team', label: 'Team / HR', icon: Users2, show: hasPermission('view_staff') || hasPermission('view_attendance') },
   ].filter(t => t.show);
 
@@ -252,7 +253,7 @@ export default function StaffPortal() {
         {tab === 'profile' && <MyProfile />}
         {tab === 'swap' && <ShiftSwapBoard />}
         {tab === 'tickets' && <TicketsBoard segments={segments} />}
-        {tab === 'leads' && <LeadsBoard segments={segments} />}
+        {tab === 'leads' && (hasPermission('full_leads_view') ? <LeadsWorkspace segments={segments} /> : <TelecallerQueue />)}
         {tab === 'team' && <HRBoard segments={segments} />}
       </main>
     </div>
