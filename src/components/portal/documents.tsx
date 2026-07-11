@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FileText, CheckCircle2, Printer, PenLine, RotateCcw, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls } from './shared';
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
@@ -216,9 +217,11 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
   const [docs, setDocs] = useState<any[]>([]);
   const [open, setOpen] = useState<any | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const toast = useToast();
 
   async function load() {
-    const { data } = await supabase.from('employee_documents').select('*').eq('staff_user_id', staffUserId).order('issued_at', { ascending: false });
+    const { data, error } = await supabase.from('employee_documents').select('*').eq('staff_user_id', staffUserId).order('issued_at', { ascending: false });
+    if (error) { toast.error(`Couldn't load documents: ${error.message}`); setLoaded(true); return; }
     if (data) setDocs(data);
     setLoaded(true);
   }
@@ -230,14 +233,18 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
       signature_data_url: dataUrl || null,
       signed_name: typedName || employeeName || '',
     };
-    await supabase.from('employee_documents').update(patch).eq('id', id);
+    const { error } = await supabase.from('employee_documents').update(patch).eq('id', id);
+    if (error) { toast.error(`Couldn't save signature: ${error.message}`); return; }
+    toast.success('Document signed');
     await load();
     setOpen((prev: any) => prev ? { ...prev, ...patch } : prev);
   }
 
   async function acknowledge(id: string) {
     const patch = { acknowledged_at: new Date().toISOString() };
-    await supabase.from('employee_documents').update(patch).eq('id', id);
+    const { error } = await supabase.from('employee_documents').update(patch).eq('id', id);
+    if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
+    toast.success('Acknowledged');
     await load();
     setOpen((prev: any) => prev ? { ...prev, ...patch } : prev);
   }

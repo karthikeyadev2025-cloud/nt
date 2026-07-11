@@ -11,6 +11,7 @@ import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget } from './features';
+import { useToast } from '../../lib/toast';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads',
@@ -100,6 +101,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     supabase.from('document_templates').select('*').eq('active', true).then(({ data }) => { if (data) setTemplates(data); });
@@ -138,13 +140,14 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
     if (error || data?.error) { setMsg(data?.error || error?.message || 'Failed to create account'); setBusy(false); return; }
     const userId = data.user_id;
 
-    await supabase.from('app_users').update({
+    const { error: updateError } = await supabase.from('app_users').update({
       designation: form.designation,
       employment_type: form.employment_type,
       joining_date: form.joining_date,
       date_of_birth: form.date_of_birth || null,
       salary_structure: form.salary_structure,
     }).eq('id', userId);
+    if (updateError) toast.error(`Account created, but salary/details save failed: ${updateError.message}`);
 
     const vars = buildOnboardingVars({
       full_name: form.full_name, designation: form.designation, role: form.role,
@@ -154,14 +157,16 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
     const docsToIssue = availableTemplates.filter(t => form.doc_types.includes(t.doc_type));
     if (docsToIssue.length) {
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('employee_documents').insert(
+      const { error: docError } = await supabase.from('employee_documents').insert(
         docsToIssue.map(t => ({
           staff_user_id: userId, doc_type: t.doc_type, title: t.title,
           content: renderTemplate(t.body, vars), issued_by: user?.id, requires_signature: t.requires_signature,
         }))
       );
+      if (docError) toast.error(`Account created, but documents failed to issue: ${docError.message}`);
     }
 
+    toast.success(`${form.full_name} onboarded successfully`);
     setBusy(false);
     onDone();
   }
@@ -305,6 +310,7 @@ function AccessControl({ segments }: { segments: Segment[] }) {
   const [users, setUsers] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [showOnboard, setShowOnboard] = useState(false);
+  const toast = useToast();
 
   async function load() {
     const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
@@ -314,7 +320,7 @@ function AccessControl({ segments }: { segments: Segment[] }) {
 
   async function saveUser() {
     if (!editing) return;
-    await supabase.from('app_users').update({
+    const { error } = await supabase.from('app_users').update({
       role: editing.role,
       segments: editing.segments,
       permission_overrides: editing.permission_overrides || {},
@@ -324,6 +330,8 @@ function AccessControl({ segments }: { segments: Segment[] }) {
       salary_structure: editing.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 },
       updated_at: new Date().toISOString(),
     }).eq('id', editing.id);
+    if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
+    toast.success('Access updated');
     setEditing(null);
     load();
   }
@@ -437,6 +445,7 @@ function AccessControl({ segments }: { segments: Segment[] }) {
 function SegmentsManager({ onChanged }: { onChanged: () => void }) {
   const [rows, setRows] = useState<Segment[]>([]);
   const [editing, setEditing] = useState<Partial<Segment> | null>(null);
+  const toast = useToast();
 
   async function load() {
     const { data } = await supabase.from('segments').select('*').order('order_index');
@@ -445,13 +454,16 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
   useEffect(() => { load(); }, []);
 
   async function save() {
-    if (!editing?.name || !editing?.slug || !editing?.ticket_prefix) return;
+    if (!editing?.name || !editing?.slug || !editing?.ticket_prefix) { toast.error('Name, slug and ticket prefix are required'); return; }
+    let error;
     if (editing.id) {
       const { id, ...patch } = editing;
-      await supabase.from('segments').update(patch).eq('id', id);
+      ({ error } = await supabase.from('segments').update(patch).eq('id', id));
     } else {
-      await supabase.from('segments').insert(editing);
+      ({ error } = await supabase.from('segments').insert(editing));
     }
+    if (error) { toast.error(`Couldn't save segment: ${error.message}`); return; }
+    toast.success(editing.id ? 'Segment updated' : 'Segment created');
     setEditing(null); load(); onChanged();
   }
 
@@ -506,6 +518,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
 function ProductsManager({ segments }: { segments: Segment[] }) {
   const [rows, setRows] = useState<Product[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
+  const toast = useToast();
 
   async function load() {
     const { data } = await supabase.from('products').select('*').order('order_index');
@@ -514,20 +527,25 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
   useEffect(() => { load(); }, []);
 
   async function save() {
-    if (!editing?.name || !editing?.slug) return;
+    if (!editing?.name || !editing?.slug) { toast.error('Name and slug are required'); return; }
     const payload = { ...editing, features: editing.features || [] };
+    let error;
     if (editing.id) {
       const { id, ...patch } = payload;
-      await supabase.from('products').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+      ({ error } = await supabase.from('products').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id));
     } else {
-      await supabase.from('products').insert(payload);
+      ({ error } = await supabase.from('products').insert(payload));
     }
+    if (error) { toast.error(`Couldn't save product: ${error.message}`); return; }
+    toast.success(editing.id ? 'Product updated' : 'Product added');
     setEditing(null); load();
   }
 
   async function remove(id: string) {
     if (!confirm('Delete this product?')) return;
-    await supabase.from('products').delete().eq('id', id);
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) { toast.error(`Couldn't delete: ${error.message}`); return; }
+    toast.success('Product deleted');
     load();
   }
 
@@ -605,6 +623,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
   const [types, setTypes] = useState<any[]>([]);
   const [newService, setNewService] = useState({ title: '', description: '', icon: 'Settings' });
   const [newType, setNewType] = useState('');
+  const toast = useToast();
 
   async function load() {
     const [{ data: s }, { data: t }] = await Promise.all([
@@ -617,15 +636,29 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
   useEffect(() => { load(); }, []);
 
   async function addService() {
-    if (!newService.title || !seg) return;
-    await supabase.from('services').insert({ ...newService, segment_slug: seg, order_index: services.filter(x => x.segment_slug === seg).length + 1 });
+    if (!newService.title || !seg) { toast.error('Enter a service title'); return; }
+    const { error } = await supabase.from('services').insert({ ...newService, segment_slug: seg, order_index: services.filter(x => x.segment_slug === seg).length + 1 });
+    if (error) { toast.error(`Couldn't add: ${error.message}`); return; }
+    toast.success('Service added');
     setNewService({ title: '', description: '', icon: 'Settings' });
     load();
   }
   async function addType() {
-    if (!newType || !seg) return;
-    await supabase.from('ticket_types').insert({ segment_slug: seg, name: newType, order_index: types.filter(x => x.segment_slug === seg).length + 1 });
+    if (!newType || !seg) { toast.error('Enter a ticket type name'); return; }
+    const { error } = await supabase.from('ticket_types').insert({ segment_slug: seg, name: newType, order_index: types.filter(x => x.segment_slug === seg).length + 1 });
+    if (error) { toast.error(`Couldn't add: ${error.message}`); return; }
+    toast.success('Ticket type added');
     setNewType('');
+    load();
+  }
+  async function removeService(id: string) {
+    const { error } = await supabase.from('services').delete().eq('id', id);
+    if (error) { toast.error(`Couldn't remove: ${error.message}`); return; }
+    load();
+  }
+  async function removeType(id: string) {
+    const { error } = await supabase.from('ticket_types').delete().eq('id', id);
+    if (error) { toast.error(`Couldn't remove: ${error.message}`); return; }
     load();
   }
 
@@ -639,7 +672,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
             {services.filter(s => s.segment_slug === seg).map(s => (
               <div key={s.id} className="flex justify-between items-center text-sm">
                 <span className="text-slate-300">{s.title}</span>
-                <button className="text-red-400 text-xs" onClick={async () => { await supabase.from('services').delete().eq('id', s.id); load(); }}>Remove</button>
+                <button className="text-red-400 text-xs" onClick={() => removeService(s.id)}>Remove</button>
               </div>
             ))}
           </div>
@@ -653,7 +686,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
             {types.filter(t => t.segment_slug === seg).map(t => (
               <div key={t.id} className="flex justify-between items-center text-sm">
                 <span className="text-slate-300">{t.name}</span>
-                <button className="text-red-400 text-xs" onClick={async () => { await supabase.from('ticket_types').delete().eq('id', t.id); load(); }}>Remove</button>
+                <button className="text-red-400 text-xs" onClick={() => removeType(t.id)}>Remove</button>
               </div>
             ))}
           </div>
@@ -671,13 +704,15 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
 function ContentManager() {
   const [rows, setRows] = useState<{ id: string; section: string; key: string; value: string }[]>([]);
   const [saved, setSaved] = useState('');
+  const toast = useToast();
 
   useEffect(() => {
     supabase.from('site_content').select('*').order('section').then(({ data }) => { if (data) setRows(data as any); });
   }, []);
 
   async function save(row: { id: string; value: string }) {
-    await supabase.from('site_content').update({ value: row.value, updated_at: new Date().toISOString() }).eq('id', row.id);
+    const { error } = await supabase.from('site_content').update({ value: row.value, updated_at: new Date().toISOString() }).eq('id', row.id);
+    if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
     setSaved(row.id);
     setTimeout(() => setSaved(''), 1500);
   }
@@ -717,6 +752,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   const [issueDocs, setIssueDocs] = useState<string[]>([]);
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   async function load() {
     const [{ data: t }, { data: s }] = await Promise.all([
@@ -729,13 +765,16 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   useEffect(() => { load(); }, []);
 
   async function saveTemplate() {
-    if (!editingTpl?.title || !editingTpl?.body) return;
+    if (!editingTpl?.title || !editingTpl?.body) { toast.error('Title and body are required'); return; }
+    let error;
     if (editingTpl.id) {
       const { id, ...patch } = editingTpl;
-      await supabase.from('document_templates').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+      ({ error } = await supabase.from('document_templates').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id));
     } else {
-      await supabase.from('document_templates').insert(editingTpl);
+      ({ error } = await supabase.from('document_templates').insert(editingTpl));
     }
+    if (error) { toast.error(`Couldn't save template: ${error.message}`); return; }
+    toast.success(editingTpl.id ? 'Template updated' : 'Template created');
     setEditingTpl(null); load();
   }
 
@@ -747,7 +786,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   const relevantTemplates = (staffMember: any) => templates.filter(t => t.active && (!t.segment_slug || (staffMember?.segments || []).includes(t.segment_slug) || (staffMember?.segments || []).includes('all')));
 
   async function issue() {
-    if (!issueFor || issueDocs.length === 0) return;
+    if (!issueFor || issueDocs.length === 0) { toast.error('Select at least one document'); return; }
     setBusy(true);
     const seg = segments.find(s => (issueFor.segments || []).includes(s.slug));
     const vars = buildOnboardingVars({
@@ -757,7 +796,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
     });
     const { data: { user } } = await supabase.auth.getUser();
     const docs = templates.filter(t => issueDocs.includes(t.id));
-    await supabase.from('employee_documents').upsert(
+    const { error } = await supabase.from('employee_documents').upsert(
       docs.map(t => ({
         staff_user_id: issueFor.id, doc_type: t.doc_type, title: t.title,
         content: renderTemplate(t.body, vars), issued_by: user?.id, issued_at: new Date().toISOString(),
@@ -765,7 +804,10 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       })),
       { onConflict: 'staff_user_id,doc_type,title' }
     );
-    setBusy(false); setIssueFor(null); load();
+    setBusy(false);
+    if (error) { toast.error(`Couldn't issue documents: ${error.message}`); return; }
+    toast.success(`${docs.length} document(s) issued to ${issueFor.full_name}`);
+    setIssueFor(null); load();
   }
 
   return (

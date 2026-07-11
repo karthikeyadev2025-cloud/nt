@@ -1,5 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './lib/toast';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import PWAInstallBanner from './components/PWAInstallBanner';
 
 const PublicSite = lazy(() => import('./components/PublicSite'));
@@ -56,8 +58,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

@@ -70,3 +70,10 @@ Safe-checked and adapted to Nikki's schema (no tenants — segment-scoped instea
 - **Birthdays & Anniversaries widget** — Super Admin Overview shows anyone with a birthday or work-anniversary today (no cron needed — computed on page load).
 
 Not ported (native-mobile-only, needs Capacitor/device APIs): face-verification selfie matching, native push notifications, PIN quick-login. These only make sense in the Capacitor mobile build; Nikki is web-only for now.
+
+## Dashboard Polish (best practices pass)
+Audit found the app had **zero user feedback on failure** — every save/create/delete/approve either succeeded silently or failed silently with no indication. Fixed:
+- **Toast system** (`src/lib/toast.tsx`) — success/error/info notifications, auto-dismiss, wired into every mutation across both portals: tickets, leads, HR approvals, onboarding, access control, segments, products, catalog, templates, document issuance, content, announcements, shift swaps, bank approvals.
+- **Error Boundary** — a component crash now shows a recovery screen with reload button instead of a blank white page.
+- Every Supabase mutation now checks `{ error }` and reports it instead of assuming success.
+- Destructive actions (delete product, delete announcement) confirm before executing.

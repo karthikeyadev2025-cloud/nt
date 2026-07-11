@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Bell, Megaphone, Repeat, Landmark, Printer, TrendingUp, Flame, Cake } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls } from './shared';
 import type { Segment } from '../../lib/database.types';
 
@@ -86,6 +87,7 @@ export function AnnouncementsFeed() {
 // ─────────────────────────── Super Admin: post announcements
 export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
+  const toast = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [form, setForm] = useState({ segment_slug: '', title: '', body: '', is_pinned: false });
 
@@ -96,13 +98,18 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
   useEffect(() => { load(); }, []);
 
   async function post() {
-    if (!form.title || !form.body || !user) return;
-    await supabase.from('announcements').insert({ ...form, segment_slug: form.segment_slug || null, created_by: user.id });
+    if (!form.title || !form.body || !user) { toast.error('Title and message are required'); return; }
+    const { error } = await supabase.from('announcements').insert({ ...form, segment_slug: form.segment_slug || null, created_by: user.id });
+    if (error) { toast.error(`Couldn't post: ${error.message}`); return; }
+    toast.success('Announcement posted and staff notified');
     setForm({ segment_slug: '', title: '', body: '', is_pinned: false });
     load();
   }
   async function remove(id: string) {
-    await supabase.from('announcements').delete().eq('id', id);
+    if (!confirm('Delete this announcement?')) return;
+    const { error } = await supabase.from('announcements').delete().eq('id', id);
+    if (error) { toast.error(`Couldn't delete: ${error.message}`); return; }
+    toast.success('Announcement deleted');
     load();
   }
 
@@ -140,6 +147,7 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
 // ─────────────────────────── Shift Swap (employee request + manager review)
 export function ShiftSwapBoard() {
   const { user, hasPermission } = useAuth();
+  const toast = useToast();
   const [mine, setMine] = useState<any[]>([]);
   const [pending, setPending] = useState<any[]>([]);
   const [colleagues, setColleagues] = useState<any[]>([]);
@@ -161,13 +169,17 @@ export function ShiftSwapBoard() {
   useEffect(() => { load(); }, [user]);
 
   async function submit() {
-    if (!form.shift_date || !user) return;
-    await supabase.from('shift_swap_requests').insert({ requester_id: user.id, target_id: form.target_id || null, shift_date: form.shift_date, reason: form.reason });
+    if (!form.shift_date || !user) { toast.error('Please pick a date'); return; }
+    const { error } = await supabase.from('shift_swap_requests').insert({ requester_id: user.id, target_id: form.target_id || null, shift_date: form.shift_date, reason: form.reason });
+    if (error) { toast.error(`Couldn't submit request: ${error.message}`); return; }
+    toast.success('Shift swap request submitted');
     setForm({ target_id: '', shift_date: '', reason: '' });
     load();
   }
   async function review(id: string, status: string) {
-    await supabase.from('shift_swap_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from('shift_swap_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(`Couldn't update request: ${error.message}`); return; }
+    toast.success(`Request ${status}`);
     load();
   }
 
@@ -226,6 +238,7 @@ export function ShiftSwapBoard() {
 // ─────────────────────────── Bank Details + change approval (employee)
 export function MyBankDetails() {
   const { user } = useAuth();
+  const toast = useToast();
   const [current, setCurrent] = useState<any>({});
   const [pendingReq, setPendingReq] = useState<any | null>(null);
   const [form, setForm] = useState({ account_holder: '', account_number: '', ifsc: '', bank_name: '', upi_id: '' });
@@ -242,7 +255,10 @@ export function MyBankDetails() {
 
   async function submit() {
     if (!user) return;
-    await supabase.from('bank_change_requests').insert({ staff_user_id: user.id, requested_details: form, previous_details: current });
+    if (!form.account_holder || !form.account_number || !form.ifsc || !form.bank_name) { toast.error('Account holder, number, IFSC and bank name are required'); return; }
+    const { error } = await supabase.from('bank_change_requests').insert({ staff_user_id: user.id, requested_details: form, previous_details: current });
+    if (error) { toast.error(`Couldn't submit: ${error.message}`); return; }
+    toast.success('Change submitted for HR approval');
     setEditing(false);
     load();
   }
@@ -285,6 +301,7 @@ export function MyBankDetails() {
 // ─────────────────────────── Super Admin/HR: review bank change requests
 export function BankChangeApprovals() {
   const { user } = useAuth();
+  const toast = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
 
@@ -297,7 +314,9 @@ export function BankChangeApprovals() {
   useEffect(() => { load(); }, []);
 
   async function review(id: string, status: string) {
-    await supabase.from('bank_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from('bank_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
+    toast.success(`Bank change ${status}`);
     load();
   }
 

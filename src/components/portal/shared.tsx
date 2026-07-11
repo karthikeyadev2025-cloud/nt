@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../lib/toast';
 import type { Segment, SupportTicket, Lead } from '../../lib/database.types';
 
 export const inputCls =
@@ -51,12 +52,14 @@ export function TicketsBoard({ segments }: { segments: Segment[] }) {
   const [replies, setReplies] = useState<{ id: string; author_name: string; message: string; created_at: string }[]>([]);
   const [reply, setReply] = useState('');
   const { user, hasPermission } = useAuth();
+  const toast = useToast();
 
   async function load() {
     let q = supabase.from('support_tickets').select('*').order('created_at', { ascending: false }).limit(300);
     if (segFilter) q = q.eq('segment_slug', segFilter);
     if (statusFilter) q = q.eq('status', statusFilter);
-    const { data } = await q;
+    const { data, error } = await q;
+    if (error) { toast.error(`Couldn't load tickets: ${error.message}`); return; }
     if (data) setTickets(data as SupportTicket[]);
   }
 
@@ -72,16 +75,19 @@ export function TicketsBoard({ segments }: { segments: Segment[] }) {
   }
 
   async function update(id: string, patch: Partial<SupportTicket>) {
-    await supabase.from('support_tickets').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from('support_tickets').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(`Update failed: ${error.message}`); return; }
+    toast.success('Ticket updated');
     load();
     if (openTicket?.id === id) setOpenTicket({ ...openTicket, ...patch } as SupportTicket);
   }
 
   async function sendReply() {
     if (!reply.trim() || !openTicket || !user) return;
-    await supabase.from('ticket_replies').insert({
+    const { error } = await supabase.from('ticket_replies').insert({
       ticket_id: openTicket.id, author_user_id: user.id, author_name: user.full_name, message: reply, is_staff: true,
     });
+    if (error) { toast.error(`Couldn't send reply: ${error.message}`); return; }
     setReply('');
     loadReplies(openTicket.id);
   }
@@ -192,12 +198,14 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
   const { user, hasPermission } = useAuth();
+  const toast = useToast();
 
   async function load() {
     let q = supabase.from('marketing_leads').select('*').order('created_at', { ascending: false }).limit(400);
     if (segFilter) q = q.eq('segment_slug', segFilter);
     if (stageFilter) q = q.eq('stage', stageFilter);
-    const { data } = await q;
+    const { data, error } = await q;
+    if (error) { toast.error(`Couldn't load leads: ${error.message}`); return; }
     if (data) setLeads(data as Lead[]);
   }
   useEffect(() => { load(); }, [segFilter, stageFilter]);
@@ -207,7 +215,9 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
   }, []);
 
   async function update(id: string, patch: Partial<Lead>) {
-    await supabase.from('marketing_leads').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from('marketing_leads').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(`Update failed: ${error.message}`); return; }
+    toast.success('Lead updated');
     load();
     if (openLead?.id === id) setOpenLead({ ...openLead, ...patch } as Lead);
   }
@@ -219,14 +229,17 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
 
   async function addRemark() {
     if (!newRemark.trim() || !openLead || !user) return;
-    await supabase.from('lead_remarks').insert({ lead_id: openLead.id, user_id: user.id, remark: newRemark, call_type: 'note' });
+    const { error } = await supabase.from('lead_remarks').insert({ lead_id: openLead.id, user_id: user.id, remark: newRemark, call_type: 'note' });
+    if (error) { toast.error(`Couldn't add remark: ${error.message}`); return; }
     setNewRemark('');
     loadRemarks(openLead.id);
   }
 
   async function createLead() {
-    if (!form.segment_slug || !form.customer_name || !form.phone || !user) return;
-    await supabase.from('marketing_leads').insert({ ...form, created_by: user.id });
+    if (!form.segment_slug || !form.customer_name || !form.phone || !user) { toast.error('Segment, name and phone are required'); return; }
+    const { error } = await supabase.from('marketing_leads').insert({ ...form, created_by: user.id });
+    if (error) { toast.error(`Couldn't create lead: ${error.message}`); return; }
+    toast.success('Lead created');
     setShowAdd(false);
     setForm({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
     load();
@@ -343,6 +356,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const [advances, setAdvances] = useState<any[]>([]);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const { user, hasPermission } = useAuth();
+  const toast = useToast();
 
   useEffect(() => {
     supabase.from('app_users').select('*').order('full_name').then(({ data }) => { if (data) setStaff(data); });
@@ -367,7 +381,9 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const inSeg = (s: any) => !segFilter || (s?.segments || []).includes(segFilter) || (s?.segments || []).includes('all');
 
   async function review(table: string, id: string, status: string, setter: (fn: any) => void) {
-    await supabase.from(table).update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from(table).update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(`Couldn't update request: ${error.message}`); return; }
+    toast.success(`Request ${status}`);
     setter((prev: any[]) => prev.map(r => r.id === id ? { ...r, status } : r));
   }
 
