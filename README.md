@@ -115,3 +115,12 @@ Replaced the static loading spinner with a letter-by-letter reveal of "N-I-K-K-I
   - Telecaller: Calls Logged bar chart (last 7 days)
   - Super Admin Overview: Company Attendance trend line (14 days), Ticket Status pie chart, Leads Funnel by segment (stacked bar: New → In Progress → Won)
 - **Portal home screen polish** — attendance tab now opens with a welcome banner showing designation, segment, staff code, joining date and reporting time at a glance.
+
+## Marketing Executive: Field Visit Workflow (was missing — now built)
+Previously Marketing Executives shared the generic CRM board with no field-specific tools. Now they get a dedicated **Field Visits** tab:
+- **My Field Leads** — only leads assigned to them (from telecaller handoffs or direct assignment), active ones only
+- **Log a Visit**: opens the device camera to take a **client/site photo**, captures **GPS location** and auto-resolves it to a **readable address** (reverse geocoding via OpenStreetMap Nominatim — free, no API key), a **"Open in Google Maps"** link, an outcome selector (Follow-up / Interested-quoting / Closed Won / Closed Lost), and a conversation/visit note — all required before saving
+- Closing a lead (Won/Lost) automatically releases it back to the pool, same release pattern as the telecaller queue
+- **Visit History** — every past visit for that lead shown with timestamp, note, address and photo link
+- **Managers/Super Admin** now also see photo + address inline in the standard Leads Board remark thread — full visibility into what the field team captured, no separate reporting needed
+- Fixed a permission bug: Marketing Executives had accidentally been granted the full CRM board (`full_leads_view: true`) instead of a role-appropriate restricted view — corrected to match the telecaller pattern.

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
-import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle } from 'lucide-react';
+import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin } from 'lucide-react';
+import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -357,6 +358,204 @@ export function LeadsWorkspace({ segments }: { segments: Segment[] }) {
       {sub === 'board' && <LeadsBoard segments={segments} />}
       {sub === 'bulk' && showBulk && <BulkLeadUpload segments={segments} />}
       {sub === 'transfers' && showTransfers && <TransferApprovals />}
+    </div>
+  );
+}
+
+// ─────────────────────────── Marketing Executive: field visits (photo + GPS + auto-address + notes)
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    return data?.display_name || '';
+  } catch {
+    return '';
+  }
+}
+
+function getPosition(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+}
+
+const VISIT_OUTCOMES = [
+  { value: 'contacted', label: 'Follow-up needed' },
+  { value: 'qualified', label: 'Interested — quoting' },
+  { value: 'won', label: 'Closed — Won' },
+  { value: 'lost', label: 'Closed — Lost' },
+];
+
+export function ExecutiveFieldVisits() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [leads, setLeads] = useState<any[]>([]);
+  const [active, setActive] = useState<any | null>(null);
+  const [remarks, setRemarks] = useState<any[]>([]);
+  const [capturing, setCapturing] = useState(false);
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [outcome, setOutcome] = useState('contacted');
+  const [remark, setRemark] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    if (!user) return;
+    const { data, error } = await supabase.from('marketing_leads').select('*')
+      .eq('assigned_to', user.id).not('stage', 'in', '(won,lost)')
+      .order('updated_at', { ascending: true });
+    if (error) { toast.error(`Couldn't load your leads: ${error.message}`); return; }
+    if (data) setLeads(data);
+  }
+  useEffect(() => { load(); }, [user]);
+
+  async function openLead(lead: any) {
+    setActive(lead);
+    setOutcome('contacted');
+    setRemark('');
+    setPhotoDataUrl(null);
+    setLocation(null);
+    const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', lead.id).order('created_at', { ascending: false });
+    if (data) setRemarks(data);
+  }
+
+  async function captureLocation() {
+    setLocating(true);
+    const pos = await getPosition();
+    if (!pos) { toast.error("Couldn't get location — check GPS permission"); setLocating(false); return; }
+    const address = await reverseGeocode(pos.lat, pos.lng);
+    setLocation({ ...pos, address });
+    setLocating(false);
+  }
+
+  function openMaps() {
+    if (!location) return;
+    window.open(`https://www.google.com/maps?q=${location.lat},${location.lng}`, '_blank');
+  }
+
+  async function saveVisit() {
+    if (!active || !user || !remark.trim()) { toast.error('Add a visit note before saving'); return; }
+    setBusy(true);
+    let photo_url: string | null = null;
+    if (photoDataUrl) {
+      const res = await fetch(photoDataUrl);
+      const blob = await res.blob();
+      const path = `${active.id}/${Date.now()}.jpg`;
+      const { error: upErr } = await supabase.storage.from('lead-photos').upload(path, blob, { contentType: 'image/jpeg' });
+      if (upErr) toast.error(`Photo upload failed: ${upErr.message}`);
+      else photo_url = path;
+    }
+
+    const { error: remErr } = await supabase.from('lead_remarks').insert({
+      lead_id: active.id, user_id: user.id, call_type: 'visit', remark,
+      photo_url, latitude: location?.lat ?? null, longitude: location?.lng ?? null, address: location?.address ?? null,
+    });
+    if (remErr) { toast.error(`Couldn't save visit: ${remErr.message}`); setBusy(false); return; }
+
+    const isClosed = outcome === 'won' || outcome === 'lost';
+    const patch: any = { stage: outcome, updated_at: new Date().toISOString() };
+    if (photo_url) patch.photo_url = photo_url;
+    if (location) { patch.latitude = location.lat; patch.longitude = location.lng; }
+    if (isClosed) patch.assigned_to = null; // release back to pool once closed
+
+    const { error: leadErr } = await supabase.from('marketing_leads').update(patch).eq('id', active.id);
+    setBusy(false);
+    if (leadErr) { toast.error(`Couldn't update lead: ${leadErr.message}`); return; }
+
+    toast.success(isClosed ? 'Visit logged — lead closed' : 'Visit logged');
+    setActive(null);
+    load();
+  }
+
+  async function viewPhoto(path: string) {
+    const { data, error } = await supabase.storage.from('lead-photos').createSignedUrl(path, 300);
+    if (error || !data) { toast.error("Couldn't load photo"); return; }
+    window.open(data.signedUrl, '_blank');
+  }
+
+  return (
+    <div>
+      <h3 className="text-white font-semibold text-sm mb-3">My Field Leads ({leads.length})</h3>
+      <div className="space-y-2">
+        {leads.map(l => (
+          <div key={l.id} className={cardCls + ' cursor-pointer hover:border-slate-600'} onClick={() => openLead(l)}>
+            <p className="text-white text-sm font-medium">{l.customer_name}</p>
+            <p className="text-slate-500 text-xs mt-0.5">{l.phone} • {l.address || l.interested_in || 'No address captured yet'}</p>
+          </div>
+        ))}
+        {leads.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No field leads assigned. Ask your manager or a telecaller to hand one off to you.</p>}
+      </div>
+
+      {active && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
+          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-white font-semibold">{active.customer_name}</h3>
+            <p className="text-slate-500 text-xs">{active.phone} {active.email && `• ${active.email}`}</p>
+
+            <div className="border-t border-slate-800 pt-3">
+              <p className="text-slate-300 text-sm font-medium mb-2">Log a Visit</p>
+
+              {photoDataUrl ? (
+                <img src={photoDataUrl} alt="Captured" className="w-full rounded-lg mb-2" />
+              ) : (
+                <button className="w-full py-2.5 rounded-lg border border-slate-700 text-slate-300 text-sm flex items-center justify-center gap-1.5 mb-2" onClick={() => setCapturing(true)}>
+                  <Camera className="w-4 h-4" /> Take Client/Site Photo
+                </button>
+              )}
+
+              {location ? (
+                <div className="mb-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800">
+                  <p className="text-emerald-400 text-xs">📍 {location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
+                  <button className="text-sky-400 text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
+                </div>
+              ) : (
+                <button className="w-full py-2.5 rounded-lg border border-slate-700 text-slate-300 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={captureLocation}>
+                  <MapPin className="w-4 h-4" /> {locating ? 'Getting location…' : 'Capture Location & Address'}
+                </button>
+              )}
+
+              <select className={inputCls + ' mb-2'} value={outcome} onChange={e => setOutcome(e.target.value)}>
+                {VISIT_OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <textarea className={inputCls} rows={2} placeholder="Visit notes / conversation summary *" value={remark} onChange={e => setRemark(e.target.value)} />
+              <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>{busy ? 'Saving…' : 'Save Visit'}</button>
+            </div>
+
+            {remarks.length > 0 && (
+              <div className="border-t border-slate-800 pt-3 space-y-2">
+                <p className="text-slate-400 text-xs font-medium">Visit History</p>
+                {remarks.map(r => (
+                  <div key={r.id} className="text-xs">
+                    <p className="text-slate-600">{new Date(r.created_at).toLocaleString()} • {r.call_type}</p>
+                    <p className="text-slate-300">{r.remark}</p>
+                    <div className="flex gap-3 mt-0.5">
+                      {r.address && <span className="text-slate-500">📍 {r.address}</span>}
+                      {r.photo_url && <button className="text-sky-400" onClick={() => viewPhoto(r.photo_url)}>View Photo</button>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {capturing && (
+        <CameraCapture
+          title="Client / Site Photo"
+          onCapture={dataUrl => { setPhotoDataUrl(dataUrl); setCapturing(false); }}
+          onCancel={() => setCapturing(false)}
+        />
+      )}
     </div>
   );
 }

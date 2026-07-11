@@ -193,7 +193,7 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[] }[]>([]);
   const [openLead, setOpenLead] = useState<Lead | null>(null);
-  const [remarks, setRemarks] = useState<{ id: string; remark: string; call_type: string; created_at: string }[]>([]);
+  const [remarks, setRemarks] = useState<{ id: string; remark: string; call_type: string; created_at: string; address?: string; photo_url?: string }[]>([]);
   const [newRemark, setNewRemark] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
@@ -233,6 +233,12 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
     if (error) { toast.error(`Couldn't add remark: ${error.message}`); return; }
     setNewRemark('');
     loadRemarks(openLead.id);
+  }
+
+  async function viewLeadPhoto(path: string) {
+    const { data, error } = await supabase.storage.from('lead-photos').createSignedUrl(path, 300);
+    if (error || !data) { toast.error("Couldn't load photo"); return; }
+    window.open(data.signedUrl, '_blank');
   }
 
   async function createLead() {
@@ -337,6 +343,12 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
                 <div key={r.id} className="text-sm">
                   <span className="text-slate-600 text-xs">{new Date(r.created_at).toLocaleString()} • {r.call_type}</span>
                   <p className="text-slate-300">{r.remark}</p>
+                  {(r.address || r.photo_url) && (
+                    <div className="flex gap-3 mt-0.5 text-xs">
+                      {r.address && <span className="text-slate-500">📍 {r.address}</span>}
+                      {r.photo_url && <button className="text-sky-400" onClick={() => viewLeadPhoto(r.photo_url as string)}>View Photo</button>}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
