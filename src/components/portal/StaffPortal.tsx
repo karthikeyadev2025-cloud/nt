@@ -9,6 +9,7 @@ import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard, MyPhotoRequest, MyPromotionHistory } from './features';
 import { TelecallerQueue, LeadsWorkspace, ExecutiveFieldVisits } from './leads-workflow';
 import { MyPerformanceChart } from './performance';
+import { MyPayslips } from './payroll';
 import CameraCapture from '../CameraCapture';
 
 // ─────────────────────────── Self-service: attendance
@@ -62,14 +63,33 @@ function MyAttendance() {
       getPosition(),
       photoDataUrl ? uploadSelfie(photoDataUrl) : Promise.resolve(null),
     ]);
+
+    // Late detection against the staff's currently assigned shift (if any)
+    let is_late = false, minutes_late = 0, shift_id: string | null = null;
+    const { data: assignment } = await supabase.from('staff_shifts').select('shift_id, shifts(start_time, grace_minutes)')
+      .eq('staff_user_id', user.id).is('effective_to', null).maybeSingle();
+    if (assignment?.shifts) {
+      shift_id = assignment.shift_id;
+      const shift = assignment.shifts as any;
+      const [h, m] = shift.start_time.split(':').map(Number);
+      const shiftStart = new Date(); shiftStart.setHours(h, m, 0, 0);
+      const graceMs = (shift.grace_minutes || 0) * 60000;
+      const now = new Date();
+      if (now.getTime() > shiftStart.getTime() + graceMs) {
+        is_late = true;
+        minutes_late = Math.round((now.getTime() - shiftStart.getTime()) / 60000);
+      }
+    }
+
     const { error } = await supabase.from('attendance_records').insert({
       staff_user_id: user.id, attendance_date: dateStr,
       check_in_at: new Date().toISOString(), check_in_lat: lat, check_in_lng: lng,
       check_in_selfie_url: selfiePath, status: 'present', work_mode: workMode,
+      is_late, minutes_late, shift_id,
     });
     setBusy(false);
     if (error) { toast.error(`Check-in failed: ${error.message}`); return; }
-    toast.success('Checked in');
+    toast.success(is_late ? `Checked in — ${minutes_late} min late` : 'Checked in');
     load();
   }
 
@@ -104,7 +124,10 @@ function MyAttendance() {
         ) : !today.check_out_at ? (
           <div>
             <p className="text-emerald-300 text-sm mb-1">Checked in at {new Date(today.check_in_at).toLocaleTimeString()}</p>
-            <p className="text-slate-500 text-xs mb-3 capitalize">{(today.work_mode || 'office').replace('_', ' ')}</p>
+            <p className="text-slate-500 text-xs mb-3 capitalize">
+              {(today.work_mode || 'office').replace('_', ' ')}
+              {today.is_late && <span className="text-amber-400 ml-2">Late by {today.minutes_late} min</span>}
+            </p>
             <button className={btnCls} disabled={busy} onClick={() => setShowCamera('out')}>Check Out</button>
           </div>
         ) : (
@@ -242,6 +265,7 @@ function MyDocuments() {
   return (
     <div className="space-y-6">
       <MySalaryCard salary={(user as any).salary_structure} />
+      <MyPayslips />
       <div>
         <h3 className="text-white font-semibold mb-3 text-sm">My Documents</h3>
         <MyDocumentsList staffUserId={user.id} employeeName={user.full_name} />

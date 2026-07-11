@@ -13,6 +13,7 @@ import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, O
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals } from './features';
 import { LeadsWorkspace } from './leads-workflow';
 import { AttendanceTrendChart, LeadsFunnelChart, TicketStatusChart } from './performance';
+import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll';
 import { useToast } from '../../lib/toast';
 
 const PERMISSION_KEYS = [
@@ -484,6 +485,25 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────── HR composite (attendance/leaves + shifts + payslips + summary)
+function HRSection({ segments }: { segments: Segment[] }) {
+  const [sub, setSub] = useState<'core' | 'shifts' | 'payslips' | 'summary'>('core');
+  return (
+    <div>
+      <div className="flex gap-2 mb-5 flex-wrap">
+        <button onClick={() => setSub('core')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'core' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Staff & Leaves</button>
+        <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Shifts</button>
+        <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Payslips</button>
+        <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Attendance Summary</button>
+      </div>
+      {sub === 'core' && <HRBoard segments={segments} />}
+      {sub === 'shifts' && <ShiftsManager segments={segments} />}
+      {sub === 'payslips' && <PayslipManager />}
+      {sub === 'summary' && <AttendanceSummaryTable segments={segments} />}
     </div>
   );
 }
@@ -1191,7 +1211,7 @@ export default function SuperAdminDashboard() {
         {tab === 'overview' && <Overview segments={segments} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
         {tab === 'tickets' && <TicketsBoard segments={segments} />}
         {tab === 'crm' && <LeadsWorkspace segments={segments} />}
-        {tab === 'hr' && <HRBoard segments={segments} />}
+        {tab === 'hr' && <HRSection segments={segments} />}
         {tab === 'access' && <AccessControl segments={segments} openSignal={onboardSignal} />}
         {tab === 'segments' && <SegmentsManager onChanged={() => setRefreshKey(k => k + 1)} />}
         {tab === 'products' && <ProductsManager segments={segments} />}
