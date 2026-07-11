@@ -157,7 +157,7 @@ export function ShiftSwapBoard() {
     if (!user) return;
     const [{ data: m }, { data: c }] = await Promise.all([
       supabase.from('shift_swap_requests').select('*').or(`requester_id.eq.${user.id},target_id.eq.${user.id}`).order('created_at', { ascending: false }),
-      supabase.from('app_users').select('id, full_name').eq('is_active', true).neq('id', user.id),
+      supabase.from('app_users').select('id, full_name').eq('is_active', true).neq('id', user.id).neq('role', 'super_admin'),
     ]);
     if (m) setMine(m);
     if (c) setColleagues(c);
@@ -466,7 +466,7 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
     (async () => {
       const from = new Date(); from.setDate(from.getDate() - 30);
       const [{ data: staff }, { data: records }] = await Promise.all([
-        supabase.from('app_users').select('id, full_name').eq('is_active', true),
+        supabase.from('app_users').select('id, full_name').eq('is_active', true).neq('role', 'super_admin'),
         supabase.from('attendance_records').select('*').gte('attendance_date', from.toISOString().slice(0, 10)),
       ]);
       if (!staff || !records) return;
@@ -498,7 +498,7 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
 export function BirthdaysWidget() {
   const [items, setItems] = useState<any[]>([]);
   useEffect(() => {
-    supabase.from('app_users').select('full_name, date_of_birth, joining_date').eq('is_active', true).then(({ data }) => {
+    supabase.from('app_users').select('full_name, date_of_birth, joining_date').eq('is_active', true).neq('role', 'super_admin').then(({ data }) => {
       if (!data) return;
       const today = new Date();
       const isToday = (d?: string) => {

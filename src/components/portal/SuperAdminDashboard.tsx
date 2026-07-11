@@ -39,7 +39,7 @@ function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: (
       const [{ data: tickets }, { data: leads }, { data: staff }] = await Promise.all([
         supabase.from('support_tickets').select('segment_slug,status'),
         supabase.from('marketing_leads').select('segment_slug,stage'),
-        supabase.from('app_users').select('segments,is_active'),
+        supabase.from('app_users').select('segments,is_active').neq('role', 'super_admin'),
       ]);
       const s: Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }> = {};
       segments.forEach(seg => { s[seg.slug] = { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 }; });
@@ -1058,7 +1058,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   async function load() {
     const [{ data: t }, { data: s }] = await Promise.all([
       supabase.from('document_templates').select('*').order('doc_type'),
-      supabase.from('app_users').select('*').eq('is_active', true).order('full_name'),
+      supabase.from('app_users').select('*').eq('is_active', true).neq('role', 'super_admin').order('full_name'),
     ]);
     if (t) setTemplates(t);
     if (s) setStaff(s);

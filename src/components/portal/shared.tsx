@@ -65,7 +65,7 @@ export function TicketsBoard({ segments }: { segments: Segment[] }) {
 
   useEffect(() => { load(); }, [segFilter, statusFilter]);
   useEffect(() => {
-    supabase.from('app_users').select('id, full_name, segments').eq('is_active', true)
+    supabase.from('app_users').select('id, full_name, segments').eq('is_active', true).neq('role', 'super_admin')
       .then(({ data }) => { if (data) setStaff(data as any); });
   }, []);
 
@@ -210,7 +210,7 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
   }
   useEffect(() => { load(); }, [segFilter, stageFilter]);
   useEffect(() => {
-    supabase.from('app_users').select('id, full_name, segments').eq('is_active', true)
+    supabase.from('app_users').select('id, full_name, segments').eq('is_active', true).neq('role', 'super_admin')
       .then(({ data }) => { if (data) setStaff(data as any); });
   }, []);
 
@@ -371,7 +371,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const toast = useToast();
 
   useEffect(() => {
-    supabase.from('app_users').select('*').order('full_name').then(({ data }) => { if (data) setStaff(data); });
+    supabase.from('app_users').select('*').neq('role', 'super_admin').order('full_name').then(({ data }) => { if (data) setStaff(data); });
   }, []);
 
   useEffect(() => {

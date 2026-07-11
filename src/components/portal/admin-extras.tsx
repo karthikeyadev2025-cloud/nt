@@ -164,7 +164,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string) => void 
     setSearching(true);
     const t = setTimeout(async () => {
       const [{ data: staff }, { data: leads }, { data: tickets }] = await Promise.all([
-        supabase.from('app_users').select('id, full_name, email, phone, role').or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`).limit(5),
+        supabase.from('app_users').select('id, full_name, email, phone, role').neq('role', 'super_admin').or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`).limit(5),
         supabase.from('marketing_leads').select('id, customer_name, phone, stage').or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5),
         supabase.from('support_tickets').select('id, ticket_no, subject, customer_name').or(`subject.ilike.%${q}%,customer_name.ilike.%${q}%,ticket_no.ilike.%${q}%`).limit(5),
       ]);
@@ -234,7 +234,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string) => void 
 // ─────────────────────────── Excel export helpers
 export function ExportStaffButton() {
   async function exportStaff() {
-    const { data } = await supabase.from('app_users').select('full_name, email, phone, role, segments, designation, employment_type, joining_date, is_active, staff_code').order('full_name');
+    const { data } = await supabase.from('app_users').select('full_name, email, phone, role, segments, designation, employment_type, joining_date, is_active, staff_code').neq('role', 'super_admin').order('full_name');
     if (!data) return;
     const rows = data.map((u: any) => ({
       'Staff Code': u.staff_code, Name: u.full_name, Email: u.email, Phone: u.phone,

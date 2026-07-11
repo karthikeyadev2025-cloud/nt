@@ -21,7 +21,7 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
   async function load() {
     const [{ data: s }, { data: st }, { data: a }] = await Promise.all([
       supabase.from('shifts').select('*').order('created_at'),
-      supabase.from('app_users').select('id, full_name').eq('is_active', true).order('full_name'),
+      supabase.from('app_users').select('id, full_name').eq('is_active', true).neq('role', 'super_admin').order('full_name'),
       supabase.from('staff_shifts').select('*').is('effective_to', null),
     ]);
     if (s) setShifts(s);
@@ -162,7 +162,7 @@ export function PayslipManager() {
 
   async function load() {
     const [{ data: s }, { data: p }] = await Promise.all([
-      supabase.from('app_users').select('id, full_name, salary_structure').eq('is_active', true).order('full_name'),
+      supabase.from('app_users').select('id, full_name, salary_structure').eq('is_active', true).neq('role', 'super_admin').order('full_name'),
       supabase.from('payslips').select('*').order('period_year', { ascending: false }).order('period_month', { ascending: false }).limit(200),
     ]);
     if (s) setStaff(s);

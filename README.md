@@ -214,3 +214,8 @@ Two real gaps found and fixed:
   - Rebranded a few leftover amber-colored glow effects in the CSS to Nikki's sky/cyan palette
 
 No visual changes needed on your end to activate the marquee/stats — they render automatically once you add at least one client logo from the Super Admin panel; stats show sensible defaults until you customize them.
+
+## BUG FIX: your own super_admin account was showing up as "staff"
+Confirmed and fixed: your own account (`super_admin`) was appearing in every staff-listing view as if it were a regular employee — HR → Staff, Attendance, Punctuality Leaderboard, Birthdays, ticket/lead assignee dropdowns, Shift Swap partner list, Shifts assignment, Payslip generation, Documents "Issue to Existing Staff", Quick Search results, and the staff Excel export. The owner account should never be listed as a manageable staff member in any of these — it's the account *managing* staff, not one being managed.
+
+Fixed by excluding `role = 'super_admin'` from every staff-listing/assignment query across the app (10 locations). Access Control still correctly shows the super_admin account (that's account management, a different context) — this fix only removes it from *staff-management* views. No migration needed — pure query filtering.
