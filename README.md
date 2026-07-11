@@ -176,3 +176,10 @@ This was the most serious bug found in the full audit. Every admin capability �
 ## Other bugs found in this pass
 - Verified every table has RLS enabled (none missing).
 - Verified no duplicate `CREATE POLICY` names across migrations that would fail on a second run (the one apparent duplicate already had `DROP POLICY IF EXISTS` before it — safe).
+
+## CRITICAL SECURITY FIX: cross-segment data leak for single-segment managers
+Direct audit of every RLS policy on staff-management tables (attendance, leaves, advances, documents, bank/photo approvals, promotions, payslips, shifts, job postings, career applications) found that **none of them checked segment overlap** — only `has_permission()`, which is company-wide. HR (segments=`['all']`) was fine by design, but a **single-segment manager granted `approve_leaves` (a manager default) could see and approve leave requests for every segment**, not just their own — same for attendance, salary advances, documents, bank-detail approvals, and payslips. This directly broke the "each segment manager only manages their own team" design from the original spec.
+
+**Fixed** with a new `can_access_staff(target_id)` helper that checks real segment overlap between the acting user and the target staff member (same `'all'` bypass HR already relies on), applied to all 12 affected tables. Nothing changes for `super_admin` or any `'all'`-segment role — this only tightens single-segment managers to their own team, which was always the intent.
+
+One migration: `20260715000002_segment_scoping_security_fix.sql`.
