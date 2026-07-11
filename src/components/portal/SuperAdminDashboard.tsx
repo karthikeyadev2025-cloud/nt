@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
-  UserCog, LogOut, Wrench, ClipboardList,
+  UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
+import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer } from './documents';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads',
@@ -74,29 +75,228 @@ function Overview({ segments }: { segments: Segment[] }) {
   );
 }
 
+// ─────────────────────────────────────── Onboarding Wizard (create + salary + documents in one flow)
+const emptyOnboard = {
+  full_name: '', email: '', password: '', phone: '', designation: '',
+  role: 'employee', segments: [] as string[], employment_type: 'full_time',
+  joining_date: new Date().toISOString().slice(0, 10),
+  salary_structure: { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 },
+  doc_types: ['welcome_letter', 'offer_letter', 'roles_responsibilities'] as string[],
+};
+
+function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; onDone: () => void; onClose: () => void }) {
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState<any>(emptyOnboard);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
+
+  useEffect(() => {
+    supabase.from('document_templates').select('*').eq('active', true).then(({ data }) => { if (data) setTemplates(data); });
+  }, []);
+
+  const toggleSeg = (slug: string) => {
+    const cur: string[] = form.segments;
+    setForm({ ...form, segments: cur.includes(slug) ? cur.filter((s: string) => s !== slug) : [...cur, slug] });
+  };
+  const toggleDoc = (t: string) => {
+    const cur: string[] = form.doc_types;
+    setForm({ ...form, doc_types: cur.includes(t) ? cur.filter((x: string) => x !== t) : [...cur, t] });
+  };
+
+  const primarySegment = segments.find(s => form.segments.includes(s.slug)) || null;
+  const availableTemplates = templates.filter(t => !t.segment_slug || t.segment_slug === primarySegment?.slug);
+
+  function previewDoc(t: any) {
+    const vars = buildOnboardingVars({
+      full_name: form.full_name, designation: form.designation, role: form.role,
+      segmentName: primarySegment?.name || 'Nikki Technologies',
+      joining_date: form.joining_date, salary_structure: form.salary_structure, employment_type: form.employment_type,
+    });
+    setPreview({ title: t.title, content: renderTemplate(t.body, vars) });
+  }
+
+  async function submit() {
+    setMsg(''); setBusy(true);
+    if (!form.email || !form.password || !form.full_name) { setMsg('Name, email and password required'); setBusy(false); return; }
+    const { data, error } = await supabase.functions.invoke('create-user', {
+      body: {
+        email: form.email, password: form.password, full_name: form.full_name, phone: form.phone,
+        role: form.role, segments: form.segments,
+      },
+    });
+    if (error || data?.error) { setMsg(data?.error || error?.message || 'Failed to create account'); setBusy(false); return; }
+    const userId = data.user_id;
+
+    await supabase.from('app_users').update({
+      designation: form.designation,
+      employment_type: form.employment_type,
+      joining_date: form.joining_date,
+      salary_structure: form.salary_structure,
+    }).eq('id', userId);
+
+    const vars = buildOnboardingVars({
+      full_name: form.full_name, designation: form.designation, role: form.role,
+      segmentName: primarySegment?.name || 'Nikki Technologies',
+      joining_date: form.joining_date, salary_structure: form.salary_structure, employment_type: form.employment_type,
+    });
+    const docsToIssue = availableTemplates.filter(t => form.doc_types.includes(t.doc_type));
+    if (docsToIssue.length) {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('employee_documents').insert(
+        docsToIssue.map(t => ({
+          staff_user_id: userId, doc_type: t.doc_type, title: t.title,
+          content: renderTemplate(t.body, vars), issued_by: user?.id,
+        }))
+      );
+    }
+
+    setBusy(false);
+    onDone();
+  }
+
+  const steps = ['Basic Info', 'Role & Segment', 'Salary', 'Documents', 'Review'];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-white font-semibold text-lg">Onboard New Employee</h3>
+          <button className="text-slate-400 hover:text-white" onClick={onClose}>✕</button>
+        </div>
+        <div className="flex items-center gap-1 mb-6 text-xs">
+          {steps.map((s, i) => (
+            <div key={s} className={`flex items-center gap-1 ${i <= step ? 'text-sky-400' : 'text-slate-600'}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center border ${i <= step ? 'border-sky-400' : 'border-slate-700'}`}>{i < step ? '✓' : i + 1}</span>
+              <span className="hidden sm:inline">{s}</span>
+              {i < steps.length - 1 && <ChevronRight className="w-3 h-3 mx-1 text-slate-700" />}
+            </div>
+          ))}
+        </div>
+
+        {step === 0 && (
+          <div className="space-y-3">
+            <input className={inputCls} placeholder="Full Name *" value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
+            <input className={inputCls} placeholder="Email *" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            <input className={inputCls} placeholder="Temporary Password *" type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+            <input className={inputCls} placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+            <input className={inputCls} placeholder="Designation (e.g. Field Technician)" value={form.designation} onChange={e => setForm({ ...form, designation: e.target.value })} />
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-slate-300 text-sm font-medium mb-2">Role</p>
+              <select className={inputCls} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+                {['manager', 'hr', 'marketing_executive', 'telecaller', 'support_agent', 'employee'].map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <p className="text-slate-300 text-sm font-medium mb-2">Segment Access</p>
+              <div className="flex flex-wrap gap-2">
+                {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
+                  <button key={s.slug} onClick={() => toggleSeg(s.slug)}
+                    className={`px-3 py-1 rounded-full text-xs border ${form.segments.includes(s.slug) ? 'bg-sky-500 text-slate-950 border-sky-500' : 'border-slate-700 text-slate-400'}`}>
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-slate-300 text-sm font-medium mb-2">Employment Type</p>
+                <select className={inputCls} value={form.employment_type} onChange={e => setForm({ ...form, employment_type: e.target.value })}>
+                  {['full_time', 'part_time', 'contract', 'intern'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+                </select>
+              </div>
+              <div>
+                <p className="text-slate-300 text-sm font-medium mb-2">Joining Date</p>
+                <input type="date" className={inputCls} value={form.joining_date} onChange={e => setForm({ ...form, joining_date: e.target.value })} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-3">
+            <p className="text-slate-400 text-sm">This breakdown will be visible to the employee in their portal for full transparency.</p>
+            <div className="grid grid-cols-2 gap-3">
+              {(['basic', 'hra', 'allowances', 'deductions'] as const).map(k => (
+                <div key={k}>
+                  <label className="text-slate-400 text-xs capitalize">{k} (monthly ₹)</label>
+                  <input type="number" className={inputCls} value={form.salary_structure[k]}
+                    onChange={e => setForm({ ...form, salary_structure: { ...form.salary_structure, [k]: Number(e.target.value) } })} />
+                </div>
+              ))}
+            </div>
+            <div>
+              <label className="text-slate-400 text-xs">Annual CTC (₹)</label>
+              <input type="number" className={inputCls} value={form.salary_structure.ctc}
+                onChange={e => setForm({ ...form, salary_structure: { ...form.salary_structure, ctc: Number(e.target.value) } })} />
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-2">
+            <p className="text-slate-400 text-sm mb-2">Select documents to auto-generate and place directly in the employee's portal.</p>
+            {availableTemplates.length === 0 && <p className="text-amber-400 text-sm">Select a segment first to see relevant templates.</p>}
+            {availableTemplates.map(t => (
+              <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
+                <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+                  <input type="checkbox" checked={form.doc_types.includes(t.doc_type)} onChange={() => toggleDoc(t.doc_type)} />
+                  {t.title} <span className="text-slate-500 text-xs">({DOC_TYPE_LABELS[t.doc_type]})</span>
+                </label>
+                <button className="text-sky-400 text-xs" onClick={() => previewDoc(t)}>Preview</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-3 text-sm">
+            <div className={cardCls}>
+              <p className="text-white font-medium">{form.full_name} — {form.designation || form.role}</p>
+              <p className="text-slate-400 text-xs mt-1">{form.email} • {primarySegment?.name || form.segments.join(', ')}</p>
+              <p className="text-slate-400 text-xs">Joining {form.joining_date} • {form.employment_type.replace('_', ' ')}</p>
+              <p className="text-slate-400 text-xs mt-1">CTC ₹{Number(form.salary_structure.ctc).toLocaleString('en-IN')}/yr</p>
+              <p className="text-slate-400 text-xs mt-1">Documents: {form.doc_types.map((d: string) => DOC_TYPE_LABELS[d]).join(', ') || 'none'}</p>
+            </div>
+            {msg && <p className="text-red-400 text-xs">{msg}</p>}
+          </div>
+        )}
+
+        <div className="flex justify-between mt-6">
+          <button className="flex items-center gap-1 text-slate-400 text-sm disabled:opacity-30" disabled={step === 0} onClick={() => setStep(step - 1)}>
+            <ChevronLeft className="w-4 h-4" /> Back
+          </button>
+          {step < 4 ? (
+            <button className={btnCls + ' flex items-center gap-1'} onClick={() => setStep(step + 1)}>Next <ChevronRight className="w-4 h-4" /></button>
+          ) : (
+            <button className={btnCls + ' flex items-center gap-1.5'} disabled={busy} onClick={submit}>
+              <CheckCircle2 className="w-4 h-4" /> {busy ? 'Creating…' : 'Complete Onboarding'}
+            </button>
+          )}
+        </div>
+      </div>
+      {preview && <DocumentViewer title={preview.title} content={preview.content} onClose={() => setPreview(null)} />}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────── Access Control (users × segments × permissions)
 function AccessControl({ segments }: { segments: Segment[] }) {
   const [users, setUsers] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ email: '', password: '', full_name: '', phone: '', role: 'employee', segments: [] as string[] });
-  const [msg, setMsg] = useState('');
+  const [showOnboard, setShowOnboard] = useState(false);
 
   async function load() {
     const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
     if (data) setUsers(data);
   }
   useEffect(() => { load(); }, []);
-
-  async function createUser() {
-    setMsg('');
-    if (!createForm.email || !createForm.password || !createForm.full_name) { setMsg('Email, password and name required'); return; }
-    const { data, error } = await supabase.functions.invoke('create-user', { body: createForm });
-    if (error || data?.error) { setMsg(data?.error || error?.message || 'Failed'); return; }
-    setShowCreate(false);
-    setCreateForm({ email: '', password: '', full_name: '', phone: '', role: 'employee', segments: [] });
-    load();
-  }
 
   async function saveUser() {
     if (!editing) return;
@@ -106,7 +306,8 @@ function AccessControl({ segments }: { segments: Segment[] }) {
       permission_overrides: editing.permission_overrides || {},
       is_active: editing.is_active,
       designation: editing.designation || '',
-      monthly_salary: editing.monthly_salary || 0,
+      employment_type: editing.employment_type || 'full_time',
+      salary_structure: editing.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 },
       updated_at: new Date().toISOString(),
     }).eq('id', editing.id);
     setEditing(null);
@@ -121,8 +322,8 @@ function AccessControl({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <p className="text-slate-400 text-sm">Assign roles, segment access and function permissions — no code needed.</p>
-        <button className={btnCls} onClick={() => setShowCreate(true)}>+ New Staff</button>
+        <p className="text-slate-400 text-sm">Onboard staff, assign segment access and function permissions — no code needed.</p>
+        <button className={btnCls} onClick={() => setShowOnboard(true)}>+ Onboard Employee</button>
       </div>
       <div className="space-y-2">
         {users.map(u => (
@@ -134,36 +335,15 @@ function AccessControl({ segments }: { segments: Segment[] }) {
             <div className="flex items-center gap-2">
               <span className={`text-xs px-2 py-0.5 rounded ${u.is_active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>{u.is_active ? 'active' : 'disabled'}</span>
               {u.role !== 'super_admin' && (
-                <button className="text-sky-400 text-sm font-medium" onClick={() => setEditing({ ...u, permission_overrides: u.permission_overrides || {} })}>Manage Access</button>
+                <button className="text-sky-400 text-sm font-medium" onClick={() => setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 } })}>Manage Access</button>
               )}
             </div>
           </div>
         ))}
       </div>
 
-      {showCreate && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-white font-semibold text-lg">Create Staff Account</h3>
-            <input className={inputCls} placeholder="Full Name *" value={createForm.full_name} onChange={e => setCreateForm({ ...createForm, full_name: e.target.value })} />
-            <input className={inputCls} placeholder="Email *" value={createForm.email} onChange={e => setCreateForm({ ...createForm, email: e.target.value })} />
-            <input className={inputCls} placeholder="Password *" type="password" value={createForm.password} onChange={e => setCreateForm({ ...createForm, password: e.target.value })} />
-            <input className={inputCls} placeholder="Phone" value={createForm.phone} onChange={e => setCreateForm({ ...createForm, phone: e.target.value })} />
-            <select className={inputCls} value={createForm.role} onChange={e => setCreateForm({ ...createForm, role: e.target.value })}>
-              {['manager', 'hr', 'marketing_executive', 'telecaller', 'support_agent', 'employee'].map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <div className="flex flex-wrap gap-2">
-              {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
-                <button key={s.slug} onClick={() => toggleSeg(createForm, setCreateForm, s.slug)}
-                  className={`px-3 py-1 rounded-full text-xs border ${createForm.segments.includes(s.slug) ? 'bg-sky-500 text-slate-950 border-sky-500' : 'border-slate-700 text-slate-400'}`}>
-                  {s.name}
-                </button>
-              ))}
-            </div>
-            {msg && <p className="text-red-400 text-xs">{msg}</p>}
-            <button className={btnCls + ' w-full'} onClick={createUser}>Create Account</button>
-          </div>
-        </div>
+      {showOnboard && (
+        <OnboardingWizard segments={segments} onClose={() => setShowOnboard(false)} onDone={() => { setShowOnboard(false); load(); }} />
       )}
 
       {editing && (
@@ -178,7 +358,26 @@ function AccessControl({ segments }: { segments: Segment[] }) {
                 <option value="1">Active</option><option value="0">Disabled</option>
               </select>
               <input className={inputCls} placeholder="Designation" value={editing.designation || ''} onChange={e => setEditing({ ...editing, designation: e.target.value })} />
-              <input className={inputCls} type="number" placeholder="Monthly Salary" value={editing.monthly_salary || ''} onChange={e => setEditing({ ...editing, monthly_salary: Number(e.target.value) })} />
+              <select className={inputCls} value={editing.employment_type || 'full_time'} onChange={e => setEditing({ ...editing, employment_type: e.target.value })}>
+                {['full_time', 'part_time', 'contract', 'intern'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+              </select>
+            </div>
+            <div>
+              <p className="text-slate-300 text-sm font-medium mb-2">Salary Structure <span className="text-slate-500 font-normal">(visible to employee)</span></p>
+              <div className="grid grid-cols-2 gap-3">
+                {(['basic', 'hra', 'allowances', 'deductions'] as const).map(k => (
+                  <div key={k}>
+                    <label className="text-slate-500 text-xs capitalize">{k} (monthly ₹)</label>
+                    <input type="number" className={inputCls} value={editing.salary_structure?.[k] || 0}
+                      onChange={e => setEditing({ ...editing, salary_structure: { ...editing.salary_structure, [k]: Number(e.target.value) } })} />
+                  </div>
+                ))}
+                <div className="col-span-2">
+                  <label className="text-slate-500 text-xs">Annual CTC (₹)</label>
+                  <input type="number" className={inputCls} value={editing.salary_structure?.ctc || 0}
+                    onChange={e => setEditing({ ...editing, salary_structure: { ...editing.salary_structure, ctc: Number(e.target.value) } })} />
+                </div>
+              </div>
             </div>
             <div>
               <p className="text-slate-300 text-sm font-medium mb-2">Segment Access</p>
@@ -494,7 +693,141 @@ function ContentManager() {
 }
 
 // ─────────────────────────────────────── Dashboard shell
-type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'content';
+// ─────────────────────────────────────── Documents Manager (templates + issue to existing staff)
+function DocumentsManager({ segments }: { segments: Segment[] }) {
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [editingTpl, setEditingTpl] = useState<any | null>(null);
+  const [issueFor, setIssueFor] = useState<any | null>(null);
+  const [issueDocs, setIssueDocs] = useState<string[]>([]);
+  const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const [{ data: t }, { data: s }] = await Promise.all([
+      supabase.from('document_templates').select('*').order('doc_type'),
+      supabase.from('app_users').select('*').eq('is_active', true).order('full_name'),
+    ]);
+    if (t) setTemplates(t);
+    if (s) setStaff(s);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function saveTemplate() {
+    if (!editingTpl?.title || !editingTpl?.body) return;
+    if (editingTpl.id) {
+      const { id, ...patch } = editingTpl;
+      await supabase.from('document_templates').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+    } else {
+      await supabase.from('document_templates').insert(editingTpl);
+    }
+    setEditingTpl(null); load();
+  }
+
+  function openIssue(staffMember: any) {
+    setIssueFor(staffMember);
+    setIssueDocs([]);
+  }
+
+  const relevantTemplates = (staffMember: any) => templates.filter(t => t.active && (!t.segment_slug || (staffMember?.segments || []).includes(t.segment_slug) || (staffMember?.segments || []).includes('all')));
+
+  async function issue() {
+    if (!issueFor || issueDocs.length === 0) return;
+    setBusy(true);
+    const seg = segments.find(s => (issueFor.segments || []).includes(s.slug));
+    const vars = buildOnboardingVars({
+      full_name: issueFor.full_name, designation: issueFor.designation, role: issueFor.role,
+      segmentName: seg?.name || 'Nikki Technologies', joining_date: issueFor.joining_date,
+      salary_structure: issueFor.salary_structure || {}, employment_type: issueFor.employment_type,
+    });
+    const { data: { user } } = await supabase.auth.getUser();
+    const docs = templates.filter(t => issueDocs.includes(t.id));
+    await supabase.from('employee_documents').upsert(
+      docs.map(t => ({
+        staff_user_id: issueFor.id, doc_type: t.doc_type, title: t.title,
+        content: renderTemplate(t.body, vars), issued_by: user?.id, issued_at: new Date().toISOString(),
+      })),
+      { onConflict: 'staff_user_id,doc_type,title' }
+    );
+    setBusy(false); setIssueFor(null); load();
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-white font-semibold">Document Templates</h3>
+          <button className={btnCls} onClick={() => setEditingTpl({ segment_slug: '', doc_type: 'other', title: '', body: '', active: true })}>+ New Template</button>
+        </div>
+        <div className="space-y-2">
+          {templates.map(t => (
+            <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
+              <div>
+                <p className="text-white text-sm font-medium">{t.title}</p>
+                <p className="text-slate-500 text-xs">{DOC_TYPE_LABELS[t.doc_type]} • {segments.find(s => s.slug === t.segment_slug)?.name || 'All segments'}</p>
+              </div>
+              <div className="flex gap-3">
+                <button className="text-sky-400 text-xs" onClick={() => setPreview({ title: t.title, content: t.body })}>Preview</button>
+                <button className="text-sky-400 text-xs" onClick={() => setEditingTpl(t)}>Edit</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-white font-semibold mb-4">Issue Documents to Existing Staff</h3>
+        <div className="space-y-2">
+          {staff.map(s => (
+            <div key={s.id} className={cardCls + ' flex items-center justify-between'}>
+              <p className="text-white text-sm">{s.full_name} <span className="text-slate-500 text-xs">({s.role})</span></p>
+              <button className="text-sky-400 text-xs" onClick={() => openIssue(s)}>Issue Document</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {editingTpl && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingTpl(null)}>
+          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-white font-semibold">{editingTpl.id ? 'Edit' : 'New'} Template</h3>
+            <input className={inputCls} placeholder="Title *" value={editingTpl.title} onChange={e => setEditingTpl({ ...editingTpl, title: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3">
+              <select className={inputCls} value={editingTpl.doc_type} onChange={e => setEditingTpl({ ...editingTpl, doc_type: e.target.value })}>
+                {Object.keys(DOC_TYPE_LABELS).map(k => <option key={k} value={k}>{DOC_TYPE_LABELS[k]}</option>)}
+              </select>
+              <select className={inputCls} value={editingTpl.segment_slug || ''} onChange={e => setEditingTpl({ ...editingTpl, segment_slug: e.target.value || null })}>
+                <option value="">All segments</option>
+                {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+              </select>
+            </div>
+            <p className="text-slate-500 text-xs">Placeholders: {'{{name}} {{designation}} {{role}} {{segment}} {{joining_date}} {{ctc}} {{employment_type}} {{company}}'}</p>
+            <textarea className={inputCls} rows={10} value={editingTpl.body} onChange={e => setEditingTpl({ ...editingTpl, body: e.target.value })} />
+            <button className={btnCls + ' w-full'} onClick={saveTemplate}>Save Template</button>
+          </div>
+        </div>
+      )}
+
+      {issueFor && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setIssueFor(null)}>
+          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-white font-semibold">Issue documents to {issueFor.full_name}</h3>
+            {relevantTemplates(issueFor).map(t => (
+              <label key={t.id} className="flex items-center gap-2 text-sm text-white cursor-pointer">
+                <input type="checkbox" checked={issueDocs.includes(t.id)} onChange={() => setIssueDocs(prev => prev.includes(t.id) ? prev.filter(x => x !== t.id) : [...prev, t.id])} />
+                {t.title}
+              </label>
+            ))}
+            <button className={btnCls + ' w-full'} disabled={busy} onClick={issue}>{busy ? 'Issuing…' : 'Issue Selected Documents'}</button>
+          </div>
+        </div>
+      )}
+      {preview && <DocumentViewer title={preview.title} content={preview.content} onClose={() => setPreview(null)} />}
+    </div>
+  );
+}
+
+type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'content';
 
 export default function SuperAdminDashboard() {
   const { user, signOut } = useAuth();
@@ -511,6 +844,7 @@ export default function SuperAdminDashboard() {
     { id: 'segments', label: 'Segments', icon: Layers },
     { id: 'products', label: 'Products', icon: Boxes },
     { id: 'catalog', label: 'Services & Ticket Types', icon: Wrench },
+    { id: 'documents', label: 'Documents & Onboarding', icon: FileText },
     { id: 'content', label: 'Website Content', icon: FileText },
   ];
 
@@ -562,6 +896,7 @@ export default function SuperAdminDashboard() {
         {tab === 'segments' && <SegmentsManager onChanged={() => setRefreshKey(k => k + 1)} />}
         {tab === 'products' && <ProductsManager segments={segments} />}
         {tab === 'catalog' && <CatalogManager segments={segments} />}
+        {tab === 'documents' && <DocumentsManager segments={segments} />}
         {tab === 'content' && <ContentManager />}
       </main>
     </div>

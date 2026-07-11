@@ -40,6 +40,12 @@ Super Admin can override any function permission per user (view_leads, manage_ti
 - `/` — public site (segments, products, raise ticket, lead form)
 - `/login` — unified staff login → Super Admin dashboard or Staff Portal (tabs appear per permissions)
 
+## Onboarding & Documents
+- **Super Admin → Documents & Onboarding**: create/edit templates (Offer Letter, Welcome Letter, Roles & Responsibilities, custom) per segment. Placeholders: `{{name}} {{designation}} {{role}} {{segment}} {{joining_date}} {{ctc}} {{employment_type}} {{company}}`.
+- **Super Admin → Access Control → Onboard Employee**: 5-step wizard — basic info, role/segment, salary structure (basic/HRA/allowances/deductions/CTC), pick documents to auto-issue, review & create. Account + salary + documents all created together.
+- Existing staff can be issued additional documents anytime from Documents & Onboarding → Issue Documents.
+- **Employee → My Documents** tab: view/print/download every issued document, see full salary breakdown, and acknowledge documents (timestamped, visible to HR) — full transparency, builds trust.
+
 ## Post-launch
 - Regenerate strict DB types: `supabase gen types typescript --project-id XXX > src/lib/database.types.ts` and re-add `<Database>` generic in `src/lib/supabase.ts`.
 - Replace placeholder contact number/email in Super Admin → Website Content.

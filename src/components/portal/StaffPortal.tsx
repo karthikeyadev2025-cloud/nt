@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin } from 'lucide-react';
+import { LogOut, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
+import { MyDocumentsList, MySalaryCard } from './documents';
 
 // ─────────────────────────── Self-service: attendance
 function MyAttendance() {
@@ -169,6 +170,21 @@ function MyRequests() {
   );
 }
 
+// ─────────────────────────── My Documents + Salary
+function MyDocuments() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return (
+    <div className="space-y-6">
+      <MySalaryCard salary={(user as any).salary_structure} />
+      <div>
+        <h3 className="text-white font-semibold mb-3 text-sm">My Documents</h3>
+        <MyDocumentsList staffUserId={user.id} />
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────── Portal shell
 export default function StaffPortal() {
   const { user, signOut, hasPermission } = useAuth();
@@ -176,6 +192,7 @@ export default function StaffPortal() {
 
   const tabs = [
     { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },
+    { id: 'documents', label: 'My Documents', icon: FileText, show: true },
     { id: 'requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
     { id: 'tickets', label: 'Tickets', icon: Ticket, show: hasPermission('view_tickets') },
     { id: 'leads', label: 'Leads / CRM', icon: ClipboardList, show: hasPermission('view_leads') },
@@ -212,6 +229,7 @@ export default function StaffPortal() {
 
       <main className="p-4 md:p-6 max-w-5xl mx-auto">
         {tab === 'attendance' && <MyAttendance />}
+        {tab === 'documents' && <MyDocuments />}
         {tab === 'requests' && <MyRequests />}
         {tab === 'tickets' && <TicketsBoard segments={segments} />}
         {tab === 'leads' && <LeadsBoard segments={segments} />}
