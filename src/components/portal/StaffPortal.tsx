@@ -8,6 +8,7 @@ import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
 import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard } from './features';
 import { TelecallerQueue, LeadsWorkspace } from './leads-workflow';
+import { MyPerformanceChart } from './performance';
 import CameraCapture from '../CameraCapture';
 
 // ─────────────────────────── Self-service: attendance
@@ -18,6 +19,8 @@ function MyAttendance() {
   const [history, setHistory] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
   const [showCamera, setShowCamera] = useState<'in' | 'out' | null>(null);
+  const [workMode, setWorkMode] = useState<'office' | 'wfh' | 'field_visit'>('office');
+  const [pickingMode, setPickingMode] = useState(false);
   const dateStr = new Date().toISOString().slice(0, 10);
 
   async function load() {
@@ -62,7 +65,7 @@ function MyAttendance() {
     const { error } = await supabase.from('attendance_records').insert({
       staff_user_id: user.id, attendance_date: dateStr,
       check_in_at: new Date().toISOString(), check_in_lat: lat, check_in_lng: lng,
-      check_in_selfie_url: selfiePath, status: 'present',
+      check_in_selfie_url: selfiePath, status: 'present', work_mode: workMode,
     });
     setBusy(false);
     if (error) { toast.error(`Check-in failed: ${error.message}`); return; }
@@ -90,16 +93,18 @@ function MyAttendance() {
   return (
     <div className="space-y-5">
       <MyStatsCard />
+      <MyPerformanceChart />
       <div className={cardCls + ' text-center py-8'}>
         <Clock className="w-8 h-8 text-sky-400 mx-auto mb-2" />
         <p className="text-slate-400 text-sm mb-4">{new Date().toDateString()}</p>
         {!today ? (
-          <button className={btnCls} disabled={busy} onClick={() => setShowCamera('in')}>
+          <button className={btnCls} disabled={busy} onClick={() => setPickingMode(true)}>
             <MapPin className="w-4 h-4 inline mr-1" /> Check In
           </button>
         ) : !today.check_out_at ? (
           <div>
-            <p className="text-emerald-300 text-sm mb-3">Checked in at {new Date(today.check_in_at).toLocaleTimeString()}</p>
+            <p className="text-emerald-300 text-sm mb-1">Checked in at {new Date(today.check_in_at).toLocaleTimeString()}</p>
+            <p className="text-slate-500 text-xs mb-3 capitalize">{(today.work_mode || 'office').replace('_', ' ')}</p>
             <button className={btnCls} disabled={busy} onClick={() => setShowCamera('out')}>Check Out</button>
           </div>
         ) : (
@@ -116,11 +121,32 @@ function MyAttendance() {
               <span className="text-slate-400">{r.attendance_date}</span>
               <span className="text-slate-300">
                 {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : '—'} → {r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : '—'}
+                {r.work_mode && r.work_mode !== 'office' && <span className="ml-2 text-amber-400 capitalize">{r.work_mode.replace('_', ' ')}</span>}
               </span>
             </div>
           ))}
         </div>
       </div>
+
+      {pickingMode && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setPickingMode(false)}>
+          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-xs w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-white font-semibold text-sm mb-4">Where are you checking in from?</h3>
+            <div className="space-y-2">
+              {[
+                { v: 'office', label: 'Office' },
+                { v: 'wfh', label: 'Work From Home' },
+                { v: 'field_visit', label: 'Field Visit' },
+              ].map(m => (
+                <button key={m.v} onClick={() => { setWorkMode(m.v as any); setPickingMode(false); setShowCamera('in'); }}
+                  className="w-full text-left px-4 py-3 rounded-lg border border-slate-700 text-white text-sm hover:border-sky-500 transition-colors">
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCamera && (
         <CameraCapture
@@ -282,6 +308,22 @@ export default function StaffPortal() {
       </div>
 
       <main className="p-4 md:p-6 max-w-5xl mx-auto">
+        {tab === 'attendance' && (
+          <div className={cardCls + ' mb-5'}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-white font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  {user?.designation || user?.role} • {mySegNames} {(user as any)?.staff_code && `• ${(user as any).staff_code}`}
+                </p>
+              </div>
+              <div className="text-right text-xs text-slate-500">
+                {user?.joining_date && <p>Joined {new Date(user.joining_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
+                {(user as any)?.reporting_time && <p className="mt-0.5">{(user as any).reporting_time}</p>}
+              </div>
+            </div>
+          </div>
+        )}
         {tab === 'attendance' && <AnnouncementsFeed />}
         {tab === 'attendance' && <MyAttendance />}
         {tab === 'documents' && <MyDocuments />}

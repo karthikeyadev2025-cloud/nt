@@ -106,3 +106,12 @@ Replaced the static loading spinner with a letter-by-letter reveal of "N-I-K-K-I
 - **Reporting Time / Shift** is now captured during onboarding and appears on the Offer Letter and Welcome Letter automatically (`{{reporting_time}}` placeholder).
 - **Job Description** added as its own document type, with a starter template per segment (Field Technician / Digital Media Executive / Software Developer) — Super Admin can add more per specific role from Documents & Onboarding → New Template.
 - Confirmed already working: documents auto-filter to the employee's segment, e-signature capture (draw or type) on every generated document.
+
+## Work From Home + Performance Graphs + Bonus/Incentive Structure
+- **Work From Home** — available to every role including telecallers (attendance is a shared self-service feature). Check-in now asks Office / Work From Home / Field Visit first; the choice is stored per record and shown in the 14-day history.
+- **Salary structure extended**: Basic, HRA, Allowances, Deductions, **Performance Bonus**, **Incentives**, Annual CTC — all editable by Super Admin (onboarding wizard + Access Control → Manage Access), all visible to the employee in My Documents for full transparency.
+- **Performance graphs (recharts), interactive across both portals:**
+  - Employee: Hours Worked bar chart (last 14 days, computed from actual check-in/check-out times)
+  - Telecaller: Calls Logged bar chart (last 7 days)
+  - Super Admin Overview: Company Attendance trend line (14 days), Ticket Status pie chart, Leads Funnel by segment (stacked bar: New → In Progress → Won)
+- **Portal home screen polish** — attendance tab now opens with a welcome banner showing designation, segment, staff code, joining date and reporting time at a glance.

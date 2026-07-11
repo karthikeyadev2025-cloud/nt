@@ -12,6 +12,7 @@ import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from '.
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager } from './features';
 import { LeadsWorkspace } from './leads-workflow';
+import { AttendanceTrendChart, LeadsFunnelChart, TicketStatusChart } from './performance';
 import { useToast } from '../../lib/toast';
 
 const PERMISSION_KEYS = [
@@ -67,6 +68,11 @@ function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: (
         <BirthdaysWidget />
         <PunctualityLeaderboard segments={segments} />
       </div>
+      <div className="grid md:grid-cols-2 gap-5">
+        <AttendanceTrendChart />
+        <TicketStatusChart />
+      </div>
+      <LeadsFunnelChart segments={segments} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {segments.map(seg => {
         const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
@@ -97,7 +103,7 @@ const emptyOnboard = {
   joining_date: new Date().toISOString().slice(0, 10),
   date_of_birth: '',
   reporting_time: '9:30 AM – 6:30 PM, Monday to Saturday',
-  salary_structure: { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 },
+  salary_structure: { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 },
   doc_types: ['welcome_letter', 'offer_letter', 'roles_responsibilities'] as string[],
 };
 
@@ -256,9 +262,9 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
           <div className="space-y-3">
             <p className="text-slate-400 text-sm">This breakdown will be visible to the employee in their portal for full transparency.</p>
             <div className="grid grid-cols-2 gap-3">
-              {(['basic', 'hra', 'allowances', 'deductions'] as const).map(k => (
+              {(['basic', 'hra', 'allowances', 'deductions', 'performance_bonus', 'incentives'] as const).map(k => (
                 <div key={k}>
-                  <label className="text-slate-400 text-xs capitalize">{k} (monthly ₹)</label>
+                  <label className="text-slate-400 text-xs capitalize">{k.replace('_',' ')} (monthly ₹)</label>
                   <input type="number" className={inputCls} value={form.salary_structure[k]}
                     onChange={e => setForm({ ...form, salary_structure: { ...form.salary_structure, [k]: Number(e.target.value) } })} />
                 </div>
@@ -343,7 +349,7 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
       is_active: editing.is_active,
       designation: editing.designation || '',
       employment_type: editing.employment_type || 'full_time',
-      salary_structure: editing.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 },
+      salary_structure: editing.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 },
       updated_at: new Date().toISOString(),
     }).eq('id', editing.id);
     if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
@@ -374,7 +380,7 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
               <span className={`text-xs px-2 py-0.5 rounded ${u.is_active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>{u.is_active ? 'active' : 'disabled'}</span>
               <OnboardingStatusBadge staffUserId={u.id} />
               {u.role !== 'super_admin' && (
-                <button className="text-sky-400 text-sm font-medium" onClick={() => setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 } })}>Manage Access</button>
+                <button className="text-sky-400 text-sm font-medium" onClick={() => setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } })}>Manage Access</button>
               )}
             </div>
           </div>
@@ -404,9 +410,9 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
             <div>
               <p className="text-slate-300 text-sm font-medium mb-2">Salary Structure <span className="text-slate-500 font-normal">(visible to employee)</span></p>
               <div className="grid grid-cols-2 gap-3">
-                {(['basic', 'hra', 'allowances', 'deductions'] as const).map(k => (
+                {(['basic', 'hra', 'allowances', 'deductions', 'performance_bonus', 'incentives'] as const).map(k => (
                   <div key={k}>
-                    <label className="text-slate-500 text-xs capitalize">{k} (monthly ₹)</label>
+                    <label className="text-slate-500 text-xs capitalize">{k.replace('_',' ')} (monthly ₹)</label>
                     <input type="number" className={inputCls} value={editing.salary_structure?.[k] || 0}
                       onChange={e => setEditing({ ...editing, salary_structure: { ...editing.salary_structure, [k]: Number(e.target.value) } })} />
                   </div>

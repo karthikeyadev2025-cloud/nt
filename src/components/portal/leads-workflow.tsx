@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard } from './shared';
+import { MyCallsChart } from './performance';
 import type { Segment } from '../../lib/database.types';
 
 // ─────────────────────────── Telecaller: counts-only dashboard
@@ -144,7 +145,8 @@ export function TelecallerQueue() {
   return (
     <div>
       <TelecallerStatsDashboard />
-      <h3 className="text-white font-semibold text-sm mb-3">My Call Queue ({leads.length})</h3>
+      <MyCallsChart />
+      <h3 className="text-white font-semibold text-sm mb-3 mt-6">My Call Queue ({leads.length})</h3>
       <div className="space-y-2">
         {leads.map(l => (
           <div key={l.id} className={cardCls + ' flex items-center justify-between'}>

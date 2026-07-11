@@ -296,7 +296,7 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
 }
 
 // ─────────────────────────── Read-only salary transparency card
-export function MySalaryCard({ salary }: { salary?: { basic?: number; hra?: number; allowances?: number; deductions?: number; ctc?: number } }) {
+export function MySalaryCard({ salary }: { salary?: { basic?: number; hra?: number; allowances?: number; deductions?: number; performance_bonus?: number; incentives?: number; ctc?: number } }) {
   const s = salary || {};
   const rupee = (n?: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
   return (
@@ -306,6 +306,8 @@ export function MySalaryCard({ salary }: { salary?: { basic?: number; hra?: numb
         <span className="text-slate-400">Basic</span><span className="text-white text-right">{rupee(s.basic)}</span>
         <span className="text-slate-400">HRA</span><span className="text-white text-right">{rupee(s.hra)}</span>
         <span className="text-slate-400">Allowances</span><span className="text-white text-right">{rupee(s.allowances)}</span>
+        {!!s.performance_bonus && (<><span className="text-slate-400">Performance Bonus</span><span className="text-emerald-400 text-right">{rupee(s.performance_bonus)}</span></>)}
+        {!!s.incentives && (<><span className="text-slate-400">Incentives</span><span className="text-emerald-400 text-right">{rupee(s.incentives)}</span></>)}
         <span className="text-slate-400">Deductions</span><span className="text-red-300 text-right">− {rupee(s.deductions)}</span>
         <div className="col-span-2 border-t border-slate-800 my-1" />
         <span className="text-white font-semibold">Annual CTC</span><span className="text-sky-400 font-bold text-right">{rupee(s.ctc)}</span>
