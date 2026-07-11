@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
+  Landmark, Megaphone,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,6 +10,7 @@ import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
+import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget } from './features';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads',
@@ -53,7 +55,12 @@ function Overview({ segments }: { segments: Segment[] }) {
   }, [segments]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div className="space-y-5">
+      <div className="grid md:grid-cols-2 gap-5">
+        <BirthdaysWidget />
+        <PunctualityLeaderboard segments={segments} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {segments.map(seg => {
         const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
         return (
@@ -71,6 +78,7 @@ function Overview({ segments }: { segments: Segment[] }) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
@@ -80,6 +88,7 @@ const emptyOnboard = {
   full_name: '', email: '', password: '', phone: '', designation: '',
   role: 'employee', segments: [] as string[], employment_type: 'full_time',
   joining_date: new Date().toISOString().slice(0, 10),
+  date_of_birth: '',
   salary_structure: { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 },
   doc_types: ['welcome_letter', 'offer_letter', 'roles_responsibilities'] as string[],
 };
@@ -133,6 +142,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       designation: form.designation,
       employment_type: form.employment_type,
       joining_date: form.joining_date,
+      date_of_birth: form.date_of_birth || null,
       salary_structure: form.salary_structure,
     }).eq('id', userId);
 
@@ -214,6 +224,10 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
               <div>
                 <p className="text-slate-300 text-sm font-medium mb-2">Joining Date</p>
                 <input type="date" className={inputCls} value={form.joining_date} onChange={e => setForm({ ...form, joining_date: e.target.value })} />
+              </div>
+              <div>
+                <p className="text-slate-300 text-sm font-medium mb-2">Date of Birth <span className="text-slate-500 font-normal">(optional)</span></p>
+                <input type="date" className={inputCls} value={form.date_of_birth} onChange={e => setForm({ ...form, date_of_birth: e.target.value })} />
               </div>
             </div>
           </div>
@@ -836,7 +850,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   );
 }
 
-type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'content';
+type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'content';
 
 export default function SuperAdminDashboard() {
   const { user, signOut } = useAuth();
@@ -854,6 +868,8 @@ export default function SuperAdminDashboard() {
     { id: 'products', label: 'Products', icon: Boxes },
     { id: 'catalog', label: 'Services & Ticket Types', icon: Wrench },
     { id: 'documents', label: 'Documents & Onboarding', icon: FileText },
+    { id: 'approvals', label: 'Bank Approvals', icon: Landmark },
+    { id: 'announcements', label: 'Announcements', icon: Megaphone },
     { id: 'content', label: 'Website Content', icon: FileText },
   ];
 
@@ -892,6 +908,7 @@ export default function SuperAdminDashboard() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-white">{tabs.find(t => t.id === tab)?.label}</h1>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <span className="text-slate-500 text-sm hidden sm:block">{user?.full_name}</span>
             <button onClick={signOut} className="md:hidden text-slate-500"><LogOut className="w-5 h-5" /></button>
           </div>
@@ -906,6 +923,8 @@ export default function SuperAdminDashboard() {
         {tab === 'products' && <ProductsManager segments={segments} />}
         {tab === 'catalog' && <CatalogManager segments={segments} />}
         {tab === 'documents' && <DocumentsManager segments={segments} />}
+        {tab === 'approvals' && <BankChangeApprovals />}
+        {tab === 'announcements' && <AnnouncementsManager segments={segments} />}
         {tab === 'content' && <ContentManager />}
       </main>
     </div>

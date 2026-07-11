@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText } from 'lucide-react';
+import { LogOut, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
 import { MyDocumentsList, MySalaryCard } from './documents';
+import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard } from './features';
 
 // ─────────────────────────── Self-service: attendance
 function MyAttendance() {
@@ -59,6 +60,7 @@ function MyAttendance() {
 
   return (
     <div className="space-y-5">
+      <MyStatsCard />
       <div className={cardCls + ' text-center py-8'}>
         <Clock className="w-8 h-8 text-sky-400 mx-auto mb-2" />
         <p className="text-slate-400 text-sm mb-4">{new Date().toDateString()}</p>
@@ -185,6 +187,16 @@ function MyDocuments() {
   );
 }
 
+// ─────────────────────────── My Profile: ID card + bank details
+function MyProfile() {
+  return (
+    <div className="grid md:grid-cols-2 gap-6">
+      <IDCard />
+      <MyBankDetails />
+    </div>
+  );
+}
+
 // ─────────────────────────── Portal shell
 export default function StaffPortal() {
   const { user, signOut, hasPermission } = useAuth();
@@ -194,6 +206,8 @@ export default function StaffPortal() {
     { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },
     { id: 'documents', label: 'My Documents', icon: FileText, show: true },
     { id: 'requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
+    { id: 'profile', label: 'My Profile', icon: CreditCard, show: true },
+    { id: 'swap', label: 'Shift Swap', icon: Repeat, show: true },
     { id: 'tickets', label: 'Tickets', icon: Ticket, show: hasPermission('view_tickets') },
     { id: 'leads', label: 'Leads / CRM', icon: ClipboardList, show: hasPermission('view_leads') },
     { id: 'team', label: 'Team / HR', icon: Users2, show: hasPermission('view_staff') || hasPermission('view_attendance') },
@@ -215,7 +229,10 @@ export default function StaffPortal() {
             <p className="text-slate-500 text-[11px]">{user?.role.replace('_', ' ')} • {mySegNames}</p>
           </div>
         </div>
-        <button onClick={signOut} className="text-slate-500 hover:text-red-400"><LogOut className="w-5 h-5" /></button>
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <button onClick={signOut} className="text-slate-500 hover:text-red-400"><LogOut className="w-5 h-5" /></button>
+        </div>
       </header>
 
       <div className="px-4 py-3 flex gap-2 overflow-x-auto border-b border-slate-900">
@@ -228,9 +245,12 @@ export default function StaffPortal() {
       </div>
 
       <main className="p-4 md:p-6 max-w-5xl mx-auto">
+        {tab === 'attendance' && <AnnouncementsFeed />}
         {tab === 'attendance' && <MyAttendance />}
         {tab === 'documents' && <MyDocuments />}
         {tab === 'requests' && <MyRequests />}
+        {tab === 'profile' && <MyProfile />}
+        {tab === 'swap' && <ShiftSwapBoard />}
         {tab === 'tickets' && <TicketsBoard segments={segments} />}
         {tab === 'leads' && <LeadsBoard segments={segments} />}
         {tab === 'team' && <HRBoard segments={segments} />}

@@ -57,3 +57,16 @@ Super Admin can override any function permission per user (view_leads, manage_ti
 - Documents not requiring a signature get a lighter "I acknowledge I've read this" confirmation instead.
 - Every staff row in **Access Control** and **Documents & Onboarding** shows a live badge: `X/Y signed` or `Onboarding complete` — so you can see at a glance who still needs to finish onboarding.
 - Print/Save-as-PDF includes the captured signature image and signing timestamp on the printed document.
+
+## Ported from Punchly (smart-timekeeper)
+Safe-checked and adapted to Nikki's schema (no tenants — segment-scoped instead):
+- **In-app Notifications** — bell icon in both portal headers, unread badge, mark-as-read, auto-fires on: ticket/lead activity via triggers, shift swap requests, bank change approval/rejection, announcements.
+- **Announcements** — Super Admin posts to all staff or one segment; pinned + auto-expiry; shows as a feed on the employee home tab and notifies everyone instantly.
+- **Shift Swap Requests** — employee requests a swap (optionally with a named colleague), manager/HR approves from the same board; both sides get notified.
+- **Bank Details + Change Approval** — employee submits new bank details from **My Profile**; nothing changes until HR approves from **Bank Approvals** — protects payroll from silent/fraudulent edits. Approved changes apply automatically via a DB trigger.
+- **Digital ID Card** — auto-generated per employee (segment-branded colors), viewable and printable from **My Profile**. Auto-numbered staff codes (`NKT-EMP-0001…`) assigned on creation.
+- **My Stats** — day streak, days present, on-time % over the last 30 days, shown on the employee's attendance tab.
+- **Punctuality Leaderboard** — Super Admin Overview, top 10 staff by on-time %, last 30 days.
+- **Birthdays & Anniversaries widget** — Super Admin Overview shows anyone with a birthday or work-anniversary today (no cron needed — computed on page load).
+
+Not ported (native-mobile-only, needs Capacitor/device APIs): face-verification selfie matching, native push notifications, PIN quick-login. These only make sense in the Capacitor mobile build; Nikki is web-only for now.
