@@ -154,7 +154,11 @@ export function TelecallerQueue() {
             <div className="min-w-0 cursor-pointer" onClick={() => openLead(l)}>
               <p className="text-white text-sm font-medium truncate">{l.customer_name}</p>
               <p className="text-slate-500 text-xs mt-0.5">
-                {l.interested_in || 'No notes'} {l.callback_at && <span className="text-amber-400 ml-2">Callback: {new Date(l.callback_at).toLocaleString()}</span>}
+                {l.interested_in || 'No notes'} {l.callback_at && (
+                  new Date(l.callback_at) <= new Date()
+                    ? <span className="text-red-400 ml-2 font-medium">⚠ Overdue callback: {new Date(l.callback_at).toLocaleString()}</span>
+                    : <span className="text-amber-400 ml-2">Callback: {new Date(l.callback_at).toLocaleString()}</span>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -340,22 +344,83 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
 
 // ─────────────────────────── Reusable composite: board + bulk upload + transfer approvals
 // Used by both Super Admin (always sees all) and Manager's own Staff Portal (permission-gated).
+// ─────────────────────────── Manager/Super Admin: Team Activity Feed
+// (company-wide stream of every call/visit/note across all leads — real workflow
+// carried over from the original Aadya ManagerPortal "Conversations" tab.
+// Without this, a manager has to open each lead individually to see any notes.)
+export function TeamActivityFeed() {
+  const [items, setItems] = useState<any[]>([]);
+  const [leadNames, setLeadNames] = useState<Record<string, { name: string; phone: string }>>({});
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    const { data } = await supabase.from('lead_remarks').select('*').order('created_at', { ascending: false }).limit(300);
+    if (data) setItems(data);
+    const leadIds = [...new Set((data || []).map((r: any) => r.lead_id))];
+    const userIds = [...new Set((data || []).map((r: any) => r.user_id).filter(Boolean))];
+    if (leadIds.length) {
+      const { data: leads } = await supabase.from('marketing_leads').select('id, customer_name, phone').in('id', leadIds);
+      if (leads) setLeadNames(Object.fromEntries(leads.map((l: any) => [l.id, { name: l.customer_name, phone: l.phone }])));
+    }
+    if (userIds.length) {
+      const { data: users } = await supabase.from('app_users').select('id, full_name').in('id', userIds);
+      if (users) setUserNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
+    }
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  const typeColor: Record<string, string> = {
+    outgoing: 'text-sky-400', incoming: 'text-emerald-400', visit: 'text-amber-400',
+    whatsapp: 'text-emerald-400', email: 'text-purple-400', note: 'text-slate-400',
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-slate-400 text-sm">Every call, visit and note across the whole team, most recent first.</p>
+        <button className="text-sky-400 text-xs" onClick={load}>Refresh</button>
+      </div>
+      {loading ? <p className="text-slate-500 text-sm text-center py-10">Loading…</p> : (
+        <div className="space-y-2">
+          {items.map(r => (
+            <div key={r.id} className={cardCls}>
+              <div className="flex items-center justify-between">
+                <p className="text-white text-sm font-medium">{leadNames[r.lead_id]?.name || 'Unknown lead'}</p>
+                <span className={`text-xs ${typeColor[r.call_type] || 'text-slate-400'} capitalize`}>{r.call_type.replace('_', ' ')}</span>
+              </div>
+              <p className="text-slate-300 text-sm mt-1">{r.remark}</p>
+              <p className="text-slate-600 text-xs mt-1">
+                {userNames[r.user_id] || 'Unknown'} • {new Date(r.created_at).toLocaleString()}
+                {r.address && <span> • 📍 {r.address}</span>}
+              </p>
+            </div>
+          ))}
+          {items.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No activity yet.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function LeadsWorkspace({ segments }: { segments: Segment[] }) {
   const { hasPermission } = useAuth();
-  const [sub, setSub] = useState<'board' | 'bulk' | 'transfers'>('board');
+  const [sub, setSub] = useState<'board' | 'bulk' | 'transfers' | 'activity'>('board');
   const showBulk = hasPermission('bulk_assign_leads');
   const showTransfers = hasPermission('approve_transfers');
 
   return (
     <div>
-      {(showBulk || showTransfers) && (
-        <div className="flex gap-2 mb-5">
-          <button onClick={() => setSub('board')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'board' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Leads Board</button>
-          {showBulk && <button onClick={() => setSub('bulk')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bulk' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Bulk Upload</button>}
-          {showTransfers && <button onClick={() => setSub('transfers')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'transfers' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Handoff Approvals</button>}
-        </div>
-      )}
+      <div className="flex gap-2 mb-5 flex-wrap">
+        <button onClick={() => setSub('board')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'board' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Leads Board</button>
+        <button onClick={() => setSub('activity')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'activity' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Team Activity</button>
+        {showBulk && <button onClick={() => setSub('bulk')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bulk' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Bulk Upload</button>}
+        {showTransfers && <button onClick={() => setSub('transfers')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'transfers' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Handoff Approvals</button>}
+      </div>
       {sub === 'board' && <LeadsBoard segments={segments} />}
+      {sub === 'activity' && <TeamActivityFeed />}
       {sub === 'bulk' && showBulk && <BulkLeadUpload segments={segments} />}
       {sub === 'transfers' && showTransfers && <TransferApprovals />}
     </div>
@@ -394,7 +459,7 @@ const VISIT_OUTCOMES = [
   { value: 'lost', label: 'Closed — Lost' },
 ];
 
-export function ExecutiveFieldVisits() {
+export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
   const [leads, setLeads] = useState<any[]>([]);
@@ -407,6 +472,8 @@ export function ExecutiveFieldVisits() {
   const [outcome, setOutcome] = useState('contacted');
   const [remark, setRemark] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [newLead, setNewLead] = useState({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
 
   async function load() {
     if (!user) return;
@@ -417,6 +484,18 @@ export function ExecutiveFieldVisits() {
     if (data) setLeads(data);
   }
   useEffect(() => { load(); }, [user]);
+
+  async function addFieldLead() {
+    if (!user || !newLead.customer_name || !newLead.phone || !newLead.segment_slug) { toast.error('Name, phone and segment are required'); return; }
+    const { error } = await supabase.from('marketing_leads').insert({
+      ...newLead, source: 'field', assigned_to: user.id, created_by: user.id,
+    });
+    if (error) { toast.error(`Couldn't add lead: ${error.message}`); return; }
+    toast.success('Lead added to your queue');
+    setShowAddLead(false);
+    setNewLead({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
+    load();
+  }
 
   async function openLead(lead: any) {
     setActive(lead);
@@ -484,7 +563,10 @@ export function ExecutiveFieldVisits() {
 
   return (
     <div>
-      <h3 className="text-white font-semibold text-sm mb-3">My Field Leads ({leads.length})</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-white font-semibold text-sm">My Field Leads ({leads.length})</h3>
+        <button className="text-sky-400 text-xs font-medium" onClick={() => setShowAddLead(true)}>+ Add Lead</button>
+      </div>
       <div className="space-y-2">
         {leads.map(l => (
           <div key={l.id} className={cardCls + ' cursor-pointer hover:border-slate-600'} onClick={() => openLead(l)}>
@@ -555,6 +637,23 @@ export function ExecutiveFieldVisits() {
           onCapture={dataUrl => { setPhotoDataUrl(dataUrl); setCapturing(false); }}
           onCancel={() => setCapturing(false)}
         />
+      )}
+
+      {showAddLead && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowAddLead(false)}>
+          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-white font-semibold">Add Field Lead</h3>
+            <p className="text-slate-500 text-xs">Found a new prospect on-site? Add them directly — it lands in your own queue.</p>
+            <select className={inputCls} value={newLead.segment_slug} onChange={e => setNewLead({ ...newLead, segment_slug: e.target.value })}>
+              <option value="">Segment *</option>
+              {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+            </select>
+            <input className={inputCls} placeholder="Customer Name *" value={newLead.customer_name} onChange={e => setNewLead({ ...newLead, customer_name: e.target.value })} />
+            <input className={inputCls} placeholder="Phone *" value={newLead.phone} onChange={e => setNewLead({ ...newLead, phone: e.target.value })} />
+            <input className={inputCls} placeholder="Interested In" value={newLead.interested_in} onChange={e => setNewLead({ ...newLead, interested_in: e.target.value })} />
+            <button className={btnCls + ' w-full'} onClick={addFieldLead}>Add Lead</button>
+          </div>
+        </div>
       )}
     </div>
   );

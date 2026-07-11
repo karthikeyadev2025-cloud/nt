@@ -365,7 +365,7 @@ export default function StaffPortal() {
           hasPermission('full_leads_view')
             ? <LeadsWorkspace segments={segments} />
             : user?.role === 'marketing_executive'
-              ? <ExecutiveFieldVisits />
+              ? <ExecutiveFieldVisits segments={segments} />
               : <TelecallerQueue />
         )}
         {tab === 'team' && <HRBoard segments={segments} />}

@@ -149,3 +149,14 @@ Per direct request — pulled the real SQL/logic from smart-timekeeper instead o
 - **Attendance Summary RPC** (`staff_attendance_summary`, `daily_attendance_trend`) — ported directly as real Postgres functions (not client-side approximation): present/absent/on-leave days and attendance % per staff member over a selectable window, excluding the super admin account from the count (same as Punchly excludes the tenant owner). Super Admin → HR → Attendance Summary.
 
 All of this required its own migration since it's genuinely new schema (shifts, staff_shifts, payslips, salary_payments, plus is_late/minutes_late/shift_id on attendance_records).
+
+## Real workflow parity check against original Aadya (not just feature presence — actual role logic)
+Re-read the original 1000+ line role portals (ManagerPortal, TelecallerPortal, ExecutivePortal, HRPortal, EmployeePortal) directly instead of relying on my earlier summary pass. Found 3 real workflow gaps where a *permission* existed but no UI exposed it, or a genuinely useful view was missing entirely:
+
+1. **Team Activity Feed** — Managers/Super Admin previously had no way to see team-wide call/visit/note activity without opening each lead individually. Added **CRM → Team Activity**: a live, company-wide stream of every call, visit and note across all leads, most recent first, with who-did-it and when.
+2. **Field-generated leads** — Marketing Executives already had `create_leads` permission granted by default, but no UI let them use it. A field rep finding a new prospect door-to-door had no way to add them. Added **"+ Add Lead"** directly in the Field Visits tab — goes straight into her own queue.
+3. **Overdue callback distinction** — Telecaller queue treated all scheduled callbacks the same. Now overdue callbacks (past their scheduled time) show a red "⚠ Overdue" flag distinct from upcoming ones (amber), matching the urgency-sorting the original Telecaller Portal had.
+
+Also fixed: **HR now has `view_leads`** by default (read-only CRM visibility), matching the original HRPortal's CRM tab — HR often needs to see sales/lead context for hiring and escalation coordination.
+
+One small migration: `20260714000002_hr_crm_visibility_parity.sql`.
