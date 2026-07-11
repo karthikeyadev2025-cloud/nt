@@ -124,3 +124,19 @@ Previously Marketing Executives shared the generic CRM board with no field-speci
 - **Visit History** — every past visit for that lead shown with timestamp, note, address and photo link
 - **Managers/Super Admin** now also see photo + address inline in the standard Leads Board remark thread — full visibility into what the field team captured, no separate reporting needed
 - Fixed a permission bug: Marketing Executives had accidentally been granted the full CRM board (`full_leads_view: true`) instead of a role-appropriate restricted view — corrected to match the telecaller pattern.
+
+## Cross-check audit (verified against all 4 sources: aadyaenterprisesown, smart-timekeeper/Punchly, ksquaremediahub.online, nt)
+Re-audited every source repo directly (not from memory) and found + fixed real gaps:
+
+**Confirmed missing, now built:**
+- **Gallery, Team, Testimonials had zero admin UI** — the tables existed in the schema since the very first migration, the public site could read testimonials, but there was no way to add/edit/remove a gallery photo, team member, or testimonial without touching Supabase directly. Built **Super Admin → Gallery / Team / Reviews** (add/hide/delete for all three) and wired **Gallery** and **Team** sections into the public homepage (they were never rendered at all before).
+- **Photo change approval** — mirrors the bank-detail approval pattern (Punchly has this; we only had it for bank details). Employee uploads a new profile photo from **My Profile**, it's held pending until **Super Admin → Approvals → Profile Photos** approves it.
+- **Blood group + ID proof number** — captured at onboarding, blood group shown on the printable ID card for emergency use (Punchly parity).
+- **Promotions / compensation history** — every designation or CTC change made via Access Control → Manage Access is now automatically logged with before/after values; visible to the employee under My Profile → Role & Compensation History, and to HR.
+
+**Confirmed NOT missing (verified, not assumed):**
+- Documents auto-filter by category, e-signature capture, onboarding wizard, telecaller/executive/manager workflows, career applications, notifications — all checked directly against the code, all present and wired correctly.
+
+**Explicitly flagged as intentionally not built (documented, not silently skipped):**
+- **Shift/late-fine automation** — Punchly has configurable grace-period + late-fine-per-minute payroll deduction logic. We added the lighter version (default start time + grace period stored, ready for a "late" flag) but did not build automatic fine deduction — that's a payroll-correctness-critical feature that deserves its own dedicated pass rather than being rushed in.
+- **Payslip generation / payment history** — Punchly tracks actual salary *payments* (unpaid/partial/paid) separately from salary *structure*. We have the structure (what's owed) but not payment tracking (what's actually been paid, when). Flagging this as the next most valuable HR addition if wanted.

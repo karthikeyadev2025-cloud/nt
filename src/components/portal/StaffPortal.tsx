@@ -6,7 +6,7 @@ import { useToast } from '../../lib/toast';
 import { useSegments } from '../../lib/useSegments';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
 import { MyDocumentsList, MySalaryCard } from './documents';
-import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard } from './features';
+import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard, MyPhotoRequest, MyPromotionHistory } from './features';
 import { TelecallerQueue, LeadsWorkspace, ExecutiveFieldVisits } from './leads-workflow';
 import { MyPerformanceChart } from './performance';
 import CameraCapture from '../CameraCapture';
@@ -254,8 +254,14 @@ function MyDocuments() {
 function MyProfile() {
   return (
     <div className="grid md:grid-cols-2 gap-6">
-      <IDCard />
-      <MyBankDetails />
+      <div className="space-y-6">
+        <IDCard />
+        <MyPhotoRequest />
+      </div>
+      <div className="space-y-6">
+        <MyBankDetails />
+        <MyPromotionHistory />
+      </div>
     </div>
   );
 }

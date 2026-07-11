@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
-  Landmark, Megaphone, Briefcase,
+  Landmark, Megaphone, Briefcase, Image as ImageIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,7 +10,7 @@ import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
-import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager } from './features';
+import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals } from './features';
 import { LeadsWorkspace } from './leads-workflow';
 import { AttendanceTrendChart, LeadsFunnelChart, TicketStatusChart } from './performance';
 import { useToast } from '../../lib/toast';
@@ -103,6 +103,7 @@ const emptyOnboard = {
   joining_date: new Date().toISOString().slice(0, 10),
   date_of_birth: '',
   reporting_time: '9:30 AM – 6:30 PM, Monday to Saturday',
+  blood_group: '', id_proof_number: '',
   salary_structure: { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 },
   doc_types: ['welcome_letter', 'offer_letter', 'roles_responsibilities'] as string[],
 };
@@ -160,6 +161,8 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       joining_date: form.joining_date,
       date_of_birth: form.date_of_birth || null,
       reporting_time: form.reporting_time,
+      blood_group: form.blood_group,
+      id_proof_number: form.id_proof_number,
       salary_structure: form.salary_structure,
     }).eq('id', userId);
     if (updateError) toast.error(`Account created, but salary/details save failed: ${updateError.message}`);
@@ -213,6 +216,10 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             <input className={inputCls} placeholder="Temporary Password *" type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
             <input className={inputCls} placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
             <input className={inputCls} placeholder="Designation (e.g. Field Technician)" value={form.designation} onChange={e => setForm({ ...form, designation: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3">
+              <input className={inputCls} placeholder="Blood Group (optional)" value={form.blood_group} onChange={e => setForm({ ...form, blood_group: e.target.value })} />
+              <input className={inputCls} placeholder="ID Proof No. (Aadhaar/PAN, optional)" value={form.id_proof_number} onChange={e => setForm({ ...form, id_proof_number: e.target.value })} />
+            </div>
           </div>
         )}
 
@@ -329,7 +336,9 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 function AccessControl({ segments, openSignal }: { segments: Segment[]; openSignal?: number }) {
   const [users, setUsers] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
+  const [snapshot, setSnapshot] = useState<{ designation: string; ctc: number } | null>(null);
   const [showOnboard, setShowOnboard] = useState(false);
+  const { user: currentUser } = useAuth();
   const toast = useToast();
 
   useEffect(() => { if (openSignal) setShowOnboard(true); }, [openSignal]);
@@ -353,8 +362,21 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
       updated_at: new Date().toISOString(),
     }).eq('id', editing.id);
     if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
+
+    const newDesig = editing.designation || '';
+    const newCtc = editing.salary_structure?.ctc || 0;
+    if (snapshot && (newDesig !== snapshot.designation || newCtc !== snapshot.ctc)) {
+      await supabase.from('promotions').insert({
+        staff_user_id: editing.id,
+        previous_designation: snapshot.designation, new_designation: newDesig,
+        previous_ctc: snapshot.ctc, new_ctc: newCtc,
+        note: 'Updated via Access Control', created_by: currentUser?.id,
+      });
+    }
+
     toast.success('Access updated');
     setEditing(null);
+    setSnapshot(null);
     load();
   }
 
@@ -380,7 +402,10 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
               <span className={`text-xs px-2 py-0.5 rounded ${u.is_active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>{u.is_active ? 'active' : 'disabled'}</span>
               <OnboardingStatusBadge staffUserId={u.id} />
               {u.role !== 'super_admin' && (
-                <button className="text-sky-400 text-sm font-medium" onClick={() => setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } })}>Manage Access</button>
+                <button className="text-sky-400 text-sm font-medium" onClick={() => {
+                  setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } });
+                  setSnapshot({ designation: u.designation || '', ctc: u.salary_structure?.ctc || 0 });
+                }}>Manage Access</button>
               )}
             </div>
           </div>
@@ -459,6 +484,21 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────── Approvals (bank + photo change requests)
+function ApprovalsSection() {
+  const [sub, setSub] = useState<'bank' | 'photo'>('bank');
+  return (
+    <div>
+      <div className="flex gap-2 mb-5">
+        <button onClick={() => setSub('bank')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bank' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Bank Details</button>
+        <button onClick={() => setSub('photo')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'photo' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Profile Photos</button>
+      </div>
+      {sub === 'bank' && <BankChangeApprovals />}
+      {sub === 'photo' && <PhotoChangeApprovals />}
     </div>
   );
 }
@@ -723,6 +763,172 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
 }
 
 // ─────────────────────────────────────── Content CMS
+// ─────────────────────────────────────── Site Media Manager (Gallery, Team, Testimonials — was missing entirely)
+function SiteMediaManager({ segments }: { segments: Segment[] }) {
+  const toast = useToast();
+  const [tab, setTab] = useState<'gallery' | 'team' | 'testimonials'>('gallery');
+  const [gallery, setGallery] = useState<any[]>([]);
+  const [team, setTeam] = useState<any[]>([]);
+  const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [newGallery, setNewGallery] = useState({ title: '', image_url: '', segment_slug: '' });
+  const [newTeam, setNewTeam] = useState({ name: '', designation: '', photo_url: '', segment_slug: '' });
+  const [newTestimonial, setNewTestimonial] = useState({ customer_name: '', content: '', rating: 5, segment_slug: '' });
+
+  async function load() {
+    const [{ data: g }, { data: t }, { data: te }] = await Promise.all([
+      supabase.from('gallery_items').select('*').order('order_index'),
+      supabase.from('team_members').select('*').order('order_index'),
+      supabase.from('testimonials').select('*').order('order_index'),
+    ]);
+    if (g) setGallery(g);
+    if (t) setTeam(t);
+    if (te) setTestimonials(te);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function addGallery() {
+    if (!newGallery.image_url) { toast.error('Image URL is required'); return; }
+    const { error } = await supabase.from('gallery_items').insert({ ...newGallery, segment_slug: newGallery.segment_slug || null, order_index: gallery.length + 1 });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Added to gallery');
+    setNewGallery({ title: '', image_url: '', segment_slug: '' });
+    load();
+  }
+  async function addTeam() {
+    if (!newTeam.name) { toast.error('Name is required'); return; }
+    const { error } = await supabase.from('team_members').insert({ ...newTeam, segment_slug: newTeam.segment_slug || null, order_index: team.length + 1 });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Team member added');
+    setNewTeam({ name: '', designation: '', photo_url: '', segment_slug: '' });
+    load();
+  }
+  async function addTestimonial() {
+    if (!newTestimonial.customer_name || !newTestimonial.content) { toast.error('Name and testimonial text are required'); return; }
+    const { error } = await supabase.from('testimonials').insert({ ...newTestimonial, segment_slug: newTestimonial.segment_slug || null, order_index: testimonials.length + 1 });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Testimonial added');
+    setNewTestimonial({ customer_name: '', content: '', rating: 5, segment_slug: '' });
+    load();
+  }
+  async function toggleActive(table: string, id: string, active: boolean, setter: () => void) {
+    const { error } = await supabase.from(table).update({ active: !active }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    setter();
+  }
+  async function remove(table: string, id: string, setter: () => void) {
+    if (!confirm('Delete this item?')) return;
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Deleted');
+    setter();
+  }
+
+  return (
+    <div>
+      <div className="flex gap-2 mb-5">
+        <button onClick={() => setTab('gallery')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'gallery' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Gallery ({gallery.length})</button>
+        <button onClick={() => setTab('team')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'team' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Team ({team.length})</button>
+        <button onClick={() => setTab('testimonials')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'testimonials' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Testimonials ({testimonials.length})</button>
+      </div>
+
+      {tab === 'gallery' && (
+        <div>
+          <div className={cardCls + ' mb-4 space-y-2'}>
+            <p className="text-white text-sm font-medium">Add Gallery Photo</p>
+            <input className={inputCls} placeholder="Image URL *" value={newGallery.image_url} onChange={e => setNewGallery({ ...newGallery, image_url: e.target.value })} />
+            <input className={inputCls} placeholder="Caption (optional)" value={newGallery.title} onChange={e => setNewGallery({ ...newGallery, title: e.target.value })} />
+            <select className={inputCls} value={newGallery.segment_slug} onChange={e => setNewGallery({ ...newGallery, segment_slug: e.target.value })}>
+              <option value="">All segments</option>
+              {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+            </select>
+            <button className={btnCls} onClick={addGallery}>Add Photo</button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {gallery.map(g => (
+              <div key={g.id} className="relative rounded-lg overflow-hidden border border-slate-800">
+                <img src={g.image_url} alt={g.title} className="w-full h-28 object-cover" />
+                <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                  <button className="text-xs text-white" onClick={() => toggleActive('gallery_items', g.id, g.active, load)}>{g.active ? 'Hide' : 'Show'}</button>
+                  <button className="text-xs text-red-300" onClick={() => remove('gallery_items', g.id, load)}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'team' && (
+        <div>
+          <div className={cardCls + ' mb-4 space-y-2'}>
+            <p className="text-white text-sm font-medium">Add Team Member</p>
+            <div className="grid grid-cols-2 gap-2">
+              <input className={inputCls} placeholder="Name *" value={newTeam.name} onChange={e => setNewTeam({ ...newTeam, name: e.target.value })} />
+              <input className={inputCls} placeholder="Designation" value={newTeam.designation} onChange={e => setNewTeam({ ...newTeam, designation: e.target.value })} />
+            </div>
+            <input className={inputCls} placeholder="Photo URL" value={newTeam.photo_url} onChange={e => setNewTeam({ ...newTeam, photo_url: e.target.value })} />
+            <select className={inputCls} value={newTeam.segment_slug} onChange={e => setNewTeam({ ...newTeam, segment_slug: e.target.value })}>
+              <option value="">All segments</option>
+              {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+            </select>
+            <button className={btnCls} onClick={addTeam}>Add Team Member</button>
+          </div>
+          <div className="space-y-2">
+            {team.map(t => (
+              <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
+                <div className="flex items-center gap-3">
+                  {t.photo_url && <img src={t.photo_url} className="w-9 h-9 rounded-full object-cover" />}
+                  <div>
+                    <p className="text-white text-sm">{t.name}</p>
+                    <p className="text-slate-500 text-xs">{t.designation}</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button className="text-slate-400 text-xs" onClick={() => toggleActive('team_members', t.id, t.active, load)}>{t.active ? 'Hide' : 'Show'}</button>
+                  <button className="text-red-400 text-xs" onClick={() => remove('team_members', t.id, load)}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'testimonials' && (
+        <div>
+          <div className={cardCls + ' mb-4 space-y-2'}>
+            <p className="text-white text-sm font-medium">Add Testimonial</p>
+            <input className={inputCls} placeholder="Customer Name *" value={newTestimonial.customer_name} onChange={e => setNewTestimonial({ ...newTestimonial, customer_name: e.target.value })} />
+            <textarea className={inputCls} rows={2} placeholder="Testimonial text *" value={newTestimonial.content} onChange={e => setNewTestimonial({ ...newTestimonial, content: e.target.value })} />
+            <div className="grid grid-cols-2 gap-2">
+              <select className={inputCls} value={newTestimonial.rating} onChange={e => setNewTestimonial({ ...newTestimonial, rating: Number(e.target.value) })}>
+                {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{r} stars</option>)}
+              </select>
+              <select className={inputCls} value={newTestimonial.segment_slug} onChange={e => setNewTestimonial({ ...newTestimonial, segment_slug: e.target.value })}>
+                <option value="">All segments</option>
+                {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+              </select>
+            </div>
+            <button className={btnCls} onClick={addTestimonial}>Add Testimonial</button>
+          </div>
+          <div className="space-y-2">
+            {testimonials.map(t => (
+              <div key={t.id} className={cardCls}>
+                <div className="flex items-center justify-between">
+                  <p className="text-white text-sm font-medium">{t.customer_name} <span className="text-amber-400 text-xs">{'★'.repeat(t.rating)}</span></p>
+                  <div className="flex gap-3">
+                    <button className="text-slate-400 text-xs" onClick={() => toggleActive('testimonials', t.id, t.active, load)}>{t.active ? 'Hide' : 'Show'}</button>
+                    <button className="text-red-400 text-xs" onClick={() => remove('testimonials', t.id, load)}>Delete</button>
+                  </div>
+                </div>
+                <p className="text-slate-400 text-sm mt-1">{t.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ContentManager() {
   const [rows, setRows] = useState<{ id: string; section: string; key: string; value: string }[]>([]);
   const [saved, setSaved] = useState('');
@@ -915,7 +1121,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   );
 }
 
-type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'content';
+type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content';
 
 export default function SuperAdminDashboard() {
   const { user, signOut } = useAuth();
@@ -934,9 +1140,10 @@ export default function SuperAdminDashboard() {
     { id: 'products', label: 'Products', icon: Boxes },
     { id: 'catalog', label: 'Services & Ticket Types', icon: Wrench },
     { id: 'documents', label: 'Documents & Onboarding', icon: FileText },
-    { id: 'approvals', label: 'Bank Approvals', icon: Landmark },
+    { id: 'approvals', label: 'Approvals', icon: Landmark },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
     { id: 'careers', label: 'Careers / Hiring', icon: Briefcase },
+    { id: 'media', label: 'Gallery / Team / Reviews', icon: ImageIcon },
     { id: 'content', label: 'Website Content', icon: FileText },
   ];
 
@@ -990,9 +1197,10 @@ export default function SuperAdminDashboard() {
         {tab === 'products' && <ProductsManager segments={segments} />}
         {tab === 'catalog' && <CatalogManager segments={segments} />}
         {tab === 'documents' && <DocumentsManager segments={segments} />}
-        {tab === 'approvals' && <BankChangeApprovals />}
+        {tab === 'approvals' && <ApprovalsSection />}
         {tab === 'announcements' && <AnnouncementsManager segments={segments} />}
         {tab === 'careers' && <CareersManager segments={segments} />}
+        {tab === 'media' && <SiteMediaManager segments={segments} />}
         {tab === 'content' && <ContentManager />}
       </main>
     </div>

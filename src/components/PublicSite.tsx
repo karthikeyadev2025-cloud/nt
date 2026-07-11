@@ -189,6 +189,58 @@ function Products() {
   );
 }
 
+// ─────────────────────────────────────────────── Gallery
+function GallerySection() {
+  const [items, setItems] = useState<{ id: string; title: string; image_url: string }[]>([]);
+  useEffect(() => {
+    supabase.from('gallery_items').select('*').eq('active', true).order('order_index')
+      .then(({ data }) => { if (data) setItems(data as any); });
+  }, []);
+  if (items.length === 0) return null;
+  return (
+    <section className="py-20 px-4">
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-4xl font-bold text-center text-white mb-12">Our Work</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {items.map(g => (
+            <div key={g.id} className="rounded-xl overflow-hidden aspect-square bg-slate-900">
+              <img src={g.image_url} alt={g.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────── Team
+function TeamSection() {
+  const [items, setItems] = useState<{ id: string; name: string; designation: string; photo_url: string }[]>([]);
+  useEffect(() => {
+    supabase.from('team_members').select('*').eq('active', true).order('order_index')
+      .then(({ data }) => { if (data) setItems(data as any); });
+  }, []);
+  if (items.length === 0) return null;
+  return (
+    <section className="py-20 px-4 bg-slate-900/40">
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-4xl font-bold text-center text-white mb-12">Meet the Team</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {items.map(m => (
+            <div key={m.id} className="text-center">
+              <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-slate-800 flex items-center justify-center text-slate-500 font-bold text-2xl">
+                {m.photo_url ? <img src={m.photo_url} alt={m.name} className="w-full h-full object-cover" /> : m.name[0]}
+              </div>
+              <p className="text-white font-semibold text-sm">{m.name}</p>
+              <p className="text-slate-500 text-xs">{m.designation}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─────────────────────────────────────────────── Testimonials
 function Testimonials() {
   const [items, setItems] = useState<{ id: string; customer_name: string; content: string; rating: number }[]>([]);
@@ -569,6 +621,8 @@ export default function PublicSite() {
       <SegmentSections segments={segments} />
       <Products />
       <Careers segments={segments} />
+      <GallerySection />
+      <TeamSection />
       <Testimonials />
       <RaiseTicket segments={segments} />
       <Contact content={content} segments={segments} />

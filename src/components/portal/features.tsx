@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bell, Megaphone, Repeat, Landmark, Printer, TrendingUp, Flame, Cake, Download, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -379,6 +379,7 @@ export function IDCard() {
           <p style="color:#64748b;font-size:13px;margin:0">${user.designation || user.role}</p>
           <div class="row"><span>ID</span><span>${(user as any).staff_code || '—'}</span></div>
           <div class="row"><span>Phone</span><span>${user.phone || '—'}</span></div>
+          ${(user as any).blood_group ? `<div class="row"><span>Blood Group</span><span>${(user as any).blood_group}</span></div>` : ''}
           <div class="row"><span>Email</span><span>${user.email}</span></div>
         </div>
       </div></body></html>
@@ -404,6 +405,7 @@ export function IDCard() {
           <div className="text-left text-xs text-slate-600 space-y-1 border-t border-slate-200 pt-2">
             <p>ID: {(user as any).staff_code || '—'}</p>
             <p>Phone: {user.phone || '—'}</p>
+            {(user as any).blood_group && <p>Blood Group: {(user as any).blood_group}</p>}
           </div>
         </div>
       </div>
@@ -732,6 +734,134 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────── Photo change approval (mirrors bank-detail approval pattern)
+export function MyPhotoRequest() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [pendingReq, setPendingReq] = useState<any | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  async function load() {
+    if (!user) return;
+    const { data } = await supabase.from('photo_change_requests').select('*').eq('staff_user_id', user.id).eq('status', 'pending').maybeSingle();
+    setPendingReq(data || null);
+  }
+  useEffect(() => { load(); }, [user]);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploading(true);
+    const path = `profile-requests/${user.id}/${Date.now()}-${file.name}`;
+    const { error: upErr } = await supabase.storage.from('site-photos').upload(path, file);
+    if (upErr) { toast.error(`Upload failed: ${upErr.message}`); setUploading(false); return; }
+    const { data: pub } = supabase.storage.from('site-photos').getPublicUrl(path);
+    const { error } = await supabase.from('photo_change_requests').insert({ staff_user_id: user.id, requested_photo_url: pub.publicUrl });
+    setUploading(false);
+    if (error) { toast.error(`Couldn't submit: ${error.message}`); return; }
+    toast.success('Photo submitted for approval');
+    load();
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
+  return (
+    <div className={cardCls}>
+      <h3 className="text-white font-semibold text-sm mb-3">Profile Photo</h3>
+      <div className="flex items-center gap-4">
+        <div className="w-16 h-16 rounded-full bg-slate-800 overflow-hidden flex items-center justify-center text-slate-400 font-bold">
+          {user?.profile_photo_url ? <img src={user.profile_photo_url} className="w-full h-full object-cover" /> : user?.full_name?.[0]}
+        </div>
+        <div>
+          {pendingReq ? (
+            <p className="text-amber-400 text-xs">Change request pending approval.</p>
+          ) : (
+            <>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} disabled={uploading}
+                className="text-slate-300 text-xs file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-300 file:text-xs" />
+              <p className="text-slate-500 text-[11px] mt-1">Requires HR approval before it updates.</p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────── Super Admin/HR: photo change approvals
+export function PhotoChangeApprovals() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [items, setItems] = useState<any[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
+
+  async function load() {
+    const { data } = await supabase.from('photo_change_requests').select('*').order('created_at', { ascending: false }).limit(100);
+    if (data) setItems(data);
+    const { data: users } = await supabase.from('app_users').select('id, full_name');
+    if (users) setNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
+  }
+  useEffect(() => { load(); }, []);
+
+  async function review(id: string, status: string) {
+    const { error } = await supabase.from('photo_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
+    toast.success(`Photo ${status}`);
+    load();
+  }
+
+  const pending = items.filter(i => i.status === 'pending');
+  if (pending.length === 0) return <p className="text-slate-500 text-sm text-center py-10">No pending photo change requests.</p>;
+
+  return (
+    <div className="space-y-2">
+      {pending.map(r => (
+        <div key={r.id} className={cardCls + ' flex items-center justify-between'}>
+          <div className="flex items-center gap-3">
+            <img src={r.requested_photo_url} className="w-12 h-12 rounded-full object-cover" />
+            <p className="text-white text-sm">{names[r.staff_user_id] || '—'}</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs" onClick={() => review(r.id, 'approved')}>Approve</button>
+            <button className="px-3 py-1 rounded bg-red-600 text-white text-xs" onClick={() => review(r.id, 'rejected')}>Reject</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────── Promotions / designation-salary history
+export function MyPromotionHistory() {
+  const { user } = useAuth();
+  const [items, setItems] = useState<any[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('promotions').select('*').eq('staff_user_id', user.id).order('effective_date', { ascending: false })
+      .then(({ data }) => { if (data) setItems(data); });
+  }, [user]);
+  if (items.length === 0) return null;
+  return (
+    <div className={cardCls}>
+      <h3 className="text-white font-semibold text-sm mb-3">Role & Compensation History</h3>
+      <div className="space-y-2">
+        {items.map(p => (
+          <div key={p.id} className="text-xs border-l-2 border-sky-600 pl-3">
+            <p className="text-slate-500">{new Date(p.effective_date).toLocaleDateString()}</p>
+            {p.new_designation && p.new_designation !== p.previous_designation && (
+              <p className="text-white">{p.previous_designation || '—'} → {p.new_designation}</p>
+            )}
+            {p.new_ctc > 0 && p.new_ctc !== p.previous_ctc && (
+              <p className="text-emerald-400">₹{Number(p.previous_ctc).toLocaleString('en-IN')} → ₹{Number(p.new_ctc).toLocaleString('en-IN')}</p>
+            )}
+            {p.note && <p className="text-slate-400 mt-0.5">{p.note}</p>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
