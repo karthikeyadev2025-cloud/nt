@@ -20,6 +20,7 @@ export interface AppUser {
   salary_structure?: { basic?: number; hra?: number; allowances?: number; deductions?: number; ctc?: number };
   joining_date?: string | null;
   employment_type?: string;
+  reporting_time?: string;
 }
 
 interface AuthContextType {

@@ -99,3 +99,10 @@ Replaced the static loading spinner with a letter-by-letter reveal of "N-I-K-K-I
   - She can also **request a handoff to a Field Executive** once an appointment is fixed — this doesn't move the lead directly; it creates a pending request that a **Manager or Super Admin must approve** before the executive actually receives it. Same mechanism across all three segments (CCTV/Digital Media/Software) since it's segment-agnostic on the shared `marketing_leads` table.
 - **Manager/Super Admin → CRM → Handoff Approvals**: review and approve/reject pending telecaller→executive requests; both sides get notified automatically.
 - All of this is permission-gated (`full_leads_view`, `bulk_assign_leads`, `approve_transfers`), so you decide per person — not hardcoded by role — via Access Control → Manage Access.
+
+## Confirmed / Fixed from cross-check
+- **Selfie attendance** — check-in and check-out now open the device camera (works in any browser, desktop or mobile) and capture a photo before submitting. Stored to the private `selfies` bucket, viewable by HR/managers via "Photo" link (signed URL) next to each attendance record. **Important distinction:** this is photographic proof-of-presence, not biometric face-matching verification — that requires ML/device-native APIs and remains out of scope for the web app (see Punchly cross-check note).
+- **Offer Letter & Welcome Letter are now segment-specific** (previously generic/company-wide) — CCTV, Digital Media and Software each get their own tailored wording, matching how Roles & Responsibilities already worked.
+- **Reporting Time / Shift** is now captured during onboarding and appears on the Offer Letter and Welcome Letter automatically (`{{reporting_time}}` placeholder).
+- **Job Description** added as its own document type, with a starter template per segment (Field Technician / Digital Media Executive / Software Developer) — Super Admin can add more per specific role from Documents & Onboarding → New Template.
+- Confirmed already working: documents auto-filter to the employee's segment, e-signature capture (draw or type) on every generated document.

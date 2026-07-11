@@ -8,6 +8,7 @@ export const DOC_TYPE_LABELS: Record<string, string> = {
   offer_letter: 'Offer Letter',
   welcome_letter: 'Welcome Letter',
   roles_responsibilities: 'Roles & Responsibilities',
+  job_description: 'Job Description',
   policy: 'Policy',
   other: 'Document',
 };
@@ -21,7 +22,7 @@ export function renderTemplate(body: string, vars: Record<string, string>) {
 
 export function buildOnboardingVars(user: {
   full_name: string; designation: string; role: string; segmentName: string;
-  joining_date: string; salary_structure: { ctc: number }; employment_type: string;
+  joining_date: string; salary_structure: { ctc: number }; employment_type: string; reporting_time?: string;
 }) {
   return {
     name: user.full_name,
@@ -31,6 +32,7 @@ export function buildOnboardingVars(user: {
     joining_date: user.joining_date ? new Date(user.joining_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—',
     ctc: user.salary_structure?.ctc ? Number(user.salary_structure.ctc).toLocaleString('en-IN') : '—',
     employment_type: (user.employment_type || 'full_time').replace('_', ' '),
+    reporting_time: user.reporting_time || '9:30 AM – 6:30 PM, Monday to Saturday',
     company: 'Nikki Technologies',
   };
 }

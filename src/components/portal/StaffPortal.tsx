@@ -2,18 +2,22 @@ import { useEffect, useState } from 'react';
 import { LogOut, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../lib/toast';
 import { useSegments } from '../../lib/useSegments';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
 import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard } from './features';
 import { TelecallerQueue, LeadsWorkspace } from './leads-workflow';
+import CameraCapture from '../CameraCapture';
 
 // ─────────────────────────── Self-service: attendance
 function MyAttendance() {
   const { user } = useAuth();
+  const toast = useToast();
   const [today, setToday] = useState<any | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
+  const [showCamera, setShowCamera] = useState<'in' | 'out' | null>(null);
   const dateStr = new Date().toISOString().slice(0, 10);
 
   async function load() {
@@ -38,25 +42,49 @@ function MyAttendance() {
     });
   }
 
-  async function checkIn() {
-    if (!user) return;
-    setBusy(true);
-    const { lat, lng } = await getPosition();
-    await supabase.from('attendance_records').insert({
-      staff_user_id: user.id, attendance_date: dateStr,
-      check_in_at: new Date().toISOString(), check_in_lat: lat, check_in_lng: lng, status: 'present',
-    });
-    setBusy(false); load();
+  async function uploadSelfie(dataUrl: string): Promise<string | null> {
+    if (!user) return null;
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const path = `${user.id}/${Date.now()}.jpg`;
+    const { error } = await supabase.storage.from('selfies').upload(path, blob, { contentType: 'image/jpeg' });
+    if (error) { toast.error(`Photo upload failed: ${error.message}`); return null; }
+    return path;
   }
 
-  async function checkOut() {
+  async function finishCheckIn(photoDataUrl: string | null) {
+    if (!user) return;
+    setBusy(true); setShowCamera(null);
+    const [{ lat, lng }, selfiePath] = await Promise.all([
+      getPosition(),
+      photoDataUrl ? uploadSelfie(photoDataUrl) : Promise.resolve(null),
+    ]);
+    const { error } = await supabase.from('attendance_records').insert({
+      staff_user_id: user.id, attendance_date: dateStr,
+      check_in_at: new Date().toISOString(), check_in_lat: lat, check_in_lng: lng,
+      check_in_selfie_url: selfiePath, status: 'present',
+    });
+    setBusy(false);
+    if (error) { toast.error(`Check-in failed: ${error.message}`); return; }
+    toast.success('Checked in');
+    load();
+  }
+
+  async function finishCheckOut(photoDataUrl: string | null) {
     if (!user || !today) return;
-    setBusy(true);
-    const { lat, lng } = await getPosition();
-    await supabase.from('attendance_records').update({
+    setBusy(true); setShowCamera(null);
+    const [{ lat, lng }, selfiePath] = await Promise.all([
+      getPosition(),
+      photoDataUrl ? uploadSelfie(photoDataUrl) : Promise.resolve(null),
+    ]);
+    const { error } = await supabase.from('attendance_records').update({
       check_out_at: new Date().toISOString(), check_out_lat: lat, check_out_lng: lng,
+      check_out_selfie_url: selfiePath,
     }).eq('id', today.id);
-    setBusy(false); load();
+    setBusy(false);
+    if (error) { toast.error(`Check-out failed: ${error.message}`); return; }
+    toast.success('Checked out');
+    load();
   }
 
   return (
@@ -66,13 +94,13 @@ function MyAttendance() {
         <Clock className="w-8 h-8 text-sky-400 mx-auto mb-2" />
         <p className="text-slate-400 text-sm mb-4">{new Date().toDateString()}</p>
         {!today ? (
-          <button className={btnCls} disabled={busy} onClick={checkIn}>
+          <button className={btnCls} disabled={busy} onClick={() => setShowCamera('in')}>
             <MapPin className="w-4 h-4 inline mr-1" /> Check In
           </button>
         ) : !today.check_out_at ? (
           <div>
             <p className="text-emerald-300 text-sm mb-3">Checked in at {new Date(today.check_in_at).toLocaleTimeString()}</p>
-            <button className={btnCls} disabled={busy} onClick={checkOut}>Check Out</button>
+            <button className={btnCls} disabled={busy} onClick={() => setShowCamera('out')}>Check Out</button>
           </div>
         ) : (
           <p className="text-slate-300 text-sm">
@@ -93,6 +121,14 @@ function MyAttendance() {
           ))}
         </div>
       </div>
+
+      {showCamera && (
+        <CameraCapture
+          title={showCamera === 'in' ? 'Check-In Selfie' : 'Check-Out Selfie'}
+          onCapture={dataUrl => showCamera === 'in' ? finishCheckIn(dataUrl) : finishCheckOut(dataUrl)}
+          onCancel={() => showCamera === 'in' ? finishCheckIn(null) : finishCheckOut(null)}
+        />
+      )}
     </div>
   );
 }

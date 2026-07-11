@@ -96,6 +96,7 @@ const emptyOnboard = {
   role: 'employee', segments: [] as string[], employment_type: 'full_time',
   joining_date: new Date().toISOString().slice(0, 10),
   date_of_birth: '',
+  reporting_time: '9:30 AM – 6:30 PM, Monday to Saturday',
   salary_structure: { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 },
   doc_types: ['welcome_letter', 'offer_letter', 'roles_responsibilities'] as string[],
 };
@@ -130,6 +131,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       full_name: form.full_name, designation: form.designation, role: form.role,
       segmentName: primarySegment?.name || 'Nikki Technologies',
       joining_date: form.joining_date, salary_structure: form.salary_structure, employment_type: form.employment_type,
+      reporting_time: form.reporting_time,
     });
     setPreview({ title: t.title, content: renderTemplate(t.body, vars) });
   }
@@ -151,6 +153,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       employment_type: form.employment_type,
       joining_date: form.joining_date,
       date_of_birth: form.date_of_birth || null,
+      reporting_time: form.reporting_time,
       salary_structure: form.salary_structure,
     }).eq('id', userId);
     if (updateError) toast.error(`Account created, but salary/details save failed: ${updateError.message}`);
@@ -159,6 +162,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       full_name: form.full_name, designation: form.designation, role: form.role,
       segmentName: primarySegment?.name || 'Nikki Technologies',
       joining_date: form.joining_date, salary_structure: form.salary_structure, employment_type: form.employment_type,
+      reporting_time: form.reporting_time,
     });
     const docsToIssue = availableTemplates.filter(t => form.doc_types.includes(t.doc_type));
     if (docsToIssue.length) {
@@ -240,6 +244,10 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
                 <p className="text-slate-300 text-sm font-medium mb-2">Date of Birth <span className="text-slate-500 font-normal">(optional)</span></p>
                 <input type="date" className={inputCls} value={form.date_of_birth} onChange={e => setForm({ ...form, date_of_birth: e.target.value })} />
               </div>
+            </div>
+            <div>
+              <p className="text-slate-300 text-sm font-medium mb-2">Reporting Time / Shift <span className="text-slate-500 font-normal">(shown on offer & welcome letters)</span></p>
+              <input className={inputCls} value={form.reporting_time} onChange={e => setForm({ ...form, reporting_time: e.target.value })} placeholder="e.g. 9:30 AM – 6:30 PM, Monday to Saturday" />
             </div>
           </div>
         )}
@@ -801,6 +809,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       full_name: issueFor.full_name, designation: issueFor.designation, role: issueFor.role,
       segmentName: seg?.name || 'Nikki Technologies', joining_date: issueFor.joining_date,
       salary_structure: issueFor.salary_structure || {}, employment_type: issueFor.employment_type,
+      reporting_time: issueFor.reporting_time,
     });
     const { data: { user } } = await supabase.auth.getUser();
     const docs = templates.filter(t => issueDocs.includes(t.id));

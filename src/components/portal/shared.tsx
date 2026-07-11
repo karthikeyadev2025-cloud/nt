@@ -387,6 +387,12 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
     setter((prev: any[]) => prev.map(r => r.id === id ? { ...r, status } : r));
   }
 
+  async function viewSelfie(path: string) {
+    const { data, error } = await supabase.storage.from('selfies').createSignedUrl(path, 300);
+    if (error || !data) { toast.error("Couldn't load photo"); return; }
+    window.open(data.signedUrl, '_blank');
+  }
+
   return (
     <div>
       <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
@@ -421,11 +427,16 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                 <div key={s.id} className={cardCls + ' flex items-center justify-between'}>
                   <p className="text-white text-sm">{s.full_name}</p>
                   {rec ? (
-                    <p className="text-xs text-slate-400">
-                      In: {rec.check_in_at ? new Date(rec.check_in_at).toLocaleTimeString() : '—'} •
-                      Out: {rec.check_out_at ? new Date(rec.check_out_at).toLocaleTimeString() : '—'}
-                      <span className="ml-2 text-emerald-300">{rec.status}</span>
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-slate-400">
+                        In: {rec.check_in_at ? new Date(rec.check_in_at).toLocaleTimeString() : '—'} •
+                        Out: {rec.check_out_at ? new Date(rec.check_out_at).toLocaleTimeString() : '—'}
+                        <span className="ml-2 text-emerald-300">{rec.status}</span>
+                      </p>
+                      {(rec.check_in_selfie_url || rec.check_out_selfie_url) && (
+                        <button className="text-sky-400 text-xs" onClick={() => viewSelfie(rec.check_in_selfie_url || rec.check_out_selfie_url)}>Photo</button>
+                      )}
+                    </div>
                   ) : <span className="text-xs text-red-300">absent / no record</span>}
                 </div>
               );
