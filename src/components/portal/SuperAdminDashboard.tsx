@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
-  Landmark, Megaphone, Briefcase, Image as ImageIcon, Clock3, CalendarClock, UserCircle, RefreshCcw,
+  Landmark, Megaphone, Briefcase, Image as ImageIcon, Clock3, CalendarClock, UserCircle, RefreshCcw, Shield,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,6 +15,7 @@ import { LeadsWorkspace } from './leads-workflow';
 import { AttendanceTrendChart, LeadsFunnelChart, TicketStatusChart } from './performance';
 import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll';
 import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
+import { SecurityLogsViewer, TodayAtAGlance, SetupChecklist, QuickSearch, ExportStaffButton } from './admin-extras';
 import { useToast } from '../../lib/toast';
 
 const PERMISSION_KEYS = [
@@ -70,6 +71,8 @@ function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: (
           <button onClick={onAddStaff} className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold whitespace-nowrap">+ Onboard Employee</button>
         </div>
       )}
+      <SetupChecklist segments={segments} />
+      <TodayAtAGlance />
       <div className="grid md:grid-cols-2 gap-5">
         <BirthdaysWidget />
         <PunctualityLeaderboard segments={segments} />
@@ -395,7 +398,10 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
     <div>
       <div className="flex justify-between items-center mb-5">
         <p className="text-slate-400 text-sm">Onboard staff, assign segment access and function permissions — no code needed.</p>
-        <button className={btnCls} onClick={() => setShowOnboard(true)}>+ Onboard Employee</button>
+        <div className="flex items-center gap-4">
+          <ExportStaffButton />
+          <button className={btnCls} onClick={() => setShowOnboard(true)}>+ Onboard Employee</button>
+        </div>
       </div>
       <div className="space-y-2">
         {users.map(u => (
@@ -1146,7 +1152,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   );
 }
 
-type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content'
+type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content' | 'security'
   | 'my_attendance' | 'my_documents' | 'my_requests' | 'my_profile' | 'my_swap';
 
 export default function SuperAdminDashboard() {
@@ -1184,6 +1190,7 @@ export default function SuperAdminDashboard() {
     { id: 'careers', label: 'Careers / Hiring', icon: Briefcase, show: isSuperAdmin || hasPermission('view_careers') || hasPermission('manage_careers') },
     { id: 'media', label: 'Gallery / Team / Reviews', icon: ImageIcon, show: isSuperAdmin || hasPermission('manage_content') },
     { id: 'content', label: 'Website Content', icon: FileText, show: isSuperAdmin || hasPermission('manage_content') },
+    { id: 'security', label: 'Security Logs', icon: Shield, show: isSuperAdmin },
   ];
   const tabs = [...selfServiceTabs, ...adminTabDefs.filter(t => t.show)];
 
@@ -1219,9 +1226,10 @@ export default function SuperAdminDashboard() {
             </button>
           ))}
         </div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <h1 className="text-2xl font-bold text-white">{tabs.find(t => t.id === tab)?.label}</h1>
           <div className="flex items-center gap-3">
+            <QuickSearch onNavigate={(t) => setTab(t as Tab)} />
             <NotificationBell />
             <span className="text-slate-500 text-sm hidden sm:block">{user?.full_name}</span>
             <button onClick={signOut} className="md:hidden text-slate-500"><LogOut className="w-5 h-5" /></button>
@@ -1247,6 +1255,7 @@ export default function SuperAdminDashboard() {
         {tab === 'careers' && <CareersManager segments={segments} />}
         {tab === 'media' && <SiteMediaManager segments={segments} />}
         {tab === 'content' && <ContentManager />}
+        {tab === 'security' && <SecurityLogsViewer />}
       </main>
     </div>
   );

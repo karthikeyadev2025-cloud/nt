@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls } from './shared';
+import { ExportPayslipsButton } from './admin-extras';
 
 const DAYS = [{ v: 1, l: 'Mon' }, { v: 2, l: 'Tue' }, { v: 3, l: 'Wed' }, { v: 4, l: 'Thu' }, { v: 5, l: 'Fri' }, { v: 6, l: 'Sat' }, { v: 7, l: 'Sun' }];
 
@@ -256,7 +257,8 @@ export function PayslipManager() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <ExportPayslipsButton />
         <button className={btnCls} onClick={() => setShowGen(true)}><Plus className="w-4 h-4 inline mr-1" /> Generate Payslip</button>
       </div>
       <div className="space-y-2">

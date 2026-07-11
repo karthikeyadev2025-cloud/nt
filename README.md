@@ -194,3 +194,10 @@ Systematic checks run against the actual code, not assumptions:
 - **Segment-scoped shift lookup** at check-in verified against RLS (staff can always read their own `staff_shifts` row and any `shifts` definition).
 
 **Real workflow gap found and fixed:** Payslip generation required **100% manual entry** of present/absent/leave/late days even though the exact data already existed in `attendance_records` and `leave_requests`. Added **"Auto-fill from Attendance & Leave Records"** — pulls real check-ins, late flags, and approved leaves for the selected staff member and month, computes days automatically. HR can still review/adjust before generating — this removes manual counting as a source of payroll errors.
+
+## Super Admin polish pass — new features
+- **Security Logs viewer** (Super Admin → Security Logs) — the `security_audit_logs` table has been capturing every login/logout since day one but had zero UI. Now visible with event-type filters.
+- **"Today at a Glance"** widget on Overview — checked-in count, new leads, open tickets, and total pending approvals (leaves + advances + bank + photo + lead handoffs combined) in one glance.
+- **Setup Checklist** on Overview — auto-detects what's not configured yet (first employee, products, job postings, testimonials, shifts, document templates) and shows only what's missing; dismissible, disappears once everything's done.
+- **Global Quick Search** in the header — search staff/leads/tickets by name, phone, or ticket number from anywhere in the admin console, jump straight to the right tab.
+- **Excel export** — Access Control (full staff list) and HR → Payslips both get a one-click "Export to Excel" using the same library already used for bulk lead upload.
