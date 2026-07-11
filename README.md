@@ -160,3 +160,19 @@ Re-read the original 1000+ line role portals (ManagerPortal, TelecallerPortal, E
 Also fixed: **HR now has `view_leads`** by default (read-only CRM visibility), matching the original HRPortal's CRM tab — HR often needs to see sales/lead context for hiring and escalation coordination.
 
 One small migration: `20260714000002_hr_crm_visibility_parity.sql`.
+
+## CRITICAL FIX: Admin features were unreachable by anyone except the literal super_admin account
+This was the most serious bug found in the full audit. Every admin capability — Access Control (onboarding), Segments, Products, Documents & Onboarding, Approvals, Announcements, Careers, Gallery/Team/Reviews, Website Content, Shifts, Payslips, Attendance Summary — had correct database-level permissions (`manage_staff`, `manage_content`, `manage_payroll`, `manage_careers`, etc.) letting HR/managers use them. **But the app's routing only ever showed the admin console to `role === 'super_admin'`.** An HR account with every permission granted still could not reach a single admin screen — they'd land in the plain staff portal with no way in. The entire permission-override system built throughout this project was effectively dead code for anyone but the owner account.
+
+**Fixed:**
+- Routing (`App.tsx`) now grants admin console access to **anyone with an admin-capable permission**, not just `super_admin` — checked against the same permissions the database actually enforces.
+- The admin console's sidebar is now **filtered per-tab to match real RLS permissions** (e.g. Segments/Website Content require `manage_content` — mirroring the DB policy exactly; Access Control requires `manage_staff`; Payslips requires `manage_payroll`) so nobody sees a tab that would silently fail on save.
+- Self-service tabs (My Attendance, My Documents, Leaves & Advances, My Profile, Shift Swap) are now available **inside the admin console too** — an HR person or manager needs to check in and see their own payslip just like anyone else; they're no longer forced to choose between "admin mode" and "being a staff member."
+- Fixed an inconsistency: `document_templates` was gated to `is_super_admin()` only while everywhere else onboarding-related uses `manage_staff` — relaxed to match.
+- Sidebar label now reads "Admin Console" for permission-holders and "Super Admin" only for the actual owner account, so it doesn't look mislabeled for HR staff.
+
+**Known follow-up, flagged not fixed:** `manage_staff` currently lets someone edit *any* user's `permission_overrides`, including granting themselves permissions beyond their own level (e.g. an HR person with `manage_staff` could grant themselves `manage_content`). This is a privilege-escalation edge case worth a dedicated pass — restricting which permission keys a non-super-admin can toggle — rather than a rushed fix here.
+
+## Other bugs found in this pass
+- Verified every table has RLS enabled (none missing).
+- Verified no duplicate `CREATE POLICY` names across migrations that would fail on a second run (the one apparent duplicate already had `DROP POLICY IF EXISTS` before it — safe).

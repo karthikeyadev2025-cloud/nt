@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
-  Landmark, Megaphone, Briefcase, Image as ImageIcon,
+  Landmark, Megaphone, Briefcase, Image as ImageIcon, Clock3, CalendarClock, UserCircle, RefreshCcw,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,10 +10,11 @@ import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
-import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals } from './features';
+import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals, ShiftSwapBoard } from './features';
 import { LeadsWorkspace } from './leads-workflow';
 import { AttendanceTrendChart, LeadsFunnelChart, TicketStatusChart } from './performance';
 import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll';
+import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
 import { useToast } from '../../lib/toast';
 
 const PERMISSION_KEYS = [
@@ -28,6 +29,8 @@ const PERMISSION_KEYS = [
 
 // ─────────────────────────────────────── Overview
 function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: () => void }) {
+  const { user, hasPermission } = useAuth();
+  const canOnboard = user?.role === 'super_admin' || hasPermission('manage_staff');
   const [stats, setStats] = useState<Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }>>({});
 
   useEffect(() => {
@@ -61,10 +64,12 @@ function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: (
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-sky-500/10 border border-sky-700/40">
-        <p className="text-sky-200 text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
-        <button onClick={onAddStaff} className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold whitespace-nowrap">+ Onboard Employee</button>
-      </div>
+      {canOnboard && (
+        <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-sky-500/10 border border-sky-700/40">
+          <p className="text-sky-200 text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
+          <button onClick={onAddStaff} className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold whitespace-nowrap">+ Onboard Employee</button>
+        </div>
+      )}
       <div className="grid md:grid-cols-2 gap-5">
         <BirthdaysWidget />
         <PunctualityLeaderboard segments={segments} />
@@ -1141,31 +1146,46 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   );
 }
 
-type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content';
+type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content'
+  | 'my_attendance' | 'my_documents' | 'my_requests' | 'my_profile' | 'my_swap';
 
 export default function SuperAdminDashboard() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasPermission } = useAuth();
   const { segments } = useSegments();
   const [tab, setTab] = useState<Tab>('overview');
   const [onboardSignal, setOnboardSignal] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const tabs: { id: Tab; label: string; icon: any }[] = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'tickets', label: 'Tickets', icon: Ticket },
-    { id: 'crm', label: 'CRM / Leads', icon: ClipboardList },
-    { id: 'hr', label: 'HR / Payroll', icon: Users2 },
-    { id: 'access', label: 'Access Control', icon: UserCog },
-    { id: 'segments', label: 'Segments', icon: Layers },
-    { id: 'products', label: 'Products', icon: Boxes },
-    { id: 'catalog', label: 'Services & Ticket Types', icon: Wrench },
-    { id: 'documents', label: 'Documents & Onboarding', icon: FileText },
-    { id: 'approvals', label: 'Approvals', icon: Landmark },
-    { id: 'announcements', label: 'Announcements', icon: Megaphone },
-    { id: 'careers', label: 'Careers / Hiring', icon: Briefcase },
-    { id: 'media', label: 'Gallery / Team / Reviews', icon: ImageIcon },
-    { id: 'content', label: 'Website Content', icon: FileText },
+  const isSuperAdmin = user?.role === 'super_admin';
+
+  // Self-service tabs: every staff member gets these regardless of admin permissions.
+  const selfServiceTabs: { id: Tab; label: string; icon: any }[] = [
+    { id: 'my_attendance', label: 'My Attendance', icon: Clock3 },
+    { id: 'my_documents', label: 'My Documents', icon: FileText },
+    { id: 'my_requests', label: 'Leaves & Advances', icon: CalendarClock },
+    { id: 'my_profile', label: 'My Profile', icon: UserCircle },
+    { id: 'my_swap', label: 'Shift Swap', icon: RefreshCcw },
   ];
+
+  // Admin tabs: each requires the same permission enforced at the database (RLS) level —
+  // shown here only when the person can actually use it, not just when they're super_admin.
+  const adminTabDefs: { id: Tab; label: string; icon: any; show: boolean }[] = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard, show: true },
+    { id: 'tickets', label: 'Tickets', icon: Ticket, show: isSuperAdmin || hasPermission('view_tickets') || hasPermission('manage_tickets') },
+    { id: 'crm', label: 'CRM / Leads', icon: ClipboardList, show: isSuperAdmin || hasPermission('view_leads') || hasPermission('manage_leads') },
+    { id: 'hr', label: 'HR / Payroll', icon: Users2, show: isSuperAdmin || hasPermission('view_staff') || hasPermission('manage_staff') || hasPermission('view_attendance') || hasPermission('manage_payroll') },
+    { id: 'access', label: 'Access Control', icon: UserCog, show: isSuperAdmin || hasPermission('manage_staff') },
+    { id: 'segments', label: 'Segments', icon: Layers, show: isSuperAdmin },
+    { id: 'products', label: 'Products', icon: Boxes, show: isSuperAdmin || hasPermission('manage_content') },
+    { id: 'catalog', label: 'Services & Ticket Types', icon: Wrench, show: isSuperAdmin || hasPermission('manage_content') },
+    { id: 'documents', label: 'Documents & Onboarding', icon: FileText, show: isSuperAdmin || hasPermission('manage_staff') },
+    { id: 'approvals', label: 'Approvals', icon: Landmark, show: isSuperAdmin || hasPermission('approve_advances') || hasPermission('manage_staff') },
+    { id: 'announcements', label: 'Announcements', icon: Megaphone, show: isSuperAdmin || hasPermission('manage_staff') },
+    { id: 'careers', label: 'Careers / Hiring', icon: Briefcase, show: isSuperAdmin || hasPermission('view_careers') || hasPermission('manage_careers') },
+    { id: 'media', label: 'Gallery / Team / Reviews', icon: ImageIcon, show: isSuperAdmin || hasPermission('manage_content') },
+    { id: 'content', label: 'Website Content', icon: FileText, show: isSuperAdmin || hasPermission('manage_content') },
+  ];
+  const tabs = [...selfServiceTabs, ...adminTabDefs.filter(t => t.show)];
 
   return (
     <div className="min-h-screen bg-slate-950 flex" key={refreshKey}>
@@ -1174,7 +1194,7 @@ export default function SuperAdminDashboard() {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950">N</div>
           <div>
             <p className="text-white font-bold text-sm leading-tight">Nikki Technologies</p>
-            <p className="text-slate-500 text-[10px]">Super Admin</p>
+            <p className="text-slate-500 text-[10px]">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
           </div>
         </div>
         <nav className="space-y-1 flex-1">
@@ -1208,6 +1228,11 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
+        {tab === 'my_attendance' && <MyAttendance />}
+        {tab === 'my_documents' && <MyDocuments />}
+        {tab === 'my_requests' && <MyRequests />}
+        {tab === 'my_profile' && <MyProfile />}
+        {tab === 'my_swap' && <ShiftSwapBoard />}
         {tab === 'overview' && <Overview segments={segments} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
         {tab === 'tickets' && <TicketsBoard segments={segments} />}
         {tab === 'crm' && <LeadsWorkspace segments={segments} />}

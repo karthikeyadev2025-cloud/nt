@@ -13,7 +13,7 @@ import { MyPayslips } from './payroll';
 import CameraCapture from '../CameraCapture';
 
 // ─────────────────────────── Self-service: attendance
-function MyAttendance() {
+export function MyAttendance() {
   const { user } = useAuth();
   const toast = useToast();
   const [today, setToday] = useState<any | null>(null);
@@ -183,7 +183,7 @@ function MyAttendance() {
 }
 
 // ─────────────────────────── Self-service: leaves + advances
-function MyRequests() {
+export function MyRequests() {
   const { user } = useAuth();
   const [leaves, setLeaves] = useState<any[]>([]);
   const [advances, setAdvances] = useState<any[]>([]);
@@ -259,7 +259,7 @@ function MyRequests() {
 }
 
 // ─────────────────────────── My Documents + Salary
-function MyDocuments() {
+export function MyDocuments() {
   const { user } = useAuth();
   if (!user) return null;
   return (
@@ -275,7 +275,7 @@ function MyDocuments() {
 }
 
 // ─────────────────────────── My Profile: ID card + bank details
-function MyProfile() {
+export function MyProfile() {
   return (
     <div className="grid md:grid-cols-2 gap-6">
       <div className="space-y-6">

@@ -18,7 +18,7 @@ function PageLoader() {
 }
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasPermission } = useAuth();
   const [isLoginRoute, setIsLoginRoute] = useState(false);
 
   useEffect(() => {
@@ -44,7 +44,15 @@ function AppContent() {
 
   if (isLoginRoute) {
     if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
-    if (user.role === 'super_admin') return <Suspense fallback={<PageLoader />}><SuperAdminDashboard /></Suspense>;
+    // Anyone with an admin-capable permission gets the admin console (its own
+    // tabs are further filtered to exactly what that person is allowed to do) —
+    // not just the literal super_admin account. Otherwise, the self-service portal.
+    const hasAdminAccess = user.role === 'super_admin' || [
+      'manage_staff', 'manage_content', 'manage_payroll', 'manage_careers',
+      'view_reports', 'manage_tickets', 'assign_tickets', 'manage_leads',
+      'bulk_assign_leads', 'approve_transfers', 'approve_advances',
+    ].some(p => hasPermission(p));
+    if (hasAdminAccess) return <Suspense fallback={<PageLoader />}><SuperAdminDashboard /></Suspense>;
     return <Suspense fallback={<PageLoader />}><StaffPortal /></Suspense>;
   }
 
