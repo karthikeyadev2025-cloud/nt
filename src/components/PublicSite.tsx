@@ -1,0 +1,396 @@
+import { useEffect, useState } from 'react';
+import {
+  Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette, TrendingUp,
+  Boxes, Bot, Layers, Phone, Mail, MapPin, ExternalLink, Star, Menu, X,
+  Ticket, Send, CheckCircle2, ChevronRight,
+} from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useSegments, useSiteContent } from '../lib/useSegments';
+import type { Segment, Product } from '../lib/database.types';
+import LoadingScreen from './LoadingScreen';
+import WhatsAppButton from './WhatsAppButton';
+import SEOHead from './SEOHead';
+
+const iconMap: Record<string, any> = {
+  Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette,
+  TrendingUp, Boxes, Bot, Layers,
+};
+const Icon = ({ name, className }: { name: string; className?: string }) => {
+  const C = iconMap[name] || Layers;
+  return <C className={className} />;
+};
+
+// ─────────────────────────────────────────────── Navigation
+function Navigation({ content }: { content: Record<string, Record<string, string>> }) {
+  const [open, setOpen] = useState(false);
+  const links = [
+    { href: '#segments', label: 'What We Do' },
+    { href: '#services', label: 'Services' },
+    { href: '#products', label: 'Products' },
+    { href: '#testimonials', label: 'Clients' },
+    { href: '#raise-ticket', label: 'Support' },
+    { href: '#contact', label: 'Contact' },
+  ];
+  return (
+    <nav className="fixed top-0 inset-x-0 z-50 bg-slate-950/90 backdrop-blur border-b border-slate-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <a href="#" className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950">N</div>
+          <span className="text-white font-bold text-lg">{content?.hero?.title || 'Nikki Technologies'}</span>
+        </a>
+        <div className="hidden md:flex items-center gap-6">
+          {links.map(l => (
+            <a key={l.href} href={l.href} className="text-slate-300 hover:text-sky-400 text-sm font-medium transition-colors">{l.label}</a>
+          ))}
+          <a href="/login" className="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold transition-colors">Staff Login</a>
+        </div>
+        <button className="md:hidden text-white" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
+      </div>
+      {open && (
+        <div className="md:hidden bg-slate-950 border-t border-slate-800 px-4 py-3 space-y-2">
+          {links.map(l => (
+            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block text-slate-300 hover:text-sky-400 py-1.5">{l.label}</a>
+          ))}
+          <a href="/login" className="block text-sky-400 font-semibold py-1.5">Staff Login</a>
+        </div>
+      )}
+    </nav>
+  );
+}
+
+// ─────────────────────────────────────────────── Hero
+function Hero({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
+  return (
+    <section className="relative pt-32 pb-24 px-4 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-950/40 via-slate-950 to-slate-950" />
+      <div className="max-w-5xl mx-auto text-center relative z-10">
+        <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-4 tracking-tight">
+          {content?.hero?.title || 'Nikki Technologies'}
+        </h1>
+        <p className="text-xl md:text-2xl bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent font-semibold mb-6">
+          {content?.hero?.subtitle || 'CCTV • Digital Media • Software'}
+        </p>
+        <p className="text-slate-400 max-w-2xl mx-auto mb-10 text-lg">
+          {content?.hero?.description || 'One technology partner for security surveillance, digital growth and software products.'}
+        </p>
+        <div className="flex flex-wrap justify-center gap-4">
+          {segments.map(s => (
+            <a key={s.slug} href={`#seg-${s.slug}`}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-sky-500 transition-colors text-white">
+              <Icon name={s.icon} className="w-5 h-5" />
+              <span className="font-medium">{s.name}</span>
+              <ChevronRight className="w-4 h-4 text-slate-500" />
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────── Segments + Services
+interface Service { id: string; segment_slug: string; title: string; description: string; icon: string; }
+
+function SegmentSections({ segments }: { segments: Segment[] }) {
+  const [services, setServices] = useState<Service[]>([]);
+  useEffect(() => {
+    supabase.from('services').select('*').eq('active', true).order('order_index')
+      .then(({ data }) => { if (data) setServices(data as Service[]); });
+  }, []);
+
+  return (
+    <section id="segments" className="py-20 px-4">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-3">What We Do</h2>
+        <p className="text-center text-slate-400 mb-16 max-w-2xl mx-auto">Three specialized divisions. One trusted company.</p>
+        <div id="services" className="space-y-16">
+          {segments.map(seg => (
+            <div key={seg.slug} id={`seg-${seg.slug}`} className="scroll-mt-24">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: seg.color + '22', color: seg.color }}>
+                  <Icon name={seg.icon} className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-white">{seg.name}</h3>
+                  <p className="text-slate-400 text-sm">{seg.tagline}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {services.filter(s => s.segment_slug === seg.slug).map(s => (
+                  <div key={s.id} className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-600 transition-colors">
+                    <Icon name={s.icon} className="w-8 h-8 mb-4" />
+                    <h4 className="text-lg font-semibold text-white mb-2">{s.title}</h4>
+                    <p className="text-slate-400 text-sm leading-relaxed">{s.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────── Products (link-out)
+function Products() {
+  const [products, setProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    supabase.from('products').select('*').neq('status', 'hidden').order('order_index')
+      .then(({ data }) => { if (data) setProducts(data as Product[]); });
+  }, []);
+  if (products.length === 0) return null;
+
+  return (
+    <section id="products" className="py-20 px-4 bg-slate-900/40">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-3">Our Products</h2>
+        <p className="text-center text-slate-400 mb-14 max-w-2xl mx-auto">Software built by Nikki Technologies, used by real businesses.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {products.map(p => (
+            <div key={p.id} className="flex flex-col p-7 rounded-2xl bg-slate-950 border border-slate-800 hover:border-sky-600 transition-colors">
+              <div className="flex items-center gap-3 mb-3">
+                {p.logo_url
+                  ? <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-cover" />
+                  : <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950 text-lg">{p.name[0]}</div>}
+                <div>
+                  <h3 className="text-xl font-bold text-white">{p.name}</h3>
+                  <p className="text-sky-400 text-xs font-medium">{p.tagline}</p>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm mb-5 leading-relaxed">{p.description}</p>
+              <div className="space-y-2.5 mb-6">
+                {(p.features || []).map((f, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-sky-500 mt-0.5 shrink-0" />
+                    <div>
+                      <span className="text-white text-sm font-medium">{f.title}</span>
+                      <span className="text-slate-500 text-sm"> — {f.description}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-auto">
+                {p.status === 'coming_soon' ? (
+                  <span className="inline-block px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-semibold">Coming Soon</span>
+                ) : p.external_url ? (
+                  <a href={p.external_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold transition-colors">
+                    {p.demo_cta || 'Visit Website'} <ExternalLink className="w-4 h-4" />
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────── Testimonials
+function Testimonials() {
+  const [items, setItems] = useState<{ id: string; customer_name: string; content: string; rating: number }[]>([]);
+  useEffect(() => {
+    supabase.from('testimonials').select('*').eq('active', true).order('order_index')
+      .then(({ data }) => { if (data) setItems(data as any); });
+  }, []);
+  if (items.length === 0) return null;
+  return (
+    <section id="testimonials" className="py-20 px-4">
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-4xl font-bold text-center text-white mb-14">What Clients Say</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {items.map(t => (
+            <div key={t.id} className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
+              <div className="flex gap-1 mb-3">
+                {Array.from({ length: t.rating }).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+              </div>
+              <p className="text-slate-300 text-sm mb-4 leading-relaxed">"{t.content}"</p>
+              <p className="text-white font-semibold text-sm">{t.customer_name}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────── Raise Ticket
+function RaiseTicket({ segments }: { segments: Segment[] }) {
+  const [form, setForm] = useState({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
+  const [types, setTypes] = useState<{ id: string; segment_slug: string; name: string }[]>([]);
+  const [done, setDone] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    supabase.from('ticket_types').select('*').eq('active', true).order('order_index')
+      .then(({ data }) => { if (data) setTypes(data as any); });
+  }, []);
+
+  async function submit() {
+    if (!form.segment_slug || !form.subject || !form.customer_name || !form.customer_phone) return;
+    setBusy(true);
+    const { data, error } = await supabase.from('support_tickets')
+      .insert({ ...form, ticket_type: form.ticket_type || 'Other' })
+      .select('ticket_no').single();
+    setBusy(false);
+    if (!error && data) {
+      setDone(data.ticket_no);
+      setForm({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
+    }
+  }
+
+  const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
+
+  return (
+    <section id="raise-ticket" className="py-20 px-4 bg-slate-900/40">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-10">
+          <Ticket className="w-10 h-10 text-sky-400 mx-auto mb-3" />
+          <h2 className="text-4xl font-bold text-white mb-2">Raise a Support Ticket</h2>
+          <p className="text-slate-400">Existing customer? Get help from the right team — CCTV, Digital Media or Software.</p>
+        </div>
+        {done ? (
+          <div className="p-8 rounded-2xl bg-slate-950 border border-sky-700 text-center">
+            <CheckCircle2 className="w-12 h-12 text-sky-400 mx-auto mb-3" />
+            <p className="text-white text-lg font-semibold mb-1">Ticket created: {done}</p>
+            <p className="text-slate-400 text-sm mb-4">Our team will contact you shortly. Save your ticket number.</p>
+            <button onClick={() => setDone(null)} className="text-sky-400 text-sm font-medium">Raise another ticket</button>
+          </div>
+        ) : (
+          <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <select className={inputCls} value={form.segment_slug}
+                onChange={e => setForm({ ...form, segment_slug: e.target.value, ticket_type: '' })}>
+                <option value="">Select Department *</option>
+                {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+              </select>
+              <select className={inputCls} value={form.ticket_type}
+                onChange={e => setForm({ ...form, ticket_type: e.target.value })} disabled={!form.segment_slug}>
+                <option value="">Issue Type</option>
+                {types.filter(t => t.segment_slug === form.segment_slug).map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+              </select>
+            </div>
+            <input className={inputCls} placeholder="Subject *" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} />
+            <textarea className={inputCls} rows={3} placeholder="Describe your issue" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+            <div className="grid md:grid-cols-3 gap-4">
+              <input className={inputCls} placeholder="Your Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
+              <input className={inputCls} placeholder="Phone *" value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} />
+              <input className={inputCls} placeholder="Email" value={form.customer_email} onChange={e => setForm({ ...form, customer_email: e.target.value })} />
+            </div>
+            <button onClick={submit} disabled={busy}
+              className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold flex items-center justify-center gap-2 transition-colors">
+              <Send className="w-4 h-4" /> {busy ? 'Submitting…' : 'Submit Ticket'}
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────── Contact (lead capture)
+function Contact({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
+  const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '' });
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const c = content?.contact || {};
+  const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
+
+  async function submit() {
+    if (!form.segment_slug || !form.customer_name || !form.phone) return;
+    setBusy(true);
+    const { error } = await supabase.from('marketing_leads').insert({ ...form, source: 'website' });
+    setBusy(false);
+    if (!error) setSent(true);
+  }
+
+  return (
+    <section id="contact" className="py-20 px-4">
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
+        <div>
+          <h2 className="text-4xl font-bold text-white mb-6">Get In Touch</h2>
+          <div className="space-y-4 text-slate-300">
+            {c.phone && <p className="flex items-center gap-3"><Phone className="w-5 h-5 text-sky-400" /> {c.phone}</p>}
+            {c.email && <p className="flex items-center gap-3"><Mail className="w-5 h-5 text-sky-400" /> {c.email}</p>}
+            {c.address && <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-sky-400" /> {c.address}</p>}
+          </div>
+        </div>
+        <div className="p-7 rounded-2xl bg-slate-900/60 border border-slate-800">
+          {sent ? (
+            <div className="text-center py-10">
+              <CheckCircle2 className="w-12 h-12 text-sky-400 mx-auto mb-3" />
+              <p className="text-white font-semibold">Thanks! Our team will call you soon.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+                <option value="">Which service do you need? *</option>
+                {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+              </select>
+              <input className={inputCls} placeholder="Your Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
+              <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+              <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+              <textarea className={inputCls} rows={2} placeholder="Tell us what you need" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
+              <button onClick={submit} disabled={busy}
+                className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold transition-colors">
+                {busy ? 'Sending…' : 'Request Free Consultation'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────── Footer
+function Footer({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
+  return (
+    <footer className="border-t border-slate-800 py-12 px-4">
+      <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8 text-sm">
+        <div>
+          <p className="text-white font-bold text-lg mb-2">Nikki Technologies</p>
+          <p className="text-slate-500">{content?.footer?.about || 'CCTV, digital media and software solutions under one roof.'}</p>
+        </div>
+        <div>
+          <p className="text-white font-semibold mb-3">Divisions</p>
+          {segments.map(s => <a key={s.slug} href={`#seg-${s.slug}`} className="block text-slate-400 hover:text-sky-400 py-0.5">{s.name}</a>)}
+        </div>
+        <div>
+          <p className="text-white font-semibold mb-3">Quick Links</p>
+          <a href="#products" className="block text-slate-400 hover:text-sky-400 py-0.5">Products</a>
+          <a href="#raise-ticket" className="block text-slate-400 hover:text-sky-400 py-0.5">Support</a>
+          <a href="/login" className="block text-slate-400 hover:text-sky-400 py-0.5">Staff Login</a>
+        </div>
+      </div>
+      <p className="text-center text-slate-600 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies. All rights reserved.</p>
+    </footer>
+  );
+}
+
+// ─────────────────────────────────────────────── Composition
+export default function PublicSite() {
+  const { content, loading: contentLoading } = useSiteContent();
+  const { segments, loading: segLoading } = useSegments();
+  const [showLoading, setShowLoading] = useState(true);
+
+  if (showLoading) return <LoadingScreen onLoadingComplete={() => setShowLoading(false)} />;
+  if (contentLoading || segLoading) return null;
+
+  return (
+    <div className="bg-slate-950 min-h-screen">
+      <SEOHead />
+      <Navigation content={content} />
+      <Hero content={content} segments={segments} />
+      <SegmentSections segments={segments} />
+      <Products />
+      <Testimonials />
+      <RaiseTicket segments={segments} />
+      <Contact content={content} segments={segments} />
+      <Footer content={content} segments={segments} />
+      <WhatsAppButton />
+    </div>
+  );
+}

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /admin
+Disallow: /portal
+
+Sitemap: https://nikkitechnologies.com/sitemap.xml

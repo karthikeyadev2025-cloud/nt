@@ -1,0 +1,222 @@
+import { useEffect, useState } from 'react';
+import { LogOut, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSegments } from '../../lib/useSegments';
+import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
+
+// ─────────────────────────── Self-service: attendance
+function MyAttendance() {
+  const { user } = useAuth();
+  const [today, setToday] = useState<any | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [busy, setBusy] = useState(false);
+  const dateStr = new Date().toISOString().slice(0, 10);
+
+  async function load() {
+    if (!user) return;
+    const [{ data: t }, { data: h }] = await Promise.all([
+      supabase.from('attendance_records').select('*').eq('staff_user_id', user.id).eq('attendance_date', dateStr).maybeSingle(),
+      supabase.from('attendance_records').select('*').eq('staff_user_id', user.id).order('attendance_date', { ascending: false }).limit(14),
+    ]);
+    setToday(t);
+    if (h) setHistory(h);
+  }
+  useEffect(() => { load(); }, [user]);
+
+  function getPosition(): Promise<{ lat: number | null; lng: number | null }> {
+    return new Promise(resolve => {
+      if (!navigator.geolocation) return resolve({ lat: null, lng: null });
+      navigator.geolocation.getCurrentPosition(
+        p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => resolve({ lat: null, lng: null }),
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    });
+  }
+
+  async function checkIn() {
+    if (!user) return;
+    setBusy(true);
+    const { lat, lng } = await getPosition();
+    await supabase.from('attendance_records').insert({
+      staff_user_id: user.id, attendance_date: dateStr,
+      check_in_at: new Date().toISOString(), check_in_lat: lat, check_in_lng: lng, status: 'present',
+    });
+    setBusy(false); load();
+  }
+
+  async function checkOut() {
+    if (!user || !today) return;
+    setBusy(true);
+    const { lat, lng } = await getPosition();
+    await supabase.from('attendance_records').update({
+      check_out_at: new Date().toISOString(), check_out_lat: lat, check_out_lng: lng,
+    }).eq('id', today.id);
+    setBusy(false); load();
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className={cardCls + ' text-center py-8'}>
+        <Clock className="w-8 h-8 text-sky-400 mx-auto mb-2" />
+        <p className="text-slate-400 text-sm mb-4">{new Date().toDateString()}</p>
+        {!today ? (
+          <button className={btnCls} disabled={busy} onClick={checkIn}>
+            <MapPin className="w-4 h-4 inline mr-1" /> Check In
+          </button>
+        ) : !today.check_out_at ? (
+          <div>
+            <p className="text-emerald-300 text-sm mb-3">Checked in at {new Date(today.check_in_at).toLocaleTimeString()}</p>
+            <button className={btnCls} disabled={busy} onClick={checkOut}>Check Out</button>
+          </div>
+        ) : (
+          <p className="text-slate-300 text-sm">
+            Done for today — In {new Date(today.check_in_at).toLocaleTimeString()} • Out {new Date(today.check_out_at).toLocaleTimeString()}
+          </p>
+        )}
+      </div>
+      <div className={cardCls}>
+        <h3 className="text-white font-semibold mb-3 text-sm">Last 14 days</h3>
+        <div className="space-y-1.5">
+          {history.map(r => (
+            <div key={r.id} className="flex justify-between text-xs">
+              <span className="text-slate-400">{r.attendance_date}</span>
+              <span className="text-slate-300">
+                {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : '—'} → {r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : '—'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────── Self-service: leaves + advances
+function MyRequests() {
+  const { user } = useAuth();
+  const [leaves, setLeaves] = useState<any[]>([]);
+  const [advances, setAdvances] = useState<any[]>([]);
+  const [leaveForm, setLeaveForm] = useState({ from_date: '', to_date: '', leave_type: 'casual', reason: '' });
+  const [advForm, setAdvForm] = useState({ amount: '', reason: '' });
+
+  async function load() {
+    if (!user) return;
+    const [{ data: l }, { data: a }] = await Promise.all([
+      supabase.from('leave_requests').select('*').eq('staff_user_id', user.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('salary_advance_requests').select('*').eq('staff_user_id', user.id).order('created_at', { ascending: false }).limit(20),
+    ]);
+    if (l) setLeaves(l);
+    if (a) setAdvances(a);
+  }
+  useEffect(() => { load(); }, [user]);
+
+  async function requestLeave() {
+    if (!user || !leaveForm.from_date || !leaveForm.to_date) return;
+    await supabase.from('leave_requests').insert({ ...leaveForm, staff_user_id: user.id });
+    setLeaveForm({ from_date: '', to_date: '', leave_type: 'casual', reason: '' });
+    load();
+  }
+
+  async function requestAdvance() {
+    if (!user || !advForm.amount) return;
+    await supabase.from('salary_advance_requests').insert({ staff_user_id: user.id, amount: Number(advForm.amount), reason: advForm.reason });
+    setAdvForm({ amount: '', reason: '' });
+    load();
+  }
+
+  const statusColor = (s: string) =>
+    s === 'approved' || s === 'paid' ? 'text-emerald-300' : s === 'rejected' ? 'text-red-300' : 'text-amber-300';
+
+  return (
+    <div className="grid md:grid-cols-2 gap-6">
+      <div className={cardCls}>
+        <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-400" /> Leave Request</h3>
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <input type="date" className={inputCls} value={leaveForm.from_date} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} />
+          <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} />
+        </div>
+        <select className={inputCls + ' mb-2'} value={leaveForm.leave_type} onChange={e => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}>
+          {['casual', 'sick', 'earned', 'unpaid', 'other'].map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <input className={inputCls + ' mb-3'} placeholder="Reason" value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} />
+        <button className={btnCls + ' w-full'} onClick={requestLeave}>Submit Leave Request</button>
+        <div className="mt-4 space-y-1.5">
+          {leaves.map(l => (
+            <div key={l.id} className="flex justify-between text-xs">
+              <span className="text-slate-400">{l.from_date} → {l.to_date} ({l.leave_type})</span>
+              <span className={statusColor(l.status)}>{l.status}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className={cardCls}>
+        <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-sky-400" /> Salary Advance</h3>
+        <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} />
+        <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} />
+        <button className={btnCls + ' w-full'} onClick={requestAdvance}>Request Advance</button>
+        <div className="mt-4 space-y-1.5">
+          {advances.map(a => (
+            <div key={a.id} className="flex justify-between text-xs">
+              <span className="text-slate-400">₹{Number(a.amount).toLocaleString('en-IN')} • {new Date(a.created_at).toLocaleDateString()}</span>
+              <span className={statusColor(a.status)}>{a.status}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────── Portal shell
+export default function StaffPortal() {
+  const { user, signOut, hasPermission } = useAuth();
+  const { segments } = useSegments();
+
+  const tabs = [
+    { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },
+    { id: 'requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
+    { id: 'tickets', label: 'Tickets', icon: Ticket, show: hasPermission('view_tickets') },
+    { id: 'leads', label: 'Leads / CRM', icon: ClipboardList, show: hasPermission('view_leads') },
+    { id: 'team', label: 'Team / HR', icon: Users2, show: hasPermission('view_staff') || hasPermission('view_attendance') },
+  ].filter(t => t.show);
+
+  const [tab, setTab] = useState(tabs[0]?.id || 'attendance');
+
+  const mySegNames = user?.segments.includes('all')
+    ? 'All Segments'
+    : segments.filter(s => user?.segments.includes(s.slug)).map(s => s.name).join(', ') || '—';
+
+  return (
+    <div className="min-h-screen bg-slate-950">
+      <header className="border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 bg-slate-950/95 backdrop-blur z-40">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950 text-sm">N</div>
+          <div>
+            <p className="text-white font-semibold text-sm leading-tight">{user?.full_name}</p>
+            <p className="text-slate-500 text-[11px]">{user?.role.replace('_', ' ')} • {mySegNames}</p>
+          </div>
+        </div>
+        <button onClick={signOut} className="text-slate-500 hover:text-red-400"><LogOut className="w-5 h-5" /></button>
+      </header>
+
+      <div className="px-4 py-3 flex gap-2 overflow-x-auto border-b border-slate-900">
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors ${tab === t.id ? 'border-sky-500 text-sky-300 bg-sky-500/10' : 'border-slate-800 text-slate-400'}`}>
+            <t.icon className="w-4 h-4" /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      <main className="p-4 md:p-6 max-w-5xl mx-auto">
+        {tab === 'attendance' && <MyAttendance />}
+        {tab === 'requests' && <MyRequests />}
+        {tab === 'tickets' && <TicketsBoard segments={segments} />}
+        {tab === 'leads' && <LeadsBoard segments={segments} />}
+        {tab === 'team' && <HRBoard segments={segments} />}
+      </main>
+    </div>
+  );
+}
