@@ -141,10 +141,10 @@
 
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+      box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
     }
     50% {
-      box-shadow: 0 0 40px rgba(251, 191, 36, 0.6);
+      box-shadow: 0 0 40px rgba(14, 165, 233, 0.6);
     }
   }
 
@@ -252,13 +252,13 @@
 
   .gradient-border {
     position: relative;
-    background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.5), transparent);
     background-size: 200% 100%;
     animation: shimmer 3s linear infinite;
   }
 
   .text-shimmer {
-    background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(251,191,36,1), rgba(255,255,255,0.3));
+    background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(14,165,233,1), rgba(255,255,255,0.3));
     background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -337,11 +337,28 @@
 
   @keyframes glow {
     0%, 100% {
-      filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5));
+      filter: drop-shadow(0 0 5px rgba(14, 165, 233, 0.5));
     }
     50% {
-      filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8));
+      filter: drop-shadow(0 0 20px rgba(14, 165, 233, 0.8));
     }
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+  }
+
+  .animate-marquee:hover {
+    animation-play-state: paused;
   }
 
   .animate-glow {

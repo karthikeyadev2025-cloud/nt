@@ -201,3 +201,16 @@ Systematic checks run against the actual code, not assumptions:
 - **Setup Checklist** on Overview — auto-detects what's not configured yet (first employee, products, job postings, testimonials, shifts, document templates) and shows only what's missing; dismissible, disappears once everything's done.
 - **Global Quick Search** in the header — search staff/leads/tickets by name, phone, or ticket number from anywhere in the admin console, jump straight to the right tab.
 - **Excel export** — Access Control (full staff list) and HR → Payslips both get a one-click "Export to Excel" using the same library already used for bulk lead upload.
+
+## Landing page: brand presence, client showcase, and animation
+Two real gaps found and fixed:
+
+- **No client-logo showcase existed** — only text testimonials (mislabeled "Clients" in nav, but no actual brand logos). Added a **"Trusted By" scrolling logo marquee** right under the hero (infinite loop, pauses on hover), managed from **Super Admin → Gallery/Team/Reviews → Client Logos**.
+- **Zero animation was actually wired up** — the codebase had a full animation library in `index.css` (fade-ins, slides, glows, scroll-reveal classes) inherited from the original build, but nothing in the rebuilt site ever used it. Fixed:
+  - **Hero**: staggered entrance animation, floating ambient glow orbs, animated gradient text, segment pills zoom in with stagger
+  - **Scroll-reveal**: product cards and testimonial cards now fade/slide in as you scroll to them (staggered), via a new reusable `<Reveal>` component wired to `IntersectionObserver`
+  - **Animated stat counters**: "Years in Business / Happy Clients / Projects Completed / Divisions" count up from 0 the moment they scroll into view — editable numbers via Website Content → stats
+  - **Hover-lift** on service cards, product cards, hero pills — subtle tilt/raise on hover instead of flat hover states
+  - Rebranded a few leftover amber-colored glow effects in the CSS to Nikki's sky/cyan palette
+
+No visual changes needed on your end to activate the marquee/stats — they render automatically once you add at least one client logo from the Super Admin panel; stats show sensible defaults until you customize them.

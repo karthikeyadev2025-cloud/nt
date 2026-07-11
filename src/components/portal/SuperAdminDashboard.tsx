@@ -797,25 +797,38 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
 // ─────────────────────────────────────── Site Media Manager (Gallery, Team, Testimonials — was missing entirely)
 function SiteMediaManager({ segments }: { segments: Segment[] }) {
   const toast = useToast();
-  const [tab, setTab] = useState<'gallery' | 'team' | 'testimonials'>('gallery');
+  const [tab, setTab] = useState<'gallery' | 'team' | 'testimonials' | 'logos'>('gallery');
   const [gallery, setGallery] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [testimonials, setTestimonials] = useState<any[]>([]);
+  const [logos, setLogos] = useState<any[]>([]);
   const [newGallery, setNewGallery] = useState({ title: '', image_url: '', segment_slug: '' });
   const [newTeam, setNewTeam] = useState({ name: '', designation: '', photo_url: '', segment_slug: '' });
   const [newTestimonial, setNewTestimonial] = useState({ customer_name: '', content: '', rating: 5, segment_slug: '' });
+  const [newLogo, setNewLogo] = useState({ name: '', logo_url: '', segment_slug: '' });
 
   async function load() {
-    const [{ data: g }, { data: t }, { data: te }] = await Promise.all([
+    const [{ data: g }, { data: t }, { data: te }, { data: lg }] = await Promise.all([
       supabase.from('gallery_items').select('*').order('order_index'),
       supabase.from('team_members').select('*').order('order_index'),
       supabase.from('testimonials').select('*').order('order_index'),
+      supabase.from('client_logos').select('*').order('order_index'),
     ]);
     if (g) setGallery(g);
     if (t) setTeam(t);
     if (te) setTestimonials(te);
+    if (lg) setLogos(lg);
   }
   useEffect(() => { load(); }, []);
+
+  async function addLogo() {
+    if (!newLogo.name || !newLogo.logo_url) { toast.error('Name and logo URL are required'); return; }
+    const { error } = await supabase.from('client_logos').insert({ ...newLogo, segment_slug: newLogo.segment_slug || null, order_index: logos.length + 1 });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Client logo added');
+    setNewLogo({ name: '', logo_url: '', segment_slug: '' });
+    load();
+  }
 
   async function addGallery() {
     if (!newGallery.image_url) { toast.error('Image URL is required'); return; }
@@ -860,6 +873,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
         <button onClick={() => setTab('gallery')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'gallery' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Gallery ({gallery.length})</button>
         <button onClick={() => setTab('team')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'team' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Team ({team.length})</button>
         <button onClick={() => setTab('testimonials')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'testimonials' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Testimonials ({testimonials.length})</button>
+        <button onClick={() => setTab('logos')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'logos' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Client Logos ({logos.length})</button>
       </div>
 
       {tab === 'gallery' && (
@@ -953,6 +967,34 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
                 <p className="text-slate-400 text-sm mt-1">{t.content}</p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'logos' && (
+        <div>
+          <div className={cardCls + ' mb-4 space-y-2'}>
+            <p className="text-white text-sm font-medium">Add Client Logo</p>
+            <p className="text-slate-500 text-xs">Shows in the scrolling "Trusted By" strip on the homepage.</p>
+            <input className={inputCls} placeholder="Client Name *" value={newLogo.name} onChange={e => setNewLogo({ ...newLogo, name: e.target.value })} />
+            <input className={inputCls} placeholder="Logo Image URL *" value={newLogo.logo_url} onChange={e => setNewLogo({ ...newLogo, logo_url: e.target.value })} />
+            <select className={inputCls} value={newLogo.segment_slug} onChange={e => setNewLogo({ ...newLogo, segment_slug: e.target.value })}>
+              <option value="">All segments</option>
+              {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+            </select>
+            <button className={btnCls} onClick={addLogo}>Add Logo</button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {logos.map(l => (
+              <div key={l.id} className="relative rounded-lg overflow-hidden border border-slate-800 bg-white p-4 flex items-center justify-center">
+                <img src={l.logo_url} alt={l.name} className="max-h-10 object-contain" />
+                <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
+                  <button className="text-xs text-white" onClick={() => toggleActive('client_logos', l.id, l.active, load)}>{l.active ? 'Hide' : 'Show'}</button>
+                  <button className="text-xs text-red-300" onClick={() => remove('client_logos', l.id, load)}>Delete</button>
+                </div>
+              </div>
+            ))}
+            {logos.length === 0 && <p className="text-slate-500 text-sm col-span-full text-center py-6">No client logos yet.</p>}
           </div>
         </div>
       )}

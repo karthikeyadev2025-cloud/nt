@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette, TrendingUp,
   Boxes, Bot, Layers, Phone, Mail, MapPin, ExternalLink, Star, Menu, X,
@@ -10,6 +10,7 @@ import type { Segment, Product } from '../lib/database.types';
 import LoadingScreen from './LoadingScreen';
 import WhatsAppButton from './WhatsAppButton';
 import SEOHead from './SEOHead';
+import Reveal from './Reveal';
 
 const iconMap: Record<string, any> = {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette,
@@ -19,6 +20,85 @@ const Icon = ({ name, className }: { name: string; className?: string }) => {
   const C = iconMap[name] || Layers;
   return <C className={className} />;
 };
+
+// ─────────────────────────────────────────────── Animated Stats (count-up on scroll into view)
+function AnimatedNumber({ value }: { value: string }) {
+  const [display, setDisplay] = useState('0');
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const triggered = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const numMatch = value.match(/[\d.]+/);
+    const target = numMatch ? parseFloat(numMatch[0]) : 0;
+    const suffix = value.replace(/[\d.]+/, '');
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !triggered.current) {
+        triggered.current = true;
+        const duration = 1200;
+        const start = performance.now();
+        const tick = (now: number) => {
+          const progress = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setDisplay(Math.round(target * eased) + suffix);
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        observer.disconnect();
+      }
+    }, { threshold: 0.4 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [value]);
+
+  return <span ref={ref}>{display}</span>;
+}
+
+function AnimatedStats({ content }: { content: Record<string, Record<string, string>> }) {
+  const stats = [
+    { label: 'Years in Business', value: content?.stats?.years_in_business || '2+' },
+    { label: 'Happy Clients', value: content?.stats?.clients_served || '50+' },
+    { label: 'Projects Completed', value: content?.stats?.projects_completed || '100+' },
+    { label: 'Divisions', value: '3' },
+  ];
+  return (
+    <section className="py-14 px-4 border-y border-slate-900">
+      <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+        {stats.map(s => (
+          <div key={s.label} className="text-center">
+            <p className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent">
+              <AnimatedNumber value={s.value} />
+            </p>
+            <p className="text-slate-500 text-sm mt-2">{s.label}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────── Client Logos (trusted-by marquee)
+function ClientLogos() {
+  const [logos, setLogos] = useState<{ id: string; name: string; logo_url: string }[]>([]);
+  useEffect(() => {
+    supabase.from('client_logos').select('*').eq('active', true).order('order_index')
+      .then(({ data }) => { if (data) setLogos(data as any); });
+  }, []);
+  if (logos.length === 0) return null;
+  const track = [...logos, ...logos]; // duplicated for seamless loop
+
+  return (
+    <section className="py-12 px-4 overflow-hidden">
+      <p className="text-center text-slate-500 text-xs uppercase tracking-[0.2em] mb-8">Trusted By</p>
+      <div className="flex gap-16 animate-marquee w-max">
+        {track.map((l, i) => (
+          <img key={`${l.id}-${i}`} src={l.logo_url} alt={l.name} className="h-10 md:h-12 object-contain opacity-60 hover:opacity-100 transition-opacity grayscale hover:grayscale-0" />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 // ─────────────────────────────────────────────── Navigation
 function Navigation({ content }: { content: Record<string, Record<string, string>> }) {
@@ -64,20 +144,23 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-sky-950/40 via-slate-950 to-slate-950" />
-      <div className="max-w-5xl mx-auto text-center relative z-10">
+      <div className="absolute top-20 left-1/4 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl animate-float-slow" />
+      <div className="absolute top-40 right-1/4 w-72 h-72 bg-cyan-400/10 rounded-full blur-3xl animate-float" />
+      <div className="max-w-5xl mx-auto text-center relative z-10 animate-slide-up">
         <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-4 tracking-tight">
           {content?.hero?.title || 'Nikki Technologies'}
         </h1>
-        <p className="text-xl md:text-2xl bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent font-semibold mb-6">
+        <p className="text-xl md:text-2xl bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent font-semibold mb-6 animate-gradient bg-[length:200%_auto]">
           {content?.hero?.subtitle || 'CCTV • Digital Media • Software'}
         </p>
         <p className="text-slate-400 max-w-2xl mx-auto mb-10 text-lg">
           {content?.hero?.description || 'One technology partner for security surveillance, digital growth and software products.'}
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          {segments.map(s => (
+          {segments.map((s, i) => (
             <a key={s.slug} href={`#seg-${s.slug}`}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-sky-500 transition-colors text-white">
+              style={{ animationDelay: `${i * 100}ms` }}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-sky-500 hover-lift transition-colors text-white animate-zoom-in">
               <Icon name={s.icon} className="w-5 h-5" />
               <span className="font-medium">{s.name}</span>
               <ChevronRight className="w-4 h-4 text-slate-500" />
@@ -118,7 +201,7 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {services.filter(s => s.segment_slug === seg.slug).map(s => (
-                  <div key={s.id} className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-600 transition-colors">
+                  <div key={s.id} className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-600 hover-lift transition-colors">
                     <Icon name={s.icon} className="w-8 h-8 mb-4" />
                     <h4 className="text-lg font-semibold text-white mb-2">{s.title}</h4>
                     <p className="text-slate-400 text-sm leading-relaxed">{s.description}</p>
@@ -148,8 +231,9 @@ function Products() {
         <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-3">Our Products</h2>
         <p className="text-center text-slate-400 mb-14 max-w-2xl mx-auto">Software built by Nikki Technologies, used by real businesses.</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {products.map(p => (
-            <div key={p.id} className="flex flex-col p-7 rounded-2xl bg-slate-950 border border-slate-800 hover:border-sky-600 transition-colors">
+          {products.map((p, i) => (
+            <Reveal key={p.id} delay={i * 100}>
+            <div className="flex flex-col h-full p-7 rounded-2xl bg-slate-950 border border-slate-800 hover:border-sky-600 hover-lift transition-colors">
               <div className="flex items-center gap-3 mb-3">
                 {p.logo_url
                   ? <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-cover" />
@@ -182,6 +266,7 @@ function Products() {
                 ) : null}
               </div>
             </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -254,14 +339,16 @@ function Testimonials() {
       <div className="max-w-6xl mx-auto">
         <h2 className="text-4xl font-bold text-center text-white mb-14">What Clients Say</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {items.map(t => (
-            <div key={t.id} className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
+          {items.map((t, i) => (
+            <Reveal key={t.id} delay={i * 100}>
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover-lift">
               <div className="flex gap-1 mb-3">
                 {Array.from({ length: t.rating }).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
               </div>
               <p className="text-slate-300 text-sm mb-4 leading-relaxed">"{t.content}"</p>
               <p className="text-white font-semibold text-sm">{t.customer_name}</p>
             </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -618,6 +705,8 @@ export default function PublicSite() {
       <SEOHead />
       <Navigation content={content} />
       <Hero content={content} segments={segments} />
+      <ClientLogos />
+      <AnimatedStats content={content} />
       <SegmentSections segments={segments} />
       <Products />
       <Careers segments={segments} />
