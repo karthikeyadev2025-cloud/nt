@@ -50,3 +50,10 @@ Super Admin can override any function permission per user (view_leads, manage_ti
 - Regenerate strict DB types: `supabase gen types typescript --project-id XXX > src/lib/database.types.ts` and re-add `<Database>` generic in `src/lib/supabase.ts`.
 - Replace placeholder contact number/email in Super Admin → Website Content.
 - Add real logo/og-image/icons in `public/`.
+
+## E-Signature Flow
+- Templates (Super Admin → Documents & Onboarding) have a **"Requires employee signature"** toggle. Default: on for Offer Letter/Welcome Letter, off (acknowledge-only) for Roles & Responsibilities/Policy.
+- Employee opens a document in **My Documents** → draws a signature on a canvas pad or types their legal name (rendered in cursive) → confirms. The signature image (or typed name) + timestamp is stored permanently on that document row.
+- Documents not requiring a signature get a lighter "I acknowledge I've read this" confirmation instead.
+- Every staff row in **Access Control** and **Documents & Onboarding** shows a live badge: `X/Y signed` or `Onboarding complete` — so you can see at a glance who still needs to finish onboarding.
+- Print/Save-as-PDF includes the captured signature image and signing timestamp on the printed document.

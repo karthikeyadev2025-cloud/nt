@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
-import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer } from './documents';
+import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads',
@@ -147,7 +147,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       await supabase.from('employee_documents').insert(
         docsToIssue.map(t => ({
           staff_user_id: userId, doc_type: t.doc_type, title: t.title,
-          content: renderTemplate(t.body, vars), issued_by: user?.id,
+          content: renderTemplate(t.body, vars), issued_by: user?.id, requires_signature: t.requires_signature,
         }))
       );
     }
@@ -247,7 +247,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
               <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
                 <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
                   <input type="checkbox" checked={form.doc_types.includes(t.doc_type)} onChange={() => toggleDoc(t.doc_type)} />
-                  {t.title} <span className="text-slate-500 text-xs">({DOC_TYPE_LABELS[t.doc_type]})</span>
+                  {t.title} <span className="text-slate-500 text-xs">({DOC_TYPE_LABELS[t.doc_type]}{t.requires_signature ? ' • needs signature' : ' • acknowledge only'})</span>
                 </label>
                 <button className="text-sky-400 text-xs" onClick={() => previewDoc(t)}>Preview</button>
               </div>
@@ -334,6 +334,7 @@ function AccessControl({ segments }: { segments: Segment[] }) {
             </div>
             <div className="flex items-center gap-2">
               <span className={`text-xs px-2 py-0.5 rounded ${u.is_active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>{u.is_active ? 'active' : 'disabled'}</span>
+              <OnboardingStatusBadge staffUserId={u.id} />
               {u.role !== 'super_admin' && (
                 <button className="text-sky-400 text-sm font-medium" onClick={() => setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, ctc: 0 } })}>Manage Access</button>
               )}
@@ -746,6 +747,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       docs.map(t => ({
         staff_user_id: issueFor.id, doc_type: t.doc_type, title: t.title,
         content: renderTemplate(t.body, vars), issued_by: user?.id, issued_at: new Date().toISOString(),
+        requires_signature: t.requires_signature,
       })),
       { onConflict: 'staff_user_id,doc_type,title' }
     );
@@ -757,14 +759,14 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       <div>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-white font-semibold">Document Templates</h3>
-          <button className={btnCls} onClick={() => setEditingTpl({ segment_slug: '', doc_type: 'other', title: '', body: '', active: true })}>+ New Template</button>
+          <button className={btnCls} onClick={() => setEditingTpl({ segment_slug: '', doc_type: 'other', title: '', body: '', active: true, requires_signature: true })}>+ New Template</button>
         </div>
         <div className="space-y-2">
           {templates.map(t => (
             <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
               <div>
                 <p className="text-white text-sm font-medium">{t.title}</p>
-                <p className="text-slate-500 text-xs">{DOC_TYPE_LABELS[t.doc_type]} • {segments.find(s => s.slug === t.segment_slug)?.name || 'All segments'}</p>
+                <p className="text-slate-500 text-xs">{DOC_TYPE_LABELS[t.doc_type]} • {segments.find(s => s.slug === t.segment_slug)?.name || 'All segments'} • {t.requires_signature ? 'needs signature' : 'acknowledge only'}</p>
               </div>
               <div className="flex gap-3">
                 <button className="text-sky-400 text-xs" onClick={() => setPreview({ title: t.title, content: t.body })}>Preview</button>
@@ -781,7 +783,10 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
           {staff.map(s => (
             <div key={s.id} className={cardCls + ' flex items-center justify-between'}>
               <p className="text-white text-sm">{s.full_name} <span className="text-slate-500 text-xs">({s.role})</span></p>
-              <button className="text-sky-400 text-xs" onClick={() => openIssue(s)}>Issue Document</button>
+              <div className="flex items-center gap-3">
+                <OnboardingStatusBadge staffUserId={s.id} />
+                <button className="text-sky-400 text-xs" onClick={() => openIssue(s)}>Issue Document</button>
+              </div>
             </div>
           ))}
         </div>
@@ -803,6 +808,10 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
             </div>
             <p className="text-slate-500 text-xs">Placeholders: {'{{name}} {{designation}} {{role}} {{segment}} {{joining_date}} {{ctc}} {{employment_type}} {{company}}'}</p>
             <textarea className={inputCls} rows={10} value={editingTpl.body} onChange={e => setEditingTpl({ ...editingTpl, body: e.target.value })} />
+            <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+              <input type="checkbox" checked={editingTpl.requires_signature !== false} onChange={e => setEditingTpl({ ...editingTpl, requires_signature: e.target.checked })} />
+              Requires employee signature <span className="text-slate-500 text-xs">(off = simple acknowledge)</span>
+            </label>
             <button className={btnCls + ' w-full'} onClick={saveTemplate}>Save Template</button>
           </div>
         </div>

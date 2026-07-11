@@ -179,7 +179,7 @@ function MyDocuments() {
       <MySalaryCard salary={(user as any).salary_structure} />
       <div>
         <h3 className="text-white font-semibold mb-3 text-sm">My Documents</h3>
-        <MyDocumentsList staffUserId={user.id} />
+        <MyDocumentsList staffUserId={user.id} employeeName={user.full_name} />
       </div>
     </div>
   );
