@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
-  Landmark, Megaphone,
+  Landmark, Megaphone, Briefcase,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,7 +10,7 @@ import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, LeadsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
-import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget } from './features';
+import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager } from './features';
 import { useToast } from '../../lib/toast';
 
 const PERMISSION_KEYS = [
@@ -19,6 +19,7 @@ const PERMISSION_KEYS = [
   'view_staff', 'manage_staff',
   'view_attendance', 'approve_leaves', 'approve_advances',
   'view_payroll', 'manage_payroll',
+  'view_careers', 'manage_careers',
   'manage_content', 'view_reports',
 ];
 
@@ -892,7 +893,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   );
 }
 
-type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'content';
+type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'content';
 
 export default function SuperAdminDashboard() {
   const { user, signOut } = useAuth();
@@ -912,6 +913,7 @@ export default function SuperAdminDashboard() {
     { id: 'documents', label: 'Documents & Onboarding', icon: FileText },
     { id: 'approvals', label: 'Bank Approvals', icon: Landmark },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
+    { id: 'careers', label: 'Careers / Hiring', icon: Briefcase },
     { id: 'content', label: 'Website Content', icon: FileText },
   ];
 
@@ -967,6 +969,7 @@ export default function SuperAdminDashboard() {
         {tab === 'documents' && <DocumentsManager segments={segments} />}
         {tab === 'approvals' && <BankChangeApprovals />}
         {tab === 'announcements' && <AnnouncementsManager segments={segments} />}
+        {tab === 'careers' && <CareersManager segments={segments} />}
         {tab === 'content' && <ContentManager />}
       </main>
     </div>

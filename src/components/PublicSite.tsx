@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette, TrendingUp,
   Boxes, Bot, Layers, Phone, Mail, MapPin, ExternalLink, Star, Menu, X,
-  Ticket, Send, CheckCircle2, ChevronRight,
+  Ticket, Send, CheckCircle2, ChevronRight, Briefcase, Upload, User,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSegments, useSiteContent } from '../lib/useSegments';
@@ -27,6 +27,7 @@ function Navigation({ content }: { content: Record<string, Record<string, string
     { href: '#segments', label: 'What We Do' },
     { href: '#services', label: 'Services' },
     { href: '#products', label: 'Products' },
+    { href: '#careers', label: 'Careers' },
     { href: '#testimonials', label: 'Clients' },
     { href: '#raise-ticket', label: 'Support' },
     { href: '#contact', label: 'Contact' },
@@ -216,6 +217,187 @@ function Testimonials() {
   );
 }
 
+// ─────────────────────────────────────────────── Careers
+interface JobPosting {
+  id: string; segment_slug: string | null; title: string; employment_type: string;
+  location: string; description: string; requirements: string; questions: string[]; positions_open: number;
+}
+
+function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segments: Segment[]; onClose: () => void }) {
+  const [form, setForm] = useState({ name: '', phone: '', email: '', experience: '', message: '', position: job?.title || '', segment_slug: job?.segment_slug || '' });
+  const [answers, setAnswers] = useState<string[]>((job?.questions || []).map(() => ''));
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [resume, setResume] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
+  const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
+
+  async function submit() {
+    setError('');
+    if (!form.name || !form.phone || !form.position) { setError('Name, phone and position are required'); return; }
+    if (!resume) { setError('Please attach your resume'); return; }
+    setBusy(true);
+    try {
+      let resume_url = '';
+      let photo_url = '';
+      const stamp = Date.now();
+      if (resume) {
+        const path = `resumes/${stamp}-${resume.name.replace(/\s+/g, '_')}`;
+        const { error: upErr } = await supabase.storage.from('career-uploads').upload(path, resume);
+        if (upErr) throw upErr;
+        resume_url = path;
+      }
+      if (photo) {
+        const path = `photos/${stamp}-${photo.name.replace(/\s+/g, '_')}`;
+        const { error: upErr } = await supabase.storage.from('career-uploads').upload(path, photo);
+        if (upErr) throw upErr;
+        photo_url = path;
+      }
+      const question_answers = (job?.questions || []).map((q, i) => ({ question: q, answer: answers[i] || '' }));
+      const { error: insErr } = await supabase.from('career_applications').insert({
+        job_posting_id: job?.id || null,
+        segment_slug: form.segment_slug || null,
+        name: form.name, phone: form.phone, email: form.email,
+        position: form.position, experience: form.experience, message: form.message,
+        resume_url, photo_url, question_answers,
+      });
+      if (insErr) throw insErr;
+      setDone(true);
+    } catch (e: any) {
+      setError(e.message || 'Something went wrong. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-start mb-5">
+          <div>
+            <h3 className="text-white text-lg font-semibold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
+            {job && <p className="text-slate-500 text-xs mt-0.5">{job.location} • {job.employment_type.replace('_', ' ')}</p>}
+          </div>
+          <button className="text-slate-400 hover:text-white" onClick={onClose}>✕</button>
+        </div>
+
+        {done ? (
+          <div className="text-center py-10">
+            <CheckCircle2 className="w-12 h-12 text-sky-400 mx-auto mb-3" />
+            <p className="text-white font-semibold mb-1">Application submitted!</p>
+            <p className="text-slate-400 text-sm">We'll review your profile and get back to you.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {!job && (
+              <>
+                <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+                  <option value="">Which division interests you?</option>
+                  {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+                </select>
+                <input className={inputCls} placeholder="Position you're applying for *" value={form.position} onChange={e => setForm({ ...form, position: e.target.value })} />
+              </>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <input className={inputCls} placeholder="Full Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+              <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+            </div>
+            <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            <input className={inputCls} placeholder="Years of Experience" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} />
+
+            {(job?.questions || []).map((q, i) => (
+              <div key={i}>
+                <label className="text-slate-400 text-xs">{q}</label>
+                <textarea className={inputCls + ' mt-1'} rows={2} value={answers[i] || ''}
+                  onChange={e => setAnswers(prev => { const next = [...prev]; next[i] = e.target.value; return next; })} />
+              </div>
+            ))}
+
+            <textarea className={inputCls} rows={2} placeholder="Anything else you'd like to share" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
+
+            <div>
+              <label className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> Passport size photo</label>
+              <input type="file" accept="image/*" className="text-slate-300 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-300 file:text-xs"
+                onChange={e => setPhoto(e.target.files?.[0] || null)} />
+            </div>
+            <div>
+              <label className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Upload className="w-3.5 h-3.5" /> Resume (PDF/DOC) *</label>
+              <input type="file" accept=".pdf,.doc,.docx" className="text-slate-300 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-300 file:text-xs"
+                onChange={e => setResume(e.target.files?.[0] || null)} />
+            </div>
+
+            {error && <p className="text-red-400 text-xs">{error}</p>}
+            <button onClick={submit} disabled={busy}
+              className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold transition-colors">
+              {busy ? 'Submitting…' : 'Submit Application'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Careers({ segments }: { segments: Segment[] }) {
+  const [jobs, setJobs] = useState<JobPosting[]>([]);
+  const [applyJob, setApplyJob] = useState<JobPosting | 'general' | null>(null);
+
+  useEffect(() => {
+    supabase.from('job_postings').select('*').eq('status', 'open').order('created_at', { ascending: false })
+      .then(({ data }) => { if (data) setJobs(data as JobPosting[]); });
+  }, []);
+
+  return (
+    <section id="careers" className="py-20 px-4 bg-slate-900/40">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-14">
+          <Briefcase className="w-10 h-10 text-sky-400 mx-auto mb-3" />
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-3">Careers at Nikki Technologies</h2>
+          <p className="text-slate-400 max-w-2xl mx-auto">
+            We're hiring across CCTV, Digital Media and Software. Don't see a role that fits? Send us a general application.
+          </p>
+        </div>
+
+        {jobs.length === 0 && (
+          <p className="text-slate-500 text-center mb-10">No open positions right now — check back soon, or apply generally below.</p>
+        )}
+
+        <div className="space-y-3 mb-10">
+          {jobs.map(job => {
+            const seg = segments.find(s => s.slug === job.segment_slug);
+            return (
+              <div key={job.id} className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-sky-600 transition-colors">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-white font-semibold">{job.title}</h3>
+                    {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
+                  </div>
+                  <p className="text-slate-500 text-sm">{job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}</p>
+                </div>
+                <button onClick={() => setApplyJob(job)}
+                  className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold transition-colors shrink-0">
+                  Apply Now
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="text-center">
+          <button onClick={() => setApplyJob('general')} className="text-sky-400 text-sm font-medium underline">
+            Don't see your role? Submit a general application
+          </button>
+        </div>
+      </div>
+
+      {applyJob && (
+        <ApplyModal job={applyJob === 'general' ? null : applyJob} segments={segments} onClose={() => setApplyJob(null)} />
+      )}
+    </section>
+  );
+}
+
 // ─────────────────────────────────────────────── Raise Ticket
 function RaiseTicket({ segments }: { segments: Segment[] }) {
   const [form, setForm] = useState({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
@@ -386,6 +568,7 @@ export default function PublicSite() {
       <Hero content={content} segments={segments} />
       <SegmentSections segments={segments} />
       <Products />
+      <Careers segments={segments} />
       <Testimonials />
       <RaiseTicket segments={segments} />
       <Contact content={content} segments={segments} />

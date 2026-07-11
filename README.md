@@ -77,3 +77,9 @@ Audit found the app had **zero user feedback on failure** — every save/create/
 - **Error Boundary** — a component crash now shows a recovery screen with reload button instead of a blank white page.
 - Every Supabase mutation now checks `{ error }` and reports it instead of assuming success.
 - Destructive actions (delete product, delete announcement) confirm before executing.
+
+## Careers / Hiring
+- **Public "Careers" section** on the homepage — lists open job postings (segment-tagged), each with an "Apply Now" that opens a form: name, phone, email, experience, passport-size photo upload, resume upload (PDF/DOC), plus any custom screening questions the job defines. A "Don't see your role?" link lets people submit a general application too.
+- Files upload to a **private** storage bucket (`career-uploads`) — public can upload, only staff with `view_careers`/`manage_careers` can read them (via short-lived signed URLs, not public links).
+- **Super Admin/HR → Careers / Hiring** tab: post/edit/close job postings per segment with custom screening questions; review applications in a pipeline (New → Shortlisted → Interviewed → Hired/Rejected), view photo and download resume from the same panel.
+- `view_careers` / `manage_careers` are granted to the `hr` role by default and can be granted to anyone else via Access Control → Manage Access, same as every other permission.

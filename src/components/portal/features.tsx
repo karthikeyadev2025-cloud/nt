@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, Megaphone, Repeat, Landmark, Printer, TrendingUp, Flame, Cake } from 'lucide-react';
+import { Bell, Megaphone, Repeat, Landmark, Printer, TrendingUp, Flame, Cake, Download, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -512,6 +512,226 @@ export function BirthdaysWidget() {
     <div className={cardCls + ' border-pink-600/40'}>
       <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Cake className="w-4 h-4 text-pink-400" /> Today's Celebrations</h3>
       {items.map((u, i) => <p key={i} className="text-slate-300 text-sm">🎉 {u.full_name}</p>)}
+    </div>
+  );
+}
+
+// ─────────────────────────── Careers: job postings + applications (Super Admin / HR)
+const APP_STATUS_COLORS: Record<string, string> = {
+  new: 'bg-sky-500/20 text-sky-300',
+  shortlisted: 'bg-purple-500/20 text-purple-300',
+  interviewed: 'bg-amber-500/20 text-amber-300',
+  hired: 'bg-emerald-500/20 text-emerald-300',
+  rejected: 'bg-red-500/20 text-red-300',
+};
+const APP_STATUSES = ['new', 'shortlisted', 'interviewed', 'hired', 'rejected'];
+
+export function CareersManager({ segments }: { segments: Segment[] }) {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [tab, setTab] = useState<'jobs' | 'applications'>('jobs');
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [apps, setApps] = useState<any[]>([]);
+  const [editingJob, setEditingJob] = useState<any | null>(null);
+  const [openApp, setOpenApp] = useState<any | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [fileUrls, setFileUrls] = useState<{ resume?: string; photo?: string }>({});
+
+  async function load() {
+    const [{ data: j }, { data: a }] = await Promise.all([
+      supabase.from('job_postings').select('*').order('created_at', { ascending: false }),
+      supabase.from('career_applications').select('*').order('created_at', { ascending: false }).limit(200),
+    ]);
+    if (j) setJobs(j);
+    if (a) setApps(a);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function saveJob() {
+    if (!editingJob?.title) { toast.error('Job title is required'); return; }
+    const payload = { ...editingJob, questions: editingJob.questions || [] };
+    let error;
+    if (editingJob.id) {
+      const { id, ...patch } = payload;
+      ({ error } = await supabase.from('job_postings').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id));
+    } else {
+      ({ error } = await supabase.from('job_postings').insert({ ...payload, created_by: user?.id }));
+    }
+    if (error) { toast.error(`Couldn't save job: ${error.message}`); return; }
+    toast.success(editingJob.id ? 'Job posting updated' : 'Job posted');
+    setEditingJob(null); load();
+  }
+
+  async function toggleJobStatus(job: any) {
+    const status = job.status === 'open' ? 'closed' : 'open';
+    const { error } = await supabase.from('job_postings').update({ status }).eq('id', job.id);
+    if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
+    toast.success(`Job ${status === 'open' ? 'reopened' : 'closed'}`);
+    load();
+  }
+
+  async function updateAppStatus(id: string, status: string) {
+    const { error } = await supabase.from('career_applications').update({ status, reviewed_by: user?.id }).eq('id', id);
+    if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
+    toast.success(`Marked as ${status}`);
+    load();
+    setOpenApp((prev: any) => prev ? { ...prev, status } : prev);
+  }
+
+  async function viewFiles(app: any) {
+    setOpenApp(app);
+    setFileUrls({});
+    const urls: { resume?: string; photo?: string } = {};
+    if (app.resume_url) {
+      const { data } = await supabase.storage.from('career-uploads').createSignedUrl(app.resume_url, 3600);
+      if (data) urls.resume = data.signedUrl;
+    }
+    if (app.photo_url) {
+      const { data } = await supabase.storage.from('career-uploads').createSignedUrl(app.photo_url, 3600);
+      if (data) urls.photo = data.signedUrl;
+    }
+    setFileUrls(urls);
+  }
+
+  const jobTitle = (id: string) => jobs.find(j => j.id === id)?.title || 'General Application';
+  const filteredApps = statusFilter ? apps.filter(a => a.status === statusFilter) : apps;
+  const counts = Object.fromEntries(APP_STATUSES.map(s => [s, apps.filter(a => a.status === s).length]));
+
+  return (
+    <div>
+      <div className="flex gap-2 mb-5">
+        <button onClick={() => setTab('jobs')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'jobs' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Job Postings</button>
+        <button onClick={() => setTab('applications')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'applications' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Applications ({apps.length})</button>
+      </div>
+
+      {tab === 'jobs' && (
+        <div>
+          <div className="flex justify-end mb-4">
+            <button className={btnCls} onClick={() => setEditingJob({ segment_slug: '', title: '', employment_type: 'full_time', location: 'Hyderabad', description: '', requirements: '', questions: [], positions_open: 1, status: 'open' })}>+ Post Job</button>
+          </div>
+          <div className="space-y-2">
+            {jobs.map(j => {
+              const seg = segments.find(s => s.slug === j.segment_slug);
+              return (
+                <div key={j.id} className={cardCls + ' flex items-center justify-between'}>
+                  <div>
+                    <p className="text-white text-sm font-medium">{j.title} {seg && <span className="text-xs px-1.5 py-0.5 rounded ml-1" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}</p>
+                    <p className="text-slate-500 text-xs mt-0.5">{j.location} • {j.employment_type.replace('_', ' ')} • {apps.filter(a => a.job_posting_id === j.id).length} applicants</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs px-2 py-0.5 rounded ${j.status === 'open' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-500/20 text-slate-400'}`}>{j.status}</span>
+                    <button className="text-sky-400 text-xs" onClick={() => setEditingJob(j)}>Edit</button>
+                    <button className="text-slate-400 text-xs" onClick={() => toggleJobStatus(j)}>{j.status === 'open' ? 'Close' : 'Reopen'}</button>
+                  </div>
+                </div>
+              );
+            })}
+            {jobs.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No job postings yet.</p>}
+          </div>
+        </div>
+      )}
+
+      {tab === 'applications' && (
+        <div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button onClick={() => setStatusFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${statusFilter === '' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>All ({apps.length})</button>
+            {APP_STATUSES.map(s => (
+              <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-lg text-xs border capitalize ${statusFilter === s ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>{s} ({counts[s] || 0})</button>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {filteredApps.map(a => (
+              <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-600'} onClick={() => viewFiles(a)}>
+                <div>
+                  <p className="text-white text-sm font-medium">{a.name} <span className="text-slate-500 text-xs">— {a.position || jobTitle(a.job_posting_id)}</span></p>
+                  <p className="text-slate-500 text-xs mt-0.5">{a.phone} • {a.experience || 'exp not specified'} • {new Date(a.created_at).toLocaleDateString()}</p>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded capitalize ${APP_STATUS_COLORS[a.status]}`}>{a.status}</span>
+              </div>
+            ))}
+            {filteredApps.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No applications yet.</p>}
+          </div>
+        </div>
+      )}
+
+      {editingJob && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingJob(null)}>
+          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-white font-semibold">{editingJob.id ? 'Edit' : 'New'} Job Posting</h3>
+            <input className={inputCls} placeholder="Job Title *" value={editingJob.title} onChange={e => setEditingJob({ ...editingJob, title: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3">
+              <select className={inputCls} value={editingJob.segment_slug} onChange={e => setEditingJob({ ...editingJob, segment_slug: e.target.value })}>
+                <option value="">Company-wide</option>
+                {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+              </select>
+              <select className={inputCls} value={editingJob.employment_type} onChange={e => setEditingJob({ ...editingJob, employment_type: e.target.value })}>
+                {['full_time', 'part_time', 'contract', 'intern'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+              </select>
+              <input className={inputCls} placeholder="Location" value={editingJob.location} onChange={e => setEditingJob({ ...editingJob, location: e.target.value })} />
+              <input type="number" min={1} className={inputCls} placeholder="Openings" value={editingJob.positions_open} onChange={e => setEditingJob({ ...editingJob, positions_open: Number(e.target.value) })} />
+            </div>
+            <textarea className={inputCls} rows={3} placeholder="Description" value={editingJob.description} onChange={e => setEditingJob({ ...editingJob, description: e.target.value })} />
+            <textarea className={inputCls} rows={2} placeholder="Requirements" value={editingJob.requirements} onChange={e => setEditingJob({ ...editingJob, requirements: e.target.value })} />
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-slate-300 text-sm font-medium">Screening Questions</p>
+                <button className="text-sky-400 text-xs" onClick={() => setEditingJob({ ...editingJob, questions: [...(editingJob.questions || []), ''] })}>+ Add question</button>
+              </div>
+              {(editingJob.questions || []).map((q: string, i: number) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <input className={inputCls} value={q} onChange={e => {
+                    const next = [...editingJob.questions]; next[i] = e.target.value; setEditingJob({ ...editingJob, questions: next });
+                  }} placeholder={`Question ${i + 1}`} />
+                  <button className="text-red-400 text-xs px-2" onClick={() => setEditingJob({ ...editingJob, questions: editingJob.questions.filter((_: string, j: number) => j !== i) })}>✕</button>
+                </div>
+              ))}
+            </div>
+            <button className={btnCls + ' w-full'} onClick={saveJob}>Save Job Posting</button>
+          </div>
+        </div>
+      )}
+
+      {openApp && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenApp(null)}>
+          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h3 className="text-white text-lg font-semibold">{openApp.name}</h3>
+                <p className="text-slate-400 text-sm">{openApp.phone} {openApp.email && `• ${openApp.email}`}</p>
+                <p className="text-slate-500 text-xs mt-0.5">Applied for: {openApp.position || jobTitle(openApp.job_posting_id)} • {openApp.experience || 'exp not specified'}</p>
+              </div>
+              <button className="text-slate-400 hover:text-white" onClick={() => setOpenApp(null)}>✕</button>
+            </div>
+
+            <div className="flex gap-3 mb-4">
+              {fileUrls.photo && <a href={fileUrls.photo} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sky-400 text-xs"><ExternalLink className="w-3.5 h-3.5" /> View Photo</a>}
+              {fileUrls.resume && <a href={fileUrls.resume} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sky-400 text-xs"><Download className="w-3.5 h-3.5" /> Download Resume</a>}
+            </div>
+
+            {openApp.message && <p className="text-slate-300 text-sm mb-3">{openApp.message}</p>}
+
+            {(openApp.question_answers || []).length > 0 && (
+              <div className="space-y-2 mb-4 border-t border-slate-800 pt-3">
+                {openApp.question_answers.map((qa: any, i: number) => (
+                  <div key={i}>
+                    <p className="text-slate-400 text-xs">{qa.question}</p>
+                    <p className="text-white text-sm">{qa.answer || '—'}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-2 border-t border-slate-800 pt-4">
+              {APP_STATUSES.map(s => (
+                <button key={s} onClick={() => updateAppStatus(openApp.id, s)}
+                  className={`px-3 py-1.5 rounded-lg text-xs capitalize border ${openApp.status === s ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
