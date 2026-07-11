@@ -169,6 +169,38 @@ export function PayslipManager() {
   }
   useEffect(() => { load(); }, []);
 
+  async function autoFillFromAttendance() {
+    if (!genForm.staff_user_id) { toast.error('Select a staff member first'); return; }
+    const y = genForm.period_year, m = genForm.period_month;
+    const periodStart = `${y}-${String(m).padStart(2, '0')}-01`;
+    const periodEnd = new Date(y, m, 0).toISOString().slice(0, 10); // last day of month
+    const workingDaysInMonth = new Date(y, m, 0).getDate();
+
+    const [{ data: records }, { data: leaves }] = await Promise.all([
+      supabase.from('attendance_records').select('*').eq('staff_user_id', genForm.staff_user_id)
+        .gte('attendance_date', periodStart).lte('attendance_date', periodEnd),
+      supabase.from('leave_requests').select('*').eq('staff_user_id', genForm.staff_user_id).eq('status', 'approved')
+        .lte('from_date', periodEnd).gte('to_date', periodStart),
+    ]);
+
+    const present = (records || []).filter(r => r.check_in_at).length;
+    const lateDays = (records || []).filter(r => r.is_late).length;
+    let paidLeave = 0, unpaidLeave = 0;
+    (leaves || []).forEach(l => {
+      const from = new Date(Math.max(new Date(l.from_date).getTime(), new Date(periodStart).getTime()));
+      const to = new Date(Math.min(new Date(l.to_date).getTime(), new Date(periodEnd).getTime()));
+      const days = Math.max(0, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
+      if (l.leave_type === 'unpaid') unpaidLeave += days; else paidLeave += days;
+    });
+    const absent = Math.max(0, workingDaysInMonth - present - paidLeave - unpaidLeave);
+
+    setGenForm({
+      ...genForm, working_days: workingDaysInMonth, present_days: present,
+      absent_days: absent, paid_leave_days: paidLeave, unpaid_leave_days: unpaidLeave, late_days: lateDays,
+    });
+    toast.success('Filled from real attendance records — review before generating');
+  }
+
   async function generate() {
     const person = staff.find(s => s.id === genForm.staff_user_id);
     if (!person) { toast.error('Select a staff member'); return; }
@@ -252,6 +284,9 @@ export function PayslipManager() {
               <div><label className="text-slate-500 text-xs">Month</label><input type="number" min={1} max={12} className={inputCls} value={genForm.period_month} onChange={e => setGenForm({ ...genForm, period_month: Number(e.target.value) })} /></div>
               <div><label className="text-slate-500 text-xs">Year</label><input type="number" className={inputCls} value={genForm.period_year} onChange={e => setGenForm({ ...genForm, period_year: Number(e.target.value) })} /></div>
             </div>
+            <button className="w-full py-2 rounded-lg border border-sky-600 text-sky-300 text-sm font-medium" onClick={autoFillFromAttendance}>
+              Auto-fill from Attendance & Leave Records
+            </button>
             <div className="grid grid-cols-2 gap-3">
               {(['working_days', 'present_days', 'absent_days', 'paid_leave_days', 'unpaid_leave_days', 'late_days'] as const).map(k => (
                 <div key={k}><label className="text-slate-500 text-xs capitalize">{k.replace(/_/g, ' ')}</label><input type="number" className={inputCls} value={(genForm as any)[k]} onChange={e => setGenForm({ ...genForm, [k]: Number(e.target.value) })} /></div>
@@ -261,7 +296,7 @@ export function PayslipManager() {
               <div><label className="text-slate-500 text-xs">Late Fine (₹)</label><input type="number" className={inputCls} value={genForm.late_fine} onChange={e => setGenForm({ ...genForm, late_fine: Number(e.target.value) })} /></div>
               <div><label className="text-slate-500 text-xs">Other Deductions (₹)</label><input type="number" className={inputCls} value={genForm.other_deductions} onChange={e => setGenForm({ ...genForm, other_deductions: Number(e.target.value) })} /></div>
             </div>
-            <p className="text-slate-500 text-xs">Base pay, performance bonus and incentives are pulled automatically from the staff member's salary structure.</p>
+            <p className="text-slate-500 text-xs">Auto-fill pulls real check-ins and approved leaves for the selected month — review before generating. Base pay, performance bonus and incentives come from the staff member's salary structure automatically.</p>
             <button className={btnCls + ' w-full'} onClick={generate}>Generate</button>
           </div>
         </div>

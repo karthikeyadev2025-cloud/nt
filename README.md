@@ -183,3 +183,14 @@ Direct audit of every RLS policy on staff-management tables (attendance, leaves,
 **Fixed** with a new `can_access_staff(target_id)` helper that checks real segment overlap between the acting user and the target staff member (same `'all'` bypass HR already relies on), applied to all 12 affected tables. Nothing changes for `super_admin` or any `'all'`-segment role — this only tightens single-segment managers to their own team, which was always the intent.
 
 One migration: `20260715000002_segment_scoping_security_fix.sql`.
+
+## End-to-end code sweep (final pass)
+Systematic checks run against the actual code, not assumptions:
+- **Typecheck + ESLint**: clean. Remaining lint output is all `no-explicit-any` (intentional loose typing on Supabase query results, standard for this kind of app) and a few `exhaustive-deps` warnings on intentional mount-only effects — no real bugs.
+- **Every notify_user() trigger call** verified against the function's 5-argument signature — all correct.
+- **Every storage bucket referenced in frontend code** (`career-uploads`, `lead-photos`, `selfies`, `site-photos`) verified to exist in migrations — no typos, no missing buckets.
+- **Payslip upsert conflict target** verified to match the actual `UNIQUE(staff_user_id, period_year, period_month)` constraint.
+- **Disabled-account handling** verified in AuthContext — inactive staff are signed out immediately on both login and session restore.
+- **Segment-scoped shift lookup** at check-in verified against RLS (staff can always read their own `staff_shifts` row and any `shifts` definition).
+
+**Real workflow gap found and fixed:** Payslip generation required **100% manual entry** of present/absent/leave/late days even though the exact data already existed in `attendance_records` and `leave_requests`. Added **"Auto-fill from Attendance & Leave Records"** — pulls real check-ins, late flags, and approved leaves for the selected staff member and month, computes days automatically. HR can still review/adjust before generating — this removes manual counting as a source of payroll errors.
