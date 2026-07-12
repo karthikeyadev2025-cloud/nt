@@ -336,6 +336,12 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
       assigned_to: assignTo || null, created_by: user?.id,
     }));
     const { error } = await supabase.from('marketing_leads').insert(payload);
+    if (!error && assignTo) {
+      await supabase.from('notifications').insert({
+        user_id: assignTo, kind: 'lead_assigned', title: 'New leads assigned to you',
+        body: `${rows.length} new leads were just uploaded and assigned to you.`, link: '/portal',
+      });
+    }
     setBusy(false);
     if (error) { toast.error(`Upload failed: ${error.message}`); return; }
     toast.success(`${rows.length} leads imported${assignTo ? ' and assigned' : ''}`);
@@ -518,14 +524,23 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   }
   useEffect(() => { load(); }, [user]);
 
+  const [duplicateInfo, setDuplicateInfo] = useState<any[] | null>(null);
+
   async function addFieldLead() {
     if (!user || !newLead.customer_name || !newLead.phone || !newLead.segment_slug) { toast.error('Name, phone and segment are required'); return; }
+
+    if (!duplicateInfo) {
+      const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: newLead.phone, _segment_slug: newLead.segment_slug });
+      if (dupes && dupes.length > 0) { setDuplicateInfo(dupes); return; } // show warning, wait for confirm
+    }
+
     const { error } = await supabase.from('marketing_leads').insert({
       ...newLead, source: 'field', assigned_to: user.id, created_by: user.id,
     });
     if (error) { toast.error(`Couldn't add lead: ${error.message}`); return; }
     toast.success('Lead added to your queue');
     setShowAddLead(false);
+    setDuplicateInfo(null);
     setNewLead({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
     load();
   }
@@ -598,7 +613,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-white font-semibold text-sm">My Field Leads ({leads.length})</h3>
-        <button className="text-sky-400 text-xs font-medium" onClick={() => setShowAddLead(true)}>+ Add Lead</button>
+        <button className="text-sky-400 text-xs font-medium" onClick={() => { setDuplicateInfo(null); setShowAddLead(true); }}>+ Add Lead</button>
       </div>
       <div className="space-y-2">
         {leads.map(l => (
@@ -677,14 +692,23 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
           <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-white font-semibold">Add Field Lead</h3>
             <p className="text-slate-500 text-xs">Found a new prospect on-site? Add them directly — it lands in your own queue.</p>
-            <select className={inputCls} value={newLead.segment_slug} onChange={e => setNewLead({ ...newLead, segment_slug: e.target.value })}>
+            <select className={inputCls} value={newLead.segment_slug} onChange={e => { setNewLead({ ...newLead, segment_slug: e.target.value }); setDuplicateInfo(null); }}>
               <option value="">Segment *</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
             <input className={inputCls} placeholder="Customer Name *" value={newLead.customer_name} onChange={e => setNewLead({ ...newLead, customer_name: e.target.value })} />
-            <input className={inputCls} placeholder="Phone *" value={newLead.phone} onChange={e => setNewLead({ ...newLead, phone: e.target.value })} />
+            <input className={inputCls} placeholder="Phone *" value={newLead.phone} onChange={e => { setNewLead({ ...newLead, phone: e.target.value }); setDuplicateInfo(null); }} />
             <input className={inputCls} placeholder="Interested In" value={newLead.interested_in} onChange={e => setNewLead({ ...newLead, interested_in: e.target.value })} />
-            <button className={btnCls + ' w-full'} onClick={addFieldLead}>Add Lead</button>
+            {duplicateInfo && (
+              <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-600/40 text-xs">
+                <p className="text-amber-300 font-medium mb-1">⚠ This phone number already exists:</p>
+                {duplicateInfo.map((d: any) => (
+                  <p key={d.id} className="text-amber-200/80">{d.customer_name} — {d.stage} {d.assignee_name ? `• with ${d.assignee_name}` : '• unassigned'}</p>
+                ))}
+                <p className="text-slate-400 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
+              </div>
+            )}
+            <button className={btnCls + ' w-full'} onClick={addFieldLead}>{duplicateInfo ? 'Add Anyway' : 'Add Lead'}</button>
           </div>
         </div>
       )}

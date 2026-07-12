@@ -241,12 +241,21 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
     window.open(data.signedUrl, '_blank');
   }
 
+  const [dupWarning, setDupWarning] = useState<any[] | null>(null);
+
   async function createLead() {
     if (!form.segment_slug || !form.customer_name || !form.phone || !user) { toast.error('Segment, name and phone are required'); return; }
+
+    if (!dupWarning) {
+      const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: form.phone, _segment_slug: form.segment_slug });
+      if (dupes && dupes.length > 0) { setDupWarning(dupes); return; }
+    }
+
     const { error } = await supabase.from('marketing_leads').insert({ ...form, created_by: user.id });
     if (error) { toast.error(`Couldn't create lead: ${error.message}`); return; }
     toast.success('Lead created');
     setShowAdd(false);
+    setDupWarning(null);
     setForm({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
     load();
   }
@@ -262,7 +271,7 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
         {hasPermission('create_leads') || hasPermission('manage_leads') ? (
-          <button className={btnCls} onClick={() => setShowAdd(true)}>+ Add Lead</button>
+          <button className={btnCls} onClick={() => { setDupWarning(null); setShowAdd(true); }}>+ Add Lead</button>
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2 mb-5">
@@ -301,13 +310,22 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
             <input className={inputCls} placeholder="Customer Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
-            <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+            <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); setDupWarning(null); }} />
             <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
             <input className={inputCls} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
             <select className={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
               {['field', 'telecall', 'referral', 'whatsapp', 'website', 'other'].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <button className={btnCls + ' w-full'} onClick={createLead}>Create Lead</button>
+            {dupWarning && (
+              <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-600/40 text-xs">
+                <p className="text-amber-300 font-medium mb-1">⚠ This phone number already exists:</p>
+                {dupWarning.map((d: any) => (
+                  <p key={d.id} className="text-amber-200/80">{d.customer_name} — {d.stage} {d.assignee_name ? `• with ${d.assignee_name}` : '• unassigned'}</p>
+                ))}
+                <p className="text-slate-400 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
+              </div>
+            )}
+            <button className={btnCls + ' w-full'} onClick={createLead}>{dupWarning ? 'Add Anyway' : 'Create Lead'}</button>
           </div>
         </div>
       )}

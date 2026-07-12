@@ -284,3 +284,14 @@ Direct code check found: reassignments and stage changes happened silently (no l
 This is exactly the "carries forward on reassignment" behavior — the full history was technically always attached to the lead (never lost), it just wasn't visible or complete. Now it's both.
 
 One migration: `20260717000002_lead_audit_trail.sql`.
+
+## Three more real gaps found and fixed
+Continued the same rigorous check-then-fix approach:
+
+1. **Silent reassignment** — moving a lead to someone (via Leads Board, Bulk Reassign, or ticket assignment) never notified the new owner; they'd only find out by happening to check their queue. Fixed: reassigning a lead or assigning a ticket now sends a direct notification naming the customer/ticket. Bulk Excel upload sends **one summary notification** ("50 new leads assigned to you") instead of spamming one notification per row.
+
+2. **Zero duplicate detection** — the same customer could be entered as a lead multiple times by different staff with no warning, wasting effort and confusing the customer with repeat calls. Fixed: creating a lead manually (Leads Board "+ Add Lead" or Executive "+ Add Lead") now checks for an existing active lead with the same phone number in that segment first. If found, shows who's already working it and what stage it's at — staff can still proceed ("Add Anyway") if it's genuinely a separate inquiry, it just can't happen by accident anymore. *(Bulk Excel upload doesn't per-row-check for performance reasons — flagging this as a known limitation, not silently skipped.)*
+
+3. **Verified clean**: ticket replies already correctly showed author names — no fix needed there.
+
+One migration: `20260717000003_notifications_and_duplicate_detection.sql`.
