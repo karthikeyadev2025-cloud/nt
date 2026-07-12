@@ -266,14 +266,25 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
   const [rows, setRows] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
   const [segment, setSegment] = useState('');
-  const [telecallers, setTelecallers] = useState<any[]>([]);
+  const [allStaff, setAllStaff] = useState<any[]>([]);
   const [assignTo, setAssignTo] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    supabase.from('app_users').select('id, full_name, segments').eq('role', 'telecaller').eq('is_active', true)
-      .then(({ data }) => { if (data) setTelecallers(data); });
+    supabase.from('app_users').select('id, full_name, role, segments').eq('is_active', true).neq('role', 'super_admin').order('full_name')
+      .then(({ data }) => { if (data) setAllStaff(data); });
   }, []);
+
+  // Anyone can be assigned bulk contacts to follow up — not just telecallers.
+  // Staff already in the chosen segment are listed first for convenience,
+  // but assigning across segments is allowed (assignment grants access regardless of segment).
+  const sortedAssignees = [...allStaff].sort((a, b) => {
+    const aMatch = segment && ((a.segments || []).includes(segment) || (a.segments || []).includes('all'));
+    const bMatch = segment && ((b.segments || []).includes(segment) || (b.segments || []).includes('all'));
+    if (aMatch && !bMatch) return -1;
+    if (!aMatch && bMatch) return 1;
+    return a.full_name.localeCompare(b.full_name);
+  });
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -330,7 +341,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
             </select>
             <select className={inputCls} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
               <option value="">Leave unassigned</option>
-              {telecallers.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+              {sortedAssignees.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
             </select>
           </div>
           <button className={btnCls} disabled={busy} onClick={upload}>

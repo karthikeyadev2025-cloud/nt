@@ -235,3 +235,11 @@ Full systematic verification before production use:
 - **Performance fix**: `xlsx` (429KB) was bundled into the main portal chunk, forcing every user to download it even if they never touch bulk upload or Excel export. Converted to a lazy `import('xlsx')` inside the three functions that actually use it — it now loads only when someone clicks Bulk Upload or Export. Dropped the main portal bundle from 959KB to 533KB and eliminated the build's chunk-size warning entirely.
 
 No open issues, no build warnings, clean typecheck. This is the final state for the version you're about to start using.
+
+## Bulk upload: assign to any staff, any category — confirmed and fixed
+Two things confirmed/fixed per your workflow description:
+
+1. **Fixed a real restriction**: Bulk Upload's assignee dropdown was hardcoded to telecallers only. Now shows **any active staff member** — telecaller, executive, manager, HR, anyone — with their role shown next to their name. Staff already belonging to the segment you picked are listed first for convenience, but you can assign across segments (assignment grants access regardless of the person's own segment, same mechanism as telecaller→executive handoffs).
+2. **Confirmed (already correct, no change needed)**: when a staff member enters a remark on a lead, that remark is only ever visible to people who can access that lead's specific category — enforced at the database level (`can_access_segment` check), not just hidden in the UI. A CCTV-only manager cannot see remarks on Digital Media leads even if she tried to query them directly.
+
+**One practical note**: whoever you assign bulk contacts to needs *some* lead-related permission (`view_leads`/`manage_leads` — telecaller, executive, manager and HR all have this by default) to actually see their assigned leads anywhere in their portal. Assigning to someone with zero lead permissions (a plain support agent, for example) would leave the lead invisible to them — worth keeping in mind when picking an assignee outside the usual sales roles.
