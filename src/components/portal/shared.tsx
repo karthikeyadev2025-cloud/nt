@@ -294,7 +294,7 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
                 <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
                 <span className="text-xs text-slate-500">{l.source}</span>
               </div>
-              <p className="text-slate-500 text-xs mt-1">{l.phone} {l.interested_in && `• ${l.interested_in}`} • {new Date(l.created_at).toLocaleDateString()}</p>
+              <p className="text-slate-500 text-xs mt-1">{l.phone} {l.interested_in && `• ${l.interested_in}`} • {new Date(l.created_at).toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-400">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}</p>
             </div>
           );
         })}
@@ -353,6 +353,12 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
                   <option value="">Unassigned</option>
                   {staff.filter(s => s.segments.includes('all') || s.segments.includes(openLead.segment_slug)).map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
                 </select>
+                {openLead.stage === 'won' && (
+                  <>
+                    <input className={inputCls} placeholder="Invoice Number" defaultValue={openLead.invoice_no || ''} onBlur={e => update(openLead.id, { invoice_no: e.target.value || null })} />
+                    <input className={inputCls} type="number" placeholder="Invoice Amount (₹)" defaultValue={openLead.invoice_amount || ''} onBlur={e => update(openLead.id, { invoice_amount: e.target.value ? Number(e.target.value) : null })} />
+                  </>
+                )}
               </div>
             )}
             <div className="border-t border-slate-800 pt-3 space-y-2">

@@ -295,3 +295,17 @@ Continued the same rigorous check-then-fix approach:
 3. **Verified clean**: ticket replies already correctly showed author names — no fix needed there.
 
 One migration: `20260717000003_notifications_and_duplicate_detection.sql`.
+
+## Four more real gaps found and fixed (comprehensive workflow re-check)
+
+1. **Offboarding was actually broken** — the exact tool built for moving someone's leads to a new owner (Bulk Reassign) excluded disabled staff from the "From" dropdown. So the moment you disabled someone during offboarding, you could no longer use the tool designed for that exact scenario to move their leads. Fixed: "From" now includes disabled staff (clearly labeled), "To" stays active-only.
+
+2. **Zero password reset flow existed anywhere** — even though the backend (`create-user` edge function) already supported a `reset_password` action, nothing in the UI ever called it. Fixed both directions:
+   - **Self-service**: "Forgot password?" on the login screen → emails a reset link → full "set new password" flow when they click it (handles Supabase's `PASSWORD_RECOVERY` auth event properly)
+   - **Admin-triggered**: Super Admin/HR → Access Control → Manage Access → "Reset Password" — sets someone's password directly, useful when email access isn't reliable
+
+3. **Invoice fields existed in the database since the very first migration but had zero UI** — `invoice_no`/`invoice_amount` on `marketing_leads` were never editable or shown anywhere. Fixed: when a lead's stage is set to "Won," invoice number and amount fields appear in the detail view, and the amount now shows directly in the leads list for quick revenue scanning.
+
+4. **No way for a customer to check their own ticket status** — someone who raised a ticket anonymously (no account) had zero way to check progress without calling in. Added **"Track its status"** on the public Raise Ticket section — requires both the exact ticket number and the phone number used to raise it (prevents a stranger from browsing other customers' tickets by guessing numbers).
+
+Two migrations: `20260717000003_notifications_and_duplicate_detection.sql` (already shipped, unchanged — verified) needs nothing new; add `20260718000001_public_ticket_tracking.sql`.

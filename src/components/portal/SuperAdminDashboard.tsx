@@ -349,8 +349,23 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
   const [showOnboard, setShowOnboard] = useState(false);
   const { user: currentUser } = useAuth();
   const toast = useToast();
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   useEffect(() => { if (openSignal) setShowOnboard(true); }, [openSignal]);
+
+  async function doResetPassword() {
+    if (!editing) return;
+    if (resetPasswordValue.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    setResettingPassword(true);
+    const { data, error } = await supabase.functions.invoke('create-user', {
+      body: { action: 'reset_password', user_id: editing.id, new_password: resetPasswordValue },
+    });
+    setResettingPassword(false);
+    if (error || data?.error) { toast.error(data?.error || error?.message || 'Failed to reset password'); return; }
+    toast.success('Password updated');
+    setResetPasswordValue('');
+  }
 
   async function load() {
     const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
@@ -417,6 +432,7 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
                 <button className="text-sky-400 text-sm font-medium" onClick={() => {
                   setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } });
                   setSnapshot({ designation: u.designation || '', ctc: u.salary_structure?.ctc || 0 });
+                  setResetPasswordValue('');
                 }}>Manage Access</button>
               )}
             </div>
@@ -491,6 +507,14 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
                   );
                 })}
               </div>
+            </div>
+            <div className="border-t border-slate-800 pt-3">
+              <p className="text-slate-300 text-sm font-medium mb-2">Reset Password</p>
+              <div className="flex gap-2">
+                <input className={inputCls} type="password" placeholder="New password (min 6 characters)" value={resetPasswordValue} onChange={e => setResetPasswordValue(e.target.value)} />
+                <button className={btnCls} disabled={resettingPassword} onClick={doResetPassword}>{resettingPassword ? 'Setting…' : 'Set'}</button>
+              </div>
+              <p className="text-slate-500 text-xs mt-1">Sets their password directly — tell them the new password securely. They can also self-reset via "Forgot password?" on the login page.</p>
             </div>
             <button className={btnCls + ' w-full'} onClick={saveUser}>Save Access</button>
           </div>

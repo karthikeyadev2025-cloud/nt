@@ -727,7 +727,9 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    supabase.from('app_users').select('id, full_name, role, segments').eq('is_active', true).neq('role', 'super_admin').order('full_name')
+    // "From" must include disabled staff too — offboarding someone is exactly
+    // when you need to move their leads off them, after their account is disabled.
+    supabase.from('app_users').select('id, full_name, role, segments, is_active').neq('role', 'super_admin').order('full_name')
       .then(({ data }) => { if (data) setStaff(data); });
   }, []);
 
@@ -765,20 +767,20 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
 
   return (
     <div>
-      <p className="text-slate-400 text-sm mb-4">Move someone's active leads to another staff member — useful when they're on leave or you're rebalancing workload.</p>
+      <p className="text-slate-400 text-sm mb-4">Move someone's active leads to another staff member — useful when they're on leave, offboarded, or you're rebalancing workload.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
         <div>
           <label className="text-slate-500 text-xs">From (current owner)</label>
           <select className={inputCls} value={fromId} onChange={e => { setFromId(e.target.value); setToId(''); }}>
             <option value="">Select staff member</option>
-            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}{!s.is_active ? ' (disabled)' : ''}</option>)}
           </select>
         </div>
         <div>
           <label className="text-slate-500 text-xs">To (new owner)</label>
           <select className={inputCls} value={toId} onChange={e => setToId(e.target.value)} disabled={!fromId}>
             <option value="">Select staff member</option>
-            {staff.filter(s => s.id !== fromId).map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+            {staff.filter(s => s.id !== fromId && s.is_active).map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
           </select>
         </div>
       </div>

@@ -538,7 +538,64 @@ function Careers({ segments }: { segments: Segment[] }) {
 }
 
 // ─────────────────────────────────────────────── Raise Ticket
+// ─────────────────────────────────────────────── Track Ticket
+function TrackTicket({ onBack }: { onBack: () => void }) {
+  const [ticketNo, setTicketNo] = useState('');
+  const [phone, setPhone] = useState('');
+  const [result, setResult] = useState<any | null | 'not_found'>(null);
+  const [busy, setBusy] = useState(false);
+  const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
+
+  async function lookup() {
+    if (!ticketNo || !phone) return;
+    setBusy(true);
+    const { data } = await supabase.rpc('track_ticket', { _ticket_no: ticketNo.trim().toUpperCase(), _phone: phone.trim() });
+    setBusy(false);
+    setResult(data && data.length > 0 ? data[0] : 'not_found');
+  }
+
+  const statusColor: Record<string, string> = {
+    open: 'text-sky-400', in_progress: 'text-amber-400', waiting_customer: 'text-purple-400',
+    resolved: 'text-emerald-400', closed: 'text-slate-400',
+  };
+
+  return (
+    <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800">
+      <button onClick={onBack} className="text-slate-500 text-xs mb-4">← Back to raise a ticket</button>
+      {!result ? (
+        <div className="space-y-3">
+          <input className={inputCls} placeholder="Ticket Number (e.g. NKT-CC-00001)" value={ticketNo} onChange={e => setTicketNo(e.target.value)} />
+          <input className={inputCls} placeholder="Phone number used when raising it" value={phone} onChange={e => setPhone(e.target.value)} />
+          <button onClick={lookup} disabled={busy || !ticketNo || !phone}
+            className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold transition-colors">
+            {busy ? 'Looking up…' : 'Check Status'}
+          </button>
+        </div>
+      ) : result === 'not_found' ? (
+        <div className="text-center py-6">
+          <p className="text-slate-300 text-sm mb-3">No ticket found matching that number and phone.</p>
+          <button onClick={() => setResult(null)} className="text-sky-400 text-sm">Try again</button>
+        </div>
+      ) : (
+        <div>
+          <p className="font-mono text-sky-400 text-sm mb-1">{result.ticket_no}</p>
+          <p className="text-white font-semibold mb-3">{result.subject}</p>
+          <div className="space-y-1.5 text-sm">
+            <p><span className="text-slate-500">Status: </span><span className={statusColor[result.status]}>{result.status.replace('_', ' ')}</span></p>
+            <p><span className="text-slate-500">Priority: </span><span className="text-slate-300">{result.priority}</span></p>
+            <p><span className="text-slate-500">Raised: </span><span className="text-slate-300">{new Date(result.created_at).toLocaleDateString()}</span></p>
+            {result.resolved_at && <p><span className="text-slate-500">Resolved: </span><span className="text-slate-300">{new Date(result.resolved_at).toLocaleDateString()}</span></p>}
+          </div>
+          <button onClick={() => setResult(null)} className="text-sky-400 text-sm mt-4">Check another ticket</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────── Raise Ticket
 function RaiseTicket({ segments }: { segments: Segment[] }) {
+  const [mode, setMode] = useState<'raise' | 'track'>('raise');
   const [form, setForm] = useState({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
   const [types, setTypes] = useState<{ id: string; segment_slug: string; name: string }[]>([]);
   const [done, setDone] = useState<string | null>(null);
@@ -571,8 +628,13 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
           <Ticket className="w-10 h-10 text-sky-400 mx-auto mb-3" />
           <h2 className="text-4xl font-bold text-white mb-2">Raise a Support Ticket</h2>
           <p className="text-slate-400">Existing customer? Get help from the right team — CCTV, Digital Media or Software.</p>
+          <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-sky-400 text-sm mt-2 underline">
+            {mode === 'raise' ? 'Already raised a ticket? Track its status' : 'Raise a new ticket instead'}
+          </button>
         </div>
-        {done ? (
+        {mode === 'track' ? (
+          <TrackTicket onBack={() => setMode('raise')} />
+        ) : done ? (
           <div className="p-8 rounded-2xl bg-slate-950 border border-sky-700 text-center">
             <CheckCircle2 className="w-12 h-12 text-sky-400 mx-auto mb-3" />
             <p className="text-white text-lg font-semibold mb-1">Ticket created: {done}</p>
