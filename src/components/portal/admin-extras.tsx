@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { Search, X, Shield, Download, CheckCircle2, Circle, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cardCls } from './shared';
@@ -241,6 +240,7 @@ export function ExportStaffButton() {
       Role: u.role, Segments: (u.segments || []).join(', '), Designation: u.designation,
       'Employment Type': u.employment_type, 'Joining Date': u.joining_date, Status: u.is_active ? 'Active' : 'Disabled',
     }));
+    const XLSX = await import('xlsx');
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Staff');
@@ -266,6 +266,7 @@ export function ExportPayslipsButton() {
       'Base Salary': p.base_salary, 'Present Days': p.present_days, 'Absent Days': p.absent_days,
       'Net Pay': p.net_pay, 'Amount Paid': p.amount_paid, Status: p.payment_status,
     }));
+    const XLSX = await import('xlsx');
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Payslips');

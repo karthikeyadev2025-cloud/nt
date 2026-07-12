@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin } from 'lucide-react';
 import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
@@ -276,10 +275,11 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
       .then(({ data }) => { if (data) setTelecallers(data); });
   }, []);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
+    const XLSX = await import('xlsx');
     const reader = new FileReader();
     reader.onload = evt => {
       const wb = XLSX.read(evt.target?.result, { type: 'binary' });

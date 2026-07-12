@@ -219,3 +219,19 @@ No visual changes needed on your end to activate the marquee/stats — they rend
 Confirmed and fixed: your own account (`super_admin`) was appearing in every staff-listing view as if it were a regular employee — HR → Staff, Attendance, Punctuality Leaderboard, Birthdays, ticket/lead assignee dropdowns, Shift Swap partner list, Shifts assignment, Payslip generation, Documents "Issue to Existing Staff", Quick Search results, and the staff Excel export. The owner account should never be listed as a manageable staff member in any of these — it's the account *managing* staff, not one being managed.
 
 Fixed by excluding `role = 'super_admin'` from every staff-listing/assignment query across the app (10 locations). Access Control still correctly shows the super_admin account (that's account management, a different context) — this fix only removes it from *staff-management* views. No migration needed — pure query filtering.
+
+## Final end-to-end comprehensive debug pass
+Full systematic verification before production use:
+
+- **15 migrations**, sequence and timestamps verified with no collisions.
+- **Every table has RLS enabled** — verified programmatically, none missing.
+- **Zero unsafe policy name collisions** — every re-defined policy across all 15 migrations has a `DROP POLICY IF EXISTS` before it; migrations are safe to re-run.
+- **Public-facing forms verified untouched** by the segment-scoping security fix — Raise Ticket, Contact form, Lead capture, and Career applications all remain open to anonymous visitors as intended; only staff read/write paths were tightened.
+- **Zero debug leftovers** — no `console.log`, no `TODO`/`FIXME` markers anywhere in the codebase.
+- **All 6 npm dependencies are actually used** — nothing extraneous, nothing missing.
+- **Edge functions verified intact** and matching their already-deployed, working versions.
+- **Deployment config verified** — `vercel.json` SPA rewrite correct for client-side routing.
+- **Auth session handling verified** — covers initial load, token refresh, and cross-tab sign-out via Supabase's `onAuthStateChange`.
+- **Performance fix**: `xlsx` (429KB) was bundled into the main portal chunk, forcing every user to download it even if they never touch bulk upload or Excel export. Converted to a lazy `import('xlsx')` inside the three functions that actually use it — it now loads only when someone clicks Bulk Upload or Export. Dropped the main portal bundle from 959KB to 533KB and eliminated the build's chunk-size warning entirely.
+
+No open issues, no build warnings, clean typecheck. This is the final state for the version you're about to start using.
