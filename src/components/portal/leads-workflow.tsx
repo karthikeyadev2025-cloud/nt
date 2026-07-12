@@ -418,7 +418,7 @@ export function TeamActivityFeed() {
 
 export function LeadsWorkspace({ segments }: { segments: Segment[] }) {
   const { hasPermission } = useAuth();
-  const [sub, setSub] = useState<'board' | 'bulk' | 'transfers' | 'activity'>('board');
+  const [sub, setSub] = useState<'board' | 'bulk' | 'reassign' | 'transfers' | 'activity'>('board');
   const showBulk = hasPermission('bulk_assign_leads');
   const showTransfers = hasPermission('approve_transfers');
 
@@ -428,11 +428,13 @@ export function LeadsWorkspace({ segments }: { segments: Segment[] }) {
         <button onClick={() => setSub('board')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'board' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Leads Board</button>
         <button onClick={() => setSub('activity')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'activity' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Team Activity</button>
         {showBulk && <button onClick={() => setSub('bulk')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bulk' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Bulk Upload</button>}
+        {showBulk && <button onClick={() => setSub('reassign')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'reassign' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Reassign Leads</button>}
         {showTransfers && <button onClick={() => setSub('transfers')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'transfers' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Handoff Approvals</button>}
       </div>
       {sub === 'board' && <LeadsBoard segments={segments} />}
       {sub === 'activity' && <TeamActivityFeed />}
       {sub === 'bulk' && showBulk && <BulkLeadUpload segments={segments} />}
+      {sub === 'reassign' && showBulk && <BulkReassignLeads segments={segments} />}
       {sub === 'transfers' && showTransfers && <TransferApprovals />}
     </div>
   );
@@ -664,6 +666,110 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             <input className={inputCls} placeholder="Interested In" value={newLead.interested_in} onChange={e => setNewLead({ ...newLead, interested_in: e.target.value })} />
             <button className={btnCls + ' w-full'} onClick={addFieldLead}>Add Lead</button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────── Manager/Super Admin: Bulk Reassign (move all of X's active leads to Y in one action)
+export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
+  const toast = useToast();
+  const [staff, setStaff] = useState<any[]>([]);
+  const [fromId, setFromId] = useState('');
+  const [toId, setToId] = useState('');
+  const [leads, setLeads] = useState<any[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    supabase.from('app_users').select('id, full_name, role, segments').eq('is_active', true).neq('role', 'super_admin').order('full_name')
+      .then(({ data }) => { if (data) setStaff(data); });
+  }, []);
+
+  useEffect(() => {
+    if (!fromId) { setLeads([]); setSelected(new Set()); return; }
+    supabase.from('marketing_leads').select('*').eq('assigned_to', fromId).not('stage', 'in', '(won,lost)').order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) { setLeads(data); setSelected(new Set(data.map((l: any) => l.id))); } // default: all selected
+      });
+  }, [fromId]);
+
+  function toggle(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  async function reassign() {
+    if (!toId) { toast.error('Select who to reassign to'); return; }
+    if (selected.size === 0) { toast.error('Select at least one lead'); return; }
+    setBusy(true);
+    const { error } = await supabase.from('marketing_leads')
+      .update({ assigned_to: toId, updated_at: new Date().toISOString() })
+      .in('id', Array.from(selected));
+    setBusy(false);
+    if (error) { toast.error(`Couldn't reassign: ${error.message}`); return; }
+    toast.success(`${selected.size} lead(s) reassigned`);
+    setFromId(''); setToId(''); setLeads([]); setSelected(new Set());
+  }
+
+  const fromName = staff.find(s => s.id === fromId)?.full_name;
+  const toName = staff.find(s => s.id === toId)?.full_name;
+
+  return (
+    <div>
+      <p className="text-slate-400 text-sm mb-4">Move someone's active leads to another staff member — useful when they're on leave or you're rebalancing workload.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+        <div>
+          <label className="text-slate-500 text-xs">From (current owner)</label>
+          <select className={inputCls} value={fromId} onChange={e => { setFromId(e.target.value); setToId(''); }}>
+            <option value="">Select staff member</option>
+            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-slate-500 text-xs">To (new owner)</label>
+          <select className={inputCls} value={toId} onChange={e => setToId(e.target.value)} disabled={!fromId}>
+            <option value="">Select staff member</option>
+            {staff.filter(s => s.id !== fromId).map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {fromId && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-slate-300 text-sm">{leads.length} active lead(s) assigned to {fromName}</p>
+            {leads.length > 0 && (
+              <button className="text-sky-400 text-xs" onClick={() => setSelected(selected.size === leads.length ? new Set() : new Set(leads.map(l => l.id)))}>
+                {selected.size === leads.length ? 'Deselect all' : 'Select all'}
+              </button>
+            )}
+          </div>
+          <div className="space-y-1.5 mb-4 max-h-72 overflow-y-auto">
+            {leads.map(l => {
+              const seg = segments.find(s => s.slug === l.segment_slug);
+              return (
+                <label key={l.id} className={cardCls + ' flex items-center gap-3 cursor-pointer py-2.5'}>
+                  <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)} />
+                  <div className="flex-1">
+                    <span className="text-white text-sm">{l.customer_name}</span>
+                    <span className="text-slate-500 text-xs ml-2">{l.phone} • {l.stage}</span>
+                  </div>
+                  {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
+                </label>
+              );
+            })}
+            {leads.length === 0 && <p className="text-slate-500 text-sm text-center py-8">No active leads currently assigned to this person.</p>}
+          </div>
+          {leads.length > 0 && (
+            <button className={btnCls} disabled={busy || !toId} onClick={reassign}>
+              {busy ? 'Reassigning…' : `Reassign ${selected.size} lead(s)${toName ? ` to ${toName}` : ''}`}
+            </button>
+          )}
         </div>
       )}
     </div>

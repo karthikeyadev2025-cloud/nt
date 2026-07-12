@@ -254,3 +254,17 @@ Real gap confirmed: telecallers and marketing executives (`full_leads_view = fal
 Same fix applied to lead remarks/visit notes — a restricted-view telecaller can no longer read notes on leads that aren't hers.
 
 One migration: `20260717000001_restricted_lead_view_enforcement.sql`. No frontend changes needed — this was purely a database-level fix.
+
+## Bulk Reassign Leads: move X's leads to Y in one action
+New tool for Manager/HR/Super Admin — **CRM → Reassign Leads**:
+- Pick a source staff member ("From") — shows every active lead currently assigned to them (excludes already-closed won/lost leads)
+- All shown pre-selected, uncheck any you want to leave behind, or use Select all/Deselect all
+- Pick a target staff member ("To") — reassign the selected leads in one action
+
+Useful when someone's on leave, changes role, or you're rebalancing workload across the team — no need to open and reassign leads one by one. Uses the same RLS-enforced permission scope as everything else (manager can only reassign within their segment, HR/Super Admin can act company-wide). No migration needed — relies on the RLS already tightened in the previous fix.
+
+**Recap of the full lead-assignment toolkit now available:**
+- **Bulk Upload** — bring in new Excel contacts, assign to anyone
+- **Reassign Leads** — move existing leads from one person to another, individually or in bulk
+- **Single-lead reassignment** — open any lead → change assignee directly
+- **Handoff Approvals** — telecaller-initiated requests to hand a lead to an executive, requiring manager/admin sign-off
