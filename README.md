@@ -243,3 +243,14 @@ Two things confirmed/fixed per your workflow description:
 2. **Confirmed (already correct, no change needed)**: when a staff member enters a remark on a lead, that remark is only ever visible to people who can access that lead's specific category — enforced at the database level (`can_access_segment` check), not just hidden in the UI. A CCTV-only manager cannot see remarks on Digital Media leads even if she tried to query them directly.
 
 **One practical note**: whoever you assign bulk contacts to needs *some* lead-related permission (`view_leads`/`manage_leads` — telecaller, executive, manager and HR all have this by default) to actually see their assigned leads anywhere in their portal. Assigning to someone with zero lead permissions (a plain support agent, for example) would leave the lead invisible to them — worth keeping in mind when picking an assignee outside the usual sales roles.
+
+## SECURITY FIX: "only assigned follow-ups visible" wasn't actually enforced
+Real gap confirmed: telecallers and marketing executives (`full_leads_view = false`) were shown a restricted queue UI showing only their own assigned leads — but the **database itself still permitted them to read every lead in their entire segment**, including everyone else's. The restriction was a frontend choice (which screen renders), not a real access control — anyone could bypass it by calling the Supabase client directly instead of going through the app's UI.
+
+**Fixed**: `full_leads_view` now actually gates segment-wide visibility at the database level.
+- **Without** `full_leads_view` (telecaller, executive by default): you only ever see leads assigned to you or created by you — nothing else, enforced by the database, not just hidden by UI.
+- **With** `full_leads_view` (manager, HR by default): unchanged, full segment visibility as intended.
+
+Same fix applied to lead remarks/visit notes — a restricted-view telecaller can no longer read notes on leads that aren't hers.
+
+One migration: `20260717000001_restricted_lead_view_enforcement.sql`. No frontend changes needed — this was purely a database-level fix.
