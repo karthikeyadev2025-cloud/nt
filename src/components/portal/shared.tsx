@@ -193,7 +193,7 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[] }[]>([]);
   const [openLead, setOpenLead] = useState<Lead | null>(null);
-  const [remarks, setRemarks] = useState<{ id: string; remark: string; call_type: string; created_at: string; address?: string; photo_url?: string }[]>([]);
+  const [remarks, setRemarks] = useState<{ id: string; remark: string; call_type: string; created_at: string; address?: string; photo_url?: string; author_name?: string; author_staff_code?: string }[]>([]);
   const [newRemark, setNewRemark] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
@@ -320,6 +320,9 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
                 <h3 className="text-white text-lg font-semibold">{openLead.customer_name}</h3>
                 <p className="text-slate-400 text-sm">{openLead.phone} {openLead.email && `• ${openLead.email}`}</p>
                 {openLead.interested_in && <p className="text-slate-500 text-sm mt-1">Interested in: {openLead.interested_in}</p>}
+                <p className="text-slate-600 text-xs mt-1.5">
+                  Created {new Date(openLead.created_at).toLocaleString()} • source: {openLead.source}
+                </p>
               </div>
               <button className="text-slate-400 hover:text-white" onClick={() => setOpenLead(null)}>✕</button>
             </div>
@@ -339,18 +342,24 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
                 <input className={inputCls} placeholder="Add call remark / note…" value={newRemark} onChange={e => setNewRemark(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRemark()} />
                 <button className={btnCls} onClick={addRemark}>Add</button>
               </div>
-              {remarks.map(r => (
-                <div key={r.id} className="text-sm">
-                  <span className="text-slate-600 text-xs">{new Date(r.created_at).toLocaleString()} • {r.call_type}</span>
-                  <p className="text-slate-300">{r.remark}</p>
-                  {(r.address || r.photo_url) && (
-                    <div className="flex gap-3 mt-0.5 text-xs">
-                      {r.address && <span className="text-slate-500">📍 {r.address}</span>}
-                      {r.photo_url && <button className="text-sky-400" onClick={() => viewLeadPhoto(r.photo_url as string)}>View Photo</button>}
-                    </div>
-                  )}
-                </div>
-              ))}
+              <p className="text-slate-400 text-xs font-medium mb-1">Full History</p>
+              {remarks.map(r => {
+                const isSystem = r.remark.startsWith('Stage changed:') || r.remark.startsWith('Reassigned:');
+                return (
+                  <div key={r.id} className={`text-sm ${isSystem ? 'pl-2 border-l-2 border-slate-800' : ''}`}>
+                    <span className="text-slate-600 text-xs">
+                      {new Date(r.created_at).toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''}{!isSystem && ` • ${r.call_type}`}
+                    </span>
+                    <p className={isSystem ? 'text-slate-500 text-xs italic' : 'text-slate-300'}>{r.remark}</p>
+                    {(r.address || r.photo_url) && (
+                      <div className="flex gap-3 mt-0.5 text-xs">
+                        {r.address && <span className="text-slate-500">📍 {r.address}</span>}
+                        {r.photo_url && <button className="text-sky-400" onClick={() => viewLeadPhoto(r.photo_url as string)}>View Photo</button>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

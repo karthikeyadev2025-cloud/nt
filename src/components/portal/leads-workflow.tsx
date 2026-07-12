@@ -67,6 +67,7 @@ export function TelecallerQueue() {
   const [leads, setLeads] = useState<any[]>([]);
   const [executives, setExecutives] = useState<any[]>([]);
   const [active, setActive] = useState<any | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
   const [outcome, setOutcome] = useState('contacted');
   const [remark, setRemark] = useState('');
   const [callbackDate, setCallbackDate] = useState('');
@@ -89,12 +90,14 @@ export function TelecallerQueue() {
       .then(({ data }) => { if (data) setExecutives(data); });
   }, [user]);
 
-  function openLead(lead: any) {
+  async function openLead(lead: any) {
     setActive(lead);
     setOutcome('contacted');
     setRemark('');
     setCallbackDate('');
     setTransferTo('');
+    const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', lead.id).order('created_at', { ascending: false });
+    setHistory(data || []);
   }
 
   function call(phone: string) {
@@ -203,6 +206,23 @@ export function TelecallerQueue() {
                 Request Handoff (needs manager/admin approval)
               </button>
             </div>
+
+            {history.length > 0 && (
+              <div className="border-t border-slate-800 pt-3 space-y-2 max-h-48 overflow-y-auto">
+                <p className="text-slate-400 text-xs font-medium">Previous History {history.length > 0 && '— read before calling'}</p>
+                {history.map(h => {
+                  const isSystem = h.remark.startsWith('Stage changed:') || h.remark.startsWith('Reassigned:');
+                  return (
+                    <div key={h.id} className={`text-xs ${isSystem ? 'pl-2 border-l-2 border-slate-800' : ''}`}>
+                      <p className="text-slate-600">
+                        {new Date(h.created_at).toLocaleString()} • {h.author_name || 'System'}{h.author_staff_code ? ` (${h.author_staff_code})` : ''}
+                      </p>
+                      <p className={isSystem ? 'text-slate-500 italic' : 'text-slate-300'}>{h.remark}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -627,10 +647,10 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
             {remarks.length > 0 && (
               <div className="border-t border-slate-800 pt-3 space-y-2">
-                <p className="text-slate-400 text-xs font-medium">Visit History</p>
+                <p className="text-slate-400 text-xs font-medium">Full History</p>
                 {remarks.map(r => (
                   <div key={r.id} className="text-xs">
-                    <p className="text-slate-600">{new Date(r.created_at).toLocaleString()} • {r.call_type}</p>
+                    <p className="text-slate-600">{new Date(r.created_at).toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''} • {r.call_type}</p>
                     <p className="text-slate-300">{r.remark}</p>
                     <div className="flex gap-3 mt-0.5">
                       {r.address && <span className="text-slate-500">📍 {r.address}</span>}

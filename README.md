@@ -268,3 +268,19 @@ Useful when someone's on leave, changes role, or you're rebalancing workload acr
 - **Reassign Leads** — move existing leads from one person to another, individually or in bulk
 - **Single-lead reassignment** — open any lead → change assignee directly
 - **Handoff Approvals** — telecaller-initiated requests to hand a lead to an executive, requiring manager/admin sign-off
+
+## Complete lead audit trail — real gaps fixed
+Direct code check found: reassignments and stage changes happened silently (no log entry at all), and even the calls/visits that *were* logged never showed **who** did them — no name, no staff ID — in most views. A telecaller opening a re-assigned lead saw zero prior history at all.
+
+**Fixed, database level:**
+- Every reassignment (`X → Y`) and every stage change (`new → contacted`) is now **automatically logged** into the same timeline as manual call/visit notes — no more silent changes.
+- Every entry permanently snapshots the author's **name and staff code** at write time (`author_name`, `author_staff_code` on `lead_remarks`) — so history stays accurate even if someone is later renamed or deactivated. Existing historical entries were backfilled.
+
+**Fixed, frontend — every place a lead's history shows now displays name + staff ID + exact timestamp:**
+- **Leads Board** (manager/HR/admin) — full history with system-generated entries visually distinguished from manual notes
+- **Executive Field Visits** — same treatment
+- **Telecaller Queue** — this was the biggest gap: **there was no history view here at all.** A telecaller opening a lead reassigned to her had zero visibility into what happened before. Now shows the complete previous timeline right in the call modal, labeled "read before calling."
+
+This is exactly the "carries forward on reassignment" behavior — the full history was technically always attached to the lead (never lost), it just wasn't visible or complete. Now it's both.
+
+One migration: `20260717000002_lead_audit_trail.sql`.
