@@ -728,13 +728,47 @@ function ApprovalsSection() {
 function SegmentsManager({ onChanged }: { onChanged: () => void }) {
   const [rows, setRows] = useState<Segment[]>([]);
   const [editing, setEditing] = useState<Partial<Segment> | null>(null);
+  const [usage, setUsage] = useState<Record<string, { staff: number; leads: number; tickets: number }>>({});
   const toast = useToast();
 
   async function load() {
     const { data } = await supabase.from('segments').select('*').order('order_index');
     if (data) setRows(data as Segment[]);
+
+    // Live dependency counts — retiring a segment must never silently strand data.
+    const [{ data: staff }, { data: leads }, { data: tickets }] = await Promise.all([
+      supabase.from('app_users').select('segments').eq('is_active', true).neq('role', 'super_admin'),
+      supabase.from('marketing_leads').select('segment_slug').not('stage', 'in', '(won,lost)'),
+      supabase.from('support_tickets').select('segment_slug').in('status', ['open', 'in_progress', 'waiting_customer']),
+    ]);
+    const u: Record<string, { staff: number; leads: number; tickets: number }> = {};
+    (data || []).forEach((s: any) => { u[s.slug] = { staff: 0, leads: 0, tickets: 0 }; });
+    (staff || []).forEach((s: any) => (s.segments || []).forEach((slug: string) => { if (u[slug]) u[slug].staff++; }));
+    (leads || []).forEach((l: any) => { if (u[l.segment_slug]) u[l.segment_slug].leads++; });
+    (tickets || []).forEach((t: any) => { if (u[t.segment_slug]) u[t.segment_slug].tickets++; });
+    setUsage(u);
   }
   useEffect(() => { load(); }, []);
+
+  async function toggleActive(seg: Segment) {
+    const retiring = seg.active;
+    const use = usage[seg.slug] || { staff: 0, leads: 0, tickets: 0 };
+    if (retiring) {
+      const attached = [
+        use.staff ? `${use.staff} staff member(s)` : null,
+        use.leads ? `${use.leads} open lead(s)` : null,
+        use.tickets ? `${use.tickets} open ticket(s)` : null,
+      ].filter(Boolean);
+      const warning = attached.length
+        ? `"${seg.name}" still has ${attached.join(', ')}.\n\nRetiring removes it from the public website immediately. Existing data is NOT deleted and stays manageable in staff portals so you can wind it down.\n\nContinue?`
+        : `Retire "${seg.name}"? It will disappear from the public website. Nothing is deleted and you can reactivate it any time.`;
+      if (!confirm(warning)) return;
+    }
+    const { error } = await supabase.from('segments').update({ active: !seg.active }).eq('id', seg.id);
+    if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
+    toast.success(retiring ? `${seg.name} retired — hidden from the website` : `${seg.name} reactivated`);
+    load(); onChanged();
+  }
 
   async function save() {
     if (!editing?.name || !editing?.slug || !editing?.ticket_prefix) { toast.error('Name, slug and ticket prefix are required'); return; }
@@ -758,17 +792,25 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
       </div>
       <div className="space-y-2">
         {rows.map(s => (
-          <div key={s.id} className={cardCls + ' flex items-center justify-between'}>
+          <div key={s.id} className={cardCls + ' flex items-center justify-between' + (s.active ? '' : ' opacity-60')}>
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
               <div>
                 <p className="text-white font-medium">{s.name} <span className="text-slate-500 text-xs">({s.slug} • NKT-{s.ticket_prefix}-)</span></p>
                 <p className="text-slate-500 text-xs">{s.tagline}</p>
+                {usage[s.slug] && (usage[s.slug].staff > 0 || usage[s.slug].leads > 0 || usage[s.slug].tickets > 0) && (
+                  <p className="text-slate-600 text-xs mt-0.5">
+                    {usage[s.slug].staff} staff · {usage[s.slug].leads} open leads · {usage[s.slug].tickets} open tickets
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className={`text-xs ${s.active ? 'text-emerald-300' : 'text-red-300'}`}>{s.active ? 'active' : 'hidden'}</span>
+              <span className={`text-xs ${s.active ? 'text-emerald-300' : 'text-amber-300'}`}>{s.active ? 'live' : 'retired'}</span>
               <button className="text-sky-400 text-sm" onClick={() => setEditing(s)}>Edit</button>
+              <button className={s.active ? 'text-amber-400 text-sm' : 'text-emerald-400 text-sm'} onClick={() => toggleActive(s)}>
+                {s.active ? 'Retire' : 'Reactivate'}
+              </button>
             </div>
           </div>
         ))}
@@ -1389,7 +1431,7 @@ type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'prod
 
 export default function SuperAdminDashboard() {
   const { user, signOut, hasPermission } = useAuth();
-  const { segments } = useSegments();
+  const { segments } = useSegments(true);
   const [tab, setTab] = useState<Tab>('overview');
   const [onboardSignal, setOnboardSignal] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);

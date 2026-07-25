@@ -336,7 +336,7 @@ export function MyProfile() {
 // ─────────────────────────── Portal shell
 export default function StaffPortal() {
   const { user, signOut, hasPermission } = useAuth();
-  const { segments } = useSegments();
+  const { segments } = useSegments(true);
 
   const tabs = [
     { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },

@@ -28,9 +28,10 @@ export function SegmentTabs({
       )}
       {visible.map(s => (
         <button key={s.slug} onClick={() => onChange(s.slug)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${value === s.slug ? 'text-slate-950 border-transparent' : 'border-slate-700 text-slate-300 hover:border-sky-600'}`}
-          style={value === s.slug ? { backgroundColor: s.color } : {}}>
-          {s.name}
+          className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${value === s.slug ? 'text-slate-950 border-transparent' : 'border-slate-700 text-slate-300 hover:border-sky-600'} ${s.active === false ? 'opacity-70' : ''}`}
+          style={value === s.slug ? { backgroundColor: s.color } : {}}
+          title={s.active === false ? 'Retired — hidden from the website, existing work still manageable' : undefined}>
+          {s.name}{s.active === false && <span className="ml-1.5 text-xs opacity-80">(retired)</span>}
         </button>
       ))}
     </div>

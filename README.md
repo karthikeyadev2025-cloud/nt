@@ -394,3 +394,36 @@ assigned follow-ups will be visible". Both are defensible; it's a business call,
 so it's left as-is and flagged rather than changed unilaterally.
 
 One migration: `20260726000003_offer_letter_salary_privacy.sql`.
+
+## Segment removal — tested against a real database, gap found and fixed
+Verified by executing the actual removal path with live CCTV data attached
+(3 staff, 2 leads, 1 open ticket, 3 services, 5 ticket types).
+
+**What DELETE does:** fails with a raw Postgres foreign-key error, because
+`support_tickets` and `marketing_leads` reference the segment with NO ACTION.
+This is correct — a hard delete would destroy customer history — but a super
+admin would have seen an unhelpful database error. There is deliberately no
+delete button; retiring is the supported path.
+
+**Real gap found:** retiring CCTV correctly removed it from the public site
+(verified: only Digital Media + Software returned to anonymous visitors), but
+`useSegments()` filtered `active = true` **everywhere, including staff and admin
+views**. The 3 CCTV staff, 2 leads and 1 ticket remained readable by RLS but had
+**no tab to display them in** — data stranded mid-wind-down.
+
+**Fixed:**
+- `useSegments(includeRetired)` — public site stays active-only, staff portal
+  and admin console now include retired segments so existing work stays
+  manageable while it's wound down.
+- Retired segments are labelled "(retired)" in staff segment tabs.
+- Segments manager now shows **live dependency counts** per segment (staff /
+  open leads / open tickets) and a Retire/Reactivate button that warns exactly
+  what is still attached before you retire, e.g. *"CCTV Installation still has
+  3 staff members, 2 open leads, 1 open ticket"*, and confirms nothing is deleted.
+
+No migration needed — frontend only.
+
+### To retire CCTV
+Super Admin → **Segments** → CCTV Installation → **Retire**. It disappears from
+nikkitechnologies.com immediately; Digital Media and Software remain. Staff, leads,
+tickets and history are all kept and stay manageable. Reactivate any time.
