@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Lock, Mail, AlertCircle, Zap, Users, Phone, Briefcase, HeartHandshake, MapPin, Clock, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Zap, Users, Phone, Briefcase, HeartHandshake, Clock, CheckCircle2 } from 'lucide-react';
 
 export default function UnifiedLogin() {
   const [email, setEmail] = useState('');
@@ -39,30 +39,10 @@ export default function UnifiedLogin() {
   }
 
   const [now, setNow] = useState(new Date());
-  const [location, setLocation] = useState('Detecting location...');
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      async pos => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-          const data = await res.json();
-          const addr = data.address;
-          const parts = [addr?.suburb || addr?.neighbourhood, addr?.city || addr?.town || addr?.village, addr?.state].filter(Boolean);
-          setLocation(parts.slice(0, 2).join(', ') || data.display_name?.split(',').slice(0, 2).join(',') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-        } catch {
-          setLocation(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-        }
-      },
-      () => setLocation('Location unavailable'),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -100,10 +80,9 @@ export default function UnifiedLogin() {
         </div>
 
         <div className="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/60 px-5 py-3 mb-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-slate-400 min-w-0">
-            <MapPin className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-            <span className="text-xs truncate">{location}</span>
-          </div>
+          <span className="text-xs text-slate-400 truncate">
+            {now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
           <div className="flex items-center gap-1.5 text-slate-300 shrink-0">
             <Clock className="w-3.5 h-3.5 text-sky-400" />
             <span className="text-xs font-mono font-semibold tabular-nums">

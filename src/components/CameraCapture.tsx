@@ -6,9 +6,12 @@ interface CameraCaptureProps {
   title: string;
   onCapture: (dataUrl: string) => void;
   onCancel: () => void;
+  // Optional: proceed WITHOUT a photo (e.g. record attendance photo-less).
+  // When absent, only capture or a full cancel are offered.
+  onSkip?: () => void;
 }
 
-export default function CameraCapture({ title, onCapture, onCancel }: CameraCaptureProps) {
+export default function CameraCapture({ title, onCapture, onCancel, onSkip }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -64,7 +67,9 @@ export default function CameraCapture({ title, onCapture, onCancel }: CameraCapt
         {error ? (
           <div className="text-center py-8">
             <p className="text-red-400 text-sm mb-4">{error}</p>
-            <button className="text-slate-400 text-sm underline" onClick={onCancel}>Continue without photo</button>
+            {onSkip
+              ? <button className="text-slate-400 text-sm underline" onClick={onSkip}>Continue without photo</button>
+              : <button className="text-slate-400 text-sm underline" onClick={onCancel}>Close</button>}
           </div>
         ) : (
           <>
@@ -86,9 +91,16 @@ export default function CameraCapture({ title, onCapture, onCancel }: CameraCapt
                 </button>
               </div>
             ) : (
-              <button onClick={takePhoto} className={btnCls + ' w-full flex items-center justify-center gap-1.5'}>
-                <Camera className="w-4 h-4" /> Take Photo
-              </button>
+              <div className="space-y-2">
+                <button onClick={takePhoto} className={btnCls + ' w-full flex items-center justify-center gap-1.5'}>
+                  <Camera className="w-4 h-4" /> Take Photo
+                </button>
+                {onSkip && (
+                  <button onClick={onSkip} className="w-full py-2 text-slate-400 hover:text-slate-200 text-xs">
+                    Skip photo &amp; continue
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}

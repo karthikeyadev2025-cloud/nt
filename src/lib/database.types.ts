@@ -1,15 +1,5 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-// Loose typing: tables are validated by RLS + runtime; regenerate strict types
-// via `supabase gen types typescript` once the project is live.
-export interface Database {
-  public: {
-    Tables: { [table: string]: { Row: any; Insert: any; Update: any } };
-    Views: { [view: string]: { Row: any } };
-    Functions: { [fn: string]: { Args: any; Returns: any } };
-  };
-}
-
 export type SegmentSlug = string;
 
 export interface Segment {

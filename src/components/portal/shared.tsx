@@ -3,6 +3,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import type { Segment, SupportTicket, Lead } from '../../lib/database.types';
+import { istDateStr } from '../../lib/dates';
+import { normalizePhone } from '../../lib/phone';
 
 export const inputCls =
   'w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
@@ -43,7 +45,7 @@ const ticketStatusColors: Record<string, string> = {
   closed: 'bg-slate-500/20 text-slate-400',
 };
 
-export function TicketsBoard({ segments }: { segments: Segment[] }) {
+export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focusId?: string }) {
   const [segFilter, setSegFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -64,6 +66,16 @@ export function TicketsBoard({ segments }: { segments: Segment[] }) {
   }
 
   useEffect(() => { load(); }, [segFilter, statusFilter]);
+  useEffect(() => {
+    if (!focusId) return;
+    const t = tickets.find(x => x.id === focusId);
+    if (t) { setOpenTicket(t); loadReplies(t.id); }
+    else {
+      // Ticket may be outside the current filter — fetch it directly.
+      supabase.from('support_tickets').select('*').eq('id', focusId).maybeSingle()
+        .then(({ data }) => { if (data) { setOpenTicket(data as SupportTicket); loadReplies(data.id); } });
+    }
+  }, [focusId, tickets]);
   useEffect(() => {
     supabase.from('app_users').select('id, full_name, segments').eq('is_active', true).neq('role', 'super_admin')
       .then(({ data }) => { if (data) setStaff(data as any); });
@@ -187,7 +199,7 @@ const stageColors: Record<string, string> = {
   not_answered: 'bg-slate-500/20 text-slate-400',
 };
 
-export function LeadsBoard({ segments }: { segments: Segment[] }) {
+export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; focusLeadId?: string }) {
   const [segFilter, setSegFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -209,6 +221,15 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
     if (data) setLeads(data as Lead[]);
   }
   useEffect(() => { load(); }, [segFilter, stageFilter]);
+  useEffect(() => {
+    if (!focusLeadId) return;
+    const l = leads.find(x => x.id === focusLeadId);
+    if (l) { setOpenLead(l); loadRemarks(l.id); }
+    else {
+      supabase.from('marketing_leads').select('*').eq('id', focusLeadId).maybeSingle()
+        .then(({ data }) => { if (data) { setOpenLead(data as Lead); loadRemarks(data.id); } });
+    }
+  }, [focusLeadId, leads]);
   useEffect(() => {
     supabase.from('app_users').select('id, full_name, segments').eq('is_active', true).neq('role', 'super_admin')
       .then(({ data }) => { if (data) setStaff(data as any); });
@@ -245,13 +266,16 @@ export function LeadsBoard({ segments }: { segments: Segment[] }) {
 
   async function createLead() {
     if (!form.segment_slug || !form.customer_name || !form.phone || !user) { toast.error('Segment, name and phone are required'); return; }
+    const phone = normalizePhone(form.phone);
 
     if (!dupWarning) {
-      const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: form.phone, _segment_slug: form.segment_slug });
+      const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: phone, _segment_slug: form.segment_slug });
       if (dupes && dupes.length > 0) { setDupWarning(dupes); return; }
+      const { data: exists } = await supabase.rpc('lead_phone_exists', { _phone: phone, _segment_slug: form.segment_slug });
+      if (exists) { setDupWarning([{ id: 'exists', customer_name: 'An active lead with this number already exists', stage: '', assignee_name: '' }]); return; }
     }
 
-    const { error } = await supabase.from('marketing_leads').insert({ ...form, created_by: user.id });
+    const { error } = await supabase.from('marketing_leads').insert({ ...form, phone, created_by: user.id });
     if (error) { toast.error(`Couldn't create lead: ${error.message}`); return; }
     toast.success('Lead created');
     setShowAdd(false);
@@ -399,7 +423,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const [attendance, setAttendance] = useState<any[]>([]);
   const [leaves, setLeaves] = useState<any[]>([]);
   const [advances, setAdvances] = useState<any[]>([]);
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(istDateStr());
   const { user, hasPermission } = useAuth();
   const toast = useToast();
 
@@ -425,10 +449,36 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const staffById = useMemo(() => Object.fromEntries(staff.map(s => [s.id, s])), [staff]);
   const inSeg = (s: any) => !segFilter || (s?.segments || []).includes(segFilter) || (s?.segments || []).includes('all');
 
-  async function review(table: string, id: string, status: string, setter: (fn: any) => void) {
-    const { error } = await supabase.from(table).update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
-    if (error) { toast.error(`Couldn't update request: ${error.message}`); return; }
-    toast.success(`Request ${status}`);
+  const [leaveBalances, setLeaveBalances] = useState<Record<string, any[]>>({});
+
+  // Pull balances for everyone with a pending leave request, so the approver
+  // can see what's left before deciding.
+  useEffect(() => {
+    const ids = Array.from(new Set(leaves.filter(l => l.status === 'pending').map(l => l.staff_user_id)));
+    ids.forEach(async id => {
+      if (leaveBalances[id]) return;
+      const { data } = await supabase.rpc('get_leave_balances', { _staff_user_id: id });
+      if (data) setLeaveBalances(prev => ({ ...prev, [id]: data }));
+    });
+  }, [leaves]);
+
+  async function review(table: string, id: string, status: string, setter: (fn: any) => void, override = false) {
+    const patch: any = { status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() };
+    if (override) patch.override_balance = true;
+    const { error } = await supabase.from(table).update(patch).eq('id', id);
+    if (error) {
+      // The balance guard raises a descriptive exception — offer the override
+      // rather than leaving the approver stuck.
+      if (table === 'leave_requests' && /entitlement/i.test(error.message)) {
+        if (confirm(`${error.message}\n\nApprove anyway (override the balance)?`)) {
+          return review(table, id, status, setter, true);
+        }
+        return;
+      }
+      toast.error(`Couldn't update request: ${error.message}`);
+      return;
+    }
+    toast.success(`Request ${status}${override ? ' (balance overridden)' : ''}`);
     setter((prev: any[]) => prev.map(r => r.id === id ? { ...r, status } : r));
   }
 
@@ -478,8 +528,11 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                         Out: {rec.check_out_at ? new Date(rec.check_out_at).toLocaleTimeString() : '—'}
                         <span className="ml-2 text-emerald-300">{rec.status}</span>
                       </p>
-                      {(rec.check_in_selfie_url || rec.check_out_selfie_url) && (
-                        <button className="text-sky-400 text-xs" onClick={() => viewSelfie(rec.check_in_selfie_url || rec.check_out_selfie_url)}>Photo</button>
+                      {rec.check_in_selfie_url && (
+                        <button className="text-sky-400 text-xs" onClick={() => viewSelfie(rec.check_in_selfie_url)}>In 📷</button>
+                      )}
+                      {rec.check_out_selfie_url && (
+                        <button className="text-sky-400 text-xs" onClick={() => viewSelfie(rec.check_out_selfie_url)}>Out 📷</button>
                       )}
                     </div>
                   ) : <span className="text-xs text-red-300">absent / no record</span>}
@@ -498,6 +551,17 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                 <div>
                   <p className="text-white text-sm font-medium">{staffById[l.staff_user_id]?.full_name || '—'} • {l.leave_type}</p>
                   <p className="text-slate-500 text-xs">{l.from_date} → {l.to_date} • {l.reason}</p>
+                  {l.status === 'pending' && (() => {
+                    const b = (leaveBalances[l.staff_user_id] || []).find((x: any) => x.leave_type === l.leave_type);
+                    if (!b) return null;
+                    if (b.is_unlimited) return <p className="text-slate-500 text-xs mt-0.5">unpaid leave — no balance limit</p>;
+                    const rem = Number(b.remaining);
+                    return (
+                      <p className={`text-xs mt-0.5 ${rem <= 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                        Balance: {rem} of {Number(b.entitled)} {l.leave_type} days left ({Number(b.used)} used)
+                      </p>
+                    );
+                  })()}
                 </div>
                 {l.status === 'pending' && hasPermission('approve_leaves') ? (
                   <div className="flex gap-2">

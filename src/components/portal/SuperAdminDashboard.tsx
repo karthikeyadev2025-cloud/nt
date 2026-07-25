@@ -17,6 +17,7 @@ import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll
 import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
 import { SecurityLogsViewer, TodayAtAGlance, SetupChecklist, QuickSearch, ExportStaffButton } from './admin-extras';
 import { useToast } from '../../lib/toast';
+import { istDateStr } from '../../lib/dates';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads', 'full_leads_view', 'bulk_assign_leads', 'approve_transfers',
@@ -36,25 +37,22 @@ function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: (
 
   useEffect(() => {
     (async () => {
-      const [{ data: tickets }, { data: leads }, { data: staff }] = await Promise.all([
-        supabase.from('support_tickets').select('segment_slug,status'),
-        supabase.from('marketing_leads').select('segment_slug,stage'),
-        supabase.from('app_users').select('segments,is_active').neq('role', 'super_admin'),
-      ]);
+      // Head-count queries instead of shipping entire tables — tickets and
+      // leads grow unbounded, so counting server-side keeps Overview fast.
+      // Staff stays a single small fetch (needed for segments-array logic).
+      const perSeg = await Promise.all(segments.map(async seg => {
+        const [tickets, openTickets, leads, won] = await Promise.all([
+          supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug),
+          supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug).in('status', ['open', 'in_progress']),
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug),
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug).eq('stage', 'won'),
+        ]);
+        return { slug: seg.slug, tickets: tickets.count || 0, openTickets: openTickets.count || 0, leads: leads.count || 0, won: won.count || 0 };
+      }));
+      const { data: staff } = await supabase.from('app_users').select('segments,is_active').neq('role', 'super_admin');
       const s: Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }> = {};
       segments.forEach(seg => { s[seg.slug] = { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 }; });
-      (tickets || []).forEach((t: any) => {
-        if (s[t.segment_slug]) {
-          s[t.segment_slug].tickets++;
-          if (t.status === 'open' || t.status === 'in_progress') s[t.segment_slug].openTickets++;
-        }
-      });
-      (leads || []).forEach((l: any) => {
-        if (s[l.segment_slug]) {
-          s[l.segment_slug].leads++;
-          if (l.stage === 'won') s[l.segment_slug].won++;
-        }
-      });
+      perSeg.forEach(p => { s[p.slug] = { ...s[p.slug], tickets: p.tickets, openTickets: p.openTickets, leads: p.leads, won: p.won } });
       (staff || []).forEach((u: any) => {
         if (!u.is_active) return;
         (u.segments || []).forEach((slug: string) => { if (s[slug]) s[slug].staff++; });
@@ -109,10 +107,11 @@ function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: (
 const emptyOnboard = {
   full_name: '', email: '', password: '', phone: '', designation: '',
   role: 'employee', segments: [] as string[], employment_type: 'full_time',
-  joining_date: new Date().toISOString().slice(0, 10),
+  joining_date: istDateStr(),
   date_of_birth: '',
   reporting_time: '9:30 AM – 6:30 PM, Monday to Saturday',
   blood_group: '', id_proof_number: '',
+  shift_id: '',
   salary_structure: { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 },
   doc_types: ['welcome_letter', 'offer_letter', 'roles_responsibilities'] as string[],
 };
@@ -121,6 +120,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<any>(emptyOnboard);
   const [templates, setTemplates] = useState<any[]>([]);
+  const [shifts, setShifts] = useState<any[]>([]);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
@@ -128,6 +128,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 
   useEffect(() => {
     supabase.from('document_templates').select('*').eq('active', true).then(({ data }) => { if (data) setTemplates(data); });
+    supabase.from('shifts').select('*').eq('is_active', true).order('created_at').then(({ data }) => { if (data) setShifts(data); });
   }, []);
 
   const toggleSeg = (slug: string) => {
@@ -176,6 +177,12 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
     }).eq('id', userId);
     if (updateError) toast.error(`Account created, but salary/details save failed: ${updateError.message}`);
 
+    // Assign the selected work shift so late tracking works from day one.
+    if (form.shift_id) {
+      const { error: shiftError } = await supabase.from('staff_shifts').insert({ staff_user_id: userId, shift_id: form.shift_id });
+      if (shiftError) toast.error(`Account created, but shift assignment failed: ${shiftError.message}`);
+    }
+
     const vars = buildOnboardingVars({
       full_name: form.full_name, designation: form.designation, role: form.role,
       segmentName: primarySegment?.name || 'Nikki Technologies',
@@ -201,6 +208,23 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 
   const steps = ['Basic Info', 'Role & Segment', 'Salary', 'Documents', 'Review'];
 
+  function validateStep(i: number): string | null {
+    if (i === 0) {
+      if (!form.full_name.trim()) return 'Full name is required';
+      if (!form.email.trim() || !form.email.includes('@')) return 'A valid email is required';
+      if ((form.password || '').length < 6) return 'Temporary password must be at least 6 characters';
+    }
+    if (i === 1 && form.segments.length === 0) return 'Select at least one segment';
+    return null;
+  }
+
+  function next() {
+    const problem = validateStep(step);
+    if (problem) { setMsg(problem); return; }
+    setMsg('');
+    setStep(step + 1);
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
@@ -222,7 +246,18 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
           <div className="space-y-3">
             <input className={inputCls} placeholder="Full Name *" value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
             <input className={inputCls} placeholder="Email *" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-            <input className={inputCls} placeholder="Temporary Password *" type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+            <div className="flex gap-2">
+              <input className={inputCls} placeholder="Temporary Password *" type="text" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+              <button type="button" className="px-3 py-2 rounded-lg border border-slate-700 text-slate-300 text-xs whitespace-nowrap"
+                onClick={() => {
+                  const gen = Array.from(crypto.getRandomValues(new Uint8Array(9)))
+                    .map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'[b % 55]).join('');
+                  setForm({ ...form, password: gen });
+                }}>Generate</button>
+              <button type="button" className="px-3 py-2 rounded-lg border border-slate-700 text-slate-300 text-xs whitespace-nowrap disabled:opacity-40"
+                disabled={!form.password}
+                onClick={() => { navigator.clipboard?.writeText(form.password); toast.success('Password copied'); }}>Copy</button>
+            </div>
             <input className={inputCls} placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
             <input className={inputCls} placeholder="Designation (e.g. Field Technician)" value={form.designation} onChange={e => setForm({ ...form, designation: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
@@ -266,6 +301,24 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
                 <p className="text-slate-300 text-sm font-medium mb-2">Date of Birth <span className="text-slate-500 font-normal">(optional)</span></p>
                 <input type="date" className={inputCls} value={form.date_of_birth} onChange={e => setForm({ ...form, date_of_birth: e.target.value })} />
               </div>
+            </div>
+            <div>
+              <p className="text-slate-300 text-sm font-medium mb-2">Work Shift <span className="text-slate-500 font-normal">(drives late tracking & punctuality)</span></p>
+              {shifts.length === 0 ? (
+                <p className="text-amber-400 text-xs">No shifts defined yet — late tracking won't work for this employee. Create one under HR / Payroll → Shifts, or continue without.</p>
+              ) : (
+                <select className={inputCls} value={form.shift_id} onChange={e => {
+                  const sh = shifts.find(s => s.id === e.target.value);
+                  setForm({
+                    ...form, shift_id: e.target.value,
+                    // Keep the human-readable letter text in sync with the real shift.
+                    reporting_time: sh ? `${sh.start_time.slice(0, 5)} – ${sh.end_time.slice(0, 5)}` : form.reporting_time,
+                  });
+                }}>
+                  <option value="">No shift (no late tracking)</option>
+                  {shifts.map(s => <option key={s.id} value={s.id}>{s.name} ({s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)}, grace {s.grace_minutes}min)</option>)}
+                </select>
+              )}
             </div>
             <div>
               <p className="text-slate-300 text-sm font-medium mb-2">Reporting Time / Shift <span className="text-slate-500 font-normal">(shown on offer & welcome letters)</span></p>
@@ -323,12 +376,14 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
           </div>
         )}
 
+        {msg && step < 4 && <p className="text-red-400 text-xs mt-4">{msg}</p>}
+
         <div className="flex justify-between mt-6">
           <button className="flex items-center gap-1 text-slate-400 text-sm disabled:opacity-30" disabled={step === 0} onClick={() => setStep(step - 1)}>
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
           {step < 4 ? (
-            <button className={btnCls + ' flex items-center gap-1'} onClick={() => setStep(step + 1)}>Next <ChevronRight className="w-4 h-4" /></button>
+            <button className={btnCls + ' flex items-center gap-1'} onClick={next}>Next <ChevronRight className="w-4 h-4" /></button>
           ) : (
             <button className={btnCls + ' flex items-center gap-1.5'} disabled={busy} onClick={submit}>
               <CheckCircle2 className="w-4 h-4" /> {busy ? 'Creating…' : 'Complete Onboarding'}
@@ -342,7 +397,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 }
 
 // ─────────────────────────────────────── Access Control (users × segments × permissions)
-function AccessControl({ segments, openSignal }: { segments: Segment[]; openSignal?: number }) {
+function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segment[]; openSignal?: number; focusStaffId?: string }) {
   const [users, setUsers] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [snapshot, setSnapshot] = useState<{ designation: string; ctc: number } | null>(null);
@@ -372,6 +427,17 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
     if (data) setUsers(data);
   }
   useEffect(() => { load(); }, []);
+
+  // Open the Manage Access editor for a staff member arriving from global search.
+  useEffect(() => {
+    if (!focusStaffId || users.length === 0) return;
+    const u = users.find(x => x.id === focusStaffId);
+    if (u && u.role !== 'super_admin') {
+      setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } });
+      setSnapshot({ designation: u.designation || '', ctc: u.salary_structure?.ctc || 0 });
+      setResetPasswordValue('');
+    }
+  }, [focusStaffId, users]);
 
   async function saveUser() {
     if (!editing) return;
@@ -525,20 +591,71 @@ function AccessControl({ segments, openSignal }: { segments: Segment[]; openSign
 }
 
 // ─────────────────────────────────────── HR composite (attendance/leaves + shifts + payslips + summary)
+// ─────────────────────────── Leave entitlement policy (HR)
+function LeavePolicyManager() {
+  const toast = useToast();
+  const [rows, setRows] = useState<any[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const { data } = await supabase.from('leave_policies').select('*').is('role_name', null).order('leave_type');
+    if (data) setRows(data);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function save(id: string, annual_days: number) {
+    setBusy(true);
+    const { error } = await supabase.from('leave_policies').update({ annual_days }).eq('id', id);
+    setBusy(false);
+    if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
+    toast.success('Entitlement updated');
+  }
+
+  return (
+    <div className={cardCls}>
+      <h3 className="text-white font-semibold mb-1 text-sm">Annual Leave Entitlements</h3>
+      <p className="text-slate-500 text-xs mb-4">Days granted per employee per calendar year. Balances are calculated from approved requests, counting working days only.</p>
+      <div className="space-y-2">
+        {rows.map(r => (
+          <div key={r.id} className="flex items-center justify-between gap-3">
+            <span className="text-slate-300 text-sm capitalize">{r.leave_type}</span>
+            {r.is_unlimited ? (
+              <span className="text-slate-500 text-xs">unlimited (unpaid)</span>
+            ) : (
+              <input type="number" min={0} className={inputCls + ' w-24 text-right'} defaultValue={r.annual_days}
+                disabled={busy} onBlur={e => { const v = Number(e.target.value); if (v !== Number(r.annual_days)) save(r.id, v); }} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HRSection({ segments }: { segments: Segment[] }) {
-  const [sub, setSub] = useState<'core' | 'shifts' | 'payslips' | 'summary'>('core');
+  const { user, hasPermission } = useAuth();
+  const isSA = user?.role === 'super_admin';
+  // Shifts & payslips require payroll/staff management; a manager with only
+  // view_attendance would otherwise see tabs whose saves are RLS-rejected.
+  const canPayroll = isSA || hasPermission('manage_payroll');
+  const canShifts = isSA || hasPermission('manage_staff') || hasPermission('manage_payroll');
+  const canSummary = isSA || hasPermission('view_attendance') || hasPermission('view_reports');
+  const [sub, setSub] = useState<'core' | 'shifts' | 'payslips' | 'summary' | 'policy'>('core');
+  const canPolicy = isSA || hasPermission('manage_staff');
   return (
     <div>
       <div className="flex gap-2 mb-5 flex-wrap">
         <button onClick={() => setSub('core')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'core' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Staff & Leaves</button>
-        <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Shifts</button>
-        <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Payslips</button>
-        <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Attendance Summary</button>
+        {canShifts && <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Shifts</button>}
+        {canPayroll && <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Payslips</button>}
+        {canSummary && <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Attendance Summary</button>}
+        {canPolicy && <button onClick={() => setSub('policy')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'policy' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Leave Policy</button>}
       </div>
       {sub === 'core' && <HRBoard segments={segments} />}
-      {sub === 'shifts' && <ShiftsManager segments={segments} />}
-      {sub === 'payslips' && <PayslipManager />}
-      {sub === 'summary' && <AttendanceSummaryTable segments={segments} />}
+      {sub === 'shifts' && canShifts && <ShiftsManager segments={segments} />}
+      {sub === 'payslips' && canPayroll && <PayslipManager />}
+      {sub === 'summary' && canSummary && <AttendanceSummaryTable segments={segments} />}
+      {sub === 'policy' && canPolicy && <LeavePolicyManager />}
     </div>
   );
 }
@@ -1227,6 +1344,12 @@ export default function SuperAdminDashboard() {
   const [tab, setTab] = useState<Tab>('overview');
   const [onboardSignal, setOnboardSignal] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [focus, setFocus] = useState<{ kind: 'staff' | 'lead' | 'ticket'; id: string } | null>(null);
+
+  function navigateWithFocus(t: string, f?: { kind: 'staff' | 'lead' | 'ticket'; id: string }) {
+    setTab(t as Tab);
+    setFocus(f || null);
+  }
 
   const isSuperAdmin = user?.role === 'super_admin';
 
@@ -1259,6 +1382,12 @@ export default function SuperAdminDashboard() {
     { id: 'security', label: 'Security Logs', icon: Shield, show: isSuperAdmin },
   ];
   const tabs = [...selfServiceTabs, ...adminTabDefs.filter(t => t.show)];
+  const visibleAdminTabs = adminTabDefs.filter(t => t.show);
+  const isSelfTab = selfServiceTabs.some(t => t.id === tab);
+  // Mobile nav group follows the active tab; the switcher just changes which chips show.
+  const [mobileGroup, setMobileGroup] = useState<'me' | 'admin'>('admin');
+  useEffect(() => { setMobileGroup(isSelfTab ? 'me' : 'admin'); }, [tab]);
+  const mobileTabs = mobileGroup === 'me' ? selfServiceTabs : visibleAdminTabs;
 
   return (
     <div className="min-h-screen bg-slate-950 flex" key={refreshKey}>
@@ -1270,13 +1399,25 @@ export default function SuperAdminDashboard() {
             <p className="text-slate-500 text-[10px]">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
           </div>
         </div>
-        <nav className="space-y-1 flex-1">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${tab === t.id ? 'bg-sky-500/15 text-sky-300' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
-              <t.icon className="w-4 h-4" /> {t.label}
-            </button>
-          ))}
+        <nav className="flex-1 overflow-y-auto">
+          <p className="px-3 pb-1 text-[10px] font-semibold tracking-wider text-slate-600">MY WORKSPACE</p>
+          <div className="space-y-1 mb-4">
+            {selfServiceTabs.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${tab === t.id ? 'bg-sky-500/15 text-sky-300' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
+                <t.icon className="w-4 h-4" /> {t.label}
+              </button>
+            ))}
+          </div>
+          <p className="px-3 pb-1 text-[10px] font-semibold tracking-wider text-slate-600 border-t border-slate-800/70 pt-3">ADMINISTRATION</p>
+          <div className="space-y-1">
+            {visibleAdminTabs.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${tab === t.id ? 'bg-sky-500/15 text-sky-300' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
+                <t.icon className="w-4 h-4" /> {t.label}
+              </button>
+            ))}
+          </div>
         </nav>
         <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-400 text-sm">
           <LogOut className="w-4 h-4" /> Sign Out
@@ -1284,19 +1425,27 @@ export default function SuperAdminDashboard() {
       </aside>
 
       <main className="flex-1 p-5 md:p-8 overflow-y-auto">
-        <div className="md:hidden flex gap-2 overflow-x-auto pb-3 mb-4 -mx-1 px-1">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs border ${tab === t.id ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>
-              {t.label}
-            </button>
-          ))}
+        <div className="md:hidden mb-4">
+          <div className="flex gap-1 bg-slate-900 rounded-lg p-1 mb-3 w-fit">
+            <button onClick={() => setMobileGroup('me')}
+              className={`px-4 py-1.5 rounded-md text-xs font-medium ${mobileGroup === 'me' ? 'bg-sky-500/20 text-sky-300' : 'text-slate-400'}`}>Me</button>
+            <button onClick={() => setMobileGroup('admin')}
+              className={`px-4 py-1.5 rounded-md text-xs font-medium ${mobileGroup === 'admin' ? 'bg-sky-500/20 text-sky-300' : 'text-slate-400'}`}>Admin</button>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {mobileTabs.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs border ${tab === t.id ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <h1 className="text-2xl font-bold text-white">{tabs.find(t => t.id === tab)?.label}</h1>
           <div className="flex items-center gap-3">
-            <QuickSearch onNavigate={(t) => setTab(t as Tab)} />
-            <NotificationBell />
+            <QuickSearch onNavigate={navigateWithFocus} />
+            <NotificationBell onNavigate={(t) => setTab(t as Tab)} />
             <span className="text-slate-500 text-sm hidden sm:block">{user?.full_name}</span>
             <button onClick={signOut} className="md:hidden text-slate-500"><LogOut className="w-5 h-5" /></button>
           </div>
@@ -1308,10 +1457,10 @@ export default function SuperAdminDashboard() {
         {tab === 'my_profile' && <MyProfile />}
         {tab === 'my_swap' && <ShiftSwapBoard />}
         {tab === 'overview' && <Overview segments={segments} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
-        {tab === 'tickets' && <TicketsBoard segments={segments} />}
-        {tab === 'crm' && <LeadsWorkspace segments={segments} />}
+        {tab === 'tickets' && <TicketsBoard segments={segments} focusId={focus?.kind === 'ticket' ? focus.id : undefined} />}
+        {tab === 'crm' && <LeadsWorkspace segments={segments} focusLeadId={focus?.kind === 'lead' ? focus.id : undefined} />}
         {tab === 'hr' && <HRSection segments={segments} />}
-        {tab === 'access' && <AccessControl segments={segments} openSignal={onboardSignal} />}
+        {tab === 'access' && <AccessControl segments={segments} openSignal={onboardSignal} focusStaffId={focus?.kind === 'staff' ? focus.id : undefined} />}
         {tab === 'segments' && <SegmentsManager onChanged={() => setRefreshKey(k => k + 1)} />}
         {tab === 'products' && <ProductsManager segments={segments} />}
         {tab === 'catalog' && <CatalogManager segments={segments} />}

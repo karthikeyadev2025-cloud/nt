@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { logLogin, logLogout } from '../lib/securityLogger';
+import { logLogin, logLoginFailed, logLogout } from '../lib/securityLogger';
 
 export type UserRole =
   | 'super_admin' | 'manager' | 'hr' | 'marketing_executive'
@@ -16,6 +16,7 @@ export interface AppUser {
   phone: string;
   designation: string;
   is_active: boolean;
+  must_change_password?: boolean;
   profile_photo_url?: string | null;
   salary_structure?: { basic?: number; hra?: number; allowances?: number; deductions?: number; ctc?: number };
   joining_date?: string | null;
@@ -84,10 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
+    if (error) { logLoginFailed(email); return { error: error.message }; }
     if (data.user) {
       const appUser = await fetchAppUser(data.user.id);
       if (!appUser || !appUser.is_active) {
+        logLoginFailed(email);
         await supabase.auth.signOut();
         return { error: 'Your account is disabled. Contact admin.' };
       }

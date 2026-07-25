@@ -28,18 +28,43 @@ Deno.serve(async (req: Request) => {
 
     const { data: callerRow } = await supabaseAdmin
       .from("app_users").select("role, is_active, permission_overrides").eq("id", caller.id).maybeSingle();
-    const authorized = callerRow?.is_active &&
-      (callerRow.role === "super_admin" || callerRow?.permission_overrides?.manage_staff === true ||
-       (callerRow.role === "hr"));
-    if (!authorized) return json({ error: "Not authorized" }, 403);
+
+    // Resolve manage_staff the same way the DB has_permission() does:
+    // per-user override wins, otherwise fall back to the role's defaults.
+    // This keeps the edge function in agreement with the UI (which shows the
+    // onboarding button based on the role-default grant too).
+    let hasManageStaff = false;
+    if (callerRow?.is_active) {
+      if (callerRow.role === "super_admin") {
+        hasManageStaff = true;
+      } else if (callerRow.permission_overrides && "manage_staff" in callerRow.permission_overrides) {
+        hasManageStaff = callerRow.permission_overrides.manage_staff === true;
+      } else {
+        const { data: rolePerms } = await supabaseAdmin
+          .from("role_permissions").select("permissions").eq("role_name", callerRow.role).maybeSingle();
+        hasManageStaff = rolePerms?.permissions?.manage_staff === true;
+      }
+    }
+    if (!hasManageStaff) return json({ error: "Not authorized" }, 403);
 
     const body = await req.json();
 
     // ── Password reset
     if (body.action === "reset_password" && body.user_id && body.new_password) {
       if (String(body.new_password).length < 6) return json({ error: "Password must be at least 6 characters." }, 400);
+
+      // Guard: only a super admin may reset another super admin's password —
+      // otherwise an HR / manage_staff holder could take over the root account.
+      const { data: targetRow } = await supabaseAdmin
+        .from("app_users").select("role").eq("id", body.user_id).maybeSingle();
+      if (targetRow?.role === "super_admin" && callerRow.role !== "super_admin") {
+        return json({ error: "Only a super admin can reset a super admin's password." }, 403);
+      }
+
       const { error } = await supabaseAdmin.auth.admin.updateUserById(body.user_id, { password: body.new_password });
       if (error) return json({ error: error.message }, 400);
+      // Admin knows this password — force the user to pick their own next login.
+      await supabaseAdmin.from("app_users").update({ must_change_password: true }).eq("id", body.user_id);
       return json({ success: true });
     }
 
@@ -64,6 +89,7 @@ Deno.serve(async (req: Request) => {
         phone: body.phone || "",
         designation: body.designation || "",
         is_active: true,
+        must_change_password: true,
         created_by: caller.id,
       });
       if (insertError) {

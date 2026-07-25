@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { useSegments } from '../../lib/useSegments';
+import { istDateStr } from '../../lib/dates';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
 import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard, MyPhotoRequest, MyPromotionHistory } from './features';
@@ -22,7 +23,7 @@ export function MyAttendance() {
   const [showCamera, setShowCamera] = useState<'in' | 'out' | null>(null);
   const [workMode, setWorkMode] = useState<'office' | 'wfh' | 'field_visit'>('office');
   const [pickingMode, setPickingMode] = useState(false);
-  const dateStr = new Date().toISOString().slice(0, 10);
+  const dateStr = istDateStr();
 
   async function load() {
     if (!user) return;
@@ -64,32 +65,17 @@ export function MyAttendance() {
       photoDataUrl ? uploadSelfie(photoDataUrl) : Promise.resolve(null),
     ]);
 
-    // Late detection against the staff's currently assigned shift (if any)
-    let is_late = false, minutes_late = 0, shift_id: string | null = null;
-    const { data: assignment } = await supabase.from('staff_shifts').select('shift_id, shifts(start_time, grace_minutes)')
-      .eq('staff_user_id', user.id).is('effective_to', null).maybeSingle();
-    if (assignment?.shifts) {
-      shift_id = assignment.shift_id;
-      const shift = assignment.shifts as any;
-      const [h, m] = shift.start_time.split(':').map(Number);
-      const shiftStart = new Date(); shiftStart.setHours(h, m, 0, 0);
-      const graceMs = (shift.grace_minutes || 0) * 60000;
-      const now = new Date();
-      if (now.getTime() > shiftStart.getTime() + graceMs) {
-        is_late = true;
-        minutes_late = Math.round((now.getTime() - shiftStart.getTime()) / 60000);
-      }
-    }
-
-    const { error } = await supabase.from('attendance_records').insert({
+    // Late detection is computed server-side by a BEFORE INSERT trigger against
+    // the assigned shift, so a tampered device clock can't defeat it. We just
+    // record the check-in and read back the authoritative is_late result.
+    const { data: inserted, error } = await supabase.from('attendance_records').insert({
       staff_user_id: user.id, attendance_date: dateStr,
       check_in_at: new Date().toISOString(), check_in_lat: lat, check_in_lng: lng,
       check_in_selfie_url: selfiePath, status: 'present', work_mode: workMode,
-      is_late, minutes_late, shift_id,
-    });
+    }).select('is_late, minutes_late').maybeSingle();
     setBusy(false);
     if (error) { toast.error(`Check-in failed: ${error.message}`); return; }
-    toast.success(is_late ? `Checked in — ${minutes_late} min late` : 'Checked in');
+    toast.success(inserted?.is_late ? `Checked in — ${inserted.minutes_late} min late` : 'Checked in');
     load();
   }
 
@@ -175,7 +161,8 @@ export function MyAttendance() {
         <CameraCapture
           title={showCamera === 'in' ? 'Check-In Selfie' : 'Check-Out Selfie'}
           onCapture={dataUrl => showCamera === 'in' ? finishCheckIn(dataUrl) : finishCheckOut(dataUrl)}
-          onCancel={() => showCamera === 'in' ? finishCheckIn(null) : finishCheckOut(null)}
+          onSkip={() => showCamera === 'in' ? finishCheckIn(null) : finishCheckOut(null)}
+          onCancel={() => setShowCamera(null)}
         />
       )}
     </div>
@@ -185,10 +172,20 @@ export function MyAttendance() {
 // ─────────────────────────── Self-service: leaves + advances
 export function MyRequests() {
   const { user } = useAuth();
+  const toast = useToast();
   const [leaves, setLeaves] = useState<any[]>([]);
   const [advances, setAdvances] = useState<any[]>([]);
   const [leaveForm, setLeaveForm] = useState({ from_date: '', to_date: '', leave_type: 'casual', reason: '' });
   const [advForm, setAdvForm] = useState({ amount: '', reason: '' });
+  const [busyLeave, setBusyLeave] = useState(false);
+  const [busyAdv, setBusyAdv] = useState(false);
+  const [balances, setBalances] = useState<any[]>([]);
+
+  async function loadBalances() {
+    if (!user) return;
+    const { data } = await supabase.rpc('get_leave_balances', { _staff_user_id: user.id });
+    if (data) setBalances(data);
+  }
 
   async function load() {
     if (!user) return;
@@ -198,19 +195,32 @@ export function MyRequests() {
     ]);
     if (l) setLeaves(l);
     if (a) setAdvances(a);
+    loadBalances();
   }
   useEffect(() => { load(); }, [user]);
 
   async function requestLeave() {
-    if (!user || !leaveForm.from_date || !leaveForm.to_date) return;
-    await supabase.from('leave_requests').insert({ ...leaveForm, staff_user_id: user.id });
+    if (!user) return;
+    if (!leaveForm.from_date || !leaveForm.to_date) { toast.error('Pick both start and end dates'); return; }
+    if (leaveForm.to_date < leaveForm.from_date) { toast.error('End date can\u2019t be before start date'); return; }
+    setBusyLeave(true);
+    const { error } = await supabase.from('leave_requests').insert({ ...leaveForm, staff_user_id: user.id });
+    setBusyLeave(false);
+    if (error) { toast.error(`Couldn't submit leave: ${error.message}`); return; }
+    toast.success('Leave request submitted');
     setLeaveForm({ from_date: '', to_date: '', leave_type: 'casual', reason: '' });
     load();
   }
 
   async function requestAdvance() {
-    if (!user || !advForm.amount) return;
-    await supabase.from('salary_advance_requests').insert({ staff_user_id: user.id, amount: Number(advForm.amount), reason: advForm.reason });
+    if (!user) return;
+    const amount = Number(advForm.amount);
+    if (!amount || amount <= 0) { toast.error('Enter a valid amount'); return; }
+    setBusyAdv(true);
+    const { error } = await supabase.from('salary_advance_requests').insert({ staff_user_id: user.id, amount, reason: advForm.reason });
+    setBusyAdv(false);
+    if (error) { toast.error(`Couldn't submit request: ${error.message}`); return; }
+    toast.success('Advance request submitted');
     setAdvForm({ amount: '', reason: '' });
     load();
   }
@@ -219,6 +229,30 @@ export function MyRequests() {
     s === 'approved' || s === 'paid' ? 'text-emerald-300' : s === 'rejected' ? 'text-red-300' : 'text-amber-300';
 
   return (
+    <div className="space-y-6">
+      {balances.length > 0 && (
+        <div className={cardCls}>
+          <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-400" /> Leave Balance <span className="text-slate-500 text-xs font-normal">this year</span></h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {balances.map((b: any) => (
+              <div key={b.leave_type} className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5">
+                <p className="text-slate-400 text-xs capitalize">{b.leave_type}</p>
+                {b.is_unlimited ? (
+                  <p className="text-sky-300 text-lg font-semibold leading-tight">—</p>
+                ) : (
+                  <p className={`text-lg font-semibold leading-tight ${Number(b.remaining) <= 0 ? 'text-red-400' : 'text-white'}`}>
+                    {Number(b.remaining)}<span className="text-slate-600 text-xs font-normal"> / {Number(b.entitled)}</span>
+                  </p>
+                )}
+                <p className="text-slate-600 text-[10px] mt-0.5">
+                  {b.is_unlimited ? 'unlimited' : `${Number(b.used)} used`}{Number(b.pending) > 0 ? ` • ${Number(b.pending)} pending` : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     <div className="grid md:grid-cols-2 gap-6">
       <div className={cardCls}>
         <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-400" /> Leave Request</h3>
@@ -227,10 +261,14 @@ export function MyRequests() {
           <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} />
         </div>
         <select className={inputCls + ' mb-2'} value={leaveForm.leave_type} onChange={e => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}>
-          {['casual', 'sick', 'earned', 'unpaid', 'other'].map(t => <option key={t} value={t}>{t}</option>)}
+          {['casual', 'sick', 'earned', 'unpaid', 'other'].map(t => {
+            const b = balances.find((x: any) => x.leave_type === t);
+            const suffix = !b ? '' : b.is_unlimited ? ' (unpaid)' : ` (${Number(b.remaining)} left)`;
+            return <option key={t} value={t}>{t}{suffix}</option>;
+          })}
         </select>
         <input className={inputCls + ' mb-3'} placeholder="Reason" value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} />
-        <button className={btnCls + ' w-full'} onClick={requestLeave}>Submit Leave Request</button>
+        <button className={btnCls + ' w-full'} disabled={busyLeave} onClick={requestLeave}>{busyLeave ? 'Submitting…' : 'Submit Leave Request'}</button>
         <div className="mt-4 space-y-1.5">
           {leaves.map(l => (
             <div key={l.id} className="flex justify-between text-xs">
@@ -244,7 +282,7 @@ export function MyRequests() {
         <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-sky-400" /> Salary Advance</h3>
         <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} />
         <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} />
-        <button className={btnCls + ' w-full'} onClick={requestAdvance}>Request Advance</button>
+        <button className={btnCls + ' w-full'} disabled={busyAdv} onClick={requestAdvance}>{busyAdv ? 'Submitting…' : 'Request Advance'}</button>
         <div className="mt-4 space-y-1.5">
           {advances.map(a => (
             <div key={a.id} className="flex justify-between text-xs">
@@ -254,6 +292,7 @@ export function MyRequests() {
           ))}
         </div>
       </div>
+    </div>
     </div>
   );
 }
@@ -323,7 +362,7 @@ export default function StaffPortal() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <NotificationBell />
+          <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
           <button onClick={signOut} className="text-slate-500 hover:text-red-400"><LogOut className="w-5 h-5" /></button>
         </div>
       </header>
@@ -366,7 +405,7 @@ export default function StaffPortal() {
             ? <LeadsWorkspace segments={segments} />
             : user?.role === 'marketing_executive'
               ? <ExecutiveFieldVisits segments={segments} />
-              : <TelecallerQueue />
+              : <TelecallerQueue segments={segments} />
         )}
         {tab === 'team' && <HRBoard segments={segments} />}
       </main>

@@ -600,6 +600,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
   const [types, setTypes] = useState<{ id: string; segment_slug: string; name: string }[]>([]);
   const [done, setDone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
 
   useEffect(() => {
     supabase.from('ticket_types').select('*').eq('active', true).order('order_index')
@@ -607,16 +608,22 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
   }, []);
 
   async function submit() {
-    if (!form.segment_slug || !form.subject || !form.customer_name || !form.customer_phone) return;
+    if (!form.segment_slug || !form.subject || !form.customer_name || !form.customer_phone) {
+      setErr('Please fill in department, subject, name and phone.');
+      return;
+    }
+    setErr('');
     setBusy(true);
     const { data, error } = await supabase.from('support_tickets')
       .insert({ ...form, ticket_type: form.ticket_type || 'Other' })
       .select('ticket_no').single();
     setBusy(false);
-    if (!error && data) {
-      setDone(data.ticket_no);
-      setForm({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
+    if (error || !data) {
+      setErr("Sorry, we couldn't submit your ticket. Please try again or call us.");
+      return;
     }
+    setDone(data.ticket_no);
+    setForm({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
   }
 
   const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
@@ -662,6 +669,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
               <input className={inputCls} placeholder="Phone *" value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} />
               <input className={inputCls} placeholder="Email" value={form.customer_email} onChange={e => setForm({ ...form, customer_email: e.target.value })} />
             </div>
+            {err && <p className="text-red-400 text-sm">{err}</p>}
             <button onClick={submit} disabled={busy}
               className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold flex items-center justify-center gap-2 transition-colors">
               <Send className="w-4 h-4" /> {busy ? 'Submitting…' : 'Submit Ticket'}
@@ -678,15 +686,21 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
   const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '' });
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
   const c = content?.contact || {};
   const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
 
   async function submit() {
-    if (!form.segment_slug || !form.customer_name || !form.phone) return;
+    if (!form.segment_slug || !form.customer_name || !form.phone) {
+      setErr('Please select a service and enter your name and phone.');
+      return;
+    }
+    setErr('');
     setBusy(true);
     const { error } = await supabase.from('marketing_leads').insert({ ...form, source: 'website' });
     setBusy(false);
-    if (!error) setSent(true);
+    if (error) { setErr("Sorry, something went wrong. Please try again or call us."); return; }
+    setSent(true);
   }
 
   return (
@@ -716,6 +730,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
               <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
               <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
               <textarea className={inputCls} rows={2} placeholder="Tell us what you need" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
+              {err && <p className="text-red-400 text-sm">{err}</p>}
               <button onClick={submit} disabled={busy}
                 className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold transition-colors">
                 {busy ? 'Sending…' : 'Request Free Consultation'}

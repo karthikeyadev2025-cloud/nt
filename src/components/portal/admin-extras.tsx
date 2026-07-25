@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Search, X, Shield, Download, CheckCircle2, Circle, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cardCls } from './shared';
+import { istDateStr } from '../../lib/dates';
 import type { Segment } from '../../lib/database.types';
 
 // ─────────────────────────── Security Audit Log viewer (super_admin only — table exists, had zero UI)
@@ -61,7 +62,7 @@ export function TodayAtAGlance() {
 
   useEffect(() => {
     (async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = istDateStr();
       const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
       const [{ count: checkedIn }, { count: newLeads }, { count: openTickets }, { count: leaveReq }, { count: advReq }, { count: bankReq }, { count: photoReq }, { count: transferReq }] = await Promise.all([
         supabase.from('attendance_records').select('id', { count: 'exact', head: true }).eq('attendance_date', today).not('check_in_at', 'is', null),
@@ -151,8 +152,15 @@ export function SetupChecklist({ segments }: { segments: Segment[] }) {
   );
 }
 
+// Escapes characters that have special meaning inside a PostgREST .or() filter
+// (commas separate conditions; parentheses group them) so a search for a name
+// with a comma or bracket doesn't break the query.
+function escapeOr(q: string): string {
+  return q.replace(/([,()\\])/g, '\\$1');
+}
+
 // ─────────────────────────── Global Quick Search (header) — staff, leads, tickets by name/phone
-export function QuickSearch({ onNavigate }: { onNavigate: (tab: string) => void }) {
+export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: { kind: 'staff' | 'lead' | 'ticket'; id: string }) => void }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [results, setResults] = useState<{ staff: any[]; leads: any[]; tickets: any[] }>({ staff: [], leads: [], tickets: [] });
@@ -162,10 +170,11 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string) => void 
     if (q.trim().length < 2) { setResults({ staff: [], leads: [], tickets: [] }); return; }
     setSearching(true);
     const t = setTimeout(async () => {
+      const s = escapeOr(q.trim());
       const [{ data: staff }, { data: leads }, { data: tickets }] = await Promise.all([
-        supabase.from('app_users').select('id, full_name, email, phone, role').neq('role', 'super_admin').or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`).limit(5),
-        supabase.from('marketing_leads').select('id, customer_name, phone, stage').or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5),
-        supabase.from('support_tickets').select('id, ticket_no, subject, customer_name').or(`subject.ilike.%${q}%,customer_name.ilike.%${q}%,ticket_no.ilike.%${q}%`).limit(5),
+        supabase.from('app_users').select('id, full_name, email, phone, role').neq('role', 'super_admin').or(`full_name.ilike.%${s}%,phone.ilike.%${s}%,email.ilike.%${s}%`).limit(5),
+        supabase.from('marketing_leads').select('id, customer_name, phone, stage').or(`customer_name.ilike.%${s}%,phone.ilike.%${s}%`).limit(5),
+        supabase.from('support_tickets').select('id, ticket_no, subject, customer_name').or(`subject.ilike.%${s}%,customer_name.ilike.%${s}%,ticket_no.ilike.%${s}%`).limit(5),
       ]);
       setResults({ staff: staff || [], leads: leads || [], tickets: tickets || [] });
       setSearching(false);
@@ -196,7 +205,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string) => void 
                 <div className="mb-2">
                   <p className="text-slate-600 text-xs px-2 py-1">STAFF</p>
                   {results.staff.map(s => (
-                    <button key={s.id} onClick={() => { onNavigate('access'); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-sm">
+                    <button key={s.id} onClick={() => { onNavigate('access', { kind: 'staff', id: s.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-sm">
                       <span className="text-white">{s.full_name}</span> <span className="text-slate-500 text-xs">— {s.role} • {s.phone}</span>
                     </button>
                   ))}
@@ -206,7 +215,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string) => void 
                 <div className="mb-2">
                   <p className="text-slate-600 text-xs px-2 py-1">LEADS</p>
                   {results.leads.map(l => (
-                    <button key={l.id} onClick={() => { onNavigate('crm'); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-sm">
+                    <button key={l.id} onClick={() => { onNavigate('crm', { kind: 'lead', id: l.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-sm">
                       <span className="text-white">{l.customer_name}</span> <span className="text-slate-500 text-xs">— {l.phone} • {l.stage}</span>
                     </button>
                   ))}
@@ -216,7 +225,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string) => void 
                 <div>
                   <p className="text-slate-600 text-xs px-2 py-1">TICKETS</p>
                   {results.tickets.map(t => (
-                    <button key={t.id} onClick={() => { onNavigate('tickets'); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-sm">
+                    <button key={t.id} onClick={() => { onNavigate('tickets', { kind: 'ticket', id: t.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-sm">
                       <span className="text-sky-400 font-mono text-xs">{t.ticket_no}</span> <span className="text-white ml-1">{t.subject}</span>
                     </button>
                   ))}
@@ -244,7 +253,7 @@ export function ExportStaffButton() {
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Staff');
-    XLSX.writeFile(wb, `nikki-staff-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(wb, `nikki-staff-${istDateStr()}.xlsx`);
   }
   return (
     <button onClick={exportStaff} className="flex items-center gap-1.5 text-sky-400 text-xs font-medium">
@@ -270,7 +279,7 @@ export function ExportPayslipsButton() {
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Payslips');
-    XLSX.writeFile(wb, `nikki-payslips-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(wb, `nikki-payslips-${istDateStr()}.xlsx`);
   }
   return (
     <button onClick={exportPayslips} className="flex items-center gap-1.5 text-sky-400 text-xs font-medium">

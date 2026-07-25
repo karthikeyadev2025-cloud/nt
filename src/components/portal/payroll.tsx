@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls } from './shared';
+import { istDateStr } from '../../lib/dates';
 import { ExportPayslipsButton } from './admin-extras';
 
 const DAYS = [{ v: 1, l: 'Mon' }, { v: 2, l: 'Tue' }, { v: 3, l: 'Wed' }, { v: 4, l: 'Thu' }, { v: 5, l: 'Fri' }, { v: 6, l: 'Sat' }, { v: 7, l: 'Sun' }];
@@ -46,7 +47,7 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
 
   async function assign() {
     if (!assigningFor || !assignStaffId) return;
-    await supabase.from('staff_shifts').update({ effective_to: new Date().toISOString().slice(0, 10) })
+    await supabase.from('staff_shifts').update({ effective_to: istDateStr() })
       .eq('staff_user_id', assignStaffId).is('effective_to', null);
     const { error } = await supabase.from('staff_shifts').insert({ staff_user_id: assignStaffId, shift_id: assigningFor.id });
     if (error) { toast.error(error.message); return; }
@@ -173,9 +174,26 @@ export function PayslipManager() {
   async function autoFillFromAttendance() {
     if (!genForm.staff_user_id) { toast.error('Select a staff member first'); return; }
     const y = genForm.period_year, m = genForm.period_month;
-    const periodStart = `${y}-${String(m).padStart(2, '0')}-01`;
-    const periodEnd = new Date(y, m, 0).toISOString().slice(0, 10); // last day of month
-    const workingDaysInMonth = new Date(y, m, 0).getDate();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const lastDay = new Date(y, m, 0).getDate();
+    const periodStart = `${y}-${pad(m)}-01`;
+    const periodEnd = `${y}-${pad(m)}-${pad(lastDay)}`;
+
+    // Resolve the staff member's working days (1=Mon..7=Sun) from their current
+    // shift. Falls back to Mon–Sat if no shift is assigned. Using this instead
+    // of raw calendar days stops weekends from being counted as unpaid absences.
+    const { data: assignment } = await supabase.from('staff_shifts')
+      .select('shifts(working_days)').eq('staff_user_id', genForm.staff_user_id).is('effective_to', null)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    const workingDaysOfWeek: number[] = (assignment?.shifts as any)?.working_days || [1, 2, 3, 4, 5, 6];
+
+    // ISO weekday (1=Mon..7=Sun) for a given day-of-month.
+    const isoDow = (day: number) => { const wd = new Date(y, m - 1, day).getDay(); return wd === 0 ? 7 : wd; };
+    const isWorkingDay = (day: number) => workingDaysOfWeek.includes(isoDow(day));
+
+    // Count actual working days in the month.
+    let workingDaysInMonth = 0;
+    for (let day = 1; day <= lastDay; day++) if (isWorkingDay(day)) workingDaysInMonth++;
 
     const [{ data: records }, { data: leaves }] = await Promise.all([
       supabase.from('attendance_records').select('*').eq('staff_user_id', genForm.staff_user_id)
@@ -186,12 +204,18 @@ export function PayslipManager() {
 
     const present = (records || []).filter(r => r.check_in_at).length;
     const lateDays = (records || []).filter(r => r.is_late).length;
+
+    // Count leave only on working days within the clipped range.
     let paidLeave = 0, unpaidLeave = 0;
     (leaves || []).forEach(l => {
-      const from = new Date(Math.max(new Date(l.from_date).getTime(), new Date(periodStart).getTime()));
-      const to = new Date(Math.min(new Date(l.to_date).getTime(), new Date(periodEnd).getTime()));
-      const days = Math.max(0, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
-      if (l.leave_type === 'unpaid') unpaidLeave += days; else paidLeave += days;
+      const from = new Date(Math.max(new Date(l.from_date).getTime(), new Date(`${periodStart}T00:00:00`).getTime()));
+      const to = new Date(Math.min(new Date(l.to_date).getTime(), new Date(`${periodEnd}T00:00:00`).getTime()));
+      let workingLeaveDays = 0;
+      for (let t = from.getTime(); t <= to.getTime(); t += 86400000) {
+        const dt = new Date(t);
+        if (dt.getFullYear() === y && dt.getMonth() === m - 1 && isWorkingDay(dt.getDate())) workingLeaveDays++;
+      }
+      if (l.leave_type === 'unpaid') unpaidLeave += workingLeaveDays; else paidLeave += workingLeaveDays;
     });
     const absent = Math.max(0, workingDaysInMonth - present - paidLeave - unpaidLeave);
 

@@ -3,6 +3,7 @@ import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Cart
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { cardCls } from './shared';
+import { istDateStr } from '../../lib/dates';
 import type { Segment } from '../../lib/database.types';
 
 const AXIS_COLOR = '#64748b';
@@ -22,13 +23,13 @@ export function MyPerformanceChart() {
     if (!user) return;
     const from = new Date(); from.setDate(from.getDate() - 13);
     supabase.from('attendance_records').select('*').eq('staff_user_id', user.id)
-      .gte('attendance_date', from.toISOString().slice(0, 10)).order('attendance_date')
+      .gte('attendance_date', istDateStr(from)).order('attendance_date')
       .then(({ data: recs }) => {
         const byDate = new Map((recs || []).map((r: any) => [r.attendance_date, r]));
         const days: { day: string; hours: number }[] = [];
         for (let i = 13; i >= 0; i--) {
           const d = new Date(); d.setDate(d.getDate() - i);
-          const key = d.toISOString().slice(0, 10);
+          const key = istDateStr(d);
           const rec = byDate.get(key);
           let hours = 0;
           if (rec?.check_in_at && rec?.check_out_at) {
@@ -75,7 +76,7 @@ export function MyCallsChart() {
         const days: { day: string; calls: number }[] = [];
         for (let i = 6; i >= 0; i--) {
           const d = new Date(); d.setDate(d.getDate() - i);
-          days.push({ day: dayLabel(d), calls: counts.get(d.toISOString().slice(0, 10)) || 0 });
+          days.push({ day: dayLabel(d), calls: counts.get(istDateStr(d)) || 0 });
         }
         setData(days);
       });
@@ -104,14 +105,14 @@ export function AttendanceTrendChart() {
 
   useEffect(() => {
     const from = new Date(); from.setDate(from.getDate() - 13);
-    supabase.from('attendance_records').select('attendance_date').gte('attendance_date', from.toISOString().slice(0, 10))
+    supabase.from('attendance_records').select('attendance_date').gte('attendance_date', istDateStr(from))
       .then(({ data: recs }) => {
         const counts = new Map<string, number>();
         (recs || []).forEach((r: any) => counts.set(r.attendance_date, (counts.get(r.attendance_date) || 0) + 1));
         const days: { day: string; present: number }[] = [];
         for (let i = 13; i >= 0; i--) {
           const d = new Date(); d.setDate(d.getDate() - i);
-          days.push({ day: dayLabel(d), present: counts.get(d.toISOString().slice(0, 10)) || 0 });
+          days.push({ day: dayLabel(d), present: counts.get(istDateStr(d)) || 0 });
         }
         setData(days);
       });

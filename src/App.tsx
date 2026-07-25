@@ -8,6 +8,7 @@ const PublicSite = lazy(() => import('./components/PublicSite'));
 const UnifiedLogin = lazy(() => import('./components/UnifiedLogin'));
 const SuperAdminDashboard = lazy(() => import('./components/portal/SuperAdminDashboard'));
 const StaffPortal = lazy(() => import('./components/portal/StaffPortal'));
+const ForcePasswordChange = lazy(() => import('./components/ForcePasswordChange'));
 
 function PageLoader() {
   return (
@@ -44,6 +45,8 @@ function AppContent() {
 
   if (isLoginRoute) {
     if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
+    // A temp password (set by an admin) must be replaced before anything else.
+    if (user.must_change_password) return <Suspense fallback={<PageLoader />}><ForcePasswordChange /></Suspense>;
     // Anyone with an admin-capable permission gets the admin console (its own
     // tabs are further filtered to exactly what that person is allowed to do) —
     // not just the literal super_admin account. Otherwise, the self-service portal.

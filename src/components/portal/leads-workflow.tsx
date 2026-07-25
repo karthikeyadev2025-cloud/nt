@@ -4,7 +4,8 @@ import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
-import { inputCls, btnCls, cardCls, LeadsBoard } from './shared';
+import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs } from './shared';
+import { normalizePhone } from '../../lib/phone';
 import { MyCallsChart } from './performance';
 import type { Segment } from '../../lib/database.types';
 
@@ -18,16 +19,26 @@ export function TelecallerStatsDashboard() {
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
     const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
 
-    const [{ count: assigned }, { count: calledToday }, { count: callbacks }, { count: convertedMonth }, { count: transfersPending }] = await Promise.all([
+    const [{ count: assigned }, { count: calledToday }, { count: callbacks }, { count: transfersPending }] = await Promise.all([
       supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('assigned_to', user.id),
       supabase.from('lead_remarks').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', todayStart.toISOString()),
       supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('assigned_to', user.id).not('callback_at', 'is', null),
-      supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_requested_by', user.id).eq('stage', 'won').gte('updated_at', monthStart.toISOString()),
       supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_requested_by', user.id).eq('transfer_status', 'pending'),
     ]);
+
+    // Converted this month = leads this caller marked "Converted / Closed" this
+    // month (a remark tagged [Converted / Closed]), which counts BOTH direct
+    // closes and won-then-handed-off deals — not just handoffs.
+    const { data: convRemarks } = await supabase.from('lead_remarks')
+      .select('lead_id')
+      .eq('user_id', user.id)
+      .ilike('remark', '[Converted / Closed]%')
+      .gte('created_at', monthStart.toISOString());
+    const convertedMonth = new Set((convRemarks || []).map((r: any) => r.lead_id)).size;
+
     setStats({
       assigned: assigned || 0, calledToday: calledToday || 0, callbacks: callbacks || 0,
-      convertedMonth: convertedMonth || 0, transfersPending: transfersPending || 0,
+      convertedMonth, transfersPending: transfersPending || 0,
     });
   }
   useEffect(() => { load(); }, [user]);
@@ -61,7 +72,7 @@ const OUTCOMES = [
   { value: 'won', label: 'Converted / Closed' },
 ];
 
-export function TelecallerQueue() {
+export function TelecallerQueue({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
   const [leads, setLeads] = useState<any[]>([]);
@@ -73,6 +84,7 @@ export function TelecallerQueue() {
   const [callbackDate, setCallbackDate] = useState('');
   const [transferTo, setTransferTo] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showPool, setShowPool] = useState(false);
 
   async function load() {
     if (!user) return;
@@ -108,10 +120,14 @@ export function TelecallerQueue() {
     if (!active || !user || !remark.trim()) { toast.error('Please add a remark before saving'); return; }
     setBusy(true);
     const isCallback = outcome === 'callback';
+    // Only terminal outcomes (won / lost / not-answered) release the lead back to
+    // the unassigned pool. "Interested" and callbacks stay with the caller so the
+    // lead never disappears into a pool that restricted staff can't see.
+    const releasesToPool = outcome === 'won' || outcome === 'lost' || outcome === 'not_answered';
     const patch: any = {
       stage: outcome === 'won' ? 'won' : outcome === 'lost' ? 'lost' : outcome === 'not_answered' ? 'not_answered' : 'contacted',
       callback_at: isCallback && callbackDate ? new Date(callbackDate).toISOString() : null,
-      assigned_to: isCallback ? user.id : null,  // callback stays with her; everything else releases to the pool
+      assigned_to: releasesToPool ? null : user.id,
       updated_at: new Date().toISOString(),
     };
     const { error: updErr } = await supabase.from('marketing_leads').update(patch).eq('id', active.id);
@@ -123,7 +139,11 @@ export function TelecallerQueue() {
     });
 
     setBusy(false);
-    toast.success(isCallback ? 'Callback scheduled — stays in your queue' : 'Saved — lead released back to the pool');
+    toast.success(
+      isCallback ? 'Callback scheduled — stays in your queue'
+      : releasesToPool ? 'Saved — lead released to the unassigned pool'
+      : 'Saved — lead stays in your queue for follow-up'
+    );
     setActive(null);
     load();
   }
@@ -172,8 +192,15 @@ export function TelecallerQueue() {
           </div>
         ))}
         {leads.length === 0 && (
-          <p className="text-slate-500 text-sm text-center py-10">Your queue is empty. Ask your manager to assign you leads.</p>
+          <p className="text-slate-500 text-sm text-center py-10">Your queue is empty. Claim leads from the unassigned pool below, or ask your manager to assign you some.</p>
         )}
+      </div>
+
+      <div className="mt-8">
+        <button onClick={() => setShowPool(!showPool)} className="text-sky-400 text-sm font-medium">
+          {showPool ? '▾' : '▸'} Unassigned Pool — claim new leads
+        </button>
+        {showPool && <div className="mt-4"><UnassignedLeadsPool segments={segments} onChanged={load} /></div>}
       </div>
 
       {active && (
@@ -313,18 +340,18 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     const XLSX = await import('xlsx');
     const reader = new FileReader();
     reader.onload = evt => {
-      const wb = XLSX.read(evt.target?.result, { type: 'binary' });
+      const wb = XLSX.read(evt.target?.result, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const json: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
       const mapped = json.map(r => ({
-        customer_name: r.Name || r.name || r.customer_name || '',
-        phone: String(r.Phone || r.phone || r.Mobile || r.mobile || '').trim(),
-        email: r.Email || r.email || '',
-        interested_in: r.Notes || r.notes || r.Interest || r.interested_in || '',
+        customer_name: String(r.Name || r.name || r.customer_name || '').trim(),
+        phone: normalizePhone(String(r.Phone || r.phone || r.Mobile || r.mobile || '')),
+        email: String(r.Email || r.email || '').trim(),
+        interested_in: String(r.Notes || r.notes || r.Interest || r.interested_in || '').trim(),
       })).filter(r => r.customer_name && r.phone);
       setRows(mapped);
     };
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   }
 
   async function upload() {
@@ -442,22 +469,125 @@ export function TeamActivityFeed() {
   );
 }
 
-export function LeadsWorkspace({ segments }: { segments: Segment[] }) {
+// ─────────────────────────── Manager/Super Admin: Unassigned lead pool (claim / assign)
+// Leads released by telecallers/executives (not-answered, lost, won→reopened, or
+// created without an owner) land here. Without this view they were invisible to
+// restricted staff and only reachable one-by-one by full-view managers.
+export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment[]; onChanged?: () => void }) {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [leads, setLeads] = useState<any[]>([]);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [segFilter, setSegFilter] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [assignTo, setAssignTo] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    let q = supabase.from('marketing_leads').select('*')
+      .is('assigned_to', null).not('stage', 'in', '(won,lost)')
+      .order('created_at', { ascending: false }).limit(400);
+    if (segFilter) q = q.eq('segment_slug', segFilter);
+    const { data, error } = await q;
+    if (error) { toast.error(`Couldn't load pool: ${error.message}`); return; }
+    setLeads(data || []);
+    setSelected(new Set());
+  }
+  useEffect(() => { load(); }, [segFilter]);
+  useEffect(() => {
+    supabase.from('app_users').select('id, full_name, role, segments').eq('is_active', true).neq('role', 'super_admin').order('full_name')
+      .then(({ data }) => { if (data) setStaff(data); });
+  }, []);
+
+  function toggle(id: string) {
+    setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
+  async function assign(toId: string, ids: string[]) {
+    if (!toId || ids.length === 0) return;
+    setBusy(true);
+    const { error } = await supabase.from('marketing_leads')
+      .update({ assigned_to: toId, updated_at: new Date().toISOString() }).in('id', ids);
+    setBusy(false);
+    if (error) { toast.error(`Couldn't assign: ${error.message}`); return; }
+    if (toId !== user?.id) {
+      await supabase.from('notifications').insert({
+        user_id: toId, kind: 'lead_assigned', title: 'Leads assigned to you',
+        body: `${ids.length} lead(s) from the unassigned pool were assigned to you.`, link: '/portal',
+      });
+    }
+    toast.success(toId === user?.id ? `${ids.length} lead(s) claimed — now in your queue` : `${ids.length} lead(s) assigned`);
+    load();
+    onChanged?.();
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
+        <button className="text-sky-400 text-xs" onClick={load}>Refresh</button>
+      </div>
+
+      {selected.size > 0 && staff.length > 0 && (
+        <div className={cardCls + ' mb-4 flex flex-wrap items-center gap-3'}>
+          <span className="text-slate-300 text-sm">{selected.size} selected</span>
+          <select className={inputCls + ' w-auto flex-1 min-w-[180px]'} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
+            <option value="">Assign selected to…</option>
+            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+          </select>
+          <button className={btnCls} disabled={busy || !assignTo} onClick={() => assign(assignTo, Array.from(selected))}>
+            {busy ? 'Assigning…' : 'Assign'}
+          </button>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {leads.map(l => {
+          const seg = segments.find(s => s.slug === l.segment_slug);
+          return (
+            <div key={l.id} className={cardCls + ' flex items-center justify-between gap-3'}>
+              <label className="flex items-center gap-3 cursor-pointer min-w-0 flex-1">
+                <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)} />
+                <div className="min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{l.customer_name}
+                    {seg && <span className="text-xs px-2 py-0.5 rounded ml-2" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
+                  </p>
+                  <p className="text-slate-500 text-xs mt-0.5">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at).toLocaleDateString()}</p>
+                </div>
+              </label>
+              <button className="text-sky-400 text-xs font-medium shrink-0" disabled={busy} onClick={() => user && assign(user.id, [l.id])}>
+                Claim
+              </button>
+            </div>
+          );
+        })}
+        {leads.length === 0 && <p className="text-slate-500 text-sm text-center py-10">The unassigned pool is empty.</p>}
+      </div>
+    </div>
+  );
+}
+
+export function LeadsWorkspace({ segments, focusLeadId }: { segments: Segment[]; focusLeadId?: string }) {
   const { hasPermission } = useAuth();
-  const [sub, setSub] = useState<'board' | 'bulk' | 'reassign' | 'transfers' | 'activity'>('board');
+  const [sub, setSub] = useState<'board' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity'>('board');
   const showBulk = hasPermission('bulk_assign_leads');
   const showTransfers = hasPermission('approve_transfers');
+
+  // A search result forces the board sub-tab so the record can be opened there.
+  useEffect(() => { if (focusLeadId) setSub('board'); }, [focusLeadId]);
 
   return (
     <div>
       <div className="flex gap-2 mb-5 flex-wrap">
         <button onClick={() => setSub('board')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'board' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Leads Board</button>
+        <button onClick={() => setSub('pool')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'pool' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Unassigned Pool</button>
         <button onClick={() => setSub('activity')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'activity' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Team Activity</button>
         {showBulk && <button onClick={() => setSub('bulk')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bulk' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Bulk Upload</button>}
         {showBulk && <button onClick={() => setSub('reassign')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'reassign' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Reassign Leads</button>}
         {showTransfers && <button onClick={() => setSub('transfers')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'transfers' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Handoff Approvals</button>}
       </div>
-      {sub === 'board' && <LeadsBoard segments={segments} />}
+      {sub === 'board' && <LeadsBoard segments={segments} focusLeadId={focusLeadId} />}
+      {sub === 'pool' && <UnassignedLeadsPool segments={segments} />}
       {sub === 'activity' && <TeamActivityFeed />}
       {sub === 'bulk' && showBulk && <BulkLeadUpload segments={segments} />}
       {sub === 'reassign' && showBulk && <BulkReassignLeads segments={segments} />}
@@ -512,6 +642,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [remark, setRemark] = useState('');
   const [busy, setBusy] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
+  const [showPool, setShowPool] = useState(false);
   const [newLead, setNewLead] = useState({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
 
   async function load() {
@@ -528,14 +659,20 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
   async function addFieldLead() {
     if (!user || !newLead.customer_name || !newLead.phone || !newLead.segment_slug) { toast.error('Name, phone and segment are required'); return; }
+    const phone = normalizePhone(newLead.phone);
 
     if (!duplicateInfo) {
-      const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: newLead.phone, _segment_slug: newLead.segment_slug });
-      if (dupes && dupes.length > 0) { setDuplicateInfo(dupes); return; } // show warning, wait for confirm
+      // Restricted field staff only get a yes/no existence check (no lead-book
+      // details); full-view staff get the detailed list. Try detailed first,
+      // fall back to the boolean so the warning still fires either way.
+      const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: phone, _segment_slug: newLead.segment_slug });
+      if (dupes && dupes.length > 0) { setDuplicateInfo(dupes); return; }
+      const { data: exists } = await supabase.rpc('lead_phone_exists', { _phone: phone, _segment_slug: newLead.segment_slug });
+      if (exists) { setDuplicateInfo([{ id: 'exists', customer_name: 'An active lead with this number already exists', stage: '', assignee_name: '' }]); return; }
     }
 
     const { error } = await supabase.from('marketing_leads').insert({
-      ...newLead, source: 'field', assigned_to: user.id, created_by: user.id,
+      ...newLead, phone, source: 'field', assigned_to: user.id, created_by: user.id,
     });
     if (error) { toast.error(`Couldn't add lead: ${error.message}`); return; }
     toast.success('Lead added to your queue');
@@ -622,7 +759,14 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             <p className="text-slate-500 text-xs mt-0.5">{l.phone} • {l.address || l.interested_in || 'No address captured yet'}</p>
           </div>
         ))}
-        {leads.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No field leads assigned. Ask your manager or a telecaller to hand one off to you.</p>}
+        {leads.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No field leads assigned. Claim from the unassigned pool below, add your own, or ask for a handoff.</p>}
+      </div>
+
+      <div className="mt-8">
+        <button onClick={() => setShowPool(!showPool)} className="text-sky-400 text-sm font-medium">
+          {showPool ? '▾' : '▸'} Unassigned Pool — claim new leads
+        </button>
+        {showPool && <div className="mt-4"><UnassignedLeadsPool segments={segments} onChanged={load} /></div>}
       </div>
 
       {active && (
@@ -744,7 +888,7 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
   function toggle(id: string) {
     setSelected(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   }

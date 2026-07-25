@@ -4,10 +4,20 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls } from './shared';
+import { istDateStr, istDateStrDaysAgo } from '../../lib/dates';
 import type { Segment } from '../../lib/database.types';
 
 // ─────────────────────────── Notification Bell (header, both portals)
-export function NotificationBell() {
+// kind → admin tab mapping so a click jumps to the relevant screen.
+const NOTIF_TAB: Record<string, string> = {
+  lead_assigned: 'crm', lead_transfer: 'crm',
+  ticket_assigned: 'tickets',
+  leave_decision: 'my_requests', advance_decision: 'my_requests',
+  photo_change: 'my_profile', promotion: 'my_profile',
+  announcement: 'overview',
+};
+
+export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -22,6 +32,12 @@ export function NotificationBell() {
   async function markRead(id: string) {
     await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id);
     setItems(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
+  }
+
+  function handleClick(n: any) {
+    markRead(n.id);
+    const tab = NOTIF_TAB[n.kind];
+    if (tab && onNavigate) { onNavigate(tab); setOpen(false); }
   }
   async function markAllRead() {
     const unread = items.filter(n => !n.read_at).map(n => n.id);
@@ -46,7 +62,7 @@ export function NotificationBell() {
           </div>
           {items.length === 0 && <p className="text-slate-500 text-sm text-center py-8">No notifications yet.</p>}
           {items.map(n => (
-            <div key={n.id} onClick={() => markRead(n.id)}
+            <div key={n.id} onClick={() => handleClick(n)}
               className={`px-4 py-3 border-b border-slate-900 cursor-pointer hover:bg-slate-900 ${!n.read_at ? 'bg-sky-500/5' : ''}`}>
               <p className="text-white text-sm">{n.title}</p>
               {n.body && <p className="text-slate-500 text-xs mt-0.5">{n.body}</p>}
@@ -421,22 +437,23 @@ export function MyStatsCard() {
 
   useEffect(() => {
     if (!user) return;
-    const from = new Date(); from.setDate(from.getDate() - 30);
     supabase.from('attendance_records').select('*').eq('staff_user_id', user.id)
-      .gte('attendance_date', from.toISOString().slice(0, 10)).order('attendance_date', { ascending: false })
+      .gte('attendance_date', istDateStrDaysAgo(30)).order('attendance_date', { ascending: false })
       .then(({ data }) => {
         if (!data) return;
         const present = data.filter((r: any) => r.status === 'present' || r.status === 'half_day');
         let streak = 0;
-        const today = new Date().toISOString().slice(0, 10);
+        const today = istDateStr();
         const byDate = new Set(present.map((r: any) => r.attendance_date));
         const d = new Date();
-        while (byDate.has(d.toISOString().slice(0, 10)) || d.toISOString().slice(0, 10) === today) {
-          if (byDate.has(d.toISOString().slice(0, 10))) streak++;
-          else if (d.toISOString().slice(0, 10) !== today) break;
+        while (byDate.has(istDateStr(d)) || istDateStr(d) === today) {
+          if (byDate.has(istDateStr(d))) streak++;
+          else if (istDateStr(d) !== today) break;
           d.setDate(d.getDate() - 1);
         }
-        const onTime = present.filter((r: any) => r.check_in_at && new Date(r.check_in_at).getHours() < 10).length;
+        // Punctuality now uses the server-computed is_late flag (respects each
+        // person's shift + grace), not a hardcoded 10 AM cutoff.
+        const onTime = present.filter((r: any) => r.check_in_at && !r.is_late).length;
         setStats({
           streak,
           presentDays: present.length,
@@ -464,15 +481,14 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
   const [rows, setRows] = useState<{ name: string; punctuality: number; presentDays: number }[]>([]);
   useEffect(() => {
     (async () => {
-      const from = new Date(); from.setDate(from.getDate() - 30);
       const [{ data: staff }, { data: records }] = await Promise.all([
         supabase.from('app_users').select('id, full_name').eq('is_active', true).neq('role', 'super_admin'),
-        supabase.from('attendance_records').select('*').gte('attendance_date', from.toISOString().slice(0, 10)),
+        supabase.from('attendance_records').select('*').gte('attendance_date', istDateStrDaysAgo(30)),
       ]);
       if (!staff || !records) return;
       const computed = staff.map((s: any) => {
         const mine = records.filter((r: any) => r.staff_user_id === s.id && (r.status === 'present' || r.status === 'half_day'));
-        const onTime = mine.filter((r: any) => r.check_in_at && new Date(r.check_in_at).getHours() < 10).length;
+        const onTime = mine.filter((r: any) => r.check_in_at && !r.is_late).length;
         return { name: s.full_name, presentDays: mine.length, punctuality: mine.length ? Math.round((onTime / mine.length) * 100) : 0 };
       }).filter((r: any) => r.presentDays > 0).sort((a: any, b: any) => b.punctuality - a.punctuality).slice(0, 10);
       setRows(computed);
