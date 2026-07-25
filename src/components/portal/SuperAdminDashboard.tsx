@@ -14,6 +14,7 @@ import { NotificationBell, AnnouncementsManager, BankChangeApprovals, Punctualit
 import { LeadsWorkspace } from './leads-workflow';
 import { AttendanceTrendChart, LeadsFunnelChart, TicketStatusChart } from './performance';
 import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll';
+import { RegularizationApprovals, HolidayManager, OffboardStaff } from './lifecycle';
 import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
 import { SecurityLogsViewer, TodayAtAGlance, SetupChecklist, QuickSearch, ExportStaffButton } from './admin-extras';
 import { useToast } from '../../lib/toast';
@@ -406,6 +407,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   const toast = useToast();
   const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [showOffboard, setShowOffboard] = useState(false);
 
   useEffect(() => { if (openSignal) setShowOnboard(true); }, [openSignal]);
 
@@ -499,6 +501,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
                   setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } });
                   setSnapshot({ designation: u.designation || '', ctc: u.salary_structure?.ctc || 0 });
                   setResetPasswordValue('');
+                  setShowOffboard(false);
                 }}>Manage Access</button>
               )}
             </div>
@@ -582,6 +585,17 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
               </div>
               <p className="text-slate-500 text-xs mt-1">Sets their password directly — tell them the new password securely. They can also self-reset via "Forgot password?" on the login page.</p>
             </div>
+            <div className="border-t border-slate-800 pt-3">
+              {showOffboard ? (
+                <OffboardStaff staffMember={editing} onDone={() => { setShowOffboard(false); setEditing(null); load(); }} />
+              ) : editing.exit_date ? (
+                <p className="text-slate-500 text-xs">
+                  Offboarded on {new Date(editing.exit_date).toLocaleDateString()} — {String(editing.exit_reason || '').replace('_', ' ')}
+                </p>
+              ) : (
+                <button className="text-red-400 text-sm font-medium" onClick={() => setShowOffboard(true)}>Offboard this employee…</button>
+              )}
+            </div>
             <button className={btnCls + ' w-full'} onClick={saveUser}>Save Access</button>
           </div>
         </div>
@@ -640,22 +654,27 @@ function HRSection({ segments }: { segments: Segment[] }) {
   const canPayroll = isSA || hasPermission('manage_payroll');
   const canShifts = isSA || hasPermission('manage_staff') || hasPermission('manage_payroll');
   const canSummary = isSA || hasPermission('view_attendance') || hasPermission('view_reports');
-  const [sub, setSub] = useState<'core' | 'shifts' | 'payslips' | 'summary' | 'policy'>('core');
+  const [sub, setSub] = useState<'core' | 'shifts' | 'payslips' | 'summary' | 'policy' | 'corrections' | 'holidays'>('core');
   const canPolicy = isSA || hasPermission('manage_staff');
+  const canApprove = isSA || hasPermission('approve_leaves');
   return (
     <div>
       <div className="flex gap-2 mb-5 flex-wrap">
         <button onClick={() => setSub('core')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'core' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Staff & Leaves</button>
+        {canApprove && <button onClick={() => setSub('corrections')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'corrections' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Attendance Corrections</button>}
         {canShifts && <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Shifts</button>}
         {canPayroll && <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Payslips</button>}
         {canSummary && <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Attendance Summary</button>}
         {canPolicy && <button onClick={() => setSub('policy')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'policy' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Leave Policy</button>}
+        {canPolicy && <button onClick={() => setSub('holidays')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'holidays' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Holidays</button>}
       </div>
       {sub === 'core' && <HRBoard segments={segments} />}
+      {sub === 'corrections' && canApprove && <RegularizationApprovals />}
       {sub === 'shifts' && canShifts && <ShiftsManager segments={segments} />}
       {sub === 'payslips' && canPayroll && <PayslipManager />}
       {sub === 'summary' && canSummary && <AttendanceSummaryTable segments={segments} />}
       {sub === 'policy' && canPolicy && <LeavePolicyManager />}
+      {sub === 'holidays' && canPolicy && <HolidayManager segments={segments} />}
     </div>
   );
 }

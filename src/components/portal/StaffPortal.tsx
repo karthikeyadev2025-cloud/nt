@@ -8,6 +8,7 @@ import { istDateStr } from '../../lib/dates';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
 import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard, MyPhotoRequest, MyPromotionHistory } from './features';
+import { MyRegularizations } from './lifecycle';
 import { TelecallerQueue, LeadsWorkspace, ExecutiveFieldVisits } from './leads-workflow';
 import { MyPerformanceChart } from './performance';
 import { MyPayslips } from './payroll';
@@ -292,6 +293,9 @@ export function MyRequests() {
           ))}
         </div>
       </div>
+    </div>
+    <div className="mt-6">
+      <MyRegularizations />
     </div>
     </div>
   );

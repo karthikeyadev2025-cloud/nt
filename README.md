@@ -309,3 +309,20 @@ One migration: `20260717000003_notifications_and_duplicate_detection.sql`.
 4. **No way for a customer to check their own ticket status** — someone who raised a ticket anonymously (no account) had zero way to check progress without calling in. Added **"Track its status"** on the public Raise Ticket section — requires both the exact ticket number and the phone number used to raise it (prevents a stranger from browsing other customers' tickets by guessing numbers).
 
 Two migrations: `20260717000003_notifications_and_duplicate_detection.sql` (already shipped, unchanged — verified) needs nothing new; add `20260718000001_public_ticket_tracking.sql`.
+
+## Deep lifecycle audit — onboarding → daily ops → exit
+Audited the complete employee journey for every user type. Four real gaps found, all daily-operations problems:
+
+1. **No holiday calendar** — any working-day/absence calculation counted Sundays and festivals as absences, so payroll would under-pay staff for every holiday. Added a holiday calendar (company-wide or per-segment, with optional-holiday support) plus a `count_working_days()` function that respects it.
+
+2. **No attendance correction path** — if someone forgot to check in/out (dead phone, no signal on site), the day was permanently lost with **no way to fix it**. This is a guaranteed weekly problem in field work. Added full regularization: staff request a correction with the actual times and a reason → manager/HR approves → the attendance record is corrected automatically, both sides notified.
+
+3. **No half-day leave** — `leave_requests` only supported whole days even though the attendance status enum already had `half_day`. Added `is_half_day` + first/second-half selection.
+
+4. **No real offboarding** — disabling an account was the only option; no exit date, reason, or record. Added proper offboarding in Access Control: last working day, reason, notes, optional account disable — **and it warns you if the person still has active leads assigned**, pointing you to reassign them first so nothing gets orphaned. All their history (documents, attendance, payslips) is retained, never deleted.
+
+Also added `reports_to` on staff records for reporting-line clarity.
+
+One migration: `20260726000001_lifecycle_deep_gaps.sql`.
+
+**Note on concurrent work**: this audit was done against a repo state that included two commits from another session (security hardening + leave balances). That work fixed a real bug in my earlier code — `'bulk_upload'` was never permitted in the `marketing_leads.source` CHECK constraint, meaning **every Excel import silently failed**. Verified fixed and confirmed working in the current state.
