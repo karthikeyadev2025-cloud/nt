@@ -335,3 +335,62 @@ One migration: `20260726000001_lifecycle_deep_gaps.sql`.
 3. **`reports_to` was dead code** — I added the column in the previous migration and never used it anywhere. Now wired properly: set a direct manager during onboarding, and their leave requests notify **that manager specifically** rather than blasting every approver in the segment. Falls back to notifying all approvers when no manager is set.
 
 One migration: `20260726000002_dangling_checkins_sla_reporting.sql`.
+
+## EXECUTED AUDIT — real database, real users, real attacks
+Not a code-reading pass. Installed PostgreSQL 16, rebuilt a Supabase-compatible
+environment (auth.uid(), storage schema, anon/authenticated roles), ran every
+migration, seeded 7 real users across all roles and segments, and executed
+queries **as each user with RLS enforced**.
+
+**Migration integrity** — clean database, all 25 migrations in order: **0 errors**.
+38 tables · 96 RLS policies · 40 functions · **0 tables without RLS**.
+
+**Privilege-escalation attacks (all 8 BLOCKED, verified by execution):**
+| Attack | Result |
+|---|---|
+| Telecaller promotes self to super_admin | ❌ Blocked by guard trigger |
+| Telecaller grants self `full_leads_view` | ❌ Blocked |
+| Telecaller sets own CTC to ₹99,99,999 | ❌ Blocked |
+| CCTV manager approves Software employee's leave | ❌ 0 rows affected |
+| Employee reads all payslips | ❌ Sees only own |
+| Telecaller reads security audit log | ❌ 0 rows |
+| DM manager steals a CCTV lead | ❌ 0 rows affected |
+| Employee disables the super admin account | ❌ 0 rows affected |
+
+**Verified-correct visibility matrix** (rows each role can actually SELECT):
+| Table | SuperAdmin | HR | CCTV Mgr | Telecaller | Employee |
+|---|---|---|---|---|---|
+| app_users (7 seeded) | 7 | 7 | 3 (own segment) | 1 (self) | 1 (self) |
+| payslips (2) | 2 | 2 | **0** | 1 (own) | 1 (own) |
+| salary_advances (2) | 2 | 2 | **0** | 1 (own) | 1 (own) |
+| security_audit_logs | 1 | 0 | 0 | 0 | 0 |
+| attendance (2) | 2 | 2 | 1 (own segment) | 1 (own) | 1 (own) |
+
+**Business logic verified by execution:** holiday-aware working days returned 25
+for Aug 2026 (31 days − 5 Sundays − 1 holiday) ✅ · ticket tracking returns the
+ticket with the right phone and **0 with a wrong phone** (no enumeration) ✅ ·
+ticket numbering `NKT-CC-00001` ✅ · reassignment auto-logs with actor name and
+notifies the new owner ✅ · duplicate detection works for both full-view and
+restricted staff ✅
+
+### Real bug found and fixed: salary leaked to managers via offer letters
+`payslips` correctly requires `view_payroll`, which segment managers don't hold —
+verified, a manager sees **0 payslips**. But `employee_documents` only required
+`view_staff`, and offer letters are generated from a template containing `{{ctc}}`.
+Executing as a CCTV manager returned **"CTC 3.6L"** from her telecaller's offer
+letter — the exact salary figure the payslip policy was designed to hide.
+
+Fixed: compensation-bearing documents (offer letters) now follow the same payroll
+permission as payslips. Non-salary documents (welcome letter, R&R, job description,
+policy) remain visible to managers with `view_staff`. Re-verified after the fix:
+manager sees only the R&R document, the employee still sees her own offer letter,
+HR is unaffected.
+
+### Design conflict flagged for your decision (not silently changed)
+Restricted staff (telecaller/executive) can see **unassigned leads in their own
+segment** — the "Unassigned Pool" self-claim feature, so someone with an empty
+queue can pick up work. This contradicts your earlier requirement that "only
+assigned follow-ups will be visible". Both are defensible; it's a business call,
+so it's left as-is and flagged rather than changed unilaterally.
+
+One migration: `20260726000003_offer_letter_salary_privacy.sql`.
