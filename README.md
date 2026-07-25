@@ -326,3 +326,12 @@ Also added `reports_to` on staff records for reporting-line clarity.
 One migration: `20260726000001_lifecycle_deep_gaps.sql`.
 
 **Note on concurrent work**: this audit was done against a repo state that included two commits from another session (security hardening + leave balances). That work fixed a real bug in my earlier code — `'bulk_upload'` was never permitted in the `marketing_leads.source` CHECK constraint, meaning **every Excel import silently failed**. Verified fixed and confirmed working in the current state.
+
+## Remaining gaps closed
+1. **Dangling check-ins** — someone checks in, forgets to check out, and the record sits open forever: hours read as 0, payroll auto-fill undercounts, and the day is stuck. Added **HR → Unclosed Days**: lists every open day with how long it's been open, closes it at their shift end time (or a time you set), flags it `auto_closed` so it's never mistaken for a real punch, and notifies the staff member so they can request a correction if the time is wrong.
+
+2. **Ticket SLA / overdue tracking** — an urgent CCTV outage and a low-priority query looked identical in the queue after a week. Added per-priority SLA targets (urgent 8h → low 168h, editable) and **Tickets → Overdue (SLA)** showing exactly how many hours past target each breached ticket is, worst first.
+
+3. **`reports_to` was dead code** — I added the column in the previous migration and never used it anywhere. Now wired properly: set a direct manager during onboarding, and their leave requests notify **that manager specifically** rather than blasting every approver in the segment. Falls back to notifying all approvers when no manager is set.
+
+One migration: `20260726000002_dangling_checkins_sla_reporting.sql`.

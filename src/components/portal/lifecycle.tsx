@@ -273,3 +273,109 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: any; onDon
     </div>
   );
 }
+
+// ─────────────────────────── HR: resolve dangling check-ins (forgot to check out)
+export function DanglingCheckins() {
+  const toast = useToast();
+  const [items, setItems] = useState<any[]>([]);
+  const [customTime, setCustomTime] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState('');
+
+  async function load() {
+    const { data, error } = await supabase.rpc('list_dangling_checkins');
+    if (error) { toast.error(`Couldn't load: ${error.message}`); return; }
+    setItems(data || []);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function close(rec: any) {
+    setBusy(rec.id);
+    const t = customTime[rec.id];
+    const checkOut = t ? new Date(`${rec.attendance_date}T${t}`).toISOString() : null;
+    const { error } = await supabase.rpc('close_dangling_checkin', { _record_id: rec.id, _check_out: checkOut });
+    setBusy('');
+    if (error) { toast.error(`Couldn't close: ${error.message}`); return; }
+    toast.success('Day closed — staff member notified');
+    load();
+  }
+
+  if (items.length === 0) {
+    return <p className="text-slate-500 text-sm text-center py-10">No unclosed attendance days. All clear.</p>;
+  }
+
+  return (
+    <div>
+      <p className="text-slate-400 text-sm mb-4">
+        These staff checked in but never checked out. Closing a day uses their shift end time unless you set one —
+        it's marked as auto-closed, never counted as a real punch.
+      </p>
+      <div className="space-y-2">
+        {items.map(r => (
+          <div key={r.id} className={cardCls}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-white text-sm font-medium">{r.full_name}</p>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  {r.attendance_date} • in at {new Date(r.check_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                  <span className="text-amber-400 ml-2">{r.days_open} day(s) open</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="time" className={inputCls + ' w-32'} value={customTime[r.id] || ''}
+                  onChange={e => setCustomTime({ ...customTime, [r.id]: e.target.value })} />
+                <button className={btnCls} disabled={busy === r.id} onClick={() => close(r)}>
+                  {busy === r.id ? 'Closing…' : 'Close Day'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────── Overdue tickets (SLA breach)
+export function OverdueTickets({ segments }: { segments: Segment[] }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [segment, setSegment] = useState('');
+
+  useEffect(() => {
+    supabase.rpc('list_overdue_tickets', { _segment_slug: segment || null })
+      .then(({ data }) => setItems(data || []));
+  }, [segment]);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-slate-400 text-sm">Open tickets past their SLA resolution target.</p>
+        <select className={inputCls + ' w-auto'} value={segment} onChange={e => setSegment(e.target.value)}>
+          <option value="">All Segments</option>
+          {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+        </select>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-slate-500 text-sm text-center py-10">No tickets are overdue. Nice.</p>
+      ) : (
+        <div className="space-y-2">
+          {items.map(t => {
+            const over = Math.round(Number(t.hours_open) - t.target_hours);
+            const seg = segments.find(s => s.slug === t.segment_slug);
+            return (
+              <div key={t.id} className={cardCls + ' border-red-900/50'}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-sky-400 text-sm">{t.ticket_no}</span>
+                  {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
+                  <span className="text-xs text-red-400 font-medium">{over}h over target</span>
+                  <span className="text-xs text-slate-500">{t.priority} • target {t.target_hours}h</span>
+                </div>
+                <p className="text-white text-sm mt-1">{t.subject}</p>
+                <p className="text-slate-500 text-xs mt-0.5">{t.customer_name} • open {Math.round(Number(t.hours_open))}h</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -14,7 +14,7 @@ import { NotificationBell, AnnouncementsManager, BankChangeApprovals, Punctualit
 import { LeadsWorkspace } from './leads-workflow';
 import { AttendanceTrendChart, LeadsFunnelChart, TicketStatusChart } from './performance';
 import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll';
-import { RegularizationApprovals, HolidayManager, OffboardStaff } from './lifecycle';
+import { RegularizationApprovals, HolidayManager, OffboardStaff, DanglingCheckins, OverdueTickets } from './lifecycle';
 import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
 import { SecurityLogsViewer, TodayAtAGlance, SetupChecklist, QuickSearch, ExportStaffButton } from './admin-extras';
 import { useToast } from '../../lib/toast';
@@ -111,6 +111,7 @@ const emptyOnboard = {
   joining_date: istDateStr(),
   date_of_birth: '',
   reporting_time: '9:30 AM – 6:30 PM, Monday to Saturday',
+  reports_to: '',
   blood_group: '', id_proof_number: '',
   shift_id: '',
   salary_structure: { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 },
@@ -122,6 +123,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
   const [form, setForm] = useState<any>(emptyOnboard);
   const [templates, setTemplates] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
+  const [managers, setManagers] = useState<any[]>([]);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
@@ -130,6 +132,9 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
   useEffect(() => {
     supabase.from('document_templates').select('*').eq('active', true).then(({ data }) => { if (data) setTemplates(data); });
     supabase.from('shifts').select('*').eq('is_active', true).order('created_at').then(({ data }) => { if (data) setShifts(data); });
+    supabase.from('app_users').select('id, full_name, role').eq('is_active', true)
+      .in('role', ['manager', 'hr', 'super_admin']).order('full_name')
+      .then(({ data }) => { if (data) setManagers(data); });
   }, []);
 
   const toggleSeg = (slug: string) => {
@@ -174,6 +179,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       reporting_time: form.reporting_time,
       blood_group: form.blood_group,
       id_proof_number: form.id_proof_number,
+      reports_to: form.reports_to || null,
       salary_structure: form.salary_structure,
     }).eq('id', userId);
     if (updateError) toast.error(`Account created, but salary/details save failed: ${updateError.message}`);
@@ -324,6 +330,13 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             <div>
               <p className="text-slate-300 text-sm font-medium mb-2">Reporting Time / Shift <span className="text-slate-500 font-normal">(shown on offer & welcome letters)</span></p>
               <input className={inputCls} value={form.reporting_time} onChange={e => setForm({ ...form, reporting_time: e.target.value })} placeholder="e.g. 9:30 AM – 6:30 PM, Monday to Saturday" />
+            </div>
+            <div>
+              <p className="text-slate-300 text-sm font-medium mb-2">Reports To <span className="text-slate-500 font-normal">(their direct manager gets their leave requests)</span></p>
+              <select className={inputCls} value={form.reports_to} onChange={e => setForm({ ...form, reports_to: e.target.value })}>
+                <option value="">No direct manager — notify all approvers</option>
+                {managers.map(m => <option key={m.id} value={m.id}>{m.full_name} — {m.role.replace('_', ' ')}</option>)}
+              </select>
             </div>
           </div>
         )}
@@ -604,6 +617,21 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   );
 }
 
+// ─────────────────────────────────────── Tickets composite (queue + SLA overdue)
+function TicketsSection({ segments, focusId }: { segments: Segment[]; focusId?: string }) {
+  const [sub, setSub] = useState<'queue' | 'overdue'>('queue');
+  return (
+    <div>
+      <div className="flex gap-2 mb-5">
+        <button onClick={() => setSub('queue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'queue' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>All Tickets</button>
+        <button onClick={() => setSub('overdue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'overdue' ? 'border-red-500 text-red-300' : 'border-slate-700 text-slate-400'}`}>Overdue (SLA)</button>
+      </div>
+      {sub === 'queue' && <TicketsBoard segments={segments} focusId={focusId} />}
+      {sub === 'overdue' && <OverdueTickets segments={segments} />}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────── HR composite (attendance/leaves + shifts + payslips + summary)
 // ─────────────────────────── Leave entitlement policy (HR)
 function LeavePolicyManager() {
@@ -654,7 +682,7 @@ function HRSection({ segments }: { segments: Segment[] }) {
   const canPayroll = isSA || hasPermission('manage_payroll');
   const canShifts = isSA || hasPermission('manage_staff') || hasPermission('manage_payroll');
   const canSummary = isSA || hasPermission('view_attendance') || hasPermission('view_reports');
-  const [sub, setSub] = useState<'core' | 'shifts' | 'payslips' | 'summary' | 'policy' | 'corrections' | 'holidays'>('core');
+  const [sub, setSub] = useState<'core' | 'shifts' | 'payslips' | 'summary' | 'policy' | 'corrections' | 'holidays' | 'dangling'>('core');
   const canPolicy = isSA || hasPermission('manage_staff');
   const canApprove = isSA || hasPermission('approve_leaves');
   return (
@@ -662,6 +690,7 @@ function HRSection({ segments }: { segments: Segment[] }) {
       <div className="flex gap-2 mb-5 flex-wrap">
         <button onClick={() => setSub('core')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'core' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Staff & Leaves</button>
         {canApprove && <button onClick={() => setSub('corrections')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'corrections' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Attendance Corrections</button>}
+        {canSummary && <button onClick={() => setSub('dangling')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'dangling' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Unclosed Days</button>}
         {canShifts && <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Shifts</button>}
         {canPayroll && <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Payslips</button>}
         {canSummary && <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Attendance Summary</button>}
@@ -670,6 +699,7 @@ function HRSection({ segments }: { segments: Segment[] }) {
       </div>
       {sub === 'core' && <HRBoard segments={segments} />}
       {sub === 'corrections' && canApprove && <RegularizationApprovals />}
+      {sub === 'dangling' && canSummary && <DanglingCheckins />}
       {sub === 'shifts' && canShifts && <ShiftsManager segments={segments} />}
       {sub === 'payslips' && canPayroll && <PayslipManager />}
       {sub === 'summary' && canSummary && <AttendanceSummaryTable segments={segments} />}
@@ -1476,7 +1506,7 @@ export default function SuperAdminDashboard() {
         {tab === 'my_profile' && <MyProfile />}
         {tab === 'my_swap' && <ShiftSwapBoard />}
         {tab === 'overview' && <Overview segments={segments} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
-        {tab === 'tickets' && <TicketsBoard segments={segments} focusId={focus?.kind === 'ticket' ? focus.id : undefined} />}
+        {tab === 'tickets' && <TicketsSection segments={segments} focusId={focus?.kind === 'ticket' ? focus.id : undefined} />}
         {tab === 'crm' && <LeadsWorkspace segments={segments} focusLeadId={focus?.kind === 'lead' ? focus.id : undefined} />}
         {tab === 'hr' && <HRSection segments={segments} />}
         {tab === 'access' && <AccessControl segments={segments} openSignal={onboardSignal} focusStaffId={focus?.kind === 'staff' ? focus.id : undefined} />}
