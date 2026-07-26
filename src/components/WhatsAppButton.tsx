@@ -45,7 +45,11 @@ Looking forward to hearing from you!`;
     setShowPopup(false);
   };
 
-  if (!whatsappNumber) return null;
+  // Hide entirely unless a real number is configured — the seeded placeholder
+  // (+91 00000 00000) would open a dead WhatsApp chat for the customer.
+  const digits = whatsappNumber.replace(/\D/g, '');
+  const hasRealNumber = digits.length >= 10 && !/^0+$/.test(digits.slice(2));
+  if (!hasRealNumber) return null;
 
   return (
     <>

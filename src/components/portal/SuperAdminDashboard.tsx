@@ -441,6 +441,9 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
     const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
     if (data) setUsers(data);
   }
+
+  const owners = users.filter(u => u.role === 'super_admin');
+  const staffOnly = users.filter(u => u.role !== 'super_admin');
   useEffect(() => { load(); }, []);
 
   // Open the Manage Access editor for a staff member arriving from global search.
@@ -499,24 +502,51 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
           <button className={btnCls} onClick={() => setShowOnboard(true)}>+ Onboard Employee</button>
         </div>
       </div>
+      {/* Owner account shown separately — you are the account holder, not a
+          managed employee. Mixing it into the staff list reads as if you're
+          one of your own employees. */}
+      {owners.length > 0 && (
+        <div className="mb-5">
+          <p className="text-slate-500 text-xs uppercase tracking-wider mb-2">Owner account</p>
+          {owners.map(u => (
+            <div key={u.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-3 border-sky-800/60'}>
+              <div>
+                <p className="text-white font-medium">
+                  {u.full_name}
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-sky-500/20 text-sky-300">Owner · full access</span>
+                </p>
+                <p className="text-slate-500 text-xs">{u.email}</p>
+              </div>
+              <span className="text-slate-600 text-xs">Not a managed employee</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-slate-500 text-xs uppercase tracking-wider mb-2">
+        Staff ({staffOnly.length})
+      </p>
       <div className="space-y-2">
-        {users.map(u => (
+        {staffOnly.length === 0 && (
+          <p className="text-slate-500 text-sm text-center py-8">
+            No staff onboarded yet. Use “+ Onboard Employee” above to add your first team member.
+          </p>
+        )}
+        {staffOnly.map(u => (
           <div key={u.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-3'}>
             <div>
-              <p className="text-white font-medium">{u.full_name} <span className="text-sky-400 text-xs">({u.role})</span></p>
+              <p className="text-white font-medium">{u.full_name} <span className="text-sky-400 text-xs">({u.role.replace('_', ' ')})</span></p>
               <p className="text-slate-500 text-xs">{u.email} • segments: {(u.segments || []).join(', ') || 'none'}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className={`text-xs px-2 py-0.5 rounded ${u.is_active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>{u.is_active ? 'active' : 'disabled'}</span>
               <OnboardingStatusBadge staffUserId={u.id} />
-              {u.role !== 'super_admin' && (
-                <button className="text-sky-400 text-sm font-medium" onClick={() => {
-                  setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } });
-                  setSnapshot({ designation: u.designation || '', ctc: u.salary_structure?.ctc || 0 });
-                  setResetPasswordValue('');
-                  setShowOffboard(false);
-                }}>Manage Access</button>
-              )}
+              <button className="text-sky-400 text-sm font-medium" onClick={() => {
+                setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } });
+                setSnapshot({ designation: u.designation || '', ctc: u.salary_structure?.ctc || 0 });
+                setResetPasswordValue('');
+                setShowOffboard(false);
+              }}>Manage Access</button>
             </div>
           </div>
         ))}

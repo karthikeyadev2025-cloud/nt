@@ -12,6 +12,14 @@ import WhatsAppButton from './WhatsAppButton';
 import SEOHead from './SEOHead';
 import Reveal from './Reveal';
 
+// A phone number is only "real" once it has actual digits — the seeded
+// placeholder (+91 00000 00000) must never be shown to a customer.
+export function hasRealPhone(v?: string) {
+  if (!v) return false;
+  const digits = v.replace(/\D/g, '');
+  return digits.length >= 10 && !/^0+$/.test(digits.slice(2));
+}
+
 const iconMap: Record<string, any> = {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette,
   TrendingUp, Boxes, Bot, Layers,
@@ -709,9 +717,15 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
         <div>
           <h2 className="text-4xl font-bold text-white mb-6">Get In Touch</h2>
           <div className="space-y-4 text-slate-300">
-            {c.phone && <p className="flex items-center gap-3"><Phone className="w-5 h-5 text-sky-400" /> {c.phone}</p>}
+            {hasRealPhone(c.phone) && <p className="flex items-center gap-3"><Phone className="w-5 h-5 text-sky-400" /> {c.phone}</p>}
             {c.email && <p className="flex items-center gap-3"><Mail className="w-5 h-5 text-sky-400" /> {c.email}</p>}
             {c.address && <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-sky-400" /> {c.address}</p>}
+            {!hasRealPhone(c.phone) && (
+              <p className="text-slate-500 text-sm pt-2">
+                Prefer to raise a request directly? Use the form here or{' '}
+                <a href="#raise-ticket" className="text-sky-400 underline">open a support ticket</a> — we respond to every one.
+              </p>
+            )}
           </div>
         </div>
         <div className="p-7 rounded-2xl bg-slate-900/60 border border-slate-800">

@@ -497,3 +497,20 @@ Every template is editable in Super Admin → Documents & Onboarding, so you can
 apply your lawyer's changes without touching code.
 
 One migration: `20260726000004_hr_document_suite.sql`
+
+## Go-live configuration
+- **Ticket-first contact**: no public phone line. The placeholder number is cleared,
+  and the phone row + WhatsApp button now **hide automatically** unless a real number
+  is configured — a customer will never see or dial `+91 00000 00000`. The contact
+  section instead points them to the ticket system.
+- **Default shift seeded**: General Shift, 9:30–18:30, Mon–Sat, 15 min grace, no late
+  fine. Late detection and payslip auto-fill now work out of the box.
+- **13 national holidays for 2026 seeded** — verified: August 2026 correctly returns
+  25 working days (31 days − 5 Sundays − Independence Day). Regional festivals vary by
+  state, so add your own in HR → Holidays.
+- **POSH policy deactivated by default** — not legally required below 10 employees.
+  Kept in the template library so it can be switched on when you cross that threshold.
+- **Owner account separated in Access Control** — the super admin account was listed
+  among employees, which read as if the owner were their own staff member. It now
+  appears in its own "Owner account · full access" row, clearly marked *not a managed
+  employee*, with the staff list below it.
