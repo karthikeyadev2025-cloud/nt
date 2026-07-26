@@ -6,9 +6,22 @@ import { inputCls, btnCls, cardCls } from './shared';
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
   offer_letter: 'Offer Letter',
+  appointment_letter: 'Appointment Letter',
   welcome_letter: 'Welcome Letter',
   roles_responsibilities: 'Roles & Responsibilities',
   job_description: 'Job Description',
+  confirmation_letter: 'Confirmation Letter',
+  nda: 'Confidentiality Agreement (NDA)',
+  code_of_conduct: 'Code of Conduct',
+  posh_policy: 'POSH Policy',
+  it_asset_policy: 'IT & Asset Policy',
+  leave_policy: 'Leave Policy',
+  salary_certificate: 'Salary Certificate',
+  increment_letter: 'Increment / Promotion Letter',
+  warning_letter: 'Warning Letter',
+  experience_letter: 'Experience Letter',
+  relieving_letter: 'Relieving Letter',
+  internship_certificate: 'Internship Certificate',
   policy: 'Policy',
   other: 'Document',
 };
@@ -22,7 +35,8 @@ export function renderTemplate(body: string, vars: Record<string, string>) {
 
 export function buildOnboardingVars(user: {
   full_name: string; designation: string; role: string; segmentName: string;
-  joining_date: string; salary_structure: { ctc: number }; employment_type: string; reporting_time?: string;
+  joining_date: string; salary_structure: { ctc: number }; employment_type: string;
+  reporting_time?: string; staff_code?: string | null; exit_date?: string | null;
 }) {
   return {
     name: user.full_name,
@@ -33,6 +47,13 @@ export function buildOnboardingVars(user: {
     ctc: user.salary_structure?.ctc ? Number(user.salary_structure.ctc).toLocaleString('en-IN') : '—',
     employment_type: (user.employment_type || 'full_time').replace('_', ' '),
     reporting_time: user.reporting_time || '9:30 AM – 6:30 PM, Monday to Saturday',
+    staff_code: user.staff_code || '—',
+    // Exit-document templates (experience, relieving, internship certificate)
+    exit_date: user.exit_date
+      ? new Date(user.exit_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+      : '—',
+    // Issue date, used as the letterhead date on every document
+    today: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
     company: 'Nikki Technologies',
   };
 }

@@ -1327,6 +1327,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       segmentName: seg?.name || 'Nikki Technologies', joining_date: issueFor.joining_date,
       salary_structure: issueFor.salary_structure || {}, employment_type: issueFor.employment_type,
       reporting_time: issueFor.reporting_time,
+      staff_code: issueFor.staff_code, exit_date: issueFor.exit_date,
     });
     const { data: { user } } = await supabase.auth.getUser();
     const docs = templates.filter(t => issueDocs.includes(t.id));

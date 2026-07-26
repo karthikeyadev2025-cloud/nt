@@ -452,3 +452,48 @@ local business to a national (India-wide) digital marketing and software company
 - Hero, Careers, Support and Footer fallback text hardcoded "CCTV, Digital Media
   and Software". These now derive from the live `segments` table, so they can
   never go stale again when segments change.
+
+## Real HR document suite (13 new templates)
+Expanded from 6 basic document types to a full professional set covering the
+entire employment lifecycle. All written for Indian employment context under
+the Nikki Technologies letterhead.
+
+**Hiring:** Offer Letter · **Appointment Letter** (the actual employment contract —
+position, probation, notice period, confidentiality, policy acceptance) · Welcome
+Letter · Job Description · Roles & Responsibilities
+
+**Post-joining:** **Confirmation Letter** (end of probation) · **NDA /
+Confidentiality Agreement** (covers client lists, ad account access, source code,
+credentials, employee data — with return-of-materials and 3-year survival) ·
+**Code of Conduct** · **POSH Policy** · **IT & Asset Policy** · **Leave Policy**
+
+**Ongoing:** **Salary Certificate** (for loans/visas/rentals) · **Increment /
+Promotion Letter** · **Warning Letter** (with a right-of-reply clause)
+
+**Exit:** **Experience Letter** · **Relieving Letter** · **Internship Certificate**
+
+**New placeholders added and wired:** `{{today}}` (letterhead date), `{{staff_code}}`
+(employee ID), `{{exit_date}}` (for exit documents) — alongside the existing name,
+designation, segment, joining date, CTC, employment type and reporting time.
+
+**Verified by execution, not assumption:** migration run against real Postgres
+(caught and fixed an SQL escaping bug in the POSH template that broke the string);
+all 25 templates then checked programmatically — **0 unresolvable placeholders**;
+appointment letter rendered end-to-end with real data.
+
+### ⚠ Legal review required before issuing
+These are professionally written templates, **not legal advice, and not reviewed by
+a lawyer**. Before issuing to a real employee, have a labour-law advocate review:
+- **Appointment Letter** — it is a binding employment contract
+- **NDA** — enforceability of restrictive terms varies
+- **POSH Policy** — governed by the Sexual Harassment of Women at Workplace Act,
+  2013. Mandatory once you have 10+ employees, and it **legally requires you to
+  constitute an Internal Committee** with a woman Presiding Officer, two employee
+  members and one external member. The template deliberately leaves those as blank
+  fields you must fill in — issuing it with blanks does not meet the legal requirement.
+- Probation, notice period and termination clauses — state-specific rules apply
+
+Every template is editable in Super Admin → Documents & Onboarding, so you can
+apply your lawyer's changes without touching code.
+
+One migration: `20260726000004_hr_document_suite.sql`
