@@ -427,3 +427,28 @@ No migration needed — frontend only.
 Super Admin → **Segments** → CCTV Installation → **Retire**. It disappears from
 nikkitechnologies.com immediately; Digital Media and Software remain. Staff, leads,
 tickets and history are all kept and stay manageable. Reactivate any time.
+
+## SEO repositioned: Digital Marketing + Software, India-wide
+CCTV removed from all SEO surfaces; positioning changed from a Hyderabad/Telangana
+local business to a national (India-wide) digital marketing and software company.
+
+**Changed:**
+- `seo.ts` — all CCTV keywords removed. Now ~70 keywords across digital marketing
+  (agency, social media, performance ads, SEO, branding, video) and software
+  (custom development, web, mobile, SaaS, automation, CRM, billing, AI) — targeted
+  at India nationally plus the major metros.
+- Structured data upgraded from generic `Organization` to `ProfessionalService`
+  with `areaServed: { Country: India }` (this is the signal that tells Google you
+  serve the whole country, not one city), plus a full `hasOfferCatalog` listing
+  each service and each SaaS product as a proper `SoftwareApplication`.
+- `index.html` — title, description, keywords, OG/Twitter cards rewritten;
+  `geo.region` widened from `IN-TG` to `IN`; canonical tag added.
+- `manifest.json` and `sitemap.xml` updated.
+
+**Leftovers found and fixed during the sweep:**
+- `WhatsAppButton` was still sending *"I'm interested in your solar and CCTV
+  solutions"* with bullet points for "Solar panel installation" — original Aadya
+  text that survived the entire rebrand and would have gone to real customers.
+- Hero, Careers, Support and Footer fallback text hardcoded "CCTV, Digital Media
+  and Software". These now derive from the live `segments` table, so they can
+  never go stale again when segments change.

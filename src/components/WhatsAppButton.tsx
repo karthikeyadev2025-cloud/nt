@@ -28,13 +28,13 @@ export default function WhatsAppButton() {
 
     const cleanNumber = whatsappNumber.replace(/\D/g, '');
 
-    const message = `Hi! I found your website *nikkitechnologies.com* and I'm interested in your solar and CCTV solutions.
+    const message = `Hi! I found your website *nikkitechnologies.com* and I'd like to know more about your services.
 
 🌐 Website: https://nikkitechnologies.com
 
-Please provide more information about:
-• Solar panel installation
-• CCTV camera systems
+Please share more information about:
+• Digital marketing services
+• Software / app development
 • Pricing and quotation
 
 Looking forward to hearing from you!`;
@@ -81,7 +81,7 @@ Looking forward to hearing from you!`;
 
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
               <p className="text-slate-300 text-sm leading-relaxed">
-                Hi! We're here to help you with solar and CCTV solutions. Click below to start chatting with our team on WhatsApp.
+                Hi! We're here to help with digital marketing and software solutions. Click below to start chatting with our team on WhatsApp.
               </p>
             </div>
 

@@ -151,7 +151,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           {content?.hero?.title || 'Nikki Technologies'}
         </h1>
         <p className="text-xl md:text-2xl bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent font-semibold mb-6 animate-gradient bg-[length:200%_auto]">
-          {content?.hero?.subtitle || 'CCTV • Digital Media • Software'}
+          {content?.hero?.subtitle || segments.map(s => s.name).join(' • ') || 'Digital Marketing • Software'}
         </p>
         <p className="text-slate-400 max-w-2xl mx-auto mb-10 text-lg">
           {content?.hero?.description || 'One technology partner for security surveillance, digital growth and software products.'}
@@ -494,7 +494,7 @@ function Careers({ segments }: { segments: Segment[] }) {
           <Briefcase className="w-10 h-10 text-sky-400 mx-auto mb-3" />
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-3">Careers at Nikki Technologies</h2>
           <p className="text-slate-400 max-w-2xl mx-auto">
-            We're hiring across CCTV, Digital Media and Software. Don't see a role that fits? Send us a general application.
+            {`We're hiring across ${segments.map(s => s.name).join(', ') || 'our divisions'}. Don't see a role that fits? Send us a general application.`}
           </p>
         </div>
 
@@ -634,7 +634,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
         <div className="text-center mb-10">
           <Ticket className="w-10 h-10 text-sky-400 mx-auto mb-3" />
           <h2 className="text-4xl font-bold text-white mb-2">Raise a Support Ticket</h2>
-          <p className="text-slate-400">Existing customer? Get help from the right team — CCTV, Digital Media or Software.</p>
+          <p className="text-slate-400">{`Existing customer? Get help from the right team — ${segments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
           <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-sky-400 text-sm mt-2 underline">
             {mode === 'raise' ? 'Already raised a ticket? Track its status' : 'Raise a new ticket instead'}
           </button>
@@ -750,7 +750,7 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
       <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8 text-sm">
         <div>
           <p className="text-white font-bold text-lg mb-2">Nikki Technologies</p>
-          <p className="text-slate-500">{content?.footer?.about || 'CCTV, digital media and software solutions under one roof.'}</p>
+          <p className="text-slate-500">{content?.footer?.about || 'Digital marketing and software solutions under one roof.'}</p>
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Divisions</p>

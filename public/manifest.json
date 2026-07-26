@@ -1,7 +1,7 @@
 {
   "name": "Nikki Technologies",
   "short_name": "Nikki Tech",
-  "description": "Nikki Technologies - CCTV, Digital Media & Software Solutions. Staff portal & CRM.",
+  "description": "Nikki Technologies — Digital Marketing & Software Development. Staff portal & CRM.",
   "start_url": "/login",
   "scope": "/",
   "display": "standalone",
