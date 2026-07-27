@@ -489,13 +489,26 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
     window.open(data.signedUrl, '_blank');
   }
 
+  // Only show tabs this person can actually act on — a manager without
+  // approve_advances would otherwise see an Advances tab that is always empty.
+  const visibleTabs = ([
+    { id: 'staff' as const, show: hasPermission('view_staff') },
+    { id: 'attendance' as const, show: hasPermission('view_attendance') },
+    { id: 'leaves' as const, show: hasPermission('approve_leaves') || hasPermission('view_staff') },
+    { id: 'advances' as const, show: hasPermission('approve_advances') || hasPermission('view_payroll') },
+  ]).filter(t => t.show);
+
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !visibleTabs.some(t => t.id === tab)) setTab(visibleTabs[0].id);
+  }, [visibleTabs.length]);
+
   return (
     <div>
       <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
       <div className="flex gap-2 mb-5">
-        {(['staff', 'attendance', 'leaves', 'advances'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${tab === t ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>{t}</button>
+        {visibleTabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${tab === t.id ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>{t.id}</button>
         ))}
       </div>
 

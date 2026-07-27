@@ -47,12 +47,14 @@ function AppContent() {
     if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
     // A temp password (set by an admin) must be replaced before anything else.
     if (user.must_change_password) return <Suspense fallback={<PageLoader />}><ForcePasswordChange /></Suspense>;
-    // Anyone with an admin-capable permission gets the admin console (its own
-    // tabs are further filtered to exactly what that person is allowed to do) —
-    // not just the literal super_admin account. Otherwise, the self-service portal.
+    // Only genuinely administrative permissions route to the admin console.
+    // manage_leads / manage_tickets are deliberately NOT here: telecallers,
+    // field executives and support agents hold them, and their real workflows
+    // (call queue, field visits, ticket queue) live in the staff portal. Sending
+    // them to the console would hide the very screens built for their job.
     const hasAdminAccess = user.role === 'super_admin' || [
       'manage_staff', 'manage_content', 'manage_payroll', 'manage_careers',
-      'view_reports', 'manage_tickets', 'assign_tickets', 'manage_leads',
+      'view_reports', 'assign_tickets',
       'bulk_assign_leads', 'approve_transfers', 'approve_advances',
     ].some(p => hasPermission(p));
     if (hasAdminAccess) return <Suspense fallback={<PageLoader />}><SuperAdminDashboard /></Suspense>;
