@@ -628,6 +628,10 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
     supabase.from('app_users').select('id, full_name, role, segments')
       .eq('is_active', true).eq('role', 'marketing_executive').order('full_name')
       .then(({ data }) => { if (data) setExecs(data); });
+    // Fallback for projects without pg_cron: sweeping here means reminders
+    // still go out whenever a manager opens this board. The function is
+    // idempotent, so calling it repeatedly is harmless.
+    supabase.rpc('remind_unassigned_appointments');
   }, []);
   useEffect(() => { load(); }, [segFilter, scope, execs.length]);
 

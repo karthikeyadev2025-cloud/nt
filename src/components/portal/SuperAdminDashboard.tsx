@@ -115,7 +115,7 @@ const emptyOnboard = {
   blood_group: '', id_proof_number: '',
   shift_id: '',
   salary_structure: { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 },
-  doc_types: ['welcome_letter', 'offer_letter', 'roles_responsibilities'] as string[],
+  doc_types: ['offer_letter', 'appointment_letter', 'welcome_letter', 'roles_responsibilities'] as string[],
 };
 
 function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; onDone: () => void; onClose: () => void }) {

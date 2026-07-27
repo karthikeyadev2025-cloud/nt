@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard } from 'lucide-react';
+import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -15,6 +15,182 @@ import { MyPayslips } from './payroll';
 import CameraCapture from '../CameraCapture';
 
 // ─────────────────────────── Self-service: attendance
+// ─────────────────────────── Role-aware Home
+// Every role lands here. The cards shown are chosen by what that person's job
+// actually is, so a telecaller sees today's calls and a field executive sees
+// today's appointments — instead of everyone getting the same attendance page.
+export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
+  const { user, hasPermission } = useAuth();
+  const [stats, setStats] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+
+  const role = user?.role;
+  const isCaller = role === 'telecaller';
+  const isExec = role === 'marketing_executive';
+  const isSupport = hasPermission('view_tickets');
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const todayStr = istDateStr();
+      const startOfDay = `${todayStr}T00:00:00`;
+      const s: any = {};
+
+      // Everyone: today's attendance + pending requests.
+      const [{ data: att }, { count: pendingLeaves }] = await Promise.all([
+        supabase.from('attendance_records').select('*')
+          .eq('staff_user_id', user.id).eq('attendance_date', todayStr).maybeSingle(),
+        supabase.from('leave_requests').select('id', { count: 'exact', head: true })
+          .eq('staff_user_id', user.id).eq('status', 'pending'),
+      ]);
+      s.attendance = att;
+      s.pendingLeaves = pendingLeaves || 0;
+
+      if (isCaller || isExec) {
+        const [{ count: myLeads }, { count: callsToday }, { data: appts }] = await Promise.all([
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
+            .eq('assigned_to', user.id).not('stage', 'in', '(won,lost)'),
+          supabase.from('lead_remarks').select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id).gte('created_at', startOfDay),
+          supabase.from('marketing_leads').select('id,customer_name,phone,appointment_at,appointment_note')
+            .eq('assigned_to', user.id).not('appointment_at', 'is', null)
+            .gte('appointment_at', new Date().toISOString())
+            .order('appointment_at').limit(5),
+        ]);
+        s.myLeads = myLeads || 0;
+        s.callsToday = callsToday || 0;
+        s.appointments = appts || [];
+
+        const { count: callbacks } = await supabase.from('marketing_leads')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_to', user.id).not('callback_at', 'is', null)
+          .lte('callback_at', new Date(Date.now() + 86400000).toISOString());
+        s.callbacksDue = callbacks || 0;
+      }
+
+      if (isSupport) {
+        const [{ count: openT }, { count: mineT }] = await Promise.all([
+          supabase.from('support_tickets').select('id', { count: 'exact', head: true })
+            .in('status', ['open', 'in_progress']),
+          supabase.from('support_tickets').select('id', { count: 'exact', head: true })
+            .eq('assigned_to', user.id).in('status', ['open', 'in_progress']),
+        ]);
+        s.openTickets = openT || 0;
+        s.myTickets = mineT || 0;
+      }
+
+      setStats(s);
+      setLoading(false);
+    })();
+  }, [user]);
+
+  if (loading) return <p className="text-slate-500 text-sm py-8 text-center">Loading…</p>;
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (user?.full_name || '').split(' ')[0];
+
+  const Tile = ({ label, value, tone = 'text-white', onClick }: any) => (
+    <button onClick={onClick} disabled={!onClick}
+      className={`${cardCls} text-left ${onClick ? 'hover:border-slate-600 cursor-pointer' : ''}`}>
+      <p className="text-slate-500 text-xs">{label}</p>
+      <p className={`text-2xl font-semibold mt-0.5 ${tone}`}>{value}</p>
+    </button>
+  );
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-white text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
+        <p className="text-slate-500 text-sm">
+          {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+          {user?.designation ? ` • ${user.designation}` : ''}
+        </p>
+      </div>
+
+      {/* Attendance status — the one thing everyone needs first. */}
+      <div className={cardCls}>
+        {!stats.attendance ? (
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-white text-sm font-medium">Not checked in yet</p>
+              <p className="text-slate-500 text-xs">Start your day from My Attendance.</p>
+            </div>
+            <button className={btnCls} onClick={() => onNavigate('attendance')}>Check In</button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-emerald-300 text-sm font-medium">
+                Checked in at {new Date(stats.attendance.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                {stats.attendance.is_late ? ` • ${stats.attendance.minutes_late} min late` : ''}
+              </p>
+              <p className="text-slate-500 text-xs capitalize">
+                {(stats.attendance.work_mode || 'office').replace('_', ' ')}
+                {stats.attendance.check_out_at ? ' • checked out' : ''}
+              </p>
+            </div>
+            {!stats.attendance.check_out_at && (
+              <button className="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-sm"
+                onClick={() => onNavigate('attendance')}>Check Out</button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Role-specific tiles */}
+      {(isCaller || isExec) && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <Tile label={isExec ? 'My leads' : 'In my queue'} value={stats.myLeads} onClick={() => onNavigate('leads')} />
+          <Tile label={isExec ? 'Visits logged today' : 'Calls logged today'} value={stats.callsToday} />
+          <Tile label="Callbacks due" value={stats.callbacksDue}
+            tone={stats.callbacksDue > 0 ? 'text-amber-400' : 'text-white'} onClick={() => onNavigate('leads')} />
+          <Tile label="Upcoming appointments" value={stats.appointments.length}
+            tone={stats.appointments.length > 0 ? 'text-sky-300' : 'text-white'} onClick={() => onNavigate('leads')} />
+        </div>
+      )}
+
+      {isSupport && (
+        <div className="grid grid-cols-2 gap-3">
+          <Tile label="Assigned to me" value={stats.myTickets}
+            tone={stats.myTickets > 0 ? 'text-sky-300' : 'text-white'} onClick={() => onNavigate('tickets')} />
+          <Tile label="Open in my segment" value={stats.openTickets} onClick={() => onNavigate('tickets')} />
+        </div>
+      )}
+
+      {/* Next appointments — the thing a field executive most needs to see. */}
+      {(isCaller || isExec) && stats.appointments.length > 0 && (
+        <div className={cardCls}>
+          <h3 className="text-white text-sm font-semibold mb-3">Next appointments</h3>
+          <div className="space-y-2">
+            {stats.appointments.map((a: any) => (
+              <div key={a.id} className="flex items-start justify-between gap-3 border-b border-slate-900 last:border-0 pb-2 last:pb-0">
+                <div className="min-w-0">
+                  <p className="text-white text-sm">{a.customer_name}</p>
+                  <p className="text-slate-500 text-xs">{a.phone}{a.appointment_note ? ` • ${a.appointment_note}` : ''}</p>
+                </div>
+                <p className="text-sky-300 text-xs whitespace-nowrap">
+                  {new Date(a.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {stats.pendingLeaves > 0 && (
+        <button className={cardCls + ' w-full text-left hover:border-slate-600'} onClick={() => onNavigate('requests')}>
+          <p className="text-amber-400 text-sm">
+            {stats.pendingLeaves} request{stats.pendingLeaves > 1 ? 's' : ''} awaiting approval
+          </p>
+        </button>
+      )}
+
+      <MyPerformanceChart />
+    </div>
+  );
+}
+
 export function MyAttendance() {
   const { user } = useAuth();
   const toast = useToast();
@@ -339,6 +515,7 @@ export default function StaffPortal() {
   const { segments } = useSegments(true);
 
   const tabs = [
+    { id: 'home', label: 'Home', icon: LayoutDashboard, show: true },
     { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },
     { id: 'documents', label: 'My Documents', icon: FileText, show: true },
     { id: 'requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
@@ -401,6 +578,7 @@ export default function StaffPortal() {
         {tab === 'attendance' && <MyAttendance />}
         {tab === 'documents' && <MyDocuments />}
         {tab === 'requests' && <MyRequests />}
+        {tab === 'home' && <MyHome onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />}
         {tab === 'profile' && <MyProfile />}
         {tab === 'swap' && <ShiftSwapBoard />}
         {tab === 'tickets' && <TicketsBoard segments={segments} />}
