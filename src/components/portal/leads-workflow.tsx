@@ -66,6 +66,7 @@ export function TelecallerStatsDashboard() {
 // ─────────────────────────── Telecaller: active call queue (click-to-call, quick remark, transfer request)
 const OUTCOMES = [
   { value: 'contacted', label: 'Spoke — Interested' },
+  { value: 'appointment', label: 'Appointment Booked' },
   { value: 'not_answered', label: 'Not Answered' },
   { value: 'lost', label: 'Not Interested' },
   { value: 'callback', label: 'Callback Requested' },
@@ -82,6 +83,8 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
   const [outcome, setOutcome] = useState('contacted');
   const [remark, setRemark] = useState('');
   const [callbackDate, setCallbackDate] = useState('');
+  const [appointmentDate, setAppointmentDate] = useState('');
+  const [appointmentNote, setAppointmentNote] = useState('');
   const [transferTo, setTransferTo] = useState('');
   const [busy, setBusy] = useState(false);
   const [showPool, setShowPool] = useState(false);
@@ -118,33 +121,46 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
 
   async function submitOutcome() {
     if (!active || !user || !remark.trim()) { toast.error('Please add a remark before saving'); return; }
-    setBusy(true);
     const isCallback = outcome === 'callback';
+    const isAppointment = outcome === 'appointment';
+    if (isAppointment && !appointmentDate) { toast.error('Please pick the appointment date and time'); return; }
+    if (isAppointment && new Date(appointmentDate) < new Date()) { toast.error('Appointment must be in the future'); return; }
+    setBusy(true);
     // Only terminal outcomes (won / lost / not-answered) release the lead back to
     // the unassigned pool. "Interested" and callbacks stay with the caller so the
     // lead never disappears into a pool that restricted staff can't see.
     const releasesToPool = outcome === 'won' || outcome === 'lost' || outcome === 'not_answered';
     const patch: any = {
-      stage: outcome === 'won' ? 'won' : outcome === 'lost' ? 'lost' : outcome === 'not_answered' ? 'not_answered' : 'contacted',
+      stage: outcome === 'won' ? 'won' : outcome === 'lost' ? 'lost'
+           : outcome === 'not_answered' ? 'not_answered'
+           : isAppointment ? 'qualified' : 'contacted',
       callback_at: isCallback && callbackDate ? new Date(callbackDate).toISOString() : null,
       assigned_to: releasesToPool ? null : user.id,
       updated_at: new Date().toISOString(),
     };
+    if (isAppointment) {
+      patch.appointment_at = new Date(appointmentDate).toISOString();
+      patch.appointment_note = appointmentNote;
+      patch.appointment_set_by = user.id;
+    }
     const { error: updErr } = await supabase.from('marketing_leads').update(patch).eq('id', active.id);
     if (updErr) { toast.error(`Couldn't save: ${updErr.message}`); setBusy(false); return; }
 
     await supabase.from('lead_remarks').insert({
       lead_id: active.id, user_id: user.id, call_type: 'outgoing',
-      remark: `[${OUTCOMES.find(o => o.value === outcome)?.label}] ${remark}`,
+      remark: `[${OUTCOMES.find(o => o.value === outcome)?.label}] ${remark}`
+        + (isAppointment ? ` — appointment ${new Date(appointmentDate).toLocaleString('en-IN')}` : ''),
     });
 
     setBusy(false);
     toast.success(
-      isCallback ? 'Callback scheduled — stays in your queue'
+      isAppointment ? 'Appointment booked — your manager has been notified to assign an executive'
+      : isCallback ? 'Callback scheduled — stays in your queue'
       : releasesToPool ? 'Saved — lead released to the unassigned pool'
       : 'Saved — lead stays in your queue for follow-up'
     );
     setActive(null);
+    setAppointmentDate(''); setAppointmentNote('');
     load();
   }
 
@@ -219,6 +235,17 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
             </select>
             {outcome === 'callback' && (
               <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} />
+            )}
+            {outcome === 'appointment' && (
+              <div className="space-y-2 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
+                <p className="text-sky-300 text-xs font-medium">Appointment date &amp; time *</p>
+                <input type="datetime-local" className={inputCls} value={appointmentDate}
+                  min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                  onChange={e => setAppointmentDate(e.target.value)} />
+                <input className={inputCls} placeholder="Location / what to bring (optional)"
+                  value={appointmentNote} onChange={e => setAppointmentNote(e.target.value)} />
+                <p className="text-slate-500 text-[11px]">Your manager will be notified to assign a field executive.</p>
+              </div>
             )}
             <textarea className={inputCls} rows={2} placeholder="Remark *" value={remark} onChange={e => setRemark(e.target.value)} />
             <button className={btnCls + ' w-full'} disabled={busy} onClick={submitOutcome}>Save Outcome</button>
@@ -567,9 +594,117 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
   );
 }
 
+// ─────────────────────────── Appointments (manager / super admin)
+// Leads where a telecaller booked a dated appointment. The manager's job here
+// is to put a named field executive against each one before the date arrives.
+export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
+  const toast = useToast();
+  const [leads, setLeads] = useState<any[]>([]);
+  const [execs, setExecs] = useState<any[]>([]);
+  const [segFilter, setSegFilter] = useState('');
+  const [scope, setScope] = useState<'upcoming' | 'unassigned' | 'past'>('upcoming');
+  const [busy, setBusy] = useState('');
+
+  async function load() {
+    let q = supabase.from('marketing_leads').select('*')
+      .not('appointment_at', 'is', null)
+      .not('stage', 'in', '(won,lost)')
+      .order('appointment_at', { ascending: true }).limit(300);
+    if (segFilter) q = q.eq('segment_slug', segFilter);
+    if (scope === 'upcoming') q = q.gte('appointment_at', new Date().toISOString());
+    if (scope === 'past') q = q.lt('appointment_at', new Date().toISOString());
+    const { data, error } = await q;
+    if (error) { toast.error(`Couldn't load appointments: ${error.message}`); return; }
+    let rows = data || [];
+    // "Needs an executive" = still sitting with whoever booked it, or nobody.
+    if (scope === 'unassigned') {
+      const execIds = new Set(execs.map(e => e.id));
+      rows = rows.filter(l => !l.assigned_to || !execIds.has(l.assigned_to));
+    }
+    setLeads(rows);
+  }
+
+  useEffect(() => {
+    supabase.from('app_users').select('id, full_name, role, segments')
+      .eq('is_active', true).eq('role', 'marketing_executive').order('full_name')
+      .then(({ data }) => { if (data) setExecs(data); });
+  }, []);
+  useEffect(() => { load(); }, [segFilter, scope, execs.length]);
+
+  async function assignExec(leadId: string, execId: string, customerName: string, apptAt: string) {
+    if (!execId) return;
+    setBusy(leadId);
+    const { error } = await supabase.from('marketing_leads')
+      .update({ assigned_to: execId, updated_at: new Date().toISOString() }).eq('id', leadId);
+    setBusy('');
+    if (error) { toast.error(`Couldn't assign: ${error.message}`); return; }
+    await supabase.from('notifications').insert({
+      user_id: execId, kind: 'appointment', title: `Appointment assigned: ${customerName}`,
+      body: `${new Date(apptAt).toLocaleString('en-IN')} — you are attending this appointment.`, link: '/portal',
+    });
+    toast.success('Executive assigned — they have been notified');
+    load();
+  }
+
+  const fmt = (s: string) => new Date(s).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true,
+  });
+
+  return (
+    <div>
+      <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
+      <div className="flex gap-2 mb-4">
+        {([['upcoming', 'Upcoming'], ['unassigned', 'Needs Executive'], ['past', 'Past']] as const).map(([v, label]) => (
+          <button key={v} onClick={() => setScope(v)}
+            className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {leads.length === 0 && (
+        <p className="text-slate-500 text-sm text-center py-10">
+          {scope === 'unassigned' ? 'Every appointment has an executive assigned.' : 'No appointments here.'}
+        </p>
+      )}
+
+      <div className="space-y-2">
+        {leads.map(l => {
+          const overdue = new Date(l.appointment_at) < new Date();
+          const assignedExec = execs.find(e => e.id === l.assigned_to);
+          return (
+            <div key={l.id} className={cardCls}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-white text-sm font-medium">{l.customer_name} <span className="text-slate-500">• {l.phone}</span></p>
+                  <p className={`text-xs mt-0.5 ${overdue ? 'text-amber-400' : 'text-sky-300'}`}>
+                    {fmt(l.appointment_at)}{overdue ? ' — date passed' : ''}
+                  </p>
+                  {l.appointment_note && <p className="text-slate-500 text-xs mt-0.5">{l.appointment_note}</p>}
+                  <p className="text-slate-600 text-[11px] mt-1">
+                    {assignedExec ? `Executive: ${assignedExec.full_name}` : 'No executive assigned yet'}
+                  </p>
+                </div>
+                <select className={inputCls + ' w-auto min-w-[190px]'} value={l.assigned_to || ''}
+                  disabled={busy === l.id}
+                  onChange={e => assignExec(l.id, e.target.value, l.customer_name, l.appointment_at)}>
+                  <option value="">Assign executive…</option>
+                  {execs
+                    .filter(e => (e.segments || []).includes(l.segment_slug) || (e.segments || []).includes('all'))
+                    .map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                </select>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function LeadsWorkspace({ segments, focusLeadId }: { segments: Segment[]; focusLeadId?: string }) {
   const { hasPermission } = useAuth();
-  const [sub, setSub] = useState<'board' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity'>('board');
+  const [sub, setSub] = useState<'board' | 'appointments' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity'>('board');
   const showBulk = hasPermission('bulk_assign_leads');
   const showTransfers = hasPermission('approve_transfers');
 
@@ -580,6 +715,7 @@ export function LeadsWorkspace({ segments, focusLeadId }: { segments: Segment[];
     <div>
       <div className="flex gap-2 mb-5 flex-wrap">
         <button onClick={() => setSub('board')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'board' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Leads Board</button>
+        <button onClick={() => setSub('appointments')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'appointments' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Appointments</button>
         <button onClick={() => setSub('pool')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'pool' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Unassigned Pool</button>
         <button onClick={() => setSub('activity')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'activity' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Team Activity</button>
         {showBulk && <button onClick={() => setSub('bulk')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bulk' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Bulk Upload</button>}
@@ -587,6 +723,7 @@ export function LeadsWorkspace({ segments, focusLeadId }: { segments: Segment[];
         {showTransfers && <button onClick={() => setSub('transfers')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'transfers' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Handoff Approvals</button>}
       </div>
       {sub === 'board' && <LeadsBoard segments={segments} focusLeadId={focusLeadId} />}
+      {sub === 'appointments' && <AppointmentsBoard segments={segments} />}
       {sub === 'pool' && <UnassignedLeadsPool segments={segments} />}
       {sub === 'activity' && <TeamActivityFeed />}
       {sub === 'bulk' && showBulk && <BulkLeadUpload segments={segments} />}
@@ -757,6 +894,13 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
           <div key={l.id} className={cardCls + ' cursor-pointer hover:border-slate-600'} onClick={() => openLead(l)}>
             <p className="text-white text-sm font-medium">{l.customer_name}</p>
             <p className="text-slate-500 text-xs mt-0.5">{l.phone} • {l.address || l.interested_in || 'No address captured yet'}</p>
+            {l.appointment_at && (
+              <p className={`text-xs mt-1 font-medium ${new Date(l.appointment_at) < new Date() ? 'text-amber-400' : 'text-sky-300'}`}>
+                📅 {new Date(l.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                {l.appointment_note ? ` — ${l.appointment_note}` : ''}
+                {new Date(l.appointment_at) < new Date() ? ' (date passed)' : ''}
+              </p>
+            )}
           </div>
         ))}
         {leads.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No field leads assigned. Claim from the unassigned pool below, add your own, or ask for a handoff.</p>}
