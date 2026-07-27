@@ -182,18 +182,12 @@ export function PayslipManager() {
     // Resolve the staff member's working days (1=Mon..7=Sun) from their current
     // shift. Falls back to Mon–Sat if no shift is assigned. Using this instead
     // of raw calendar days stops weekends from being counted as unpaid absences.
-    const { data: assignment } = await supabase.from('staff_shifts')
-      .select('shifts(working_days)').eq('staff_user_id', genForm.staff_user_id).is('effective_to', null)
-      .order('created_at', { ascending: false }).limit(1).maybeSingle();
-    const workingDaysOfWeek: number[] = (assignment?.shifts as any)?.working_days || [1, 2, 3, 4, 5, 6];
-
-    // ISO weekday (1=Mon..7=Sun) for a given day-of-month.
-    const isoDow = (day: number) => { const wd = new Date(y, m - 1, day).getDay(); return wd === 0 ? 7 : wd; };
-    const isWorkingDay = (day: number) => workingDaysOfWeek.includes(isoDow(day));
-
-    // Count actual working days in the month.
-    let workingDaysInMonth = 0;
-    for (let day = 1; day <= lastDay; day++) if (isWorkingDay(day)) workingDaysInMonth++;
+    // Working days come from the shared SQL function so payroll, leave and
+    // reports all agree — and so paid holidays aren't counted as absences.
+    const { data: wdData } = await supabase.rpc('staff_working_days_in_month', {
+      _staff_user_id: genForm.staff_user_id, _year: y, _month: m,
+    });
+    const workingDaysInMonth = Number(wdData ?? 0);
 
     const [{ data: records }, { data: leaves }] = await Promise.all([
       supabase.from('attendance_records').select('*').eq('staff_user_id', genForm.staff_user_id)
@@ -205,18 +199,17 @@ export function PayslipManager() {
     const present = (records || []).filter(r => r.check_in_at).length;
     const lateDays = (records || []).filter(r => r.is_late).length;
 
-    // Count leave only on working days within the clipped range.
+    // Leave days also come from the shared function, clipped to this period.
     let paidLeave = 0, unpaidLeave = 0;
-    (leaves || []).forEach(l => {
-      const from = new Date(Math.max(new Date(l.from_date).getTime(), new Date(`${periodStart}T00:00:00`).getTime()));
-      const to = new Date(Math.min(new Date(l.to_date).getTime(), new Date(`${periodEnd}T00:00:00`).getTime()));
-      let workingLeaveDays = 0;
-      for (let t = from.getTime(); t <= to.getTime(); t += 86400000) {
-        const dt = new Date(t);
-        if (dt.getFullYear() === y && dt.getMonth() === m - 1 && isWorkingDay(dt.getDate())) workingLeaveDays++;
-      }
+    for (const l of leaves || []) {
+      const from = l.from_date < periodStart ? periodStart : l.from_date;
+      const to = l.to_date > periodEnd ? periodEnd : l.to_date;
+      const { data: lwd } = await supabase.rpc('leave_working_days', {
+        _staff_user_id: genForm.staff_user_id, _from: from, _to: to,
+      });
+      const workingLeaveDays = Number(lwd ?? 0);
       if (l.leave_type === 'unpaid') unpaidLeave += workingLeaveDays; else paidLeave += workingLeaveDays;
-    });
+    }
     const absent = Math.max(0, workingDaysInMonth - present - paidLeave - unpaidLeave);
 
     setGenForm({
