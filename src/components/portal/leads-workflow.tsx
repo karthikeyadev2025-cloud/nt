@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs } from './shared';
 import { normalizePhone } from '../../lib/phone';
+import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { MyCallsChart } from './performance';
 import type { Segment } from '../../lib/database.types';
 
@@ -457,7 +458,11 @@ export function TeamActivityFeed() {
 
   async function load() {
     setLoading(true);
-    let q = supabase.from('lead_remarks').select('*').order('created_at', { ascending: false }).limit(300);
+    // Order by when the work actually happened, so a visit logged offline on
+    // Monday and synced Wednesday sits on Monday, not at the top.
+    let q = supabase.from('lead_remarks').select('*')
+      .order('occurred_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false }).limit(300);
     if (typeFilter) q = q.eq('call_type', typeFilter);
     if (personFilter) q = q.eq('user_id', personFilter);
     if (days) q = q.gte('created_at', new Date(Date.now() - days * 86400000).toISOString());
@@ -519,7 +524,10 @@ export function TeamActivityFeed() {
               </div>
               <p className="text-slate-300 text-sm mt-1">{r.remark}</p>
               <p className="text-slate-600 text-xs mt-1">
-                {userNames[r.user_id] || 'Unknown'} • {new Date(r.created_at).toLocaleString()}
+                {userNames[r.user_id] || 'Unknown'} • {new Date(r.occurred_at || r.created_at).toLocaleString()}
+                {r.occurred_at && new Date(r.created_at).getTime() - new Date(r.occurred_at).getTime() > 3600000 && (
+                  <span className="text-slate-700"> • synced later</span>
+                )}
               </p>
               {(r.address || r.photo_url || r.latitude) && (
                 <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
@@ -834,6 +842,10 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [visitRequirement, setVisitRequirement] = useState('');
   const [nextFollowup, setNextFollowup] = useState('');
   const [apptAt, setApptAt] = useState('');
+  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingItems, setPendingItems] = useState<QueuedVisit[]>([]);
+  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  const [syncing, setSyncing] = useState(false);
   const [newLead, setNewLead] = useState({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
 
   async function load() {
@@ -852,6 +864,35 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   // Fallback when pg_cron isn't enabled: sweeping here means due follow-ups
   // still notify whenever field staff open their queue. Idempotent.
   useEffect(() => { supabase.rpc('remind_due_followups'); }, []);
+
+  // Offline queue: keep the pending count live, flush automatically on
+  // reconnect / focus / timer, and refresh the lead list once things land.
+  useEffect(() => {
+    const refresh = async () => {
+      setPendingCount(await queueCount());
+      setPendingItems(await listQueued());
+    };
+    refresh();
+    const stop = startAutoFlush(supabase, result => {
+      refresh();
+      if (result.synced > 0) { toast.success(`${result.synced} visit(s) synced`); load(); }
+    });
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { stop(); window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+
+  async function syncNow() {
+    setSyncing(true);
+    const r = await flushQueue(supabase);
+    setSyncing(false);
+    setPendingCount(r.remaining);
+    setPendingItems(await listQueued());
+    if (r.synced > 0) { toast.success(`${r.synced} visit(s) synced`); load(); }
+    else if (r.remaining > 0) toast.error(`Still offline — ${r.remaining} visit(s) waiting`);
+  }
 
   const [duplicateInfo, setDuplicateInfo] = useState<any[] | null>(null);
 
@@ -911,25 +952,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   async function saveVisit() {
     if (!active || !user || !remark.trim()) { toast.error('Add a visit note before saving'); return; }
     setBusy(true);
-    let photo_url: string | null = null;
-    if (photoDataUrl) {
-      const res = await fetch(photoDataUrl);
-      const blob = await res.blob();
-      const path = `${active.id}/${Date.now()}.jpg`;
-      const { error: upErr } = await supabase.storage.from('lead-photos').upload(path, blob, { contentType: 'image/jpeg' });
-      if (upErr) toast.error(`Photo upload failed: ${upErr.message}`);
-      else photo_url = path;
-    }
 
-    const { error: remErr } = await supabase.from('lead_remarks').insert({
-      lead_id: active.id, user_id: user.id, call_type: 'visit', remark,
-      photo_url, latitude: location?.lat ?? null, longitude: location?.lng ?? null, address: location?.address ?? null,
-    });
-    if (remErr) { toast.error(`Couldn't save visit: ${remErr.message}`); setBusy(false); return; }
+    const photoBlob = photoDataUrl ? await (await fetch(photoDataUrl)).blob() : null;
 
     const isClosed = outcome === 'won' || outcome === 'lost';
     const patch: any = { stage: outcome, updated_at: new Date().toISOString() };
-    if (photo_url) patch.photo_url = photo_url;
     if (location) {
       patch.latitude = location.lat; patch.longitude = location.lng;
       if (location.address) patch.address = location.address;
@@ -956,11 +983,34 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     // own conversion numbers the moment they won, and the won/lost stages are
     // already excluded from the unassigned pool.
 
-    const { error: leadErr } = await supabase.from('marketing_leads').update(patch).eq('id', active.id);
-    setBusy(false);
-    if (leadErr) { toast.error(`Couldn't update lead: ${leadErr.message}`); return; }
+    // Queue first, always. The visit is safely on the device before any
+    // network call, so a dead signal at a customer site can no longer lose
+    // notes, photo or GPS. flushQueue then tries to send it immediately.
+    const clientRef = crypto.randomUUID();
+    await enqueue({
+      id: clientRef,
+      leadId: active.id,
+      leadName: active.customer_name,
+      userId: user.id,
+      remark,
+      callType: 'visit',
+      occurredAt: new Date().toISOString(),
+      latitude: location?.lat ?? null,
+      longitude: location?.lng ?? null,
+      address: location?.address ?? null,
+      photo: photoBlob,
+      leadPatch: patch,
+    });
 
-    toast.success(isClosed ? 'Visit logged — lead closed' : 'Visit logged');
+    const result = await flushQueue(supabase);
+    setBusy(false);
+    setPendingCount(result.remaining);
+
+    if (result.remaining > 0) {
+      toast.success(`Visit saved on your phone — will sync automatically (${result.remaining} pending)`);
+    } else {
+      toast.success(isClosed ? 'Visit logged — lead closed' : 'Visit logged');
+    }
     setActive(null);
     setDealValue(''); setVisitRequirement(''); setNextFollowup(''); setApptAt('');
     load();
@@ -974,6 +1024,37 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
   return (
     <div>
+      {(!online || pendingCount > 0) && (
+        <div className={`mb-3 rounded-xl border px-4 py-3 ${online ? 'border-amber-600/40 bg-amber-500/10' : 'border-slate-600 bg-slate-800/60'}`}>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className={`text-sm font-medium ${online ? 'text-amber-300' : 'text-slate-300'}`}>
+                {online
+                  ? `${pendingCount} visit${pendingCount === 1 ? '' : 's'} waiting to sync`
+                  : `Offline${pendingCount > 0 ? ` — ${pendingCount} visit${pendingCount === 1 ? '' : 's'} saved on this phone` : ' — visits will be saved on this phone'}`}
+              </p>
+              <p className="text-slate-500 text-xs mt-0.5">
+                {online ? 'Retrying automatically.' : 'Keep working — everything syncs when signal returns.'}
+              </p>
+            </div>
+            {online && pendingCount > 0 && (
+              <button className="px-3 py-1.5 rounded-lg border border-slate-600 text-slate-200 text-xs whitespace-nowrap"
+                disabled={syncing} onClick={syncNow}>{syncing ? 'Syncing…' : 'Sync now'}</button>
+            )}
+          </div>
+          {pendingItems.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-slate-700/60 space-y-1">
+              {pendingItems.slice(0, 5).map(p => (
+                <p key={p.id} className="text-slate-500 text-[11px]">
+                  {p.leadName} — {new Date(p.occurredAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                  {p.photo ? ' • photo' : ''}{p.attempts > 0 ? ` • ${p.attempts} attempt(s)` : ''}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-white font-semibold text-sm">My Field Leads ({leads.length})</h3>
         <button className="text-sky-400 text-xs font-medium" onClick={() => { setDuplicateInfo(null); setShowAddLead(true); }}>+ Add Lead</button>

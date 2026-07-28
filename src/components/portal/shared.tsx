@@ -245,7 +245,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   }
 
   async function loadRemarks(id: string) {
-    const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', id).order('created_at', { ascending: false });
+    const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', id).order('occurred_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
     if (data) setRemarks(data as any);
   }
 
