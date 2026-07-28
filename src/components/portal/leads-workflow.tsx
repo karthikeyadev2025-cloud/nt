@@ -440,14 +440,28 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
 // carried over from the original Aadya ManagerPortal "Conversations" tab.
 // Without this, a manager has to open each lead individually to see any notes.)
 export function TeamActivityFeed() {
+  const toast = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [leadNames, setLeadNames] = useState<Record<string, { name: string; phone: string }>>({});
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState('');
+  const [personFilter, setPersonFilter] = useState('');
+  const [days, setDays] = useState(7);
+
+  async function viewPhoto(path: string) {
+    const { data, error } = await supabase.storage.from('lead-photos').createSignedUrl(path, 300);
+    if (error || !data) { toast.error("Couldn't load photo"); return; }
+    window.open(data.signedUrl, '_blank');
+  }
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase.from('lead_remarks').select('*').order('created_at', { ascending: false }).limit(300);
+    let q = supabase.from('lead_remarks').select('*').order('created_at', { ascending: false }).limit(300);
+    if (typeFilter) q = q.eq('call_type', typeFilter);
+    if (personFilter) q = q.eq('user_id', personFilter);
+    if (days) q = q.gte('created_at', new Date(Date.now() - days * 86400000).toISOString());
+    const { data } = await q;
     if (data) setItems(data);
     const leadIds = [...new Set((data || []).map((r: any) => r.lead_id))];
     const userIds = [...new Set((data || []).map((r: any) => r.user_id).filter(Boolean))];
@@ -461,18 +475,39 @@ export function TeamActivityFeed() {
     }
     setLoading(false);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [typeFilter, personFilter, days]);
 
   const typeColor: Record<string, string> = {
     outgoing: 'text-sky-400', incoming: 'text-emerald-400', visit: 'text-amber-400',
     whatsapp: 'text-emerald-400', email: 'text-purple-400', note: 'text-slate-400',
+    review: 'text-purple-300',
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-slate-400 text-sm">Every call, visit and note across the whole team, most recent first.</p>
+        <p className="text-slate-400 text-sm">Every call, visit and note across your team, most recent first.</p>
         <button className="text-sky-400 text-xs" onClick={load}>Refresh</button>
+      </div>
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <select className={inputCls + ' w-auto'} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+          <option value="">All activity</option>
+          <option value="visit">Field visits</option>
+          <option value="outgoing">Calls</option>
+          <option value="review">Reviews</option>
+          <option value="note">Notes</option>
+          <option value="whatsapp">WhatsApp</option>
+        </select>
+        <select className={inputCls + ' w-auto'} value={personFilter} onChange={e => setPersonFilter(e.target.value)}>
+          <option value="">Everyone</option>
+          {Object.entries(userNames).map(([id, name]) => <option key={id} value={id}>{name as string}</option>)}
+        </select>
+        <select className={inputCls + ' w-auto'} value={days} onChange={e => setDays(Number(e.target.value))}>
+          <option value={1}>Today</option>
+          <option value={7}>Last 7 days</option>
+          <option value={30}>Last 30 days</option>
+          <option value={0}>All time</option>
+        </select>
       </div>
       {loading ? <p className="text-slate-500 text-sm text-center py-10">Loading…</p> : (
         <div className="space-y-2">
@@ -485,8 +520,19 @@ export function TeamActivityFeed() {
               <p className="text-slate-300 text-sm mt-1">{r.remark}</p>
               <p className="text-slate-600 text-xs mt-1">
                 {userNames[r.user_id] || 'Unknown'} • {new Date(r.created_at).toLocaleString()}
-                {r.address && <span> • 📍 {r.address}</span>}
               </p>
+              {(r.address || r.photo_url || r.latitude) && (
+                <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
+                  {r.address && <span className="text-slate-500">📍 {r.address}</span>}
+                  {!r.address && r.latitude && (
+                    <a className="text-sky-400" target="_blank" rel="noreferrer"
+                      href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}>📍 View on map</a>
+                  )}
+                  {r.photo_url && (
+                    <button className="text-sky-400" onClick={() => viewPhoto(r.photo_url)}>📷 Proof photo</button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
           {items.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No activity yet.</p>}
@@ -786,17 +832,26 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [showPool, setShowPool] = useState(false);
   const [dealValue, setDealValue] = useState('');
   const [visitRequirement, setVisitRequirement] = useState('');
+  const [nextFollowup, setNextFollowup] = useState('');
+  const [apptAt, setApptAt] = useState('');
   const [newLead, setNewLead] = useState({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
 
   async function load() {
     if (!user) return;
+    // Soonest commitment first: appointments and follow-ups you've promised
+    // outrank leads you haven't scheduled anything on.
     const { data, error } = await supabase.from('marketing_leads').select('*')
       .eq('assigned_to', user.id).not('stage', 'in', '(won,lost)')
+      .order('appointment_at', { ascending: true, nullsFirst: false })
+      .order('next_followup_at', { ascending: true, nullsFirst: false })
       .order('updated_at', { ascending: true });
     if (error) { toast.error(`Couldn't load your leads: ${error.message}`); return; }
     if (data) setLeads(data);
   }
   useEffect(() => { load(); }, [user]);
+  // Fallback when pg_cron isn't enabled: sweeping here means due follow-ups
+  // still notify whenever field staff open their queue. Idempotent.
+  useEffect(() => { supabase.rpc('remind_due_followups'); }, []);
 
   const [duplicateInfo, setDuplicateInfo] = useState<any[] | null>(null);
 
@@ -833,6 +888,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     setLocation(null);
     setDealValue(lead.invoice_amount || lead.estimated_value || '');
     setVisitRequirement(lead.interested_in || '');
+    setNextFollowup(lead.next_followup_at ? new Date(lead.next_followup_at).toISOString().slice(0,16) : '');
+    setApptAt(lead.appointment_at ? new Date(lead.appointment_at).toISOString().slice(0,16) : '');
     const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', lead.id).order('created_at', { ascending: false });
     if (data) setRemarks(data);
   }
@@ -884,6 +941,17 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       if (outcome === 'won') patch.invoice_amount = Number(dealValue);
       else patch.estimated_value = Number(dealValue);
     }
+    // Field staff schedule their own next touch; closing clears it so a won
+    // deal doesn't keep nagging.
+    patch.next_followup_at = isClosed ? null : (nextFollowup ? new Date(nextFollowup).toISOString() : null);
+    // The executive can move or set the appointment themselves after meeting
+    // the customer — they're the one who agreed the new time.
+    if (apptAt) {
+      patch.appointment_at = new Date(apptAt).toISOString();
+      patch.appointment_set_by = user.id;
+    } else if (isClosed) {
+      patch.appointment_at = null;
+    }
     // Ownership is retained on close. Releasing it used to wipe the closer's
     // own conversion numbers the moment they won, and the won/lost stages are
     // already excluded from the unassigned pool.
@@ -894,7 +962,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
     toast.success(isClosed ? 'Visit logged — lead closed' : 'Visit logged');
     setActive(null);
-    setDealValue(''); setVisitRequirement('');
+    setDealValue(''); setVisitRequirement(''); setNextFollowup(''); setApptAt('');
     load();
   }
 
@@ -915,6 +983,12 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
           <div key={l.id} className={cardCls + ' cursor-pointer hover:border-slate-600'} onClick={() => openLead(l)}>
             <p className="text-white text-sm font-medium">{l.customer_name}</p>
             <p className="text-slate-500 text-xs mt-0.5">{l.phone} • {l.address || l.interested_in || 'No address captured yet'}</p>
+            {l.next_followup_at && !l.appointment_at && (
+              <p className={`text-xs mt-1 ${new Date(l.next_followup_at) < new Date() ? 'text-red-400 font-medium' : 'text-slate-400'}`}>
+                {new Date(l.next_followup_at) < new Date() ? '⚠ Follow-up overdue: ' : '↻ Follow-up: '}
+                {new Date(l.next_followup_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+              </p>
+            )}
             {l.appointment_at && (
               <p className={`text-xs mt-1 font-medium ${new Date(l.appointment_at) < new Date() ? 'text-amber-400' : 'text-sky-300'}`}>
                 📅 {new Date(l.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
@@ -971,6 +1045,20 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 placeholder={outcome === 'won' ? 'Final invoice amount (₹)' : 'Estimated deal value (₹)'}
                 value={dealValue} onChange={e => setDealValue(e.target.value)} />
               <textarea className={inputCls} rows={2} placeholder="Visit notes / conversation summary *" value={remark} onChange={e => setRemark(e.target.value)} />
+              {outcome !== 'won' && outcome !== 'lost' && (
+                <div className="grid grid-cols-1 gap-2 mt-2">
+                  <div>
+                    <p className="text-slate-400 text-xs mb-1">Next follow-up (reminds you)</p>
+                    <input type="datetime-local" className={inputCls} value={nextFollowup}
+                      onChange={e => setNextFollowup(e.target.value)} />
+                  </div>
+                  <div>
+                    <p className="text-slate-400 text-xs mb-1">Next appointment (visible to manager)</p>
+                    <input type="datetime-local" className={inputCls} value={apptAt}
+                      onChange={e => setApptAt(e.target.value)} />
+                  </div>
+                </div>
+              )}
               <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>{busy ? 'Saving…' : 'Save Visit'}</button>
             </div>
 

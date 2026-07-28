@@ -72,6 +72,10 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
         jobs.push(count('unassignedLeads',
           supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
             .is('assigned_to', null).not('stage', 'in', '(won,lost)')));
+        jobs.push(count('overdueFollowups',
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
+            .not('next_followup_at', 'is', null).lt('next_followup_at', new Date().toISOString())
+            .not('stage', 'in', '(won,lost)')));
         jobs.push(count('apptsSoon',
           supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
             .not('appointment_at', 'is', null).gte('appointment_at', new Date().toISOString())
@@ -108,6 +112,7 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
     { key: 'advances', label: 'Advance requests to review', tab: 'hr', tone: 'text-amber-400', show: canAdvances },
     { key: 'regularizations', label: 'Attendance corrections pending', tab: 'hr', tone: 'text-amber-400', show: canStaff },
     { key: 'apptsSoon', label: 'Appointments in next 24h', tab: 'crm', tone: 'text-sky-300', show: canLeads },
+    { key: 'overdueFollowups', label: 'Follow-ups overdue', tab: 'crm', tone: 'text-red-400', show: canLeads },
     { key: 'transfers', label: 'Lead handoffs to approve', tab: 'crm', tone: 'text-purple-300', show: canTransfers },
     { key: 'unassignedLeads', label: 'Leads with no owner', tab: 'crm', tone: 'text-sky-300', show: canLeads },
     { key: 'unassignedTickets', label: 'Tickets with no owner', tab: 'tickets', tone: 'text-red-400', show: canTickets },

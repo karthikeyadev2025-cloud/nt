@@ -45,6 +45,15 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  -- System-generated audit remarks ("Stage changed: …", "Reassigned: …") are
+  -- written by triggers, not people. Notifying on them would mean every stage
+  -- change pinged the owner about their own action.
+  IF NEW.user_id IS NULL
+     OR NEW.remark LIKE 'Stage changed:%'
+     OR NEW.remark LIKE 'Reassigned:%' THEN
+    RETURN NEW;
+  END IF;
+
   SELECT full_name INTO author FROM app_users WHERE id = NEW.user_id;
 
   PERFORM notify_user(
