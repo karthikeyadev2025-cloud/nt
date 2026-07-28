@@ -337,6 +337,7 @@ export function TransferApprovals() {
 // ─────────────────────────── Manager/Super Admin: Excel bulk upload + assign
 export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [rows, setRows] = useState<any[]>([]);
@@ -417,13 +418,17 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
         <div className="mb-3">
           <p className="text-emerald-400 text-xs mb-2">{fileName}: {rows.length} valid rows detected</p>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <select className={inputCls} value={segment} onChange={e => setSegment(e.target.value)}>
+            <select className={inputCls} value={segment} onChange={e => { setSegment(e.target.value); setAssignTo(''); }}>
               <option value="">Assign to Segment *</option>
-              {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+              {segments
+                .filter(s => isSuperAdmin || (user?.segments || []).includes('all') || (user?.segments || []).includes(s.slug))
+                .map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
             <select className={inputCls} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
               <option value="">Leave unassigned</option>
-              {sortedAssignees.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+              {sortedAssignees
+                .filter(s => !segment || (s.segments || []).includes(segment) || (s.segments || []).includes('all'))
+                .map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
             </select>
           </div>
           <button className={btnCls} disabled={busy} onClick={upload}>
