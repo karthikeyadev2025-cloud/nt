@@ -31,7 +31,115 @@ const PERMISSION_KEYS = [
 ];
 
 // ─────────────────────────────────────── Overview
-function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: () => void }) {
+// ─────────────────────────── Action Centre (role-aware "what needs me today")
+// The segment stat cards below tell you how the business is doing; this tells
+// you what is waiting on YOU. Every item is gated on the permission that lets
+// the person actually act on it, so nobody is shown a queue they can't clear.
+function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
+  const { user, hasPermission } = useAuth();
+  const [c, setC] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  const isSA = user?.role === 'super_admin';
+  const canLeaves = isSA || hasPermission('approve_leaves');
+  const canAdvances = isSA || hasPermission('approve_advances');
+  const canLeads = isSA || hasPermission('bulk_assign_leads') || hasPermission('full_leads_view');
+  const canTransfers = isSA || hasPermission('approve_transfers');
+  const canTickets = isSA || hasPermission('view_tickets') || hasPermission('manage_tickets');
+  const canAttendance = isSA || hasPermission('view_attendance');
+  const canStaff = isSA || hasPermission('manage_staff');
+
+  useEffect(() => {
+    (async () => {
+      const out: Record<string, number> = {};
+      const today = istDateStr();
+      const soon = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+      const jobs: Promise<void>[] = [];
+      const count = async (key: string, q: any) => {
+        const { count: n } = await q;
+        out[key] = n || 0;
+      };
+
+      if (canLeaves) jobs.push(count('leaves',
+        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')));
+      if (canAdvances) jobs.push(count('advances',
+        supabase.from('salary_advance_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')));
+      if (canStaff) jobs.push(count('regularizations',
+        supabase.from('attendance_regularizations').select('id', { count: 'exact', head: true }).eq('status', 'pending')));
+      if (canTransfers) jobs.push(count('transfers',
+        supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_status', 'pending')));
+      if (canLeads) {
+        jobs.push(count('unassignedLeads',
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
+            .is('assigned_to', null).not('stage', 'in', '(won,lost)')));
+        jobs.push(count('apptsSoon',
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
+            .not('appointment_at', 'is', null).gte('appointment_at', new Date().toISOString())
+            .lte('appointment_at', soon).not('stage', 'in', '(won,lost)')));
+      }
+      if (canTickets) {
+        jobs.push(count('openTickets',
+          supabase.from('support_tickets').select('id', { count: 'exact', head: true })
+            .in('status', ['open', 'in_progress'])));
+        jobs.push(count('unassignedTickets',
+          supabase.from('support_tickets').select('id', { count: 'exact', head: true })
+            .is('assigned_to', null).in('status', ['open', 'in_progress'])));
+      }
+      if (canAttendance) {
+        // Staff with no check-in row for today.
+        const [{ data: staff }, { data: present }] = await Promise.all([
+          supabase.from('app_users').select('id').eq('is_active', true).neq('role', 'super_admin'),
+          supabase.from('attendance_records').select('staff_user_id').eq('attendance_date', today),
+        ]);
+        const inToday = new Set((present || []).map((r: any) => r.staff_user_id));
+        out.notCheckedIn = (staff || []).filter((s: any) => !inToday.has(s.id)).length;
+      }
+
+      await Promise.all(jobs);
+      setC(out);
+      setLoading(false);
+    })();
+  }, [user]);
+
+  if (loading) return null;
+
+  const items = [
+    { key: 'leaves', label: 'Leave requests to review', tab: 'hr', tone: 'text-amber-400', show: canLeaves },
+    { key: 'advances', label: 'Advance requests to review', tab: 'hr', tone: 'text-amber-400', show: canAdvances },
+    { key: 'regularizations', label: 'Attendance corrections pending', tab: 'hr', tone: 'text-amber-400', show: canStaff },
+    { key: 'apptsSoon', label: 'Appointments in next 24h', tab: 'crm', tone: 'text-sky-300', show: canLeads },
+    { key: 'transfers', label: 'Lead handoffs to approve', tab: 'crm', tone: 'text-purple-300', show: canTransfers },
+    { key: 'unassignedLeads', label: 'Leads with no owner', tab: 'crm', tone: 'text-sky-300', show: canLeads },
+    { key: 'unassignedTickets', label: 'Tickets with no owner', tab: 'tickets', tone: 'text-red-400', show: canTickets },
+    { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-slate-300', show: canTickets },
+    { key: 'notCheckedIn', label: 'Staff not checked in today', tab: 'hr', tone: 'text-slate-300', show: canAttendance },
+  ].filter(i => i.show && (c[i.key] ?? 0) > 0);
+
+  if (items.length === 0) {
+    return (
+      <div className={cardCls + ' mb-6'}>
+        <p className="text-emerald-300 text-sm">Nothing waiting on you right now.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-slate-400 text-xs font-semibold tracking-wider mb-2">NEEDS YOUR ATTENTION</h3>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {items.map(i => (
+          <button key={i.key} onClick={() => onGo(i.tab)}
+            className={cardCls + ' text-left hover:border-slate-600 cursor-pointer'}>
+            <p className={`text-2xl font-semibold ${i.tone}`}>{c[i.key]}</p>
+            <p className="text-slate-500 text-xs mt-0.5">{i.label}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddStaff: () => void; onGo: (tab: string) => void }) {
   const { user, hasPermission } = useAuth();
   const canOnboard = user?.role === 'super_admin' || hasPermission('manage_staff');
   const [stats, setStats] = useState<Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }>>({});
@@ -64,6 +172,7 @@ function Overview({ segments, onAddStaff }: { segments: Segment[]; onAddStaff: (
 
   return (
     <div className="space-y-5">
+      <ActionCentre onGo={onGo} />
       {canOnboard && (
         <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-sky-500/10 border border-sky-700/40">
           <p className="text-sky-200 text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
@@ -1578,7 +1687,7 @@ export default function SuperAdminDashboard() {
         {tab === 'my_requests' && <MyRequests />}
         {tab === 'my_profile' && <MyProfile />}
         {tab === 'my_swap' && <ShiftSwapBoard />}
-        {tab === 'overview' && <Overview segments={segments} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
+        {tab === 'overview' && <Overview segments={segments} onGo={(t) => setTab(t as Tab)} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
         {tab === 'tickets' && <TicketsSection segments={segments} focusId={focus?.kind === 'ticket' ? focus.id : undefined} />}
         {tab === 'crm' && <LeadsWorkspace segments={segments} focusLeadId={focus?.kind === 'lead' ? focus.id : undefined} />}
         {tab === 'hr' && <HRSection segments={segments} />}
