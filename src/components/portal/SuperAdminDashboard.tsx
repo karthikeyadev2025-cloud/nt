@@ -11,6 +11,7 @@ import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals, ShiftSwapBoard } from './features';
+import { TasksBoard } from './tasks';
 import { LeadsWorkspace } from './leads-workflow';
 import { AttendanceTrendChart, LeadsFunnelChart, TicketStatusChart } from './performance';
 import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll';
@@ -81,6 +82,13 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
             .not('appointment_at', 'is', null).gte('appointment_at', new Date().toISOString())
             .lte('appointment_at', soon).not('stage', 'in', '(won,lost)')));
       }
+      jobs.push(count('myTasks',
+        supabase.from('office_tasks').select('id', { count: 'exact', head: true })
+          .eq('assigned_to', user?.id).in('status', ['pending', 'in_progress'])));
+      if (canStaff || canLeads) jobs.push(count('overdueTasks',
+        supabase.from('office_tasks').select('id', { count: 'exact', head: true })
+          .in('status', ['pending', 'in_progress'])
+          .lt('due_date', istDateStr())));
       if (canTickets) {
         jobs.push(count('openTickets',
           supabase.from('support_tickets').select('id', { count: 'exact', head: true })
@@ -112,6 +120,8 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
     { key: 'advances', label: 'Advance requests to review', tab: 'hr', tone: 'text-amber-400', show: canAdvances },
     { key: 'regularizations', label: 'Attendance corrections pending', tab: 'hr', tone: 'text-amber-400', show: canStaff },
     { key: 'apptsSoon', label: 'Appointments in next 24h', tab: 'crm', tone: 'text-sky-300', show: canLeads },
+    { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-sky-300', show: true },
+    { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-400', show: canStaff || canLeads },
     { key: 'overdueFollowups', label: 'Follow-ups overdue', tab: 'crm', tone: 'text-red-400', show: canLeads },
     { key: 'transfers', label: 'Lead handoffs to approve', tab: 'crm', tone: 'text-purple-300', show: canTransfers },
     { key: 'unassignedLeads', label: 'Leads with no owner', tab: 'crm', tone: 'text-sky-300', show: canLeads },
@@ -1571,7 +1581,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   );
 }
 
-type Tab = 'overview' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content' | 'security'
+type Tab = 'overview' | 'tasks' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content' | 'security'
   | 'my_attendance' | 'my_documents' | 'my_requests' | 'my_profile' | 'my_swap';
 
 export default function SuperAdminDashboard() {
@@ -1603,6 +1613,7 @@ export default function SuperAdminDashboard() {
   const adminTabDefs: { id: Tab; label: string; icon: any; show: boolean }[] = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, show: true },
     { id: 'tickets', label: 'Tickets', icon: Ticket, show: isSuperAdmin || hasPermission('view_tickets') || hasPermission('manage_tickets') },
+    { id: 'tasks', label: 'Tasks', icon: ClipboardList, show: true },
     { id: 'crm', label: 'CRM / Leads', icon: ClipboardList, show: isSuperAdmin || hasPermission('view_leads') || hasPermission('manage_leads') },
     { id: 'hr', label: 'HR / Payroll', icon: Users2, show: isSuperAdmin || hasPermission('view_staff') || hasPermission('manage_staff') || hasPermission('view_attendance') || hasPermission('manage_payroll') },
     { id: 'access', label: 'Access Control', icon: UserCog, show: isSuperAdmin || hasPermission('manage_staff') },
@@ -1693,6 +1704,7 @@ export default function SuperAdminDashboard() {
         {tab === 'my_profile' && <MyProfile />}
         {tab === 'my_swap' && <ShiftSwapBoard />}
         {tab === 'overview' && <Overview segments={segments} onGo={(t) => setTab(t as Tab)} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
+        {tab === 'tasks' && <TasksBoard segments={segments} />}
         {tab === 'tickets' && <TicketsSection segments={segments} focusId={focus?.kind === 'ticket' ? focus.id : undefined} />}
         {tab === 'crm' && <LeadsWorkspace segments={segments} focusLeadId={focus?.kind === 'lead' ? focus.id : undefined} />}
         {tab === 'hr' && <HRSection segments={segments} />}

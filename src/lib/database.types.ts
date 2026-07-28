@@ -66,5 +66,10 @@ export interface Lead {
   assigned_to: string | null;
   created_by: string | null;
   next_followup_at: string | null;
+  priority?: 'high' | 'medium' | 'low';
+  alternate_phone?: string | null;
+  appointment_at?: string | null;
+  appointment_note?: string | null;
+  appointment_set_by?: string | null;
   created_at: string;
 }

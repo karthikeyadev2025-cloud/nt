@@ -94,6 +94,7 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
     if (!user) return;
     const { data, error } = await supabase.from('marketing_leads').select('*')
       .eq('assigned_to', user.id).eq('transfer_status', 'none')
+      .order('priority', { ascending: true })
       .order('callback_at', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
     if (error) { toast.error(`Couldn't load queue: ${error.message}`); return; }

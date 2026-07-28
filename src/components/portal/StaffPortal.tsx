@@ -6,6 +6,7 @@ import { useToast } from '../../lib/toast';
 import { useSegments } from '../../lib/useSegments';
 import { istDateStr } from '../../lib/dates';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
+import { TasksBoard } from './tasks';
 import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard, MyPhotoRequest, MyPromotionHistory } from './features';
 import { MyRegularizations } from './lifecycle';
@@ -517,6 +518,7 @@ export default function StaffPortal() {
   const tabs = [
     { id: 'home', label: 'Home', icon: LayoutDashboard, show: true },
     { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },
+    { id: 'tasks', label: 'My Tasks', icon: ClipboardList, show: true },
     { id: 'documents', label: 'My Documents', icon: FileText, show: true },
     { id: 'requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
     { id: 'profile', label: 'My Profile', icon: CreditCard, show: true },
@@ -579,6 +581,7 @@ export default function StaffPortal() {
         {tab === 'documents' && <MyDocuments />}
         {tab === 'requests' && <MyRequests />}
         {tab === 'home' && <MyHome onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />}
+        {tab === 'tasks' && <TasksBoard segments={segments} mineOnly />}
         {tab === 'profile' && <MyProfile />}
         {tab === 'swap' && <ShiftSwapBoard />}
         {tab === 'tickets' && <TicketsBoard segments={segments} />}

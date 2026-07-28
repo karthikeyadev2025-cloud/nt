@@ -327,7 +327,10 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
                 <span className="text-xs text-slate-500">{l.source}</span>
               </div>
-              <p className="text-slate-500 text-xs mt-1">{l.phone} {l.interested_in && `• ${l.interested_in}`} • {new Date(l.created_at).toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-400">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}</p>
+              <p className="text-slate-500 text-xs mt-1">
+                {l.priority === 'high' && <span className="text-red-400 font-medium">● High </span>}
+                {l.priority === 'low' && <span className="text-slate-600">● Low </span>}
+                {l.phone} {l.interested_in && `• ${l.interested_in}`} • {new Date(l.created_at).toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-400">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}</p>
             </div>
           );
         })}
@@ -389,6 +392,14 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 {openLead.stage === 'won' && (
                   <>
                     <input className={inputCls} placeholder="Invoice Number" defaultValue={openLead.invoice_no || ''} onBlur={e => update(openLead.id, { invoice_no: e.target.value || null })} />
+                    <select className={inputCls} defaultValue={openLead.priority || 'medium'}
+                      onChange={e => update(openLead.id, { priority: e.target.value as 'high' | 'medium' | 'low' })}>
+                      <option value="high">High priority</option>
+                      <option value="medium">Medium priority</option>
+                      <option value="low">Low priority</option>
+                    </select>
+                    <input className={inputCls} placeholder="Alternate phone" defaultValue={openLead.alternate_phone || ''}
+                      onBlur={e => update(openLead.id, { alternate_phone: normalizePhone(e.target.value) })} />
                     <input className={inputCls} type="number" placeholder="Invoice Amount (₹)" defaultValue={openLead.invoice_amount || ''} onBlur={e => update(openLead.id, { invoice_amount: e.target.value ? Number(e.target.value) : null })} />
                   </>
                 )}
