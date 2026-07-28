@@ -784,6 +784,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [busy, setBusy] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
   const [showPool, setShowPool] = useState(false);
+  const [dealValue, setDealValue] = useState('');
+  const [visitRequirement, setVisitRequirement] = useState('');
   const [newLead, setNewLead] = useState({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
 
   async function load() {
@@ -829,6 +831,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     setRemark('');
     setPhotoDataUrl(null);
     setLocation(null);
+    setDealValue(lead.invoice_amount || lead.estimated_value || '');
+    setVisitRequirement(lead.interested_in || '');
     const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', lead.id).order('created_at', { ascending: false });
     if (data) setRemarks(data);
   }
@@ -869,8 +873,20 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     const isClosed = outcome === 'won' || outcome === 'lost';
     const patch: any = { stage: outcome, updated_at: new Date().toISOString() };
     if (photo_url) patch.photo_url = photo_url;
-    if (location) { patch.latitude = location.lat; patch.longitude = location.lng; }
-    if (isClosed) patch.assigned_to = null; // release back to pool once closed
+    if (location) {
+      patch.latitude = location.lat; patch.longitude = location.lng;
+      if (location.address) patch.address = location.address;
+    }
+    // Details learned on-site: the executive is the only person who knows the
+    // real requirement and the deal value, so they capture it here.
+    if (visitRequirement.trim()) patch.interested_in = visitRequirement.trim();
+    if (dealValue) {
+      if (outcome === 'won') patch.invoice_amount = Number(dealValue);
+      else patch.estimated_value = Number(dealValue);
+    }
+    // Ownership is retained on close. Releasing it used to wipe the closer's
+    // own conversion numbers the moment they won, and the won/lost stages are
+    // already excluded from the unassigned pool.
 
     const { error: leadErr } = await supabase.from('marketing_leads').update(patch).eq('id', active.id);
     setBusy(false);
@@ -878,6 +894,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
     toast.success(isClosed ? 'Visit logged — lead closed' : 'Visit logged');
     setActive(null);
+    setDealValue(''); setVisitRequirement('');
     load();
   }
 
@@ -948,6 +965,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               <select className={inputCls + ' mb-2'} value={outcome} onChange={e => setOutcome(e.target.value)}>
                 {VISIT_OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
+              <input className={inputCls + ' mb-2'} placeholder="What they actually need (updates the lead)"
+                value={visitRequirement} onChange={e => setVisitRequirement(e.target.value)} />
+              <input className={inputCls + ' mb-2'} type="number" min={0}
+                placeholder={outcome === 'won' ? 'Final invoice amount (₹)' : 'Estimated deal value (₹)'}
+                value={dealValue} onChange={e => setDealValue(e.target.value)} />
               <textarea className={inputCls} rows={2} placeholder="Visit notes / conversation summary *" value={remark} onChange={e => setRemark(e.target.value)} />
               <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>{busy ? 'Saving…' : 'Save Visit'}</button>
             </div>

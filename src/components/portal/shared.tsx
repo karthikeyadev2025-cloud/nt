@@ -249,11 +249,19 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     if (data) setRemarks(data as any);
   }
 
-  async function addRemark() {
+  async function addRemark(asReview = false) {
     if (!newRemark.trim() || !openLead || !user) return;
-    const { error } = await supabase.from('lead_remarks').insert({ lead_id: openLead.id, user_id: user.id, remark: newRemark, call_type: 'note' });
+    const { error } = await supabase.from('lead_remarks').insert({
+      lead_id: openLead.id, user_id: user.id, remark: newRemark,
+      call_type: asReview ? 'review' : 'note',
+    });
     if (error) { toast.error(`Couldn't add remark: ${error.message}`); return; }
     setNewRemark('');
+    toast.success(
+      asReview && openLead.assigned_to && openLead.assigned_to !== user.id
+        ? 'Review sent — the lead owner has been notified'
+        : 'Remark added'
+    );
     loadRemarks(openLead.id);
   }
 
@@ -388,8 +396,12 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
             )}
             <div className="border-t border-slate-800 pt-3 space-y-2">
               <div className="flex gap-2">
-                <input className={inputCls} placeholder="Add call remark / note…" value={newRemark} onChange={e => setNewRemark(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRemark()} />
-                <button className={btnCls} onClick={addRemark}>Add</button>
+                <input className={inputCls} placeholder="Add call remark / note…" value={newRemark} onChange={e => setNewRemark(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRemark(false)} />
+                <button className={btnCls} onClick={() => addRemark(false)}>Add</button>
+                <button
+                  className="px-3 py-2 rounded-lg border border-purple-600 text-purple-300 text-sm whitespace-nowrap"
+                  title="Saves as a review and notifies whoever owns this lead"
+                  onClick={() => addRemark(true)}>Send as Review</button>
               </div>
               <p className="text-slate-400 text-xs font-medium mb-1">Full History</p>
               {remarks.map(r => {
