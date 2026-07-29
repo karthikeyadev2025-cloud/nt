@@ -185,7 +185,8 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                       <button className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
                         disabled={busy === t.id}
                         onClick={() => {
-                          const note = window.prompt('Anything to note about how it went? (optional)') ?? '';
+                          const note = window.prompt('Anything to note about how it went? (optional)');
+                          if (note === null) return;
                           setStatus(t, 'completed', note);
                         }}>Done</button>
                     </div>

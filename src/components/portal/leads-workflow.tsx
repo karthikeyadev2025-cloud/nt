@@ -373,12 +373,22 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
       const wb = XLSX.read(evt.target?.result, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const json: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      const mapped = json.map(r => ({
-        customer_name: String(r.Name || r.name || r.customer_name || '').trim(),
-        phone: normalizePhone(String(r.Phone || r.phone || r.Mobile || r.mobile || '')),
-        email: String(r.Email || r.email || '').trim(),
-        interested_in: String(r.Notes || r.notes || r.Interest || r.interested_in || '').trim(),
-      })).filter(r => r.customer_name && r.phone);
+      const mapped = json.map(r => {
+        const getVal = (...keys: string[]) => {
+          for (const k of keys) {
+            if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== '') {
+              return String(r[k]).trim();
+            }
+          }
+          return '';
+        };
+        return {
+          customer_name: getVal('Customer Name', 'Customer_Name', 'Full Name', 'Name', 'name', 'customer_name'),
+          phone: normalizePhone(getVal('Phone Number', 'Phone_Number', 'Phone', 'phone', 'Mobile Number', 'Mobile', 'mobile', 'Contact', 'Contact Number', 'Contact_Number')),
+          email: getVal('Email Address', 'Email_Address', 'Email', 'email'),
+          interested_in: getVal('Notes', 'notes', 'Interest', 'Interested In', 'interested_in', 'Requirement', 'Remarks', 'Remark'),
+        };
+      }).filter(r => r.customer_name && r.phone);
       setRows(mapped);
     };
     reader.readAsArrayBuffer(file);

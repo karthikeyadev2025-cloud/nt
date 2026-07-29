@@ -222,6 +222,7 @@ export function PayslipManager() {
   async function generate() {
     const person = staff.find(s => s.id === genForm.staff_user_id);
     if (!person) { toast.error('Select a staff member'); return; }
+    if (genForm.working_days <= 0) { toast.error('Working days must be greater than 0'); return; }
     const salary = person.salary_structure || {};
     const monthlyBase = (salary.basic || 0) + (salary.hra || 0) + (salary.allowances || 0);
     const dailyRate = genForm.working_days > 0 ? monthlyBase / genForm.working_days : 0;
