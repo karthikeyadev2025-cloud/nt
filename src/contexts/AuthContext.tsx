@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   });
   const [permissions, setPermissions] = useState<Record<string, boolean>>({ all: true });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   async function loadUser(userId: string, email?: string) {
     try {
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 1500);
+    }, 300);
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;

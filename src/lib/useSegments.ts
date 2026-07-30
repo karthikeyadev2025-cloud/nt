@@ -29,15 +29,15 @@ const DEFAULT_FALLBACK_SEGMENTS: Segment[] = [
 
 export function useSegments(includeRetired = false) {
   const [segments, setSegments] = useState<Segment[]>(DEFAULT_FALLBACK_SEGMENTS);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     
-    // Safety timeout: Never hang loading for more than 2 seconds
+    // Instant safety timeout: Never hang loading for more than 300ms
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 2000);
+    }, 300);
 
     let q = supabase.from('segments').select('*');
     if (!includeRetired) q = q.eq('active', true);
@@ -72,15 +72,15 @@ export function useSegments(includeRetired = false) {
 
 export function useSiteContent() {
   const [content, setContent] = useState<Record<string, Record<string, string>>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout: Never hang loading for more than 2 seconds
+    // Instant safety timeout: Never hang loading for more than 300ms
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 2000);
+    }, 300);
 
     supabase.from('site_content').select('*')
       .then(({ data, error }) => {

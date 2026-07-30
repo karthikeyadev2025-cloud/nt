@@ -24,7 +24,7 @@ import { KiteTailLogo } from '../KiteTailLogo';
 export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user, hasPermission } = useAuth();
   const [stats, setStats] = useState<any>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const role = user?.role;
   const isCaller = role === 'telecaller';

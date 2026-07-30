@@ -461,7 +461,7 @@ export function TeamActivityFeed() {
   const [items, setItems] = useState<any[]>([]);
   const [leadNames, setLeadNames] = useState<Record<string, { name: string; phone: string }>>({});
   const [userNames, setUserNames] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState('');
   const [personFilter, setPersonFilter] = useState('');
   const [days, setDays] = useState(7);

@@ -9,7 +9,7 @@ import type { Segment } from '../../lib/database.types';
 export function SecurityLogsViewer() {
   const [logs, setLogs] = useState<any[]>([]);
   const [filter, setFilter] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     supabase.from('security_audit_logs').select('*').order('created_at', { ascending: false }).limit(300)
