@@ -213,13 +213,13 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
           <div key={seg.slug} className={cardCls}>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }} />
-              <h3 className="text-white font-semibold">{seg.name}</h3>
+              <h3 className="text-slate-900 font-bold">{seg.name}</h3>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><p className="text-2xl font-bold text-white">{st.openTickets}</p><p className="text-slate-500 text-xs">Open tickets</p></div>
-              <div><p className="text-2xl font-bold text-white">{st.leads}</p><p className="text-slate-500 text-xs">Total leads</p></div>
-              <div><p className="text-2xl font-bold text-emerald-400">{st.won}</p><p className="text-slate-500 text-xs">Won deals</p></div>
-              <div><p className="text-2xl font-bold text-white">{st.staff}</p><p className="text-slate-500 text-xs">Staff</p></div>
+              <div><p className="text-2xl font-extrabold text-slate-900">{st.openTickets}</p><p className="text-slate-500 text-xs">Open tickets</p></div>
+              <div><p className="text-2xl font-extrabold text-slate-900">{st.leads}</p><p className="text-slate-500 text-xs">Total leads</p></div>
+              <div><p className="text-2xl font-extrabold text-emerald-600">{st.won}</p><p className="text-slate-500 text-xs">Won deals</p></div>
+              <div><p className="text-2xl font-extrabold text-slate-900">{st.staff}</p><p className="text-slate-500 text-xs">Staff</p></div>
             </div>
           </div>
         );
@@ -951,7 +951,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
               <div>
-                <p className="text-white font-medium">{s.name} <span className="text-slate-500 text-xs">({s.slug} • NKT-{s.ticket_prefix}-)</span></p>
+                <p className="text-slate-900 font-bold">{s.name} <span className="text-slate-500 text-xs">({s.slug} • NKT-{s.ticket_prefix}-)</span></p>
                 <p className="text-slate-500 text-xs">{s.tagline}</p>
                 {usage[s.slug] && (usage[s.slug].staff > 0 || usage[s.slug].leads > 0 || usage[s.slug].tickets > 0) && (
                   <p className="text-slate-600 text-xs mt-0.5">
@@ -1039,7 +1039,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
         {rows.map(p => (
           <div key={p.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
             <div>
-              <p className="text-white font-medium">{p.name} <span className="text-slate-500 text-xs">/{p.slug}</span></p>
+              <p className="text-slate-900 font-bold">{p.name} <span className="text-slate-500 text-xs">/{p.slug}</span></p>
               <p className="text-slate-500 text-xs">{p.tagline} {p.external_url && `• ${p.external_url}`}</p>
             </div>
             <div className="flex items-center gap-3">
@@ -1147,12 +1147,12 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
       <SegmentTabs segments={segments} value={seg} onChange={s => setSeg(s || segments[0]?.slug || '')} includeAll={false} />
       <div className="grid md:grid-cols-2 gap-6">
         <div className={cardCls}>
-          <h3 className="text-white font-semibold mb-3">Services on Website</h3>
+          <h3 className="text-slate-900 font-bold mb-3">Services on Website</h3>
           <div className="space-y-2 mb-4">
             {services.filter(s => s.segment_slug === seg).map(s => (
               <div key={s.id} className="flex justify-between items-center text-sm">
-                <span className="text-slate-300">{s.title}</span>
-                <button className="text-red-400 text-xs" onClick={() => removeService(s.id)}>Remove</button>
+                <span className="text-slate-800 font-medium">{s.title}</span>
+                <button className="text-red-500 text-xs font-semibold" onClick={() => removeService(s.id)}>Remove</button>
               </div>
             ))}
           </div>
@@ -1161,12 +1161,12 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
           <button className={btnCls} onClick={addService}>Add Service</button>
         </div>
         <div className={cardCls}>
-          <h3 className="text-white font-semibold mb-3">Ticket Types (support form options)</h3>
+          <h3 className="text-slate-900 font-bold mb-3">Ticket Types (support form options)</h3>
           <div className="space-y-2 mb-4">
             {types.filter(t => t.segment_slug === seg).map(t => (
               <div key={t.id} className="flex justify-between items-center text-sm">
-                <span className="text-slate-300">{t.name}</span>
-                <button className="text-red-400 text-xs" onClick={() => removeType(t.id)}>Remove</button>
+                <span className="text-slate-800 font-medium">{t.name}</span>
+                <button className="text-red-500 text-xs font-semibold" onClick={() => removeType(t.id)}>Remove</button>
               </div>
             ))}
           </div>
@@ -1629,13 +1629,8 @@ export default function SuperAdminDashboard() {
     { id: 'content', label: 'Website Content', icon: FileText, show: isSuperAdmin || hasPermission('manage_content') },
     { id: 'security', label: 'Security Logs', icon: Shield, show: isSuperAdmin },
   ];
-  const tabs = [...selfServiceTabs, ...adminTabDefs.filter(t => t.show)];
   const visibleAdminTabs = adminTabDefs.filter(t => t.show);
-  const isSelfTab = selfServiceTabs.some(t => t.id === tab);
-  // Mobile nav group follows the active tab; the switcher just changes which chips show.
-  const [mobileGroup, setMobileGroup] = useState<'me' | 'admin'>('admin');
-  useEffect(() => { setMobileGroup(isSelfTab ? 'me' : 'admin'); }, [tab]);
-  const mobileTabs = mobileGroup === 'me' ? selfServiceTabs : visibleAdminTabs;
+  const tabs = visibleAdminTabs;
 
   return (
     <div className="min-h-screen bg-slate-50 flex text-slate-900" key={refreshKey}>
@@ -1657,15 +1652,6 @@ export default function SuperAdminDashboard() {
               </button>
             ))}
           </div>
-          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 border-t border-slate-200 pt-4 uppercase">MY SELF SERVICE</p>
-          <div className="space-y-1">
-            {selfServiceTabs.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-blue-50 border border-blue-200 text-blue-800 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'}`}>
-                <t.icon className={`w-4 h-4 ${tab === t.id ? 'text-blue-700' : 'text-slate-400'}`} /> {t.label}
-              </button>
-            ))}
-          </div>
         </nav>
         <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 text-sm font-semibold mt-auto border-t border-slate-200 pt-3">
           <LogOut className="w-4 h-4" /> Sign Out
@@ -1674,14 +1660,8 @@ export default function SuperAdminDashboard() {
 
       <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="md:hidden mb-4">
-          <div className="flex gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 mb-3 w-fit">
-            <button onClick={() => setMobileGroup('admin')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileGroup === 'admin' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}>Executive</button>
-            <button onClick={() => setMobileGroup('me')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileGroup === 'me' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}>Self Service</button>
-          </div>
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-            {mobileTabs.map(t => (
+            {visibleAdminTabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${tab === t.id ? 'bg-blue-700 text-white border-blue-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700'}`}>
                 {t.label}
@@ -1690,7 +1670,7 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-          <h1 className="text-2xl font-bold text-white">{tabs.find(t => t.id === tab)?.label}</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{tabs.find(t => t.id === tab)?.label}</h1>
           <div className="flex items-center gap-3">
             <QuickSearch onNavigate={navigateWithFocus} />
             <NotificationBell onNavigate={(t) => setTab(t as Tab)} />

@@ -16,7 +16,7 @@ export function SegmentTabs({
   segments, value, onChange, includeAll = true,
 }: { segments: Segment[]; value: string; onChange: (s: string) => void; includeAll?: boolean }) {
   const { user, canAccessSegment } = useAuth();
-  const visible = segments.filter(s => canAccessSegment(s.slug));
+  const visible = segments.filter(s => canAccessSegment(s.slug) && !s.slug.toLowerCase().includes('cctv') && !s.name.toLowerCase().includes('cctv'));
   const showAll = includeAll && (user?.role === 'super_admin' || user?.segments.includes('all'));
   return (
     <div className="flex flex-wrap gap-2 mb-5">
