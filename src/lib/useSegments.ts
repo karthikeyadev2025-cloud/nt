@@ -13,6 +13,31 @@ import type { Segment } from './database.types';
  * The public site passes nothing (defaults to active-only), so a retired
  * segment disappears from the website immediately, as intended.
  */
+const DEFAULT_FALLBACK_SEGMENTS: Segment[] = [
+  {
+    id: 'seg-kt',
+    slug: 'digital-marketing',
+    name: 'Kite & Tail Media',
+    tagline: 'Digital Media Marketing, Performance PPC & Social Growth',
+    icon: 'Rocket',
+    color: '#1d4ed8',
+    active: true,
+    order_index: 1,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'seg-soft',
+    slug: 'software-development',
+    name: 'Nikki Software Studio',
+    tagline: 'Custom Web Apps, Mobile Apps & Enterprise Systems',
+    icon: 'Code',
+    color: '#0284c7',
+    active: true,
+    order_index: 2,
+    created_at: new Date().toISOString(),
+  },
+];
+
 export function useSegments(includeRetired = false) {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +46,11 @@ export function useSegments(includeRetired = false) {
     let q = supabase.from('segments').select('*');
     if (!includeRetired) q = q.eq('active', true);
     q.order('order_index').then(({ data }) => {
-      if (data) setSegments(data as Segment[]);
+      if (data && data.length > 0) {
+        setSegments(data as Segment[]);
+      } else {
+        setSegments(DEFAULT_FALLBACK_SEGMENTS);
+      }
       setLoading(false);
     });
   }, [includeRetired]);

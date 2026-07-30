@@ -150,26 +150,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // ─────────────────────────────────────────────── Client-Facing Services Showcase (Hero Widget)
 function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
-  const [activeTab, setActiveTab] = useState<'digital' | 'software'>('digital');
+  const [activeTab, setActiveTab] = useState<'kite_tail' | 'software'>('kite_tail');
 
   const contentMap = {
-    digital: {
-      title: 'Digital Media Marketing & Performance Growth',
-      desc: 'Data-driven marketing campaigns, social media management, Google & Meta ads, brand identity, reels production, and SEO lead generation.',
-      badge: 'Digital Marketing & Growth',
+    kite_tail: {
+      title: 'Kite & Tail • Digital Media Marketing & Performance Growth',
+      desc: 'Data-driven marketing campaigns, viral reels production, targeted Google & Meta PPC ads, brand identity, and SEO lead generation by Kite & Tail Media.',
+      badge: '🪁 Kite & Tail Digital Marketing',
       icon: '🚀',
       highlights: [
         'Targeted Meta (Instagram/FB) & Google PPC Campaigns',
         'Social Media Management & Creative Reels Production',
         'Search Engine Optimization (SEO) & Brand Identity Design',
-        'Lead Funnel Strategy & Conversion Analytics',
+        'High-Converting Lead Funnel Strategy & Analytics',
       ],
       stats: { reach: '10M+ Impression Reach', roas: '4.8x Avg Ad ROAS', leads: '50,000+ Generated Leads' }
     },
     software: {
-      title: 'Custom Software & Mobile App Development',
+      title: 'Nikki Software Studio • Custom Apps & Engineering',
       desc: 'Bespoke web applications, cross-platform mobile apps (Android & iOS), cloud API backends, and enterprise business software.',
-      badge: 'Software & App Engineering',
+      badge: '💻 Custom Software Studio',
       icon: '💻',
       highlights: [
         'Modern Web Applications (React, TypeScript, Cloud Backends)',
@@ -177,7 +177,7 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
         'Scalable Database Systems & Secure API Architecture',
         'Custom Business Automation & Enterprise Software',
       ],
-      stats: { delivery: '100% On-Time Delivery', tech: 'Modern Stack', architecture: 'Secure & Scalable' }
+      stats: { delivery: '100% On-Time Delivery', tech: 'Modern Tech Stack', architecture: 'Secure & Scalable' }
     }
   };
 
@@ -194,18 +194,18 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-blue-600" />
           <div className="w-3 h-3 rounded-full bg-indigo-600" />
-          <div className="w-3 h-3 rounded-full bg-blue-400" />
-          <span className="text-slate-700 text-xs font-bold uppercase tracking-wider ml-2">Nikki Technologies • Core Services</span>
+          <div className="w-3 h-3 rounded-full bg-sky-400" />
+          <span className="text-slate-700 text-xs font-extrabold uppercase tracking-wider ml-2">Nikki Technologies • Brand Divisions</span>
         </div>
         <div className="flex flex-wrap gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
           {[
-            { id: 'digital', label: '🚀 Digital Marketing' },
-            { id: 'software', label: '💻 Software Development' },
+            { id: 'kite_tail', label: '🪁 Kite & Tail Digital' },
+            { id: 'software', label: '💻 Software Studio' },
           ].map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id as any)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all ${
                 activeTab === t.id
                   ? 'bg-blue-700 text-white shadow-md shadow-blue-700/20'
                   : 'text-slate-600 hover:text-slate-900'
@@ -229,7 +229,7 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-xl">{curr.icon}</span>
-              <span className="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold">
+              <span className="px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-extrabold shadow-xs">
                 {curr.badge}
               </span>
             </div>
@@ -245,19 +245,19 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
             </div>
           </div>
 
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-5 space-y-4 flex flex-col justify-between">
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Service Guarantee</p>
+          <div className="rounded-xl bg-slate-50 border border-slate-200 p-5 space-y-4 flex flex-col justify-between shadow-xs">
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Performance Guarantee</p>
             <div className="space-y-3">
               {Object.entries(curr.stats).map(([k, v]) => (
                 <div key={k} className="flex justify-between items-center border-b border-slate-200 pb-2">
                   <span className="text-slate-500 text-xs capitalize font-medium">{k}</span>
-                  <span className="text-blue-800 font-bold text-xs">{v}</span>
+                  <span className="text-blue-800 font-extrabold text-xs">{v}</span>
                 </div>
               ))}
             </div>
             <a
               href="#contact"
-              className="w-full py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-semibold text-xs text-center transition-all shadow-md shadow-blue-700/20"
+              className="w-full py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-bold text-xs text-center transition-all shadow-md shadow-blue-700/20"
             >
               Get Free Consultation
             </a>
@@ -277,10 +277,10 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-800 text-xs font-semibold mb-6 shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-800 text-xs font-extrabold mb-6 shadow-sm"
         >
           <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-          <span>Digital Marketing &amp; Custom Software Engineering</span>
+          <span>🪁 Kite &amp; Tail Digital Marketing • Powered by Nikki Technologies</span>
         </motion.div>
 
         <motion.h1
@@ -298,7 +298,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-xl md:text-2xl bg-gradient-to-r from-blue-800 via-indigo-700 to-blue-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
-          {content?.hero?.subtitle || 'Digital Media Marketing • Custom Software & Mobile Apps'}
+          {content?.hero?.subtitle || 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps'}
         </motion.p>
 
         <motion.p
@@ -307,7 +307,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.25 }}
           className="text-slate-600 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
-          {content?.hero?.description || 'We help brands grow through data-driven digital marketing, social media campaigns, performance ads, and custom software development.'}
+          {content?.hero?.description || 'Empowering brands through Kite & Tail performance marketing, Meta & Google ads, social media reels, and custom software engineering.'}
         </motion.p>
 
         <motion.div
