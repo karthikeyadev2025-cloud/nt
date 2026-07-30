@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FileText, CheckCircle2, Printer, PenLine, RotateCcw, ShieldCheck } from 'lucide-react';
+import { FileText, CheckCircle2, Printer, PenLine, RotateCcw, ShieldCheck, X, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls } from './shared';
@@ -352,5 +352,112 @@ export function OnboardingStatusBadge({ staffUserId }: { staffUserId: string }) 
     <span className={`text-xs px-2 py-0.5 rounded ${complete ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
       {complete ? 'Onboarding complete' : `${status.done}/${status.total} signed`}
     </span>
+  );
+}
+
+
+export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { staffUserId: string; staffName: string; onClose: () => void }) {
+  const [docs, setDocs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewDoc, setViewDoc] = useState<any | null>(null);
+
+  useEffect(() => {
+    supabase.from('employee_documents')
+      .select('*')
+      .eq('staff_user_id', staffUserId)
+      .order('issued_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setDocs(data);
+        setLoading(false);
+      });
+  }, [staffUserId]);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <div>
+            <h2 className="text-slate-900 font-bold text-lg">{staffName}</h2>
+            <p className="text-slate-700 text-sm">Collected Documents & Agreements</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full text-slate-700"><X className="w-5 h-5" /></button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+          {loading ? (
+            <p className="text-center text-slate-700 py-10">Loading documents...</p>
+          ) : docs.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
+              <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-700 font-medium">No documents issued yet.</p>
+              <p className="text-slate-500 text-sm mt-1">Issue an offer letter or policy document to get started.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {docs.map(doc => (
+                <div key={doc.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-slate-900 font-bold text-lg">{doc.title}</span>
+                      <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${doc.acknowledged_at ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {doc.acknowledged_at ? 'SIGNED' : 'PENDING'}
+                      </span>
+                      <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-medium">{DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}</span>
+                    </div>
+                    <p className="text-sm text-slate-500 mb-4">Issued on {new Date(doc.issued_at).toLocaleDateString()}</p>
+                    
+                    {doc.acknowledged_at ? (
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm font-semibold text-slate-900">Signatory Record</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Signed By</p>
+                            <p className="text-sm text-slate-900 font-bold">{doc.signed_name || staffName}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Timestamp</p>
+                            <p className="text-sm text-slate-900 font-medium">{new Date(doc.acknowledged_at).toLocaleString()}</p>
+                          </div>
+                        </div>
+                        {doc.signature_data_url && (
+                          <div className="mt-4">
+                            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">Digital Signature</p>
+                            <div className="bg-white border border-slate-200 rounded p-2 inline-block">
+                              <img src={doc.signature_data_url} alt="Signature" className="h-12 object-contain" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-amber-50 p-3 rounded-lg border border-amber-100 mb-4">
+                        <p className="text-sm text-amber-800">This document has not been signed by the employee yet.</p>
+                      </div>
+                    )}
+                    
+                    <button 
+                      onClick={() => setViewDoc(doc)}
+                      className="flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-colors"
+                    >
+                      <Eye className="w-4 h-4" /> View Full Document
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {viewDoc && (
+        <DocumentViewer 
+          doc={viewDoc} 
+          onClose={() => setViewDoc(null)} 
+          onSigned={() => {}} 
+        />
+      )}
+    </div>
   );
 }

@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
-import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge } from './documents';
+import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge, EmployeeDocumentsModal } from './documents';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals, ShiftSwapBoard } from './features';
 import { TasksBoard } from './tasks';
 import { LeadsWorkspace } from './leads-workflow';
@@ -755,6 +755,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
               <p className="text-slate-700 text-xs mt-1">Sets their password directly — tell them the new password securely. They can also self-reset via "Forgot password?" on the login page.</p>
             </div>
             <div className="border-t border-slate-800 pt-3">
+              <button className="text-sky-700 text-sm font-medium mb-4 block" onClick={() => { setViewDocsFor(editing); setEditing(null); }}>View Documents</button>
               {showOffboard ? (
                 <OffboardStaff staffMember={editing} onDone={() => { setShowOffboard(false); setEditing(null); load(); }} />
               ) : editing.exit_date ? (
@@ -1438,6 +1439,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   const [staff, setStaff] = useState<any[]>([]);
   const [editingTpl, setEditingTpl] = useState<any | null>(null);
   const [issueFor, setIssueFor] = useState<any | null>(null);
+  const [viewDocsFor, setViewDocsFor] = useState<any | null>(null);
   const [issueDocs, setIssueDocs] = useState<string[]>([]);
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1531,8 +1533,13 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
             <div key={s.id} className={cardCls + ' flex items-center justify-between'}>
               <p className="text-slate-900 text-sm">{s.full_name} <span className="text-slate-700 text-xs">({s.role})</span></p>
               <div className="flex items-center gap-3">
-                <OnboardingStatusBadge staffUserId={s.id} />
-                <button className="text-sky-700 text-xs" onClick={() => openIssue(s)}>Issue Document</button>
+                <div className="flex items-center gap-2 border-r border-slate-200 pr-3">
+                  <OnboardingStatusBadge staffUserId={s.id} />
+                  <button onClick={() => setViewDocsFor(s)} className="text-[11px] font-semibold text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 px-2 py-1 rounded transition-colors">
+                    View Collected
+                  </button>
+                </div>
+                <button className="text-sky-700 text-xs font-medium hover:text-sky-900" onClick={() => openIssue(s)}>Issue Document</button>
               </div>
             </div>
           ))}
@@ -1579,6 +1586,13 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
         </div>
       )}
       {preview && <DocumentViewer title={preview.title} content={preview.content} onClose={() => setPreview(null)} />}
+      {viewDocsFor && (
+        <EmployeeDocumentsModal
+          staffUserId={viewDocsFor.id}
+          staffName={viewDocsFor.full_name}
+          onClose={() => setViewDocsFor(null)}
+        />
+      )}
     </div>
   );
 }

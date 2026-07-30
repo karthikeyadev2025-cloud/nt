@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, X, MapPin, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -388,11 +388,138 @@ export function MyPayslips() {
   );
 }
 
+// ─────────────────────────── Super Admin/HR: Attendance Details Modal
+function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { staffUserId: string; staffName: string; onClose: () => void }) {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from('attendance_records')
+      .select('*')
+      .eq('staff_user_id', staffUserId)
+      .order('attendance_date', { ascending: false })
+      .limit(30)
+      .then(({ data }) => {
+        if (data) setLogs(data);
+        setLoading(false);
+      });
+  }, [staffUserId]);
+
+  const mapLink = (lat: number, lng: number) => `https://maps.google.com/?q=${lat},${lng}`;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <div>
+            <h2 className="text-slate-900 font-bold text-lg">{staffName}</h2>
+            <p className="text-slate-700 text-sm">Detailed Attendance (Last 30 Days)</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full text-slate-700"><X className="w-5 h-5" /></button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4">
+          {loading ? (
+            <p className="text-center text-slate-700 py-10">Loading records...</p>
+          ) : logs.length === 0 ? (
+            <p className="text-center text-slate-700 py-10">No attendance records found.</p>
+          ) : (
+            <div className="space-y-4">
+              {logs.map(log => (
+                <div key={log.id} className="border border-slate-200 rounded-xl p-4 bg-white shadow-sm flex flex-col md:flex-row gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-slate-900 font-bold">{new Date(log.attendance_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${log.status === 'present' ? 'bg-emerald-100 text-emerald-700' : log.status === 'absent' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {log.status.toUpperCase()}
+                      </span>
+                      {log.is_late && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{log.minutes_late}m late</span>}
+                      {log.work_mode && <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full capitalize font-medium">{log.work_mode.replace('_', ' ')}</span>}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                      {/* Check In Info */}
+                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <p className="text-slate-700 text-xs font-semibold uppercase tracking-wider mb-2">Check In</p>
+                        {log.check_in_at ? (
+                          <div className="space-y-2">
+                            <p className="text-slate-900 text-sm font-medium">{new Date(log.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                            {log.check_in_lat && log.check_in_lng && (
+                              <a href={mapLink(log.check_in_lat, log.check_in_lng)} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sky-700 hover:text-sky-900 text-xs font-medium">
+                                <MapPin className="w-3 h-3" /> View on Map
+                              </a>
+                            )}
+                            {log.check_in_selfie_url ? (
+                              <button onClick={() => setPreviewImage(supabase.storage.from('selfies').getPublicUrl(log.check_in_selfie_url).data.publicUrl)} className="mt-2 block relative group overflow-hidden rounded-lg w-24 h-24 border border-slate-200">
+                                <img src={supabase.storage.from('selfies').getPublicUrl(log.check_in_selfie_url).data.publicUrl} alt="Check in selfie" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ImageIcon className="w-5 h-5 text-white" />
+                                </div>
+                              </button>
+                            ) : (
+                              <span className="text-slate-700 text-xs block mt-2">No photo</span>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-slate-700 text-sm">--</p>
+                        )}
+                      </div>
+
+                      {/* Check Out Info */}
+                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <p className="text-slate-700 text-xs font-semibold uppercase tracking-wider mb-2">Check Out</p>
+                        {log.check_out_at ? (
+                          <div className="space-y-2">
+                            <p className="text-slate-900 text-sm font-medium">{new Date(log.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                            {log.check_out_lat && log.check_out_lng && (
+                              <a href={mapLink(log.check_out_lat, log.check_out_lng)} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sky-700 hover:text-sky-900 text-xs font-medium">
+                                <MapPin className="w-3 h-3" /> View on Map
+                              </a>
+                            )}
+                            {log.check_out_selfie_url ? (
+                              <button onClick={() => setPreviewImage(supabase.storage.from('selfies').getPublicUrl(log.check_out_selfie_url).data.publicUrl)} className="mt-2 block relative group overflow-hidden rounded-lg w-24 h-24 border border-slate-200">
+                                <img src={supabase.storage.from('selfies').getPublicUrl(log.check_out_selfie_url).data.publicUrl} alt="Check out selfie" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ImageIcon className="w-5 h-5 text-white" />
+                                </div>
+                              </button>
+                            ) : (
+                              <span className="text-slate-700 text-xs block mt-2">No photo</span>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-slate-700 text-sm block mt-2">--</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Full Screen Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+          <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+            <X className="w-6 h-6" />
+          </button>
+          <img src={previewImage} alt="Selfie Preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─────────────────────────── Super Admin/HR: Attendance summary (RPC-powered, ported from Punchly)
 export function AttendanceSummaryTable({ segments }: { segments: { slug: string; name: string }[] }) {
   const [rows, setRows] = useState<any[]>([]);
   const [segment, setSegment] = useState('');
   const [days, setDays] = useState(7);
+  const [selectedStaff, setSelectedStaff] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     supabase.rpc('staff_attendance_summary', { _segment_slug: segment || null, _days: days })
@@ -428,8 +555,16 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
           </thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.staff_user_id} className="border-b border-slate-900">
-                <td className="py-2 text-slate-900">{r.full_name}</td>
+              <tr key={r.staff_user_id} className="border-b border-slate-900 group">
+                <td className="py-2 text-slate-900">
+                  {r.full_name}
+                  <button 
+                    onClick={() => setSelectedStaff({ id: r.staff_user_id, name: r.full_name })}
+                    className="ml-3 text-[11px] font-semibold text-sky-700 hover:text-sky-900 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    View Logs
+                  </button>
+                </td>
                 <td className="py-2 text-emerald-700">{r.days_present}</td>
                 <td className="py-2 text-red-700">{r.days_absent}</td>
                 <td className="py-2 text-amber-700">{r.days_on_leave}</td>
@@ -440,6 +575,14 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
         </table>
         {rows.length === 0 && <p className="text-slate-700 text-sm text-center py-6">No data.</p>}
       </div>
+      
+      {selectedStaff && (
+        <AttendanceDetailsModal 
+          staffUserId={selectedStaff.id} 
+          staffName={selectedStaff.name} 
+          onClose={() => setSelectedStaff(null)} 
+        />
+      )}
     </div>
   );
 }
