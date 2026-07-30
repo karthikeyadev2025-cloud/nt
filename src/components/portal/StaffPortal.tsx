@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard } from 'lucide-react';
+import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -276,6 +276,14 @@ export function MyAttendance() {
     load();
   }
 
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  async function viewSelfie(path: string) {
+    const { data, error } = await supabase.storage.from('selfies').createSignedUrl(path, 300);
+    if (error || !data) { toast.error("Couldn't load photo"); return; }
+    setPreviewImage(data.signedUrl);
+  }
+
   return (
     <div className="space-y-5">
       <MyStatsCard />
@@ -289,33 +297,100 @@ export function MyAttendance() {
           </button>
         ) : !today.check_out_at ? (
           <div>
-            <p className="text-emerald-700 text-sm mb-1">Checked in at {new Date(today.check_in_at).toLocaleTimeString()}</p>
+            <p className="text-emerald-700 text-sm mb-1 font-semibold">Checked in at {new Date(today.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
             <p className="text-slate-700 text-xs mb-3 capitalize">
               {(today.work_mode || 'office').replace('_', ' ')}
-              {today.is_late && <span className="text-amber-700 ml-2">Late by {today.minutes_late} min</span>}
+              {today.is_late && <span className="text-amber-700 ml-2 font-medium">Late by {today.minutes_late} min</span>}
             </p>
             <button className={btnCls} disabled={busy} onClick={() => setShowCamera('out')}>Check Out</button>
           </div>
         ) : (
-          <p className="text-slate-700 text-sm">
-            Done for today — In {new Date(today.check_in_at).toLocaleTimeString()} • Out {new Date(today.check_out_at).toLocaleTimeString()}
+          <p className="text-slate-700 text-sm font-medium">
+            Done for today — In {new Date(today.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })} • Out {new Date(today.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
           </p>
         )}
       </div>
-      <div className={cardCls}>
-        <h3 className="text-slate-900 font-semibold mb-3 text-sm">Last 14 days</h3>
-        <div className="space-y-1.5">
+
+      <div className={cardCls + ' space-y-4'}>
+        <div>
+          <h3 className="text-slate-900 font-bold text-sm">Attendance History (Last 14 days)</h3>
+          <p className="text-slate-500 text-xs">View your check-in/out times, photos, and map locations</p>
+        </div>
+
+        <div className="space-y-3">
           {history.map(r => (
-            <div key={r.id} className="flex justify-between text-xs">
-              <span className="text-slate-700">{r.attendance_date}</span>
-              <span className="text-slate-700">
-                {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : '—'} → {r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : '—'}
-                {r.work_mode && r.work_mode !== 'office' && <span className="ml-2 text-amber-700 capitalize">{r.work_mode.replace('_', ' ')}</span>}
-              </span>
+            <div key={r.id} className="border border-slate-200 rounded-xl p-3 bg-white space-y-2">
+              <div className="flex items-center justify-between text-xs border-b border-slate-100 pb-2">
+                <span className="text-slate-900 font-bold">
+                  {new Date(r.attendance_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded-full font-semibold ${r.status === 'present' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    {(r.status || 'present').toUpperCase()}
+                  </span>
+                  {r.is_late && <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">{r.minutes_late}m late</span>}
+                  {r.work_mode && <span className="text-slate-600 capitalize bg-slate-100 px-2 py-0.5 rounded font-medium">{r.work_mode.replace('_', ' ')}</span>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {/* Check In */}
+                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-500 font-medium block text-[11px]">Check In</span>
+                    <span className="text-slate-900 font-semibold">
+                      {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {r.check_in_lat && r.check_in_lng && (
+                      <a href={`https://maps.google.com/?q=${r.check_in_lat},${r.check_in_lng}`} target="_blank" rel="noreferrer" className="text-sky-700 hover:text-sky-900 bg-sky-50 px-2 py-1 rounded font-medium border border-sky-100 inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-sky-600" /> Map
+                      </a>
+                    )}
+                    {r.check_in_selfie_url && (
+                      <button onClick={() => viewSelfie(r.check_in_selfie_url)} className="text-sky-700 hover:text-sky-900 bg-white px-2 py-1 rounded font-medium border border-slate-200 inline-flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3 text-sky-600" /> Photo 📷
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Check Out */}
+                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-500 font-medium block text-[11px]">Check Out</span>
+                    <span className="text-slate-900 font-semibold">
+                      {r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {r.check_out_lat && r.check_out_lng && (
+                      <a href={`https://maps.google.com/?q=${r.check_out_lat},${r.check_out_lng}`} target="_blank" rel="noreferrer" className="text-sky-700 hover:text-sky-900 bg-sky-50 px-2 py-1 rounded font-medium border border-sky-100 inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-sky-600" /> Map
+                      </a>
+                    )}
+                    {r.check_out_selfie_url && (
+                      <button onClick={() => viewSelfie(r.check_out_selfie_url)} className="text-sky-700 hover:text-sky-900 bg-white px-2 py-1 rounded font-medium border border-slate-200 inline-flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3 text-sky-600" /> Photo 📷
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       </div>
+
+      {previewImage && (
+        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+          <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+            <X className="w-6 h-6" />
+          </button>
+          <img src={previewImage} alt="Selfie Preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
 
       {pickingMode && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setPickingMode(false)}>

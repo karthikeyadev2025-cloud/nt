@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { MapPin, Image as ImageIcon, Eye, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import type { Segment, SupportTicket, Lead } from '../../lib/database.types';
 import { istDateStr } from '../../lib/dates';
 import { normalizePhone } from '../../lib/phone';
+import { AttendanceDetailsModal } from './payroll';
 
 export const inputCls =
   'w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 focus:outline-none transition-all placeholder-slate-500';
@@ -448,6 +450,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const [leaves, setLeaves] = useState<any[]>([]);
   const [advances, setAdvances] = useState<any[]>([]);
   const [date, setDate] = useState(istDateStr());
+  const [selectedStaffModal, setSelectedStaffModal] = useState<{ id: string; name: string } | null>(null);
   const { user, hasPermission } = useAuth();
   const toast = useToast();
 
@@ -550,33 +553,123 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
       )}
 
       {tab === 'attendance' && (
-        <div>
-          <input type="date" className={inputCls + ' max-w-xs mb-4'} value={date} onChange={e => setDate(e.target.value)} />
-          <div className="space-y-2">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+            <div>
+              <p className="text-slate-900 font-semibold text-sm">Daily Attendance Logs</p>
+              <p className="text-slate-500 text-xs">Select date to inspect check-in times, locations, and selfie photos</p>
+            </div>
+            <input type="date" className={inputCls + ' max-w-xs'} value={date} onChange={e => setDate(e.target.value)} />
+          </div>
+
+          <div className="space-y-3">
             {staff.filter(inSeg).map(s => {
               const rec = attendance.find(a => a.staff_user_id === s.id);
               return (
-                <div key={s.id} className={cardCls + ' flex items-center justify-between'}>
-                  <p className="text-slate-900 text-sm">{s.full_name}</p>
-                  {rec ? (
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-slate-700">
-                        In: {rec.check_in_at ? new Date(rec.check_in_at).toLocaleTimeString() : '—'} •
-                        Out: {rec.check_out_at ? new Date(rec.check_out_at).toLocaleTimeString() : '—'}
-                        <span className="ml-2 text-emerald-700">{rec.status}</span>
-                      </p>
-                      {rec.check_in_selfie_url && (
-                        <button className="text-sky-700 text-xs" onClick={() => viewSelfie(rec.check_in_selfie_url)}>In 📷</button>
-                      )}
-                      {rec.check_out_selfie_url && (
-                        <button className="text-sky-700 text-xs" onClick={() => viewSelfie(rec.check_out_selfie_url)}>Out 📷</button>
-                      )}
+                <div key={s.id} className={cardCls + ' space-y-3'}>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div>
+                      <span className="text-slate-900 font-bold text-sm mr-2">{s.full_name}</span>
+                      <span className="text-slate-500 text-xs">({s.role.replace('_', ' ')})</span>
                     </div>
-                  ) : <span className="text-xs text-red-700">absent / no record</span>}
+                    
+                    <div className="flex items-center gap-2">
+                      {rec ? (
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${rec.status === 'present' ? 'bg-emerald-100 text-emerald-700' : rec.status === 'absent' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {rec.status.toUpperCase()}
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-red-100 text-red-700">ABSENT / NO PUNCH</span>
+                      )}
+                      
+                      <button 
+                        onClick={() => setSelectedStaffModal({ id: s.id, name: s.full_name })}
+                        className="px-3 py-1 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg border border-sky-200 transition-colors shadow-sm inline-flex items-center gap-1.5"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-sky-600" /> Full 30-Day History
+                      </button>
+                    </div>
+                  </div>
+
+                  {rec ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      {/* Check in */}
+                      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-slate-500 font-medium">Check In</p>
+                          <p className="text-slate-900 font-semibold text-sm">
+                            {rec.check_in_at ? new Date(rec.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                          </p>
+                          {rec.is_late && <p className="text-amber-700 text-[11px] font-medium">{rec.minutes_late}m late</p>}
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {rec.check_in_lat && rec.check_in_lng && (
+                            <a 
+                              href={`https://maps.google.com/?q=${rec.check_in_lat},${rec.check_in_lng}`} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="text-sky-700 hover:text-sky-900 bg-sky-50 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-sky-100"
+                            >
+                              <MapPin className="w-3 h-3" /> Map
+                            </a>
+                          )}
+                          {rec.check_in_selfie_url && (
+                            <button 
+                              className="text-sky-700 hover:text-sky-900 bg-white px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-slate-200" 
+                              onClick={() => viewSelfie(rec.check_in_selfie_url)}
+                            >
+                              <ImageIcon className="w-3 h-3 text-sky-600" /> Photo 📷
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Check out */}
+                      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-slate-500 font-medium">Check Out</p>
+                          <p className="text-slate-900 font-semibold text-sm">
+                            {rec.check_out_at ? new Date(rec.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                          </p>
+                          {rec.work_mode && <p className="text-slate-600 text-[11px] capitalize font-medium">{rec.work_mode.replace('_', ' ')}</p>}
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {rec.check_out_lat && rec.check_out_lng && (
+                            <a 
+                              href={`https://maps.google.com/?q=${rec.check_out_lat},${rec.check_out_lng}`} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="text-sky-700 hover:text-sky-900 bg-sky-50 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-sky-100"
+                            >
+                              <MapPin className="w-3 h-3" /> Map
+                            </a>
+                          )}
+                          {rec.check_out_selfie_url && (
+                            <button 
+                              className="text-sky-700 hover:text-sky-900 bg-white px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-slate-200" 
+                              onClick={() => viewSelfie(rec.check_out_selfie_url)}
+                            >
+                              <ImageIcon className="w-3 h-3 text-sky-600" /> Photo 📷
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-slate-500 text-xs italic">No check-in recorded for this date.</p>
+                  )}
                 </div>
               );
             })}
           </div>
+
+          {selectedStaffModal && (
+            <AttendanceDetailsModal
+              staffUserId={selectedStaffModal.id}
+              staffName={selectedStaffModal.name}
+              onClose={() => setSelectedStaffModal(null)}
+            />
+          )}
         </div>
       )}
 
