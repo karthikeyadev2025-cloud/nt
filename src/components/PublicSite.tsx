@@ -904,7 +904,24 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
   );
 }
 
+const DEFAULT_FALLBACK_TICKET_TYPES = [
+  // Digital Marketing / Kite & Tail Media
+  { id: 'tt-1', segment_slug: 'digital-marketing', name: 'Meta & Google Ads Campaign Issue' },
+  { id: 'tt-2', segment_slug: 'digital-marketing', name: 'Creative Reel / Video Request' },
+  { id: 'tt-3', segment_slug: 'digital-marketing', name: 'SEO & Google Ranking Inquiry' },
+  { id: 'tt-4', segment_slug: 'digital-marketing', name: 'Social Media Account Support' },
+  { id: 'tt-5', segment_slug: 'digital-marketing', name: 'Billing & Invoice Question' },
+
+  // Software Development / Nikki Software Studio
+  { id: 'tt-6', segment_slug: 'software-development', name: 'Software Bug & System Error' },
+  { id: 'tt-7', segment_slug: 'software-development', name: 'Feature Enhancement Request' },
+  { id: 'tt-8', segment_slug: 'software-development', name: 'API & Integration Support' },
+  { id: 'tt-9', segment_slug: 'software-development', name: 'Server & Cloud Downtime' },
+  { id: 'tt-10', segment_slug: 'software-development', name: 'Billing & License Inquiry' },
+];
+
 function RaiseTicket({ segments }: { segments: Segment[] }) {
+  const cleanSegments = segments.filter(s => !s.slug.toLowerCase().includes('cctv') && !s.name.toLowerCase().includes('cctv'));
   const [mode, setMode] = useState<'raise' | 'track'>('raise');
   const [form, setForm] = useState({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
   const [types, setTypes] = useState<{ id: string; segment_slug: string; name: string }[]>([]);
@@ -914,7 +931,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
 
   useEffect(() => {
     supabase.from('ticket_types').select('*').eq('active', true).order('order_index')
-      .then(({ data }) => { if (data) setTypes(data as any); });
+      .then(({ data }) => { if (data && data.length > 0) setTypes(data as any); });
   }, []);
 
   async function submit() {
@@ -925,7 +942,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
     setErr('');
     setBusy(true);
     const { data, error } = await supabase.from('support_tickets')
-      .insert({ ...form, ticket_type: form.ticket_type || 'Other' })
+      .insert({ ...form, ticket_type: form.ticket_type || 'General Support' })
       .select('ticket_no').single();
     setBusy(false);
     if (error || !data) {
@@ -936,7 +953,22 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
     setForm({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
   }
 
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400 font-medium';
+
+  const isMarketingSeg = form.segment_slug.includes('marketing') || form.segment_slug.includes('media') || form.segment_slug.includes('digital') || form.segment_slug.includes('kt');
+  const isSoftwareSeg = form.segment_slug.includes('software') || form.segment_slug.includes('dev') || form.segment_slug.includes('tech');
+
+  const matchedTypes = types.filter(t =>
+    t.segment_slug === form.segment_slug ||
+    (isMarketingSeg && (t.segment_slug.includes('marketing') || t.segment_slug.includes('media') || t.segment_slug.includes('digital'))) ||
+    (isSoftwareSeg && (t.segment_slug.includes('software') || t.segment_slug.includes('dev')))
+  );
+
+  const displayTypes = matchedTypes.length > 0
+    ? matchedTypes
+    : DEFAULT_FALLBACK_TICKET_TYPES.filter(t =>
+        isMarketingSeg ? t.segment_slug === 'digital-marketing' : isSoftwareSeg ? t.segment_slug === 'software-development' : true
+      );
 
   return (
     <section id="raise-ticket" className="py-20 px-4 bg-slate-100/60 border-y border-slate-200">
@@ -944,7 +976,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
         <div className="text-center mb-10">
           <Ticket className="w-10 h-10 text-blue-700 mx-auto mb-3" />
           <h2 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">Raise a Support Ticket</h2>
-          <p className="text-slate-600 font-medium">{`Existing customer? Get help from the right team — ${segments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
+          <p className="text-slate-600 font-medium">{`Existing customer? Get help from the right team — ${cleanSegments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
           <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-blue-700 text-sm mt-2 font-semibold underline">
             {mode === 'raise' ? 'Already raised a ticket? Track its status' : 'Raise a new ticket instead'}
           </button>
@@ -964,12 +996,12 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
               <select className={inputCls} value={form.segment_slug}
                 onChange={e => setForm({ ...form, segment_slug: e.target.value, ticket_type: '' })}>
                 <option value="">Select Department *</option>
-                {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+                {cleanSegments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
               <select className={inputCls} value={form.ticket_type}
                 onChange={e => setForm({ ...form, ticket_type: e.target.value })} disabled={!form.segment_slug}>
-                <option value="">Issue Type</option>
-                {types.filter(t => t.segment_slug === form.segment_slug).map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                <option value="">Issue Type *</option>
+                {displayTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
               </select>
             </div>
             <input className={inputCls} placeholder="Subject *" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} />
