@@ -113,7 +113,6 @@ function ClientLogos() {
 function Navigation({ content }: { content: Record<string, Record<string, string>> }) {
   const [open, setOpen] = useState(false);
   const links = [
-    { href: '#philosophy', label: 'Brand Concept' },
     { href: '#services', label: 'Services' },
     { href: '#products', label: 'Products' },
     { href: '#careers', label: 'Careers' },
@@ -124,11 +123,10 @@ function Navigation({ content }: { content: Record<string, Record<string, string
   return (
     <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-3">
-          <KiteTailLogo className="w-9 h-9" />
+        <a href="#" className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-blue-700/20">N</div>
           <div className="flex flex-col text-left">
-            <span className="text-slate-900 font-extrabold text-base tracking-tight leading-tight">{content?.hero?.title || 'Nikki Technologies'}</span>
-            <span className="text-blue-700 font-bold text-[10px] uppercase tracking-wider">Kite &amp; Tail Digital</span>
+            <span className="text-slate-900 font-extrabold text-lg tracking-tight leading-tight">{content?.hero?.title || 'Nikki Technologies'}</span>
           </div>
         </a>
         <div className="hidden md:flex items-center gap-6">
@@ -162,7 +160,7 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
       title: 'Kite & Tail • Digital Media Marketing & Performance Growth',
       desc: 'Data-driven marketing campaigns, viral reels production, targeted Google & Meta PPC ads, brand identity, and SEO lead generation by Kite & Tail Media.',
       badge: 'Kite & Tail Digital Marketing',
-      icon: Rocket,
+      icon: Megaphone,
       highlights: [
         'Targeted Meta (Instagram/FB) & Google PPC Campaigns',
         'Social Media Management & Creative Reels Production',
@@ -198,7 +196,9 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-6">
         <div className="flex items-center gap-2">
-          <KiteTailLogo className="w-5 h-5" />
+          <div className="w-3 h-3 rounded-full bg-blue-600" />
+          <div className="w-3 h-3 rounded-full bg-indigo-600" />
+          <div className="w-3 h-3 rounded-full bg-sky-400" />
           <span className="text-slate-700 text-xs font-extrabold uppercase tracking-wider ml-1">Nikki Technologies • Core Divisions</span>
         </div>
         <div className="flex flex-wrap gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
@@ -215,7 +215,7 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {t.id === 'kite_tail' ? <KiteTailLogo className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
+              {t.id === 'kite_tail' ? <Megaphone className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
               <span>{t.label}</span>
             </button>
           ))}
@@ -284,8 +284,8 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-800 text-xs font-extrabold mb-6 shadow-sm"
         >
-          <KiteTailLogo className="w-4 h-4" />
-          <span>Kite &amp; Tail Digital Marketing • Nikki Technologies</span>
+          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+          <span>Digital Marketing &amp; Custom Software Engineering</span>
         </motion.div>
 
         <motion.h1
@@ -294,7 +294,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.1 }}
           className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-6 tracking-tight leading-tight"
         >
-          Kite &amp; Tail
+          {content?.hero?.title || 'Nikki Technologies'}
         </motion.h1>
 
         <motion.p
@@ -303,7 +303,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-xl md:text-2xl bg-gradient-to-r from-blue-800 via-indigo-700 to-blue-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
-          Performance Digital Marketing &amp; Custom Software Engineering
+          {content?.hero?.subtitle || 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps'}
         </motion.p>
 
         <motion.p
@@ -312,7 +312,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.25 }}
           className="text-slate-600 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
-          We help brands scale rapidly through data-driven performance advertising, Meta &amp; Google PPC, social media management, creative content production, and custom software development.
+          {content?.hero?.description || 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.'}
         </motion.p>
 
         <motion.div
