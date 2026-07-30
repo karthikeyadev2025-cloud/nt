@@ -285,7 +285,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-800 text-xs font-extrabold mb-6 shadow-sm"
         >
           <KiteTailLogo className="w-4 h-4" />
-          <span>KITE &amp; TAIL • WE HOLD YOUR BRAND &amp; GUIDE YOU TO SUCCESS</span>
+          <span>Kite &amp; Tail Digital Marketing • Nikki Technologies</span>
         </motion.div>
 
         <motion.h1
@@ -294,7 +294,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.1 }}
           className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-6 tracking-tight leading-tight"
         >
-          We Hold Your Brand. We Guide You to Success.
+          Kite &amp; Tail
         </motion.h1>
 
         <motion.p
@@ -303,16 +303,16 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-xl md:text-2xl bg-gradient-to-r from-blue-800 via-indigo-700 to-blue-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
-          Kite &amp; Tail Digital Marketing • Powered by Nikki Technologies
+          Performance Digital Marketing &amp; Custom Software Engineering
         </motion.p>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="text-slate-600 max-w-3xl mx-auto mb-10 text-lg leading-relaxed font-medium"
+          className="text-slate-600 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
-          Your brand is a kite designed to reach maximum market height. Nikki Technologies provides the strategic tail, balance, performance ad funnels, and software engineering that launches your brand to victory.
+          We help brands scale rapidly through data-driven performance advertising, Meta &amp; Google PPC, social media management, creative content production, and custom software development.
         </motion.p>
 
         <motion.div
@@ -333,58 +333,6 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
 
         {/* Client-Facing Services Showcase */}
         <ServicesHeroShowcase segments={segments} />
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────── Kite & Tail Philosophy Section
-function KiteTailPhilosophy() {
-  return (
-    <section id="philosophy" className="py-20 px-4 bg-slate-50 border-b border-slate-200">
-      <div className="max-w-6xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-800 text-xs font-extrabold mb-4 shadow-xs">
-          <KiteTailLogo className="w-5 h-5" />
-          <span>THE KITE &amp; TAIL STRATEGIC CONCEPT</span>
-        </div>
-        <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
-          The Kite is Your Brand. The Tail is Nikki Technologies.
-        </h2>
-        <p className="text-slate-600 max-w-3xl mx-auto text-base md:text-lg font-medium leading-relaxed mb-12">
-          A kite cannot fly without a tail. Nikki Technologies acts as the grounding tail, strategic line, data-driven ad funnel, and engineering core that holds your brand steady against market turbulence and elevates you to ultimate market dominance.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-          <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center mb-5 font-bold">
-              <KiteTailLogo className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">1. The Kite — Your Brand Vision</h3>
-            <p className="text-slate-600 text-sm leading-relaxed font-medium">
-              Your business identity, product vision, and market ambition. Designed to capture customer attention and achieve soaring heights of market reach.
-            </p>
-          </div>
-
-          <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center mb-5">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">2. The Tail — Strategic Guidance</h3>
-            <p className="text-slate-600 text-sm leading-relaxed font-medium">
-              Nikki Technologies acts as the balancing tail. Our performance ad funnels, viral reels, and SEO keep your brand flying steady and climbing higher.
-            </p>
-          </div>
-
-          <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center mb-5">
-              <Code2 className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">3. The Engine — Software Scale</h3>
-            <p className="text-slate-600 text-sm leading-relaxed font-medium">
-              Beyond marketing, our software studio builds the robust web apps, mobile apps, and business automation that power your daily operations as you scale.
-            </p>
-          </div>
-        </div>
       </div>
     </section>
   );
@@ -1004,7 +952,6 @@ export default function PublicSite() {
       <SEOHead />
       <Navigation content={content} />
       <Hero content={content} segments={segments} />
-      <KiteTailPhilosophy />
       <ClientLogos />
       <AnimatedStats content={content} />
       <SegmentSections segments={segments} />
