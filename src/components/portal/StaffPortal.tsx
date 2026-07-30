@@ -528,72 +528,143 @@ export default function StaffPortal() {
     { id: 'team', label: 'Team / HR', icon: Users2, show: hasPermission('view_staff') || hasPermission('view_attendance') },
   ].filter(t => t.show);
 
-  const [tab, setTab] = useState(tabs[0]?.id || 'attendance');
+  const [tab, setTab] = useState(tabs[0]?.id || 'home');
+  const [collapsed, setCollapsed] = useState(false);
 
   const mySegNames = user?.segments.includes('all')
     ? 'All Segments'
     : segments.filter(s => user?.segments.includes(s.slug)).map(s => s.name).join(', ') || '—';
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <header className="border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 bg-slate-950/95 backdrop-blur z-40">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950 text-sm">N</div>
-          <div>
-            <p className="text-white font-semibold text-sm leading-tight">{user?.full_name}</p>
-            <p className="text-slate-500 text-[11px]">{user?.role.replace('_', ' ')} • {mySegNames}</p>
+    <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row text-slate-100">
+      {/* ── Desktop Collapsible Sidebar Navigation ── */}
+      <aside className={`hidden md:flex flex-col border-r border-slate-800/80 bg-slate-950/95 backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 ${collapsed ? 'w-20' : 'w-64'}`}>
+        <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-extrabold text-slate-950 text-base shadow-lg shadow-sky-500/20 shrink-0">
+              N
+            </div>
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="text-white font-bold text-sm tracking-tight truncate">Nikki Suite</p>
+                <p className="text-slate-500 text-[11px] font-mono truncate">Enterprise Portal</p>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-900 transition-colors"
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? '→' : '←'}
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+          {tabs.map(t => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  active
+                    ? 'bg-sky-500/15 border border-sky-500/40 text-sky-300 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/60 border border-transparent'
+                }`}
+                title={collapsed ? t.label : undefined}
+              >
+                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-sky-400' : 'text-slate-500'}`} />
+                {!collapsed && <span className="truncate">{t.label}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* User Card at bottom of sidebar */}
+        <div className="p-3 border-t border-slate-800/80">
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-900/60 border border-slate-850">
+            <div className="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 font-bold flex items-center justify-center text-xs shrink-0">
+              {user?.full_name?.[0] || 'U'}
+            </div>
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-xs font-semibold truncate">{user?.full_name}</p>
+                <p className="text-slate-500 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
+              </div>
+            )}
+            <button onClick={signOut} className="text-slate-500 hover:text-red-400 p-1" title="Sign out">
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
-          <button onClick={signOut} className="text-slate-500 hover:text-red-400"><LogOut className="w-5 h-5" /></button>
-        </div>
-      </header>
+      </aside>
 
-      <div className="px-4 py-3 flex gap-2 overflow-x-auto border-b border-slate-900">
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors ${tab === t.id ? 'border-sky-500 text-sky-300 bg-sky-500/10' : 'border-slate-800 text-slate-400'}`}>
-            <t.icon className="w-4 h-4" /> {t.label}
-          </button>
-        ))}
-      </div>
-
-      <main className="p-4 md:p-6 max-w-5xl mx-auto">
-        {tab === 'attendance' && (
-          <div className={cardCls + ' mb-5'}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-white font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
-                <p className="text-slate-500 text-xs mt-0.5">
-                  {user?.designation || user?.role} • {mySegNames} {(user as any)?.staff_code && `• ${(user as any).staff_code}`}
-                </p>
-              </div>
-              <div className="text-right text-xs text-slate-500">
-                {user?.joining_date && <p>Joined {new Date(user.joining_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
-                {(user as any)?.reporting_time && <p className="mt-0.5">{(user as any).reporting_time}</p>}
-              </div>
+      {/* ── Main Area ── */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header */}
+        <header className="border-b border-slate-800 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-slate-950/95 backdrop-blur z-30">
+          <div className="flex items-center gap-3">
+            <div className="md:hidden w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950 text-sm">N</div>
+            <div>
+              <h1 className="text-white font-bold text-base md:text-lg tracking-tight">
+                {tabs.find(t => t.id === tab)?.label || 'Portal'}
+              </h1>
+              <p className="text-slate-500 text-xs hidden sm:block">{mySegNames}</p>
             </div>
           </div>
-        )}
-        {tab === 'attendance' && <AnnouncementsFeed />}
-        {tab === 'attendance' && <MyAttendance />}
-        {tab === 'documents' && <MyDocuments />}
-        {tab === 'requests' && <MyRequests />}
-        {tab === 'home' && <MyHome onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />}
-        {tab === 'tasks' && <TasksBoard segments={segments} mineOnly />}
-        {tab === 'profile' && <MyProfile />}
-        {tab === 'swap' && <ShiftSwapBoard />}
-        {tab === 'tickets' && <TicketsBoard segments={segments} />}
-        {tab === 'leads' && (
-          hasPermission('full_leads_view')
-            ? <LeadsWorkspace segments={segments} />
-            : user?.role === 'marketing_executive'
-              ? <ExecutiveFieldVisits segments={segments} />
-              : <TelecallerQueue segments={segments} />
-        )}
-        {tab === 'team' && <HRBoard segments={segments} />}
-      </main>
+          <div className="flex items-center gap-3">
+            <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
+            <button onClick={signOut} className="md:hidden text-slate-500 hover:text-red-400"><LogOut className="w-5 h-5" /></button>
+          </div>
+        </header>
+
+        {/* Mobile Horizontal Tabs */}
+        <div className="md:hidden px-4 py-2.5 flex gap-2 overflow-x-auto border-b border-slate-900 bg-slate-950">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tab === t.id ? 'border-sky-500 text-sky-300 bg-sky-500/10' : 'border-slate-800 text-slate-400'}`}>
+              <t.icon className="w-3.5 h-3.5" /> {t.label}
+            </button>
+          ))}
+        </div>
+
+        <main className="p-4 md:p-6 max-w-6xl w-full mx-auto flex-1">
+          {tab === 'attendance' && (
+            <div className={cardCls + ' mb-5'}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-white font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
+                  <p className="text-slate-500 text-xs mt-0.5">
+                    {user?.designation || user?.role} • {mySegNames} {(user as any)?.staff_code && `• ${(user as any).staff_code}`}
+                  </p>
+                </div>
+                <div className="text-right text-xs text-slate-500">
+                  {user?.joining_date && <p>Joined {new Date(user.joining_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
+                  {(user as any)?.reporting_time && <p className="mt-0.5">{(user as any).reporting_time}</p>}
+                </div>
+              </div>
+            </div>
+          )}
+          {tab === 'attendance' && <AnnouncementsFeed />}
+          {tab === 'attendance' && <MyAttendance />}
+          {tab === 'documents' && <MyDocuments />}
+          {tab === 'requests' && <MyRequests />}
+          {tab === 'home' && <MyHome onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />}
+          {tab === 'tasks' && <TasksBoard segments={segments} mineOnly />}
+          {tab === 'profile' && <MyProfile />}
+          {tab === 'swap' && <ShiftSwapBoard />}
+          {tab === 'tickets' && <TicketsBoard segments={segments} />}
+          {tab === 'leads' && (
+            hasPermission('full_leads_view')
+              ? <LeadsWorkspace segments={segments} />
+              : user?.role === 'marketing_executive'
+                ? <ExecutiveFieldVisits segments={segments} />
+                : <TelecallerQueue segments={segments} />
+          )}
+          {tab === 'team' && <HRBoard segments={segments} />}
+        </main>
+      </div>
     </div>
   );
 }

@@ -147,34 +147,265 @@ function Navigation({ content }: { content: Record<string, Record<string, string
   );
 }
 
+import { motion, AnimatePresence } from 'framer-motion';
+
+// ─────────────────────────────────────────────── Hero Live Demo (Interactive SaaS Dashboard Preview)
+function HeroLiveDemo() {
+  const [activeTab, setActiveTab] = useState<'telecall' | 'crm' | 'field' | 'payroll'>('telecall');
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.3 }}
+      className="mt-14 max-w-5xl mx-auto rounded-2xl bg-slate-950/80 border border-sky-500/30 p-4 md:p-6 shadow-2xl backdrop-blur-xl relative overflow-hidden"
+    >
+      <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-5">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-red-500/80" />
+          <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+          <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
+          <span className="text-slate-500 text-xs font-mono ml-2">Nikki Enterprise Suite v2.4 • Live Interactive Demo</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+          {[
+            { id: 'telecall', label: '📞 Telecalling Queue' },
+            { id: 'crm', label: '📊 Lead CRM' },
+            { id: 'field', label: '📍 Field GPS' },
+            { id: 'payroll', label: '💼 HRMS & Payroll' },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id as any)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeTab === t.id
+                  ? 'bg-sky-500 text-slate-950 shadow-md font-semibold'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {activeTab === 'telecall' && (
+          <motion.div
+            key="telecall"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left"
+          >
+            <div className="md:col-span-2 rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-medium flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Live Call Active — 02:45
+                </span>
+                <span className="text-slate-500 text-xs">Priority: High</span>
+              </div>
+              <div>
+                <p className="text-white font-semibold text-base">Apex Enterprises — Ramesh Kumar</p>
+                <p className="text-slate-400 text-xs">+91 98765 43210 • Software SaaS Inquiry</p>
+              </div>
+              <div className="flex items-center gap-1 h-6">
+                {[40, 70, 30, 90, 50, 80, 60, 40, 85, 45, 95, 30, 75].map((h, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ height: [`${h}%`, `${100 - h}%`, `${h}%`] }}
+                    transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.1 }}
+                    className="flex-1 bg-sky-400 rounded-full"
+                  />
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-800/80">
+                {['Interested — Appt', 'Callback Tomorrow', 'Converted ₹1,20,000', 'Send Quote'].map((btn, idx) => (
+                  <span key={idx} className="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 text-xs">
+                    {btn}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-3">
+              <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Queue Metrics</p>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between"><span className="text-slate-400">Calls Today</span><span className="text-white font-semibold">48 calls</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Appointments Booked</span><span className="text-sky-400 font-semibold">9 booked</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Avg Call Duration</span><span className="text-emerald-400 font-semibold">3m 12s</span></div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'crm' && (
+          <motion.div
+            key="crm"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-left"
+          >
+            {[
+              { stage: 'New Enquiries', count: '14', color: 'border-sky-500/40 bg-sky-500/10', title: 'TechCorp Solutions', amt: '₹2,50,000' },
+              { stage: 'Contacted & Demo', count: '8', color: 'border-amber-500/40 bg-amber-500/10', title: 'Horizon Networks', amt: '₹4,80,000' },
+              { stage: 'Quoted / Negotiating', count: '5', color: 'border-purple-500/40 bg-purple-500/10', title: 'Global Infra Ltd', amt: '₹9,20,000' },
+              { stage: 'Won / Closed', count: '22', color: 'border-emerald-500/40 bg-emerald-500/10', title: 'Vanguard Retail', amt: '₹3,40,000' },
+            ].map(col => (
+              <div key={col.stage} className={`p-3 rounded-xl border ${col.color} space-y-2`}>
+                <div className="flex justify-between items-center text-xs font-semibold text-white">
+                  <span>{col.stage}</span>
+                  <span className="px-1.5 py-0.5 rounded bg-slate-950/60 text-slate-300">{col.count}</span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
+                  <p className="text-white text-xs font-medium">{col.title}</p>
+                  <p className="text-emerald-400 font-semibold text-[11px] mt-1">{col.amt}</p>
+                  <p className="text-slate-500 text-[10px] mt-0.5">Updated 10m ago</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {activeTab === 'field' && (
+          <motion.div
+            key="field"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left"
+          >
+            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-3 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                  📍 GPS Field Radar — Live Executive Check-In
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300">IndexedDB Synced</span>
+              </div>
+              <div className="h-28 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:12px_12px] opacity-20" />
+                <motion.div
+                  animate={{ scale: [1, 1.4, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className="w-8 h-8 rounded-full bg-sky-500/30 border border-sky-400 flex items-center justify-center text-white"
+                >
+                  📍
+                </motion.div>
+              </div>
+              <p className="text-slate-300 text-xs">Address: 14th Main Rd, HSR Layout, Bengaluru, Karnataka</p>
+            </div>
+            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-3">
+              <p className="text-xs text-slate-400 font-medium">On-Site Verification Proof</p>
+              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-bold text-sm">📷</div>
+                <div>
+                  <p className="text-white text-xs font-medium">Site Installation Proof Photo</p>
+                  <p className="text-emerald-400 text-[10px]">Verified with GPS Timestamp</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'payroll' && (
+          <motion.div
+            key="payroll"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left"
+          >
+            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-2">
+              <p className="text-slate-400 text-xs">Working Days (Shift Aware)</p>
+              <p className="text-2xl font-bold text-white">26 days</p>
+              <p className="text-emerald-400 text-[11px]">Excludes company holidays automatically</p>
+            </div>
+            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-2">
+              <p className="text-slate-400 text-xs">Shift Grace & Late Fines</p>
+              <p className="text-2xl font-bold text-sky-400">10m Grace</p>
+              <p className="text-slate-500 text-[11px]">Server-side trigger enforcement</p>
+            </div>
+            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-2">
+              <p className="text-slate-400 text-xs">Automated Payslips</p>
+              <p className="text-2xl font-bold text-amber-400">100% Calculated</p>
+              <p className="text-purple-300 text-[11px]">One-click bank transfer export</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 // ─────────────────────────────────────────────── Hero
 function Hero({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-sky-950/40 via-slate-950 to-slate-950" />
-      <div className="absolute top-20 left-1/4 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl animate-float-slow" />
-      <div className="absolute top-40 right-1/4 w-72 h-72 bg-cyan-400/10 rounded-full blur-3xl animate-float" />
-      <div className="max-w-5xl mx-auto text-center relative z-10 animate-slide-up">
-        <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-4 tracking-tight">
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-950/50 via-slate-950 to-slate-950" />
+      <div className="absolute top-20 left-1/4 w-96 h-96 bg-sky-500/15 rounded-full blur-3xl animate-float-slow pointer-events-none" />
+      <div className="absolute top-40 right-1/4 w-96 h-96 bg-cyan-400/15 rounded-full blur-3xl animate-float pointer-events-none" />
+      
+      <div className="max-w-6xl mx-auto text-center relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-semibold mb-6"
+        >
+          <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+          <span>Enterprise SaaS &amp; Unified CRM ERP Platform</span>
+        </motion.div>
+
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.1 }}
+          className="text-5xl md:text-7xl font-extrabold text-white mb-6 tracking-tight leading-tight"
+        >
           {content?.hero?.title || 'Nikki Technologies'}
-        </h1>
-        <p className="text-xl md:text-2xl bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent font-semibold mb-6 animate-gradient bg-[length:200%_auto]">
-          {content?.hero?.subtitle || segments.map(s => s.name).join(' • ') || 'Digital Marketing • Software'}
-        </p>
-        <p className="text-slate-400 max-w-2xl mx-auto mb-10 text-lg">
-          {content?.hero?.description || 'One technology partner for security surveillance, digital growth and software products.'}
-        </p>
-        <div className="flex flex-wrap justify-center gap-4">
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="text-xl md:text-2xl bg-gradient-to-r from-sky-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent font-semibold mb-6 animate-gradient bg-[length:200%_auto]"
+        >
+          {content?.hero?.subtitle || segments.map(s => s.name).join(' • ') || 'Digital Marketing • Software SaaS'}
+        </motion.p>
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.25 }}
+          className="text-slate-400 max-w-2xl mx-auto mb-10 text-lg leading-relaxed"
+        >
+          {content?.hero?.description || 'One unified technology platform for telecalling campaigns, field GPS visits, automated payroll, and enterprise growth.'}
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="flex flex-wrap justify-center gap-4"
+        >
           {segments.map((s, i) => (
             <a key={s.slug} href={`#seg-${s.slug}`}
-              style={{ animationDelay: `${i * 100}ms` }}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-sky-500 hover-lift transition-colors text-white animate-zoom-in">
-              <Icon name={s.icon} className="w-5 h-5" />
-              <span className="font-medium">{s.name}</span>
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-700 bg-slate-900/80 hover:border-sky-500 hover:bg-slate-900 transition-all text-white shadow-lg">
+              <Icon name={s.icon} className="w-5 h-5 text-sky-400" />
+              <span className="font-medium text-sm">{s.name}</span>
               <ChevronRight className="w-4 h-4 text-slate-500" />
             </a>
           ))}
-        </div>
+        </motion.div>
+
+        {/* Live Interactive Hero Visual Mock */}
+        <HeroLiveDemo />
       </div>
     </section>
   );
