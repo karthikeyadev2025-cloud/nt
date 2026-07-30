@@ -54,18 +54,15 @@ function withTimeout<T>(p: PromiseLike<T>, ms = AUTH_TIMEOUT_MS, label = 'reques
 }
 
 async function fetchAppUser(userId: string): Promise<AppUser | null> {
-  try {
-    const { data, error } = await withTimeout(
-      supabase.from('app_users').select('*').eq('id', userId).maybeSingle(),
-      AUTH_TIMEOUT_MS,
-      'user profile'
-    );
-    if (error || !data) return null;
-    if (data.is_active === false) return null;
-    return data as AppUser;
-  } catch {
-    return null;
-  }
+  const { data, error } = await withTimeout(
+    supabase.from('app_users').select('*').eq('id', userId).maybeSingle(),
+    AUTH_TIMEOUT_MS,
+    'user profile'
+  );
+  if (error) throw error; // Let network errors throw
+  if (!data) return null; // Not found
+  if (data.is_active === false) return null; // Disabled
+  return data as AppUser;
 }
 
 async function fetchRolePermissions(role: string): Promise<Record<string, boolean>> {
@@ -122,8 +119,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
         if (!mounted) return;
         if (session?.user) {
-          const loaded = await loadUser(session.user.id);
-          if (!loaded && mounted) clearLocalSession();
+          try {
+            const loaded = await loadUser(session.user.id);
+            if (!loaded && mounted) {
+              clearLocalSession();
+              // Only sign out of Supabase if the user is truly disabled (not a network error)
+              await supabase.auth.signOut().catch(() => {});
+            }
+          } catch (err) {
+            // Network error -> keep their Supabase token intact so they can just refresh/retry
+            if (mounted) clearLocalSession();
+          }
         } else {
           // No live session — don't trust localStorage.
           clearLocalSession();
@@ -147,10 +153,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // On SIGNED_IN / TOKEN_REFRESHED / USER_UPDATED — sync the profile.
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        const loaded = await loadUser(session.user.id);
-        if (!loaded && mounted) {
-          clearLocalSession();
-          await supabase.auth.signOut().catch(() => {});
+        try {
+          // Add a tiny delay to allow Supabase Auth to update the PostgREST client headers
+          // This prevents a known race condition where the first DB query uses a missing/stale token.
+          await new Promise(r => setTimeout(r, 100));
+          const loaded = await loadUser(session.user.id);
+          if (!loaded && mounted) {
+            clearLocalSession();
+            await supabase.auth.signOut().catch(() => {});
+          }
+        } catch (err) {
+          // Network error - just clear local session so UI shows login, but don't nuke their auth token.
+          if (mounted) clearLocalSession();
         }
       }
     });
@@ -237,7 +251,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       logLogin(data.user.email || cleanEmail);
-      const appUser = await loadUser(data.user.id);
+      let appUser: AppUser | null = null;
+      try {
+        appUser = await loadUser(data.user.id);
+      } catch (err) {
+        return { error: 'Network error while loading profile. Please try again.' };
+      }
+
       if (!appUser) {
         // Auth passed but this identity has no active app_users row — refuse access.
         await supabase.auth.signOut().catch(() => {});
