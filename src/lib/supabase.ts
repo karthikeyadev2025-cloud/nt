@@ -1,12 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohprabgcstqwswbcthjs.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+if (!supabaseUrl) {
+  console.warn('VITE_SUPABASE_URL is not set. Falling back to default project URL.');
 }
 
-// Untyped client — regenerate strict types with `supabase gen types typescript`
-// once the new project is live, then re-add the <Database> generic.
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(
+  supabaseUrl,
+  supabaseAnonKey || 'dummy-key-placeholder'
+);
