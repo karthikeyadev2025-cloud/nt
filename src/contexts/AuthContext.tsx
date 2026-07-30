@@ -145,6 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         logLoginFailed(email);
+        if (error.message?.toLowerCase().includes('api key') || error.message?.toLowerCase().includes('apikey')) {
+          return { error: 'Vercel Environment Setup Required: Please add VITE_SUPABASE_ANON_KEY into your Vercel Project Environment Variables.' };
+        }
         return { error: error.message || 'Invalid email or password.' };
       }
 
