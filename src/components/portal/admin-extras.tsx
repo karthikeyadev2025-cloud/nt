@@ -137,13 +137,13 @@ export function SetupChecklist({ segments }: { segments: Segment[] }) {
     <div className={cardCls + ' border-blue-200 bg-white'}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-slate-900 font-bold text-sm">Getting Set Up ({checks.length - remaining.length}/{checks.length})</h3>
-        <button onClick={() => setDismissed(true)} className="text-slate-400 hover:text-slate-700 p-1"><X className="w-4 h-4" /></button>
+        <button onClick={() => setDismissed(true)} className="text-slate-500 hover:text-slate-700 p-1"><X className="w-4 h-4" /></button>
       </div>
       <div className="space-y-2.5">
         {checks.map(c => (
           <div key={c.label} className="flex items-center gap-2.5 text-sm">
-            {c.done ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <Circle className="w-4 h-4 text-slate-400 shrink-0" />}
-            <span className={c.done ? 'text-slate-400 line-through font-medium' : 'text-slate-900 font-bold'}>{c.label}</span>
+            {c.done ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <Circle className="w-4 h-4 text-slate-500 shrink-0" />}
+            <span className={c.done ? 'text-slate-500 line-through font-medium' : 'text-slate-900 font-bold'}>{c.label}</span>
             {!c.done && <span className="text-slate-700 text-xs font-semibold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md ml-auto">{c.hint}</span>}
           </div>
         ))}
@@ -184,14 +184,14 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
   return (
     <div className="relative">
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-sm focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 shadow-sm w-48 sm:w-64">
-        <Search className="w-4 h-4 text-slate-400 shrink-0" />
+        <Search className="w-4 h-4 text-slate-500 shrink-0" />
         <input
           className="bg-transparent border-none p-0 text-slate-900 text-xs focus:ring-0 focus:outline-none w-full placeholder-slate-400 font-medium"
           placeholder="Search staff, leads, tickets..."
           value={query}
           onChange={e => setQuery(e.target.value)}
         />
-        {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-slate-400 hover:text-slate-600"><X className="w-3.5 h-3.5" /></button>}
+        {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-slate-500 hover:text-slate-600"><X className="w-3.5 h-3.5" /></button>}
       </div>
       {open && results.length > 0 && (
         <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-1">

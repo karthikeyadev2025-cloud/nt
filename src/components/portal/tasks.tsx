@@ -9,11 +9,11 @@ import type { Segment } from '../../lib/database.types';
 const PRIORITY_TONE: Record<string, string> = {
   high: 'text-red-400 border-red-500/40 bg-red-500/10',
   medium: 'text-amber-300 border-amber-500/40 bg-amber-500/10',
-  low: 'text-slate-400 border-slate-600 bg-slate-800/60',
+  low: 'text-slate-500 border-slate-300 bg-slate-100/60',
 };
 
 const STATUS_META: Record<string, { label: string; icon: any; tone: string }> = {
-  pending: { label: 'Pending', icon: Circle, tone: 'text-slate-400' },
+  pending: { label: 'Pending', icon: Circle, tone: 'text-slate-500' },
   in_progress: { label: 'In progress', icon: Clock3, tone: 'text-sky-300' },
   completed: { label: 'Completed', icon: CheckCircle2, tone: 'text-emerald-400' },
   cancelled: { label: 'Cancelled', icon: XCircle, tone: 'text-slate-600' },
@@ -24,7 +24,7 @@ function dueTone(due: string | null, status: string) {
   const d = new Date(due + 'T23:59:59');
   if (d < new Date()) return 'text-red-400 font-medium';
   if (d.getTime() - Date.now() < 2 * 86400000) return 'text-amber-300';
-  return 'text-slate-400';
+  return 'text-slate-500';
 }
 
 /**
@@ -126,7 +126,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
         <div className="flex gap-2">
           {([['open', 'Open'], ['mine', 'Assigned to me'], ['done', 'Completed']] as const).map(([v, label]) => (
             <button key={v} onClick={() => setScope(v)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>
+              className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>
               {label}
             </button>
           ))}
@@ -154,12 +154,12 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Icon className={`w-4 h-4 shrink-0 ${meta.tone}`} />
-                    <p className="text-white text-sm font-medium">{t.title}</p>
+                    <p className="text-slate-900 text-sm font-medium">{t.title}</p>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded border capitalize ${PRIORITY_TONE[t.priority]}`}>
                       {t.priority}
                     </span>
                   </div>
-                  {t.description && <p className="text-slate-400 text-xs mt-1">{t.description}</p>}
+                  {t.description && <p className="text-slate-500 text-xs mt-1">{t.description}</p>}
                   <div className="flex flex-wrap gap-3 mt-1.5 text-xs">
                     {t.due_date && (
                       <span className={dueTone(t.due_date, t.status)}>
@@ -179,7 +179,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                   {(isMine || canEditAll) && t.status !== 'completed' && t.status !== 'cancelled' && (
                     <div className="flex gap-2">
                       {t.status === 'pending' && (
-                        <button className="px-2.5 py-1 rounded-lg border border-slate-600 text-slate-300 text-xs"
+                        <button className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-600 text-xs"
                           disabled={busy === t.id} onClick={() => setStatus(t, 'in_progress')}>Start</button>
                       )}
                       <button className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
@@ -213,8 +213,8 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
 
       {showNew && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowNew(false)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-white font-semibold">New Task</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-slate-900 font-semibold">New Task</h3>
             <input className={inputCls} placeholder="What needs doing? *"
               value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
             <textarea className={inputCls} rows={2} placeholder="Details (optional)"

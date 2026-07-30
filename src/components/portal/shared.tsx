@@ -28,7 +28,7 @@ export function SegmentTabs({
       )}
       {visible.map(s => (
         <button key={s.slug} onClick={() => onChange(s.slug)}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === s.slug ? 'text-white border-blue-700 shadow-md' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'} ${s.active === false ? 'opacity-70' : ''}`}
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === s.slug ? 'text-slate-900 border-blue-700 shadow-md' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'} ${s.active === false ? 'opacity-70' : ''}`}
           style={value === s.slug ? { backgroundColor: s.color || '#1d4ed8' } : {}}
           title={s.active === false ? 'Retired — hidden from the website, existing work still manageable' : undefined}>
           {s.name}{s.active === false && <span className="ml-1.5 text-[10px] opacity-80">(retired)</span>}
@@ -43,7 +43,7 @@ const ticketStatusColors: Record<string, string> = {
   in_progress: 'bg-amber-500/20 text-amber-300',
   waiting_customer: 'bg-purple-500/20 text-purple-300',
   resolved: 'bg-emerald-500/20 text-emerald-300',
-  closed: 'bg-slate-500/20 text-slate-400',
+  closed: 'bg-slate-500/20 text-slate-500',
 };
 
 export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focusId?: string }) {
@@ -117,7 +117,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
       <div className="flex flex-wrap gap-2 mb-5">
         {['', 'open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1 rounded-lg text-xs font-medium border ${statusFilter === s ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>
+            className={`px-3 py-1 rounded-lg text-xs font-medium border ${statusFilter === s ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>
             {s === '' ? `All (${tickets.length})` : `${s.replace('_', ' ')} (${counts[s] || 0})`}
           </button>
         ))}
@@ -127,7 +127,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
         {tickets.map(t => {
           const seg = segments.find(s => s.slug === t.segment_slug);
           return (
-            <div key={t.id} className={cardCls + ' cursor-pointer hover:border-slate-600'}
+            <div key={t.id} className={cardCls + ' cursor-pointer hover:border-slate-300'}
               onClick={() => { setOpenTicket(t); loadReplies(t.id); }}>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="font-mono text-sky-400 text-sm">{t.ticket_no}</span>
@@ -136,7 +136,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
                 <span className="text-xs text-slate-500">{t.ticket_type}</span>
                 <span className={`text-xs ${t.priority === 'urgent' ? 'text-red-400' : t.priority === 'high' ? 'text-amber-400' : 'text-slate-500'}`}>{t.priority}</span>
               </div>
-              <p className="text-white font-medium mt-1.5">{t.subject}</p>
+              <p className="text-slate-900 font-medium mt-1.5">{t.subject}</p>
               <p className="text-slate-500 text-xs mt-0.5">{t.customer_name} • {t.customer_phone} • {new Date(t.created_at).toLocaleString()}</p>
             </div>
           );
@@ -146,16 +146,16 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
 
       {openTicket && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenTicket(null)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3">
               <div>
                 <p className="font-mono text-sky-400 text-sm">{openTicket.ticket_no}</p>
-                <h3 className="text-white text-lg font-semibold">{openTicket.subject}</h3>
-                <p className="text-slate-400 text-sm">{openTicket.customer_name} • {openTicket.customer_phone} {openTicket.customer_email && `• ${openTicket.customer_email}`}</p>
+                <h3 className="text-slate-900 text-lg font-semibold">{openTicket.subject}</h3>
+                <p className="text-slate-500 text-sm">{openTicket.customer_name} • {openTicket.customer_phone} {openTicket.customer_email && `• ${openTicket.customer_email}`}</p>
               </div>
-              <button className="text-slate-400 hover:text-white" onClick={() => setOpenTicket(null)}>✕</button>
+              <button className="text-slate-500 hover:text-slate-900" onClick={() => setOpenTicket(null)}>✕</button>
             </div>
-            <p className="text-slate-300 text-sm mb-4 whitespace-pre-wrap">{openTicket.description}</p>
+            <p className="text-slate-600 text-sm mb-4 whitespace-pre-wrap">{openTicket.description}</p>
             {hasPermission('manage_tickets') && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                 <select className={inputCls} value={openTicket.status} onChange={e => update(openTicket.id, { status: e.target.value as SupportTicket['status'] })}>
@@ -175,7 +175,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
                 <div key={r.id} className="text-sm">
                   <span className="text-sky-400 font-medium">{r.author_name}</span>
                   <span className="text-slate-600 text-xs ml-2">{new Date(r.created_at).toLocaleString()}</span>
-                  <p className="text-slate-300 mt-0.5">{r.message}</p>
+                  <p className="text-slate-600 mt-0.5">{r.message}</p>
                 </div>
               ))}
               {hasPermission('manage_tickets') && (
@@ -197,7 +197,7 @@ const stageColors: Record<string, string> = {
   new: 'bg-sky-500/20 text-sky-300', contacted: 'bg-indigo-500/20 text-indigo-300',
   qualified: 'bg-purple-500/20 text-purple-300', quoted: 'bg-amber-500/20 text-amber-300',
   won: 'bg-emerald-500/20 text-emerald-300', lost: 'bg-red-500/20 text-red-300',
-  not_answered: 'bg-slate-500/20 text-slate-400',
+  not_answered: 'bg-slate-500/20 text-slate-500',
 };
 
 export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; focusLeadId?: string }) {
@@ -308,9 +308,9 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2 mb-5">
-        <button onClick={() => setStageFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === '' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>All ({leads.length})</button>
+        <button onClick={() => setStageFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === '' ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>All ({leads.length})</button>
         {stages.map(s => (
-          <button key={s} onClick={() => setStageFilter(s)} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === s ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>
+          <button key={s} onClick={() => setStageFilter(s)} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === s ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>
             {s.replace('_', ' ')} ({funnel[s] || 0})
           </button>
         ))}
@@ -320,9 +320,9 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         {leads.map(l => {
           const seg = segments.find(s => s.slug === l.segment_slug);
           return (
-            <div key={l.id} className={cardCls + ' cursor-pointer hover:border-slate-600'} onClick={() => { setOpenLead(l); loadRemarks(l.id); }}>
+            <div key={l.id} className={cardCls + ' cursor-pointer hover:border-slate-300'} onClick={() => { setOpenLead(l); loadRemarks(l.id); }}>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-white font-medium">{l.customer_name}</span>
+                <span className="text-slate-900 font-medium">{l.customer_name}</span>
                 <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
                 <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
                 <span className="text-xs text-slate-500">{l.source}</span>
@@ -339,8 +339,8 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
 
       {showAdd && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-white font-semibold text-lg">New Lead</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-slate-900 font-semibold text-lg">New Lead</h3>
             <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
               <option value="">Segment *</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
@@ -358,7 +358,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 {dupWarning.map((d: any) => (
                   <p key={d.id} className="text-amber-200/80">{d.customer_name} — {d.stage} {d.assignee_name ? `• with ${d.assignee_name}` : '• unassigned'}</p>
                 ))}
-                <p className="text-slate-400 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
+                <p className="text-slate-500 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
               </div>
             )}
             <button className={btnCls + ' w-full'} onClick={createLead}>{dupWarning ? 'Add Anyway' : 'Create Lead'}</button>
@@ -368,17 +368,17 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
 
       {openLead && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenLead(null)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between mb-3">
               <div>
-                <h3 className="text-white text-lg font-semibold">{openLead.customer_name}</h3>
-                <p className="text-slate-400 text-sm">{openLead.phone} {openLead.email && `• ${openLead.email}`}</p>
+                <h3 className="text-slate-900 text-lg font-semibold">{openLead.customer_name}</h3>
+                <p className="text-slate-500 text-sm">{openLead.phone} {openLead.email && `• ${openLead.email}`}</p>
                 {openLead.interested_in && <p className="text-slate-500 text-sm mt-1">Interested in: {openLead.interested_in}</p>}
                 <p className="text-slate-600 text-xs mt-1.5">
                   Created {new Date(openLead.created_at).toLocaleString()} • source: {openLead.source}
                 </p>
               </div>
-              <button className="text-slate-400 hover:text-white" onClick={() => setOpenLead(null)}>✕</button>
+              <button className="text-slate-500 hover:text-slate-900" onClick={() => setOpenLead(null)}>✕</button>
             </div>
             {hasPermission('manage_leads') && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -414,7 +414,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                   title="Saves as a review and notifies whoever owns this lead"
                   onClick={() => addRemark(true)}>Send as Review</button>
               </div>
-              <p className="text-slate-400 text-xs font-medium mb-1">Full History</p>
+              <p className="text-slate-500 text-xs font-medium mb-1">Full History</p>
               {remarks.map(r => {
                 const isSystem = r.remark.startsWith('Stage changed:') || r.remark.startsWith('Reassigned:');
                 return (
@@ -422,7 +422,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                     <span className="text-slate-600 text-xs">
                       {new Date(r.created_at).toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''}{!isSystem && ` • ${r.call_type}`}
                     </span>
-                    <p className={isSystem ? 'text-slate-500 text-xs italic' : 'text-slate-300'}>{r.remark}</p>
+                    <p className={isSystem ? 'text-slate-500 text-xs italic' : 'text-slate-600'}>{r.remark}</p>
                     {(r.address || r.photo_url) && (
                       <div className="flex gap-3 mt-0.5 text-xs">
                         {r.address && <span className="text-slate-500">📍 {r.address}</span>}
@@ -531,7 +531,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
       <div className="flex gap-2 mb-5">
         {visibleTabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${tab === t.id ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>{t.id}</button>
+            className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${tab === t.id ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>{t.id}</button>
         ))}
       </div>
 
@@ -540,7 +540,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
           {staff.filter(inSeg).map(s => (
             <div key={s.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
               <div>
-                <p className="text-white font-medium">{s.full_name} <span className="text-slate-500 text-xs">({s.role})</span></p>
+                <p className="text-slate-900 font-medium">{s.full_name} <span className="text-slate-500 text-xs">({s.role})</span></p>
                 <p className="text-slate-500 text-xs">{s.email} • {s.phone} • segments: {(s.segments || []).join(', ') || '—'}</p>
               </div>
               <span className={`text-xs px-2 py-0.5 rounded ${s.is_active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>{s.is_active ? 'active' : 'disabled'}</span>
@@ -557,10 +557,10 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
               const rec = attendance.find(a => a.staff_user_id === s.id);
               return (
                 <div key={s.id} className={cardCls + ' flex items-center justify-between'}>
-                  <p className="text-white text-sm">{s.full_name}</p>
+                  <p className="text-slate-900 text-sm">{s.full_name}</p>
                   {rec ? (
                     <div className="flex items-center gap-2">
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-500">
                         In: {rec.check_in_at ? new Date(rec.check_in_at).toLocaleTimeString() : '—'} •
                         Out: {rec.check_out_at ? new Date(rec.check_out_at).toLocaleTimeString() : '—'}
                         <span className="ml-2 text-emerald-300">{rec.status}</span>
@@ -586,7 +586,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             <div key={l.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-white text-sm font-medium">{staffById[l.staff_user_id]?.full_name || '—'} • {l.leave_type}</p>
+                  <p className="text-slate-900 text-sm font-medium">{staffById[l.staff_user_id]?.full_name || '—'} • {l.leave_type}</p>
                   <p className="text-slate-500 text-xs">{l.from_date} → {l.to_date} • {l.reason}</p>
                   {l.status === 'pending' && (() => {
                     const b = (leaveBalances[l.staff_user_id] || []).find((x: any) => x.leave_type === l.leave_type);
@@ -594,7 +594,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                     if (b.is_unlimited) return <p className="text-slate-500 text-xs mt-0.5">unpaid leave — no balance limit</p>;
                     const rem = Number(b.remaining);
                     return (
-                      <p className={`text-xs mt-0.5 ${rem <= 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                      <p className={`text-xs mt-0.5 ${rem <= 0 ? 'text-red-400' : 'text-slate-500'}`}>
                         Balance: {rem} of {Number(b.entitled)} {l.leave_type} days left ({Number(b.used)} used)
                       </p>
                     );
@@ -605,7 +605,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                     <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs" onClick={() => review('leave_requests', l.id, 'approved', setLeaves)}>Approve</button>
                     <button className="px-3 py-1 rounded bg-red-600 text-white text-xs" onClick={() => review('leave_requests', l.id, 'rejected', setLeaves)}>Reject</button>
                   </div>
-                ) : <span className="text-xs text-slate-400">{l.status}</span>}
+                ) : <span className="text-xs text-slate-500">{l.status}</span>}
               </div>
             </div>
           ))}
@@ -618,7 +618,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             <div key={a.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-white text-sm font-medium">{staffById[a.staff_user_id]?.full_name || '—'} • ₹{Number(a.amount).toLocaleString('en-IN')}</p>
+                  <p className="text-slate-900 text-sm font-medium">{staffById[a.staff_user_id]?.full_name || '—'} • ₹{Number(a.amount).toLocaleString('en-IN')}</p>
                   <p className="text-slate-500 text-xs">{a.reason} • {new Date(a.created_at).toLocaleDateString()}</p>
                 </div>
                 {a.status === 'pending' && hasPermission('approve_advances') ? (
@@ -626,7 +626,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                     <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs" onClick={() => review('salary_advance_requests', a.id, 'approved', setAdvances)}>Approve</button>
                     <button className="px-3 py-1 rounded bg-red-600 text-white text-xs" onClick={() => review('salary_advance_requests', a.id, 'rejected', setAdvances)}>Reject</button>
                   </div>
-                ) : <span className="text-xs text-slate-400">{a.status}</span>}
+                ) : <span className="text-xs text-slate-500">{a.status}</span>}
               </div>
             </div>
           ))}

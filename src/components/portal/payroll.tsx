@@ -64,7 +64,7 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <p className="text-slate-400 text-sm">Define shift timing, grace period and late-fine rules, then assign staff.</p>
+        <p className="text-slate-500 text-sm">Define shift timing, grace period and late-fine rules, then assign staff.</p>
         <button className={btnCls} onClick={() => setEditing({ segment_slug: '', name: '', start_time: '09:30', end_time: '18:30', break_minutes: 60, working_days: [1, 2, 3, 4, 5, 6], grace_minutes: 10, late_fine_type: 'none', late_fine_amount: 0, half_day_after_minutes: 120, is_active: true })}>+ New Shift</button>
       </div>
       <div className="space-y-2">
@@ -72,7 +72,7 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
           <div key={s.id} className={cardCls}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white font-medium">{s.name}</p>
+                <p className="text-slate-900 font-medium">{s.name}</p>
                 <p className="text-slate-500 text-xs mt-0.5">{s.start_time} – {s.end_time} • grace {s.grace_minutes}min • {assignedCount(s.id)} staff assigned</p>
               </div>
               <div className="flex gap-3">
@@ -87,8 +87,8 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
 
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-white font-semibold">{editing.id ? 'Edit' : 'New'} Shift</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-slate-900 font-semibold">{editing.id ? 'Edit' : 'New'} Shift</h3>
             <input className={inputCls} placeholder="Shift Name *" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} />
             <select className={inputCls} value={editing.segment_slug || ''} onChange={e => setEditing({ ...editing, segment_slug: e.target.value || null })}>
               <option value="">Company-wide</option>
@@ -103,7 +103,7 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
               <div className="flex flex-wrap gap-1.5">
                 {DAYS.map(d => (
                   <button key={d.v} onClick={() => toggleDay(d.v)}
-                    className={`px-2.5 py-1 rounded-lg text-xs border ${(editing.working_days || []).includes(d.v) ? 'bg-sky-500 text-slate-950 border-sky-500' : 'border-slate-700 text-slate-400'}`}>
+                    className={`px-2.5 py-1 rounded-lg text-xs border ${(editing.working_days || []).includes(d.v) ? 'bg-sky-500 text-slate-950 border-sky-500' : 'border-slate-200 text-slate-500'}`}>
                     {d.l}
                   </button>
                 ))}
@@ -135,8 +135,8 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
 
       {assigningFor && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setAssigningFor(null)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-white font-semibold">Assign to "{assigningFor.name}"</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-slate-900 font-semibold">Assign to "{assigningFor.name}"</h3>
             <select className={inputCls} value={assignStaffId} onChange={e => setAssignStaffId(e.target.value)}>
               <option value="">Select staff member</option>
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
@@ -281,9 +281,9 @@ export function PayslipManager() {
       </div>
       <div className="space-y-2">
         {payslips.map(p => (
-          <div key={p.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-600'} onClick={() => openPayments(p)}>
+          <div key={p.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-300'} onClick={() => openPayments(p)}>
             <div>
-              <p className="text-white text-sm font-medium">{staffName(p.staff_user_id)} — {p.period_month}/{p.period_year}</p>
+              <p className="text-slate-900 text-sm font-medium">{staffName(p.staff_user_id)} — {p.period_month}/{p.period_year}</p>
               <p className="text-slate-500 text-xs mt-0.5">Net Pay ₹{Number(p.net_pay).toLocaleString('en-IN')} • Paid ₹{Number(p.amount_paid).toLocaleString('en-IN')}</p>
             </div>
             <span className={`text-xs px-2 py-0.5 rounded capitalize ${statusColor[p.payment_status]}`}>{p.payment_status}</span>
@@ -294,8 +294,8 @@ export function PayslipManager() {
 
       {showGen && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowGen(false)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-white font-semibold">Generate Payslip</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-slate-900 font-semibold">Generate Payslip</h3>
             <select className={inputCls} value={genForm.staff_user_id} onChange={e => setGenForm({ ...genForm, staff_user_id: e.target.value })}>
               <option value="">Select staff *</option>
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
@@ -324,15 +324,15 @@ export function PayslipManager() {
 
       {openSlip && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenSlip(null)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-white font-semibold">{staffName(openSlip.staff_user_id)} — {openSlip.period_month}/{openSlip.period_year}</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-slate-900 font-semibold">{staffName(openSlip.staff_user_id)} — {openSlip.period_month}/{openSlip.period_year}</h3>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
-              <span className="text-slate-400">Net Pay</span><span className="text-white text-right">₹{Number(openSlip.net_pay).toLocaleString('en-IN')}</span>
-              <span className="text-slate-400">Paid So Far</span><span className="text-emerald-400 text-right">₹{Number(openSlip.amount_paid).toLocaleString('en-IN')}</span>
-              <span className="text-slate-400">Balance</span><span className="text-amber-400 text-right">₹{Math.max(0, Number(openSlip.net_pay) - Number(openSlip.amount_paid)).toLocaleString('en-IN')}</span>
+              <span className="text-slate-500">Net Pay</span><span className="text-slate-900 text-right">₹{Number(openSlip.net_pay).toLocaleString('en-IN')}</span>
+              <span className="text-slate-500">Paid So Far</span><span className="text-emerald-400 text-right">₹{Number(openSlip.amount_paid).toLocaleString('en-IN')}</span>
+              <span className="text-slate-500">Balance</span><span className="text-amber-400 text-right">₹{Math.max(0, Number(openSlip.net_pay) - Number(openSlip.amount_paid)).toLocaleString('en-IN')}</span>
             </div>
             <div className="border-t border-slate-800 pt-3 space-y-2">
-              <p className="text-slate-300 text-sm font-medium">Record a Payment</p>
+              <p className="text-slate-600 text-sm font-medium">Record a Payment</p>
               <div className="grid grid-cols-2 gap-2">
                 <input type="number" className={inputCls} placeholder="Amount *" value={payForm.amount} onChange={e => setPayForm({ ...payForm, amount: e.target.value })} />
                 <select className={inputCls} value={payForm.method} onChange={e => setPayForm({ ...payForm, method: e.target.value })}>
@@ -344,11 +344,11 @@ export function PayslipManager() {
             </div>
             {payments.length > 0 && (
               <div className="border-t border-slate-800 pt-3 space-y-1.5">
-                <p className="text-slate-400 text-xs font-medium">Payment History</p>
+                <p className="text-slate-500 text-xs font-medium">Payment History</p>
                 {payments.map(p => (
                   <div key={p.id} className="flex justify-between text-xs">
-                    <span className="text-slate-400">{new Date(p.paid_at).toLocaleDateString()} • {p.method.replace('_', ' ')}</span>
-                    <span className="text-white">₹{Number(p.amount).toLocaleString('en-IN')}</span>
+                    <span className="text-slate-500">{new Date(p.paid_at).toLocaleDateString()} • {p.method.replace('_', ' ')}</span>
+                    <span className="text-slate-900">₹{Number(p.amount).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
               </div>
@@ -375,11 +375,11 @@ export function MyPayslips() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><FileText className="w-4 h-4 text-sky-400" /> My Payslips</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-3 flex items-center gap-2"><FileText className="w-4 h-4 text-sky-400" /> My Payslips</h3>
       <div className="space-y-2">
         {payslips.map(p => (
           <div key={p.id} className="flex items-center justify-between text-sm">
-            <span className="text-slate-300">{p.period_month}/{p.period_year} — ₹{Number(p.net_pay).toLocaleString('en-IN')}</span>
+            <span className="text-slate-600">{p.period_month}/{p.period_year} — ₹{Number(p.net_pay).toLocaleString('en-IN')}</span>
             <span className={`text-xs px-2 py-0.5 rounded capitalize ${statusColor[p.payment_status]}`}>{p.payment_status}</span>
           </div>
         ))}
@@ -402,7 +402,7 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
   return (
     <div className={cardCls}>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h3 className="text-white font-semibold text-sm">Attendance Summary</h3>
+        <h3 className="text-slate-900 font-semibold text-sm">Attendance Summary</h3>
         <div className="flex gap-2">
           <select className={inputCls + ' w-auto'} value={segment} onChange={e => setSegment(e.target.value)}>
             <option value="">All Segments</option>
@@ -429,11 +429,11 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
           <tbody>
             {rows.map(r => (
               <tr key={r.staff_user_id} className="border-b border-slate-900">
-                <td className="py-2 text-white">{r.full_name}</td>
+                <td className="py-2 text-slate-900">{r.full_name}</td>
                 <td className="py-2 text-emerald-400">{r.days_present}</td>
                 <td className="py-2 text-red-400">{r.days_absent}</td>
                 <td className="py-2 text-amber-400">{r.days_on_leave}</td>
-                <td className="py-2 text-slate-300">{r.attendance_pct}%</td>
+                <td className="py-2 text-slate-600">{r.attendance_pct}%</td>
               </tr>
             ))}
           </tbody>

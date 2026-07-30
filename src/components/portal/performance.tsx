@@ -44,7 +44,7 @@ export function MyPerformanceChart() {
   if (data.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-4">Hours Worked — Last 14 Days</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-4">Hours Worked — Last 14 Days</h3>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
@@ -85,7 +85,7 @@ export function MyCallsChart() {
   if (data.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-4">Calls Logged — Last 7 Days</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-4">Calls Logged — Last 7 Days</h3>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
@@ -121,7 +121,7 @@ export function AttendanceTrendChart() {
   if (data.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-4">Company Attendance — Last 14 Days</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-4">Company Attendance — Last 14 Days</h3>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
@@ -159,7 +159,7 @@ export function LeadsFunnelChart({ segments }: { segments: Segment[] }) {
   if (data.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-4">Leads Funnel by Segment</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-4">Leads Funnel by Segment</h3>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
@@ -192,7 +192,7 @@ export function TicketStatusChart() {
   if (data.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-4">Ticket Status Breakdown</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-4">Ticket Status Breakdown</h3>
       <ResponsiveContainer width="100%" height={200}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={2}>
@@ -203,7 +203,7 @@ export function TicketStatusChart() {
       </ResponsiveContainer>
       <div className="flex flex-wrap gap-3 justify-center mt-2">
         {data.map(d => (
-          <span key={d.name} className="text-xs text-slate-400 capitalize flex items-center gap-1">
+          <span key={d.name} className="text-xs text-slate-500 capitalize flex items-center gap-1">
             <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: colors[d.name.replace(' ', '_')] || '#0ea5e9' }} /> {d.name} ({d.value})
           </span>
         ))}

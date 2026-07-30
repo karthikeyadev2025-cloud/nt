@@ -124,7 +124,7 @@ function SignaturePad({ onCapture }: { onCapture: (dataUrl: string) => void }) {
         onTouchStart={start} onTouchMove={move} onTouchEnd={end}
       />
       <div className="flex justify-between items-center mt-2">
-        <button onClick={clear} className="flex items-center gap-1 text-slate-400 text-xs">
+        <button onClick={clear} className="flex items-center gap-1 text-slate-500 text-xs">
           <RotateCcw className="w-3.5 h-3.5" /> Clear
         </button>
         <button onClick={capture} disabled={empty} className={btnCls + ' disabled:opacity-40'}>
@@ -178,13 +178,13 @@ export function DocumentViewer({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
+      <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-white text-lg font-semibold">{title}</h3>
+            <h3 className="text-slate-900 text-lg font-semibold">{title}</h3>
             {meta && <p className="text-slate-500 text-xs mt-0.5">{meta}</p>}
           </div>
-          <button className="text-slate-400 hover:text-white" onClick={onClose}>✕</button>
+          <button className="text-slate-500 hover:text-slate-900" onClick={onClose}>✕</button>
         </div>
 
         <div className="bg-white text-slate-800 rounded-lg p-6 whitespace-pre-wrap text-sm leading-relaxed font-serif mb-5">
@@ -206,10 +206,10 @@ export function DocumentViewer({
 
         {canSubmit && !signed && requiresSignature && (
           <div className="border-t border-slate-800 pt-5">
-            <p className="text-white text-sm font-medium mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-400" /> Sign to accept this document</p>
+            <p className="text-slate-900 text-sm font-medium mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-400" /> Sign to accept this document</p>
             <div className="flex gap-2 mb-3">
-              <button onClick={() => setMode('draw')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'draw' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Draw Signature</button>
-              <button onClick={() => setMode('type')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'type' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Type Name</button>
+              <button onClick={() => setMode('draw')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'draw' ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>Draw Signature</button>
+              <button onClick={() => setMode('type')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'type' ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>Type Name</button>
             </div>
             {mode === 'draw' ? (
               <SignaturePad onCapture={dataUrl => onSign && onSign(dataUrl, '')} />
@@ -284,11 +284,11 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
       )}
       {docs.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No documents issued yet.</p>}
       {docs.map(d => (
-        <div key={d.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-600'} onClick={() => setOpen(d)}>
+        <div key={d.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-300'} onClick={() => setOpen(d)}>
           <div className="flex items-center gap-3">
             <FileText className="w-5 h-5 text-sky-400" />
             <div>
-              <p className="text-white text-sm font-medium">{d.title}</p>
+              <p className="text-slate-900 text-sm font-medium">{d.title}</p>
               <p className="text-slate-500 text-xs">{DOC_TYPE_LABELS[d.doc_type]} • issued {new Date(d.issued_at).toLocaleDateString()}</p>
             </div>
           </div>
@@ -322,16 +322,16 @@ export function MySalaryCard({ salary }: { salary?: { basic?: number; hra?: numb
   const rupee = (n?: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold mb-4 text-sm">Salary Structure</h3>
+      <h3 className="text-slate-900 font-semibold mb-4 text-sm">Salary Structure</h3>
       <div className="grid grid-cols-2 gap-y-3 text-sm">
-        <span className="text-slate-400">Basic</span><span className="text-white text-right">{rupee(s.basic)}</span>
-        <span className="text-slate-400">HRA</span><span className="text-white text-right">{rupee(s.hra)}</span>
-        <span className="text-slate-400">Allowances</span><span className="text-white text-right">{rupee(s.allowances)}</span>
-        {!!s.performance_bonus && (<><span className="text-slate-400">Performance Bonus</span><span className="text-emerald-400 text-right">{rupee(s.performance_bonus)}</span></>)}
-        {!!s.incentives && (<><span className="text-slate-400">Incentives</span><span className="text-emerald-400 text-right">{rupee(s.incentives)}</span></>)}
-        <span className="text-slate-400">Deductions</span><span className="text-red-300 text-right">− {rupee(s.deductions)}</span>
+        <span className="text-slate-500">Basic</span><span className="text-slate-900 text-right">{rupee(s.basic)}</span>
+        <span className="text-slate-500">HRA</span><span className="text-slate-900 text-right">{rupee(s.hra)}</span>
+        <span className="text-slate-500">Allowances</span><span className="text-slate-900 text-right">{rupee(s.allowances)}</span>
+        {!!s.performance_bonus && (<><span className="text-slate-500">Performance Bonus</span><span className="text-emerald-400 text-right">{rupee(s.performance_bonus)}</span></>)}
+        {!!s.incentives && (<><span className="text-slate-500">Incentives</span><span className="text-emerald-400 text-right">{rupee(s.incentives)}</span></>)}
+        <span className="text-slate-500">Deductions</span><span className="text-red-300 text-right">− {rupee(s.deductions)}</span>
         <div className="col-span-2 border-t border-slate-800 my-1" />
-        <span className="text-white font-semibold">Annual CTC</span><span className="text-sky-400 font-bold text-right">{rupee(s.ctc)}</span>
+        <span className="text-slate-900 font-semibold">Annual CTC</span><span className="text-sky-400 font-bold text-right">{rupee(s.ctc)}</span>
       </div>
     </div>
   );

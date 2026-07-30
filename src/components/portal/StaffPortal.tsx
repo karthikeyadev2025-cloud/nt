@@ -95,7 +95,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
   const Tile = ({ label, value, tone = 'text-white', onClick }: any) => (
     <button onClick={onClick} disabled={!onClick}
-      className={`${cardCls} text-left ${onClick ? 'hover:border-slate-600 cursor-pointer' : ''}`}>
+      className={`${cardCls} text-left ${onClick ? 'hover:border-slate-300 cursor-pointer' : ''}`}>
       <p className="text-slate-500 text-xs">{label}</p>
       <p className={`text-2xl font-semibold mt-0.5 ${tone}`}>{value}</p>
     </button>
@@ -104,7 +104,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-white text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
+        <h2 className="text-slate-900 text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
         <p className="text-slate-500 text-sm">
           {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           {user?.designation ? ` • ${user.designation}` : ''}
@@ -116,7 +116,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
         {!stats.attendance ? (
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-white text-sm font-medium">Not checked in yet</p>
+              <p className="text-slate-900 text-sm font-medium">Not checked in yet</p>
               <p className="text-slate-500 text-xs">Start your day from My Attendance.</p>
             </div>
             <button className={btnCls} onClick={() => onNavigate('attendance')}>Check In</button>
@@ -134,7 +134,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
               </p>
             </div>
             {!stats.attendance.check_out_at && (
-              <button className="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-sm"
+              <button className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-sm"
                 onClick={() => onNavigate('attendance')}>Check Out</button>
             )}
           </div>
@@ -164,12 +164,12 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       {/* Next appointments — the thing a field executive most needs to see. */}
       {(isCaller || isExec) && stats.appointments.length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-white text-sm font-semibold mb-3">Next appointments</h3>
+          <h3 className="text-slate-900 text-sm font-semibold mb-3">Next appointments</h3>
           <div className="space-y-2">
             {stats.appointments.map((a: any) => (
               <div key={a.id} className="flex items-start justify-between gap-3 border-b border-slate-900 last:border-0 pb-2 last:pb-0">
                 <div className="min-w-0">
-                  <p className="text-white text-sm">{a.customer_name}</p>
+                  <p className="text-slate-900 text-sm">{a.customer_name}</p>
                   <p className="text-slate-500 text-xs">{a.phone}{a.appointment_note ? ` • ${a.appointment_note}` : ''}</p>
                 </div>
                 <p className="text-sky-300 text-xs whitespace-nowrap">
@@ -182,7 +182,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       )}
 
       {stats.pendingLeaves > 0 && (
-        <button className={cardCls + ' w-full text-left hover:border-slate-600'} onClick={() => onNavigate('requests')}>
+        <button className={cardCls + ' w-full text-left hover:border-slate-300'} onClick={() => onNavigate('requests')}>
           <p className="text-amber-400 text-sm">
             {stats.pendingLeaves} request{stats.pendingLeaves > 1 ? 's' : ''} awaiting approval
           </p>
@@ -282,7 +282,7 @@ export function MyAttendance() {
       <MyPerformanceChart />
       <div className={cardCls + ' text-center py-8'}>
         <Clock className="w-8 h-8 text-sky-400 mx-auto mb-2" />
-        <p className="text-slate-400 text-sm mb-4">{new Date().toDateString()}</p>
+        <p className="text-slate-500 text-sm mb-4">{new Date().toDateString()}</p>
         {!today ? (
           <button className={btnCls} disabled={busy} onClick={() => setPickingMode(true)}>
             <MapPin className="w-4 h-4 inline mr-1" /> Check In
@@ -297,18 +297,18 @@ export function MyAttendance() {
             <button className={btnCls} disabled={busy} onClick={() => setShowCamera('out')}>Check Out</button>
           </div>
         ) : (
-          <p className="text-slate-300 text-sm">
+          <p className="text-slate-600 text-sm">
             Done for today — In {new Date(today.check_in_at).toLocaleTimeString()} • Out {new Date(today.check_out_at).toLocaleTimeString()}
           </p>
         )}
       </div>
       <div className={cardCls}>
-        <h3 className="text-white font-semibold mb-3 text-sm">Last 14 days</h3>
+        <h3 className="text-slate-900 font-semibold mb-3 text-sm">Last 14 days</h3>
         <div className="space-y-1.5">
           {history.map(r => (
             <div key={r.id} className="flex justify-between text-xs">
-              <span className="text-slate-400">{r.attendance_date}</span>
-              <span className="text-slate-300">
+              <span className="text-slate-500">{r.attendance_date}</span>
+              <span className="text-slate-600">
                 {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : '—'} → {r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : '—'}
                 {r.work_mode && r.work_mode !== 'office' && <span className="ml-2 text-amber-400 capitalize">{r.work_mode.replace('_', ' ')}</span>}
               </span>
@@ -319,8 +319,8 @@ export function MyAttendance() {
 
       {pickingMode && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setPickingMode(false)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-xs w-full p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-white font-semibold text-sm mb-4">Where are you checking in from?</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-xs w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-slate-900 font-semibold text-sm mb-4">Where are you checking in from?</h3>
             <div className="space-y-2">
               {[
                 { v: 'office', label: 'Office' },
@@ -328,7 +328,7 @@ export function MyAttendance() {
                 { v: 'field_visit', label: 'Field Visit' },
               ].map(m => (
                 <button key={m.v} onClick={() => { setWorkMode(m.v as any); setPickingMode(false); setShowCamera('in'); }}
-                  className="w-full text-left px-4 py-3 rounded-lg border border-slate-700 text-white text-sm hover:border-sky-500 transition-colors">
+                  className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 text-slate-900 text-sm hover:border-sky-500 transition-colors">
                   {m.label}
                 </button>
               ))}
@@ -412,15 +412,15 @@ export function MyRequests() {
     <div className="space-y-6">
       {balances.length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-400" /> Leave Balance <span className="text-slate-500 text-xs font-normal">this year</span></h3>
+          <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-400" /> Leave Balance <span className="text-slate-500 text-xs font-normal">this year</span></h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {balances.map((b: any) => (
-              <div key={b.leave_type} className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5">
-                <p className="text-slate-400 text-xs capitalize">{b.leave_type}</p>
+              <div key={b.leave_type} className="rounded-xl bg-white border border-slate-800 px-3 py-2.5">
+                <p className="text-slate-500 text-xs capitalize">{b.leave_type}</p>
                 {b.is_unlimited ? (
                   <p className="text-sky-300 text-lg font-semibold leading-tight">—</p>
                 ) : (
-                  <p className={`text-lg font-semibold leading-tight ${Number(b.remaining) <= 0 ? 'text-red-400' : 'text-white'}`}>
+                  <p className={`text-lg font-semibold leading-tight ${Number(b.remaining) <= 0 ? 'text-red-400' : 'text-slate-900'}`}>
                     {Number(b.remaining)}<span className="text-slate-600 text-xs font-normal"> / {Number(b.entitled)}</span>
                   </p>
                 )}
@@ -435,7 +435,7 @@ export function MyRequests() {
 
     <div className="grid md:grid-cols-2 gap-6">
       <div className={cardCls}>
-        <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-400" /> Leave Request</h3>
+        <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-400" /> Leave Request</h3>
         <div className="grid grid-cols-2 gap-2 mb-2">
           <input type="date" className={inputCls} value={leaveForm.from_date} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} />
           <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} />
@@ -452,21 +452,21 @@ export function MyRequests() {
         <div className="mt-4 space-y-1.5">
           {leaves.map(l => (
             <div key={l.id} className="flex justify-between text-xs">
-              <span className="text-slate-400">{l.from_date} → {l.to_date} ({l.leave_type})</span>
+              <span className="text-slate-500">{l.from_date} → {l.to_date} ({l.leave_type})</span>
               <span className={statusColor(l.status)}>{l.status}</span>
             </div>
           ))}
         </div>
       </div>
       <div className={cardCls}>
-        <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-sky-400" /> Salary Advance</h3>
+        <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-sky-400" /> Salary Advance</h3>
         <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} />
         <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} />
         <button className={btnCls + ' w-full'} disabled={busyAdv} onClick={requestAdvance}>{busyAdv ? 'Submitting…' : 'Request Advance'}</button>
         <div className="mt-4 space-y-1.5">
           {advances.map(a => (
             <div key={a.id} className="flex justify-between text-xs">
-              <span className="text-slate-400">₹{Number(a.amount).toLocaleString('en-IN')} • {new Date(a.created_at).toLocaleDateString()}</span>
+              <span className="text-slate-500">₹{Number(a.amount).toLocaleString('en-IN')} • {new Date(a.created_at).toLocaleDateString()}</span>
               <span className={statusColor(a.status)}>{a.status}</span>
             </div>
           ))}
@@ -489,7 +489,7 @@ export function MyDocuments() {
       <MySalaryCard salary={(user as any).salary_structure} />
       <MyPayslips />
       <div>
-        <h3 className="text-white font-semibold mb-3 text-sm">My Documents</h3>
+        <h3 className="text-slate-900 font-semibold mb-3 text-sm">My Documents</h3>
         <MyDocumentsList staffUserId={user.id} employeeName={user.full_name} />
       </div>
     </div>
@@ -556,7 +556,7 @@ export default function StaffPortal() {
           </div>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            className="text-slate-500 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? '→' : '←'}
@@ -577,7 +577,7 @@ export default function StaffPortal() {
                 }`}
                 title={collapsed ? t.label : undefined}
               >
-                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-blue-700' : 'text-slate-400'}`} />
+                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-blue-700' : 'text-slate-500'}`} />
                 {!collapsed && <span className="truncate">{t.label}</span>}
               </button>
             );
@@ -596,7 +596,7 @@ export default function StaffPortal() {
                 <p className="text-slate-500 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
-            <button onClick={signOut} className="text-slate-400 hover:text-red-600 p-1" title="Sign out">
+            <button onClick={signOut} className="text-slate-500 hover:text-red-600 p-1" title="Sign out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -620,7 +620,7 @@ export default function StaffPortal() {
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
-            <button onClick={signOut} className="md:hidden text-slate-400 hover:text-red-600"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} className="md:hidden text-slate-500 hover:text-red-600"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
@@ -639,7 +639,7 @@ export default function StaffPortal() {
             <div className={cardCls + ' mb-5'}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-white font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
+                  <p className="text-slate-900 font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
                   <p className="text-slate-500 text-xs mt-0.5">
                     {user?.designation || user?.role} • {mySegNames} {(user as any)?.staff_code && `• ${(user as any).staff_code}`}
                   </p>

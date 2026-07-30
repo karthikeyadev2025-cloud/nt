@@ -46,7 +46,7 @@ export function MyRegularizations() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold mb-1 text-sm flex items-center gap-2">
+      <h3 className="text-slate-900 font-semibold mb-1 text-sm flex items-center gap-2">
         <CalendarCheck className="w-4 h-4 text-sky-400" /> Attendance Correction
       </h3>
       <p className="text-slate-500 text-xs mb-3">Forgot to check in or out? Request a correction — it needs manager/HR approval.</p>
@@ -69,7 +69,7 @@ export function MyRegularizations() {
         <div className="mt-4 space-y-1.5">
           {items.map(r => (
             <div key={r.id} className="flex justify-between text-xs">
-              <span className="text-slate-400">{r.attendance_date} — {r.reason.slice(0, 30)}{r.reason.length > 30 ? '…' : ''}</span>
+              <span className="text-slate-500">{r.attendance_date} — {r.reason.slice(0, 30)}{r.reason.length > 30 ? '…' : ''}</span>
               <span className={statusColor(r.status)}>{r.status}</span>
             </div>
           ))}
@@ -112,9 +112,9 @@ export function RegularizationApprovals() {
     <div className="space-y-2">
       {pending.map(r => (
         <div key={r.id} className={cardCls}>
-          <p className="text-white text-sm font-medium">{names[r.staff_user_id] || '—'} • {r.attendance_date}</p>
-          <p className="text-slate-400 text-xs mt-1">In: {fmtTime(r.requested_check_in)} • Out: {fmtTime(r.requested_check_out)}</p>
-          <p className="text-slate-400 text-xs mt-0.5">"{r.reason}"</p>
+          <p className="text-slate-900 text-sm font-medium">{names[r.staff_user_id] || '—'} • {r.attendance_date}</p>
+          <p className="text-slate-500 text-xs mt-1">In: {fmtTime(r.requested_check_in)} • Out: {fmtTime(r.requested_check_out)}</p>
+          <p className="text-slate-500 text-xs mt-0.5">"{r.reason}"</p>
           {hasPermission('approve_leaves') && (
             <div className="flex gap-2 mt-3">
               <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs" onClick={() => review(r.id, 'approved')}>Approve</button>
@@ -161,7 +161,7 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className={cardCls + ' mb-5 space-y-2'}>
-        <h3 className="text-white font-semibold text-sm flex items-center gap-2"><CalendarX className="w-4 h-4 text-sky-400" /> Add Holiday</h3>
+        <h3 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><CalendarX className="w-4 h-4 text-sky-400" /> Add Holiday</h3>
         <p className="text-slate-500 text-xs">Holidays are excluded from working-day counts, so payroll doesn't treat them as absences.</p>
         <div className="grid grid-cols-2 gap-2">
           <input type="date" className={inputCls} value={form.holiday_date} onChange={e => setForm({ ...form, holiday_date: e.target.value })} />
@@ -171,19 +171,19 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
           <option value="">Company-wide</option>
           {segments.map(s => <option key={s.slug} value={s.slug}>{s.name} only</option>)}
         </select>
-        <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-slate-900 cursor-pointer">
           <input type="checkbox" checked={form.is_optional} onChange={e => setForm({ ...form, is_optional: e.target.checked })} />
           Optional holiday <span className="text-slate-500 text-xs">(still counts as a working day)</span>
         </label>
         <button className={btnCls} onClick={add}>Add Holiday</button>
       </div>
 
-      <p className="text-slate-400 text-xs font-medium mb-2">Upcoming ({upcoming.length})</p>
+      <p className="text-slate-500 text-xs font-medium mb-2">Upcoming ({upcoming.length})</p>
       <div className="space-y-1.5 mb-5">
         {upcoming.map(h => (
           <div key={h.id} className={cardCls + ' flex items-center justify-between py-2.5'}>
             <div>
-              <p className="text-white text-sm">{h.name} {h.is_optional && <span className="text-amber-400 text-xs">(optional)</span>}</p>
+              <p className="text-slate-900 text-sm">{h.name} {h.is_optional && <span className="text-amber-400 text-xs">(optional)</span>}</p>
               <p className="text-slate-500 text-xs">{new Date(h.holiday_date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                 {h.segment_slug && ` • ${segments.find(s => s.slug === h.segment_slug)?.name || h.segment_slug}`}</p>
             </div>
@@ -244,7 +244,7 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: any; onDon
 
   return (
     <div className="space-y-3">
-      <h3 className="text-white font-semibold">Offboard {staffMember.full_name}</h3>
+      <h3 className="text-slate-900 font-semibold">Offboard {staffMember.full_name}</h3>
       {openLeads > 0 && (
         <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-600/40 text-amber-300 text-xs">
           ⚠ They still have <strong>{openLeads} active lead(s)</strong> assigned. Reassign those first
@@ -262,7 +262,7 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: any; onDon
         </select>
       </div>
       <textarea className={inputCls} rows={2} placeholder="Notes (optional)" value={form.exit_note} onChange={e => setForm({ ...form, exit_note: e.target.value })} />
-      <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+      <label className="flex items-center gap-2 text-sm text-slate-900 cursor-pointer">
         <input type="checkbox" checked={form.disable_account} onChange={e => setForm({ ...form, disable_account: e.target.checked })} />
         Disable their login immediately
       </label>
@@ -305,7 +305,7 @@ export function DanglingCheckins() {
 
   return (
     <div>
-      <p className="text-slate-400 text-sm mb-4">
+      <p className="text-slate-500 text-sm mb-4">
         These staff checked in but never checked out. Closing a day uses their shift end time unless you set one —
         it's marked as auto-closed, never counted as a real punch.
       </p>
@@ -314,7 +314,7 @@ export function DanglingCheckins() {
           <div key={r.id} className={cardCls}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-white text-sm font-medium">{r.full_name}</p>
+                <p className="text-slate-900 text-sm font-medium">{r.full_name}</p>
                 <p className="text-slate-500 text-xs mt-0.5">
                   {r.attendance_date} • in at {new Date(r.check_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                   <span className="text-amber-400 ml-2">{r.days_open} day(s) open</span>
@@ -348,7 +348,7 @@ export function OverdueTickets({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-slate-400 text-sm">Open tickets past their SLA resolution target.</p>
+        <p className="text-slate-500 text-sm">Open tickets past their SLA resolution target.</p>
         <select className={inputCls + ' w-auto'} value={segment} onChange={e => setSegment(e.target.value)}>
           <option value="">All Segments</option>
           {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
@@ -369,7 +369,7 @@ export function OverdueTickets({ segments }: { segments: Segment[] }) {
                   <span className="text-xs text-red-400 font-medium">{over}h over target</span>
                   <span className="text-xs text-slate-500">{t.priority} • target {t.target_hours}h</span>
                 </div>
-                <p className="text-white text-sm mt-1">{t.subject}</p>
+                <p className="text-slate-900 text-sm mt-1">{t.subject}</p>
                 <p className="text-slate-500 text-xs mt-0.5">{t.customer_name} • open {Math.round(Number(t.hours_open))}h</p>
               </div>
             );

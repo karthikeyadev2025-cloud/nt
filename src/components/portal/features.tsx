@@ -50,21 +50,21 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className="relative text-slate-400 hover:text-white">
+      <button onClick={() => setOpen(!open)} className="relative text-slate-500 hover:text-slate-900">
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-slate-950 border border-slate-700 rounded-xl shadow-xl z-50">
+        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800">
-            <p className="text-white text-sm font-semibold">Notifications</p>
+            <p className="text-slate-900 text-sm font-semibold">Notifications</p>
             {unreadCount > 0 && <button onClick={markAllRead} className="text-sky-400 text-xs">Mark all read</button>}
           </div>
           {items.length === 0 && <p className="text-slate-500 text-sm text-center py-8">No notifications yet.</p>}
           {items.map(n => (
             <div key={n.id} onClick={() => handleClick(n)}
-              className={`px-4 py-3 border-b border-slate-900 cursor-pointer hover:bg-slate-900 ${!n.read_at ? 'bg-sky-500/5' : ''}`}>
-              <p className="text-white text-sm">{n.title}</p>
+              className={`px-4 py-3 border-b border-slate-900 cursor-pointer hover:bg-slate-50 ${!n.read_at ? 'bg-sky-500/5' : ''}`}>
+              <p className="text-slate-900 text-sm">{n.title}</p>
               {n.body && <p className="text-slate-500 text-xs mt-0.5">{n.body}</p>}
               <p className="text-slate-600 text-[10px] mt-1">{new Date(n.created_at).toLocaleString()}</p>
             </div>
@@ -89,10 +89,10 @@ export function AnnouncementsFeed() {
         <div key={a.id} className={cardCls + (a.is_pinned ? ' border-sky-600/50' : '')}>
           <div className="flex items-center gap-2">
             <Megaphone className="w-4 h-4 text-sky-400 shrink-0" />
-            <p className="text-white text-sm font-medium">{a.title}</p>
+            <p className="text-slate-900 text-sm font-medium">{a.title}</p>
             {a.is_pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300">Pinned</span>}
           </div>
-          <p className="text-slate-400 text-sm mt-1.5">{a.body}</p>
+          <p className="text-slate-500 text-sm mt-1.5">{a.body}</p>
           <p className="text-slate-600 text-xs mt-1.5">{new Date(a.created_at).toLocaleDateString()}</p>
         </div>
       ))}
@@ -132,14 +132,14 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className={cardCls + ' mb-6 space-y-3'}>
-        <h3 className="text-white font-semibold text-sm">Post Announcement</h3>
+        <h3 className="text-slate-900 font-semibold text-sm">Post Announcement</h3>
         <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
           <option value="">All Staff</option>
           {segments.map(s => <option key={s.slug} value={s.slug}>{s.name} only</option>)}
         </select>
         <input className={inputCls} placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
         <textarea className={inputCls} rows={3} placeholder="Message" value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} />
-        <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-slate-900 cursor-pointer">
           <input type="checkbox" checked={form.is_pinned} onChange={e => setForm({ ...form, is_pinned: e.target.checked })} /> Pin to top
         </label>
         <button className={btnCls} onClick={post}>Post & Notify Staff</button>
@@ -148,7 +148,7 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
         {items.map(a => (
           <div key={a.id} className={cardCls + ' flex items-start justify-between'}>
             <div>
-              <p className="text-white text-sm font-medium">{a.title} {a.is_pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 ml-1">Pinned</span>}</p>
+              <p className="text-slate-900 text-sm font-medium">{a.title} {a.is_pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 ml-1">Pinned</span>}</p>
               <p className="text-slate-500 text-xs mt-1">{a.body}</p>
               <p className="text-slate-600 text-[10px] mt-1">{segments.find(s => s.slug === a.segment_slug)?.name || 'All staff'} • {new Date(a.created_at).toLocaleDateString()}</p>
             </div>
@@ -205,7 +205,7 @@ export function ShiftSwapBoard() {
   return (
     <div className="space-y-6">
       <div className={cardCls + ' space-y-3'}>
-        <h3 className="text-white font-semibold text-sm flex items-center gap-2"><Repeat className="w-4 h-4 text-sky-400" /> Request Shift Swap</h3>
+        <h3 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><Repeat className="w-4 h-4 text-sky-400" /> Request Shift Swap</h3>
         <input type="date" className={inputCls} value={form.shift_date} onChange={e => setForm({ ...form, shift_date: e.target.value })} />
         <select className={inputCls} value={form.target_id} onChange={e => setForm({ ...form, target_id: e.target.value })}>
           <option value="">Swap with (optional)</option>
@@ -217,12 +217,12 @@ export function ShiftSwapBoard() {
 
       {hasPermission('approve_leaves') && pending.length > 0 && (
         <div>
-          <h3 className="text-white font-semibold text-sm mb-3">Pending Approvals</h3>
+          <h3 className="text-slate-900 font-semibold text-sm mb-3">Pending Approvals</h3>
           <div className="space-y-2">
             {pending.map(p => (
               <div key={p.id} className={cardCls + ' flex items-center justify-between'}>
                 <div>
-                  <p className="text-white text-sm">{p.shift_date} {p.target_id && `↔ ${byId[p.target_id] || '—'}`}</p>
+                  <p className="text-slate-900 text-sm">{p.shift_date} {p.target_id && `↔ ${byId[p.target_id] || '—'}`}</p>
                   <p className="text-slate-500 text-xs">{p.reason}</p>
                 </div>
                 <div className="flex gap-2">
@@ -236,11 +236,11 @@ export function ShiftSwapBoard() {
       )}
 
       <div>
-        <h3 className="text-white font-semibold text-sm mb-3">My Requests</h3>
+        <h3 className="text-slate-900 font-semibold text-sm mb-3">My Requests</h3>
         <div className="space-y-2">
           {mine.map(m => (
             <div key={m.id} className={cardCls + ' flex items-center justify-between'}>
-              <p className="text-slate-300 text-sm">{m.shift_date} {m.target_id && `↔ ${byId[m.target_id] || '—'}`}</p>
+              <p className="text-slate-600 text-sm">{m.shift_date} {m.target_id && `↔ ${byId[m.target_id] || '—'}`}</p>
               <span className={`text-xs ${statusColor[m.status]}`}>{m.status}</span>
             </div>
           ))}
@@ -281,7 +281,7 @@ export function MyBankDetails() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2"><Landmark className="w-4 h-4 text-sky-400" /> Bank Details</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-4 flex items-center gap-2"><Landmark className="w-4 h-4 text-sky-400" /> Bank Details</h3>
       {pendingReq && (
         <div className="mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-600/40 text-amber-300 text-xs">
           A change request is pending HR approval.
@@ -289,11 +289,11 @@ export function MyBankDetails() {
       )}
       {!editing ? (
         <div className="space-y-2 text-sm">
-          <p className="text-slate-400">Account Holder: <span className="text-white">{current.account_holder || '—'}</span></p>
-          <p className="text-slate-400">Account Number: <span className="text-white">{current.account_number ? '••••' + String(current.account_number).slice(-4) : '—'}</span></p>
-          <p className="text-slate-400">IFSC: <span className="text-white">{current.ifsc || '—'}</span></p>
-          <p className="text-slate-400">Bank: <span className="text-white">{current.bank_name || '—'}</span></p>
-          <p className="text-slate-400">UPI ID: <span className="text-white">{current.upi_id || '—'}</span></p>
+          <p className="text-slate-500">Account Holder: <span className="text-slate-900">{current.account_holder || '—'}</span></p>
+          <p className="text-slate-500">Account Number: <span className="text-slate-900">{current.account_number ? '••••' + String(current.account_number).slice(-4) : '—'}</span></p>
+          <p className="text-slate-500">IFSC: <span className="text-slate-900">{current.ifsc || '—'}</span></p>
+          <p className="text-slate-500">Bank: <span className="text-slate-900">{current.bank_name || '—'}</span></p>
+          <p className="text-slate-500">UPI ID: <span className="text-slate-900">{current.upi_id || '—'}</span></p>
           {!pendingReq && <button className="text-sky-400 text-sm mt-2" onClick={() => setEditing(true)}>Request Change</button>}
         </div>
       ) : (
@@ -306,7 +306,7 @@ export function MyBankDetails() {
           <p className="text-slate-500 text-xs">Changes require HR approval before taking effect.</p>
           <div className="flex gap-2">
             <button className={btnCls} onClick={submit}>Submit for Approval</button>
-            <button className="text-slate-400 text-sm" onClick={() => setEditing(false)}>Cancel</button>
+            <button className="text-slate-500 text-sm" onClick={() => setEditing(false)}>Cancel</button>
           </div>
         </div>
       )}
@@ -341,10 +341,10 @@ export function BankChangeApprovals() {
       {items.map(r => (
         <div key={r.id} className={cardCls}>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-white text-sm font-medium">{staffNames[r.staff_user_id] || '—'}</p>
+            <p className="text-slate-900 text-sm font-medium">{staffNames[r.staff_user_id] || '—'}</p>
             <span className={`text-xs ${r.status === 'pending' ? 'text-amber-300' : r.status === 'approved' ? 'text-emerald-300' : 'text-red-300'}`}>{r.status}</span>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 text-xs text-slate-400">
+          <div className="grid grid-cols-2 gap-x-4 text-xs text-slate-500">
             <p>Holder: {r.requested_details.account_holder}</p>
             <p>A/C: {r.requested_details.account_number}</p>
             <p>IFSC: {r.requested_details.ifsc}</p>
@@ -466,10 +466,10 @@ export function MyStatsCard() {
   if (!stats) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-sky-400" /> My Stats (last 30 days)</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-sky-400" /> My Stats (last 30 days)</h3>
       <div className="grid grid-cols-3 gap-3 text-center">
         <div><p className="text-2xl font-bold text-amber-400 flex items-center justify-center gap-1"><Flame className="w-5 h-5" />{stats.streak}</p><p className="text-slate-500 text-xs">Day streak</p></div>
-        <div><p className="text-2xl font-bold text-white">{stats.presentDays}</p><p className="text-slate-500 text-xs">Days present</p></div>
+        <div><p className="text-2xl font-bold text-slate-900">{stats.presentDays}</p><p className="text-slate-500 text-xs">Days present</p></div>
         <div><p className="text-2xl font-bold text-emerald-400">{stats.punctuality}%</p><p className="text-slate-500 text-xs">On-time rate</p></div>
       </div>
     </div>
@@ -497,11 +497,11 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-4">Punctuality Leaderboard (30 days)</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-4">Punctuality Leaderboard (30 days)</h3>
       <div className="space-y-2">
         {rows.map((r, i) => (
           <div key={r.name} className="flex items-center justify-between text-sm">
-            <span className="text-slate-300">#{i + 1} {r.name}</span>
+            <span className="text-slate-600">#{i + 1} {r.name}</span>
             <span className="text-emerald-400 font-medium">{r.punctuality}%</span>
           </div>
         ))}
@@ -528,8 +528,8 @@ export function BirthdaysWidget() {
   if (items.length === 0) return null;
   return (
     <div className={cardCls + ' border-pink-600/40'}>
-      <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Cake className="w-4 h-4 text-pink-400" /> Today's Celebrations</h3>
-      {items.map((u, i) => <p key={i} className="text-slate-300 text-sm">🎉 {u.full_name}</p>)}
+      <h3 className="text-slate-900 font-semibold text-sm mb-3 flex items-center gap-2"><Cake className="w-4 h-4 text-pink-400" /> Today's Celebrations</h3>
+      {items.map((u, i) => <p key={i} className="text-slate-600 text-sm">🎉 {u.full_name}</p>)}
     </div>
   );
 }
@@ -618,8 +618,8 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setTab('jobs')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'jobs' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Job Postings</button>
-        <button onClick={() => setTab('applications')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'applications' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>Applications ({apps.length})</button>
+        <button onClick={() => setTab('jobs')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'jobs' ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>Job Postings</button>
+        <button onClick={() => setTab('applications')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'applications' ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>Applications ({apps.length})</button>
       </div>
 
       {tab === 'jobs' && (
@@ -633,13 +633,13 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
               return (
                 <div key={j.id} className={cardCls + ' flex items-center justify-between'}>
                   <div>
-                    <p className="text-white text-sm font-medium">{j.title} {seg && <span className="text-xs px-1.5 py-0.5 rounded ml-1" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}</p>
+                    <p className="text-slate-900 text-sm font-medium">{j.title} {seg && <span className="text-xs px-1.5 py-0.5 rounded ml-1" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}</p>
                     <p className="text-slate-500 text-xs mt-0.5">{j.location} • {j.employment_type.replace('_', ' ')} • {apps.filter(a => a.job_posting_id === j.id).length} applicants</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-xs px-2 py-0.5 rounded ${j.status === 'open' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-500/20 text-slate-400'}`}>{j.status}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${j.status === 'open' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-500/20 text-slate-500'}`}>{j.status}</span>
                     <button className="text-sky-400 text-xs" onClick={() => setEditingJob(j)}>Edit</button>
-                    <button className="text-slate-400 text-xs" onClick={() => toggleJobStatus(j)}>{j.status === 'open' ? 'Close' : 'Reopen'}</button>
+                    <button className="text-slate-500 text-xs" onClick={() => toggleJobStatus(j)}>{j.status === 'open' ? 'Close' : 'Reopen'}</button>
                   </div>
                 </div>
               );
@@ -652,16 +652,16 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
       {tab === 'applications' && (
         <div>
           <div className="flex flex-wrap gap-2 mb-4">
-            <button onClick={() => setStatusFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${statusFilter === '' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>All ({apps.length})</button>
+            <button onClick={() => setStatusFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${statusFilter === '' ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>All ({apps.length})</button>
             {APP_STATUSES.map(s => (
-              <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-lg text-xs border capitalize ${statusFilter === s ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>{s} ({counts[s] || 0})</button>
+              <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-lg text-xs border capitalize ${statusFilter === s ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>{s} ({counts[s] || 0})</button>
             ))}
           </div>
           <div className="space-y-2">
             {filteredApps.map(a => (
-              <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-600'} onClick={() => viewFiles(a)}>
+              <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-300'} onClick={() => viewFiles(a)}>
                 <div>
-                  <p className="text-white text-sm font-medium">{a.name} <span className="text-slate-500 text-xs">— {a.position || jobTitle(a.job_posting_id)}</span></p>
+                  <p className="text-slate-900 text-sm font-medium">{a.name} <span className="text-slate-500 text-xs">— {a.position || jobTitle(a.job_posting_id)}</span></p>
                   <p className="text-slate-500 text-xs mt-0.5">{a.phone} • {a.experience || 'exp not specified'} • {new Date(a.created_at).toLocaleDateString()}</p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded capitalize ${APP_STATUS_COLORS[a.status]}`}>{a.status}</span>
@@ -674,8 +674,8 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
 
       {editingJob && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingJob(null)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-white font-semibold">{editingJob.id ? 'Edit' : 'New'} Job Posting</h3>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-slate-900 font-semibold">{editingJob.id ? 'Edit' : 'New'} Job Posting</h3>
             <input className={inputCls} placeholder="Job Title *" value={editingJob.title} onChange={e => setEditingJob({ ...editingJob, title: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
               <select className={inputCls} value={editingJob.segment_slug} onChange={e => setEditingJob({ ...editingJob, segment_slug: e.target.value })}>
@@ -692,7 +692,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
             <textarea className={inputCls} rows={2} placeholder="Requirements" value={editingJob.requirements} onChange={e => setEditingJob({ ...editingJob, requirements: e.target.value })} />
             <div>
               <div className="flex justify-between items-center mb-2">
-                <p className="text-slate-300 text-sm font-medium">Screening Questions</p>
+                <p className="text-slate-600 text-sm font-medium">Screening Questions</p>
                 <button className="text-sky-400 text-xs" onClick={() => setEditingJob({ ...editingJob, questions: [...(editingJob.questions || []), ''] })}>+ Add question</button>
               </div>
               {(editingJob.questions || []).map((q: string, i: number) => (
@@ -711,14 +711,14 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
 
       {openApp && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenApp(null)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-white text-lg font-semibold">{openApp.name}</h3>
-                <p className="text-slate-400 text-sm">{openApp.phone} {openApp.email && `• ${openApp.email}`}</p>
+                <h3 className="text-slate-900 text-lg font-semibold">{openApp.name}</h3>
+                <p className="text-slate-500 text-sm">{openApp.phone} {openApp.email && `• ${openApp.email}`}</p>
                 <p className="text-slate-500 text-xs mt-0.5">Applied for: {openApp.position || jobTitle(openApp.job_posting_id)} • {openApp.experience || 'exp not specified'}</p>
               </div>
-              <button className="text-slate-400 hover:text-white" onClick={() => setOpenApp(null)}>✕</button>
+              <button className="text-slate-500 hover:text-slate-900" onClick={() => setOpenApp(null)}>✕</button>
             </div>
 
             <div className="flex gap-3 mb-4">
@@ -726,14 +726,14 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
               {fileUrls.resume && <a href={fileUrls.resume} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sky-400 text-xs"><Download className="w-3.5 h-3.5" /> Download Resume</a>}
             </div>
 
-            {openApp.message && <p className="text-slate-300 text-sm mb-3">{openApp.message}</p>}
+            {openApp.message && <p className="text-slate-600 text-sm mb-3">{openApp.message}</p>}
 
             {(openApp.question_answers || []).length > 0 && (
               <div className="space-y-2 mb-4 border-t border-slate-800 pt-3">
                 {openApp.question_answers.map((qa: any, i: number) => (
                   <div key={i}>
-                    <p className="text-slate-400 text-xs">{qa.question}</p>
-                    <p className="text-white text-sm">{qa.answer || '—'}</p>
+                    <p className="text-slate-500 text-xs">{qa.question}</p>
+                    <p className="text-slate-900 text-sm">{qa.answer || '—'}</p>
                   </div>
                 ))}
               </div>
@@ -742,7 +742,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
             <div className="flex flex-wrap gap-2 border-t border-slate-800 pt-4">
               {APP_STATUSES.map(s => (
                 <button key={s} onClick={() => updateAppStatus(openApp.id, s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs capitalize border ${openApp.status === s ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs capitalize border ${openApp.status === s ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>
                   {s}
                 </button>
               ))}
@@ -787,9 +787,9 @@ export function MyPhotoRequest() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-3">Profile Photo</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-3">Profile Photo</h3>
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-slate-800 overflow-hidden flex items-center justify-center text-slate-400 font-bold">
+        <div className="w-16 h-16 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center text-slate-500 font-bold">
           {user?.profile_photo_url ? <img src={user.profile_photo_url} className="w-full h-full object-cover" /> : user?.full_name?.[0]}
         </div>
         <div>
@@ -798,7 +798,7 @@ export function MyPhotoRequest() {
           ) : (
             <>
               <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} disabled={uploading}
-                className="text-slate-300 text-xs file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-300 file:text-xs" />
+                className="text-slate-600 text-xs file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-600 file:text-xs" />
               <p className="text-slate-500 text-[11px] mt-1">Requires HR approval before it updates.</p>
             </>
           )}
@@ -839,7 +839,7 @@ export function PhotoChangeApprovals() {
         <div key={r.id} className={cardCls + ' flex items-center justify-between'}>
           <div className="flex items-center gap-3">
             <img src={r.requested_photo_url} className="w-12 h-12 rounded-full object-cover" />
-            <p className="text-white text-sm">{names[r.staff_user_id] || '—'}</p>
+            <p className="text-slate-900 text-sm">{names[r.staff_user_id] || '—'}</p>
           </div>
           <div className="flex gap-2">
             <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs" onClick={() => review(r.id, 'approved')}>Approve</button>
@@ -863,18 +863,18 @@ export function MyPromotionHistory() {
   if (items.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-3">Role & Compensation History</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-3">Role & Compensation History</h3>
       <div className="space-y-2">
         {items.map(p => (
           <div key={p.id} className="text-xs border-l-2 border-sky-600 pl-3">
             <p className="text-slate-500">{new Date(p.effective_date).toLocaleDateString()}</p>
             {p.new_designation && p.new_designation !== p.previous_designation && (
-              <p className="text-white">{p.previous_designation || '—'} → {p.new_designation}</p>
+              <p className="text-slate-900">{p.previous_designation || '—'} → {p.new_designation}</p>
             )}
             {p.new_ctc > 0 && p.new_ctc !== p.previous_ctc && (
               <p className="text-emerald-400">₹{Number(p.previous_ctc).toLocaleString('en-IN')} → ₹{Number(p.new_ctc).toLocaleString('en-IN')}</p>
             )}
-            {p.note && <p className="text-slate-400 mt-0.5">{p.note}</p>}
+            {p.note && <p className="text-slate-500 mt-0.5">{p.note}</p>}
           </div>
         ))}
       </div>

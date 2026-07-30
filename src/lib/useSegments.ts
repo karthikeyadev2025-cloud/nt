@@ -49,7 +49,10 @@ export function useSegments(includeRetired = false) {
       ({ data, error }) => {
         if (!mounted) return;
         if (data && data.length > 0 && !error) {
-          setSegments(data as Segment[]);
+          const cleanSegments = (data as Segment[]).filter(
+            s => !s.slug.toLowerCase().includes('cctv') && !s.name.toLowerCase().includes('cctv')
+          );
+          setSegments(cleanSegments.length > 0 ? cleanSegments : DEFAULT_FALLBACK_SEGMENTS);
         } else {
           setSegments(DEFAULT_FALLBACK_SEGMENTS);
         }
