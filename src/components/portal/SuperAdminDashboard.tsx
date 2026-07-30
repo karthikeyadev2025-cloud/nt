@@ -1649,16 +1649,16 @@ export default function SuperAdminDashboard() {
         <nav className="flex-1 overflow-y-auto">
           <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 uppercase">EXECUTIVE OVERVIEW</p>
           <div className="space-y-1 mb-5">
-            {selfServiceTabs.map(t => (
+            {visibleAdminTabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-blue-50 border border-blue-200 text-blue-800 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'}`}>
                 <t.icon className={`w-4 h-4 ${tab === t.id ? 'text-blue-700' : 'text-slate-400'}`} /> {t.label}
               </button>
             ))}
           </div>
-          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 border-t border-slate-200 pt-4 uppercase">COMPANY MANAGEMENT</p>
+          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 border-t border-slate-200 pt-4 uppercase">MY SELF SERVICE</p>
           <div className="space-y-1">
-            {visibleAdminTabs.map(t => (
+            {selfServiceTabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-blue-50 border border-blue-200 text-blue-800 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'}`}>
                 <t.icon className={`w-4 h-4 ${tab === t.id ? 'text-blue-700' : 'text-slate-400'}`} /> {t.label}
@@ -1674,10 +1674,10 @@ export default function SuperAdminDashboard() {
       <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="md:hidden mb-4">
           <div className="flex gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 mb-3 w-fit">
-            <button onClick={() => setMobileGroup('me')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileGroup === 'me' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}>Overview</button>
             <button onClick={() => setMobileGroup('admin')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileGroup === 'admin' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}>Management</button>
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileGroup === 'admin' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}>Executive</button>
+            <button onClick={() => setMobileGroup('me')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileGroup === 'me' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}>Self Service</button>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
             {mobileTabs.map(t => (
