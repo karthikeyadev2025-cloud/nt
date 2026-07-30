@@ -190,43 +190,43 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
         <Search className="w-4 h-4" /> <span className="hidden sm:inline">Search staff, leads, tickets…</span>
       </button>
       {open && (
-        <div className="fixed inset-0 z-[70] bg-black/70 flex items-start justify-center pt-24 px-4" onClick={() => setOpen(false)}>
-          <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 p-4 border-b border-slate-800">
-              <Search className="w-4 h-4 text-slate-500" />
-              <input autoFocus className="flex-1 bg-transparent text-white text-sm focus:outline-none" placeholder="Search by name, phone, email, ticket number…" value={q} onChange={e => setQ(e.target.value)} />
-              <button onClick={() => setOpen(false)} className="text-slate-500 hover:text-white"><X className="w-4 h-4" /></button>
+        <div className="fixed inset-0 z-[70] bg-slate-900/50 backdrop-blur-sm flex items-start justify-center pt-24 px-4" onClick={() => setOpen(false)}>
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[70vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 p-4 border-b border-slate-200">
+              <Search className="w-4 h-4 text-slate-400" />
+              <input autoFocus className="flex-1 bg-transparent text-slate-900 text-sm focus:outline-none placeholder-slate-400 font-medium" placeholder="Search by name, phone, email, ticket number…" value={q} onChange={e => setQ(e.target.value)} />
+              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-2">
-              {searching && <p className="text-slate-500 text-sm text-center py-6">Searching…</p>}
-              {!searching && q.trim().length >= 2 && totalResults === 0 && <p className="text-slate-500 text-sm text-center py-6">No results.</p>}
+              {searching && <p className="text-slate-500 text-sm text-center py-6 font-medium">Searching…</p>}
+              {!searching && q.trim().length >= 2 && totalResults === 0 && <p className="text-slate-500 text-sm text-center py-6 font-medium">No results found.</p>}
 
               {results.staff.length > 0 && (
                 <div className="mb-2">
-                  <p className="text-slate-600 text-xs px-2 py-1">STAFF</p>
+                  <p className="text-slate-500 text-[11px] font-bold px-2 py-1 uppercase tracking-wider">STAFF</p>
                   {results.staff.map(s => (
-                    <button key={s.id} onClick={() => { onNavigate('access', { kind: 'staff', id: s.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-sm">
-                      <span className="text-white">{s.full_name}</span> <span className="text-slate-500 text-xs">— {s.role} • {s.phone}</span>
+                    <button key={s.id} onClick={() => { onNavigate('access', { kind: 'staff', id: s.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm transition-colors">
+                      <span className="text-slate-900 font-semibold">{s.full_name}</span> <span className="text-slate-500 text-xs">— {s.role} • {s.phone}</span>
                     </button>
                   ))}
                 </div>
               )}
               {results.leads.length > 0 && (
                 <div className="mb-2">
-                  <p className="text-slate-600 text-xs px-2 py-1">LEADS</p>
+                  <p className="text-slate-500 text-[11px] font-bold px-2 py-1 uppercase tracking-wider">LEADS</p>
                   {results.leads.map(l => (
-                    <button key={l.id} onClick={() => { onNavigate('crm', { kind: 'lead', id: l.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-sm">
-                      <span className="text-white">{l.customer_name}</span> <span className="text-slate-500 text-xs">— {l.phone} • {l.stage}</span>
+                    <button key={l.id} onClick={() => { onNavigate('crm', { kind: 'lead', id: l.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm transition-colors">
+                      <span className="text-slate-900 font-semibold">{l.customer_name}</span> <span className="text-slate-500 text-xs">— {l.phone} • {l.stage}</span>
                     </button>
                   ))}
                 </div>
               )}
               {results.tickets.length > 0 && (
                 <div>
-                  <p className="text-slate-600 text-xs px-2 py-1">TICKETS</p>
+                  <p className="text-slate-500 text-[11px] font-bold px-2 py-1 uppercase tracking-wider">TICKETS</p>
                   {results.tickets.map(t => (
-                    <button key={t.id} onClick={() => { onNavigate('tickets', { kind: 'ticket', id: t.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 text-sm">
-                      <span className="text-sky-400 font-mono text-xs">{t.ticket_no}</span> <span className="text-white ml-1">{t.subject}</span>
+                    <button key={t.id} onClick={() => { onNavigate('tickets', { kind: 'ticket', id: t.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm transition-colors">
+                      <span className="text-blue-700 font-mono text-xs font-bold">{t.ticket_no}</span> <span className="text-slate-900 font-semibold ml-1">{t.subject}</span>
                     </button>
                   ))}
                 </div>

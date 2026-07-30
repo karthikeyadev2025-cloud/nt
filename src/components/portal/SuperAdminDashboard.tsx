@@ -1637,41 +1637,41 @@ export default function SuperAdminDashboard() {
   const mobileTabs = mobileGroup === 'me' ? selfServiceTabs : visibleAdminTabs;
 
   return (
-    <div className="min-h-screen bg-slate-950 flex" key={refreshKey}>
-      <aside className="w-60 shrink-0 border-r border-slate-800 p-4 hidden md:flex flex-col">
-        <div className="flex items-center gap-2 mb-8 px-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950">N</div>
+    <div className="min-h-screen bg-slate-50 flex text-slate-900" key={refreshKey}>
+      <aside className="w-60 shrink-0 border-r border-slate-200 bg-white p-4 hidden md:flex flex-col shadow-sm">
+        <div className="flex items-center gap-2.5 mb-8 px-2">
+          <div className="w-9 h-9 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-blue-700/20">N</div>
           <div>
-            <p className="text-white font-bold text-sm leading-tight">Nikki Technologies</p>
-            <p className="text-slate-500 text-[10px]">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
+            <p className="text-slate-900 font-extrabold text-sm leading-tight">Nikki Technologies</p>
+            <p className="text-slate-500 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto">
-          <p className="px-3 pb-1 text-[10px] font-semibold tracking-wider text-slate-600">MY WORKSPACE</p>
-          <div className="space-y-1 mb-4">
+          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 uppercase">MY WORKSPACE</p>
+          <div className="space-y-1 mb-5">
             {selfServiceTabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${tab === t.id ? 'bg-sky-500/15 text-sky-300' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
-                <t.icon className="w-4 h-4" /> {t.label}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-blue-50 border border-blue-200 text-blue-800 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'}`}>
+                <t.icon className={`w-4 h-4 ${tab === t.id ? 'text-blue-700' : 'text-slate-400'}`} /> {t.label}
               </button>
             ))}
           </div>
-          <p className="px-3 pb-1 text-[10px] font-semibold tracking-wider text-slate-600 border-t border-slate-800/70 pt-3">ADMINISTRATION</p>
+          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 border-t border-slate-200 pt-4 uppercase">ADMINISTRATION</p>
           <div className="space-y-1">
             {visibleAdminTabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${tab === t.id ? 'bg-sky-500/15 text-sky-300' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}>
-                <t.icon className="w-4 h-4" /> {t.label}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-blue-50 border border-blue-200 text-blue-800 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'}`}>
+                <t.icon className={`w-4 h-4 ${tab === t.id ? 'text-blue-700' : 'text-slate-400'}`} /> {t.label}
               </button>
             ))}
           </div>
         </nav>
-        <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-400 text-sm">
+        <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 text-sm font-semibold mt-auto border-t border-slate-200 pt-3">
           <LogOut className="w-4 h-4" /> Sign Out
         </button>
       </aside>
 
-      <main className="flex-1 p-5 md:p-8 overflow-y-auto">
+      <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="md:hidden mb-4">
           <div className="flex gap-1 bg-slate-900 rounded-lg p-1 mb-3 w-fit">
             <button onClick={() => setMobileGroup('me')}
