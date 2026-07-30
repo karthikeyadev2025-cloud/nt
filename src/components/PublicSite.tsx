@@ -273,10 +273,74 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
   );
 }
 
+// ─────────────────────────────────────────────── Heroic Flying Kites Background
+function HeroicFlyingKites() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      {/* Soft ambient background gradient blur circles */}
+      <div className="absolute -top-24 -left-20 w-96 h-96 bg-blue-100/50 rounded-full blur-3xl" />
+      <div className="absolute top-1/3 -right-20 w-80 h-80 bg-indigo-100/40 rounded-full blur-3xl" />
+
+      {/* Floating Kite 1 - Top Left */}
+      <motion.div
+        animate={{
+          y: [0, -25, 0],
+          x: [0, 15, 0],
+          rotate: [-3, 4, -3],
+        }}
+        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute top-16 left-[8%] opacity-25 w-24 h-24"
+      >
+        <KiteTailLogo className="w-full h-full text-blue-600 drop-shadow-sm" />
+      </motion.div>
+
+      {/* Floating Kite 2 - Top Right */}
+      <motion.div
+        animate={{
+          y: [0, -35, 0],
+          x: [0, -20, 0],
+          rotate: [4, -4, 4],
+        }}
+        transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+        className="absolute top-28 right-[10%] opacity-20 w-32 h-32 hidden sm:block"
+      >
+        <KiteTailLogo className="w-full h-full text-indigo-600 drop-shadow-sm" />
+      </motion.div>
+
+      {/* Floating Kite 3 - Center Right */}
+      <motion.div
+        animate={{
+          y: [0, -20, 0],
+          x: [0, 12, 0],
+          rotate: [-2, 3, -2],
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2.5 }}
+        className="absolute top-1/2 right-[22%] opacity-15 w-20 h-20 hidden md:block"
+      >
+        <KiteTailLogo className="w-full h-full text-sky-500" />
+      </motion.div>
+
+      {/* Floating Kite 4 - Center Left */}
+      <motion.div
+        animate={{
+          y: [0, -30, 0],
+          x: [0, -15, 0],
+          rotate: [3, -3, 3],
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 3.5 }}
+        className="absolute top-2/3 left-[16%] opacity-20 w-28 h-28 hidden lg:block"
+      >
+        <KiteTailLogo className="w-full h-full text-blue-700" />
+      </motion.div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────── Hero
 function Hero({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-blue-50/60 via-slate-50 to-slate-50">
+      <HeroicFlyingKites />
       <div className="max-w-6xl mx-auto text-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
