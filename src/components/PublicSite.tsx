@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette, TrendingUp,
   Boxes, Bot, Layers, Phone, Mail, MapPin, ExternalLink, Star, Menu, X,
-  Ticket, Send, CheckCircle2, ChevronRight, Briefcase, Upload, User,
+  Ticket, Send, CheckCircle2, ChevronRight, Briefcase, Upload, User, Rocket, Award, ShieldCheck,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSegments, useSiteContent } from '../lib/useSegments';
@@ -11,6 +11,7 @@ import LoadingScreen from './LoadingScreen';
 import WhatsAppButton from './WhatsAppButton';
 import SEOHead from './SEOHead';
 import Reveal from './Reveal';
+import { KiteTailLogo } from './KiteTailLogo';
 
 // A phone number is only "real" once it has actual digits — the seeded
 // placeholder (+91 00000 00000) must never be shown to a customer.
@@ -112,6 +113,7 @@ function ClientLogos() {
 function Navigation({ content }: { content: Record<string, Record<string, string>> }) {
   const [open, setOpen] = useState(false);
   const links = [
+    { href: '#philosophy', label: 'Brand Concept' },
     { href: '#services', label: 'Services' },
     { href: '#products', label: 'Products' },
     { href: '#careers', label: 'Careers' },
@@ -122,9 +124,12 @@ function Navigation({ content }: { content: Record<string, Record<string, string
   return (
     <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-blue-700/20">N</div>
-          <span className="text-slate-900 font-extrabold text-lg tracking-tight">{content?.hero?.title || 'Nikki Technologies'}</span>
+        <a href="#" className="flex items-center gap-3">
+          <KiteTailLogo className="w-9 h-9" />
+          <div className="flex flex-col text-left">
+            <span className="text-slate-900 font-extrabold text-base tracking-tight leading-tight">{content?.hero?.title || 'Nikki Technologies'}</span>
+            <span className="text-blue-700 font-bold text-[10px] uppercase tracking-wider">Kite &amp; Tail Digital</span>
+          </div>
         </a>
         <div className="hidden md:flex items-center gap-6">
           {links.map(l => (
@@ -156,8 +161,8 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
     kite_tail: {
       title: 'Kite & Tail • Digital Media Marketing & Performance Growth',
       desc: 'Data-driven marketing campaigns, viral reels production, targeted Google & Meta PPC ads, brand identity, and SEO lead generation by Kite & Tail Media.',
-      badge: '🪁 Kite & Tail Digital Marketing',
-      icon: '🚀',
+      badge: 'Kite & Tail Digital Marketing',
+      icon: Rocket,
       highlights: [
         'Targeted Meta (Instagram/FB) & Google PPC Campaigns',
         'Social Media Management & Creative Reels Production',
@@ -169,8 +174,8 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
     software: {
       title: 'Nikki Software Studio • Custom Apps & Engineering',
       desc: 'Bespoke web applications, cross-platform mobile apps (Android & iOS), cloud API backends, and enterprise business software.',
-      badge: '💻 Custom Software Studio',
-      icon: '💻',
+      badge: 'Custom Software Studio',
+      icon: Code2,
       highlights: [
         'Modern Web Applications (React, TypeScript, Cloud Backends)',
         'Native & Cross-Platform Mobile Apps (Android & iOS)',
@@ -182,6 +187,7 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
   };
 
   const curr = contentMap[activeTab];
+  const IconComponent = curr.icon;
 
   return (
     <motion.div
@@ -192,26 +198,25 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-600" />
-          <div className="w-3 h-3 rounded-full bg-indigo-600" />
-          <div className="w-3 h-3 rounded-full bg-sky-400" />
-          <span className="text-slate-700 text-xs font-extrabold uppercase tracking-wider ml-2">Nikki Technologies • Brand Divisions</span>
+          <KiteTailLogo className="w-5 h-5" />
+          <span className="text-slate-700 text-xs font-extrabold uppercase tracking-wider ml-1">Nikki Technologies • Core Divisions</span>
         </div>
         <div className="flex flex-wrap gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
           {[
-            { id: 'kite_tail', label: '🪁 Kite & Tail Digital' },
-            { id: 'software', label: '💻 Software Studio' },
+            { id: 'kite_tail', label: 'Kite & Tail Digital' },
+            { id: 'software', label: 'Software Studio' },
           ].map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id as any)}
-              className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all ${
+              className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
                 activeTab === t.id
                   ? 'bg-blue-700 text-white shadow-md shadow-blue-700/20'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {t.label}
+              {t.id === 'kite_tail' ? <KiteTailLogo className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
+              <span>{t.label}</span>
             </button>
           ))}
         </div>
@@ -228,7 +233,7 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
         >
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-xl">{curr.icon}</span>
+              <IconComponent className="w-5 h-5 text-blue-700" />
               <span className="px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-extrabold shadow-xs">
                 {curr.badge}
               </span>
@@ -279,8 +284,8 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-800 text-xs font-extrabold mb-6 shadow-sm"
         >
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-          <span>🪁 Kite &amp; Tail Digital Marketing • Powered by Nikki Technologies</span>
+          <KiteTailLogo className="w-4 h-4" />
+          <span>KITE &amp; TAIL • WE HOLD YOUR BRAND &amp; GUIDE YOU TO SUCCESS</span>
         </motion.div>
 
         <motion.h1
@@ -289,7 +294,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.1 }}
           className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-6 tracking-tight leading-tight"
         >
-          {content?.hero?.title || 'Nikki Technologies'}
+          We Hold Your Brand. We Guide You to Success.
         </motion.h1>
 
         <motion.p
@@ -298,16 +303,16 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-xl md:text-2xl bg-gradient-to-r from-blue-800 via-indigo-700 to-blue-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
-          {content?.hero?.subtitle || 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps'}
+          Kite &amp; Tail Digital Marketing • Powered by Nikki Technologies
         </motion.p>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="text-slate-600 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
+          className="text-slate-600 max-w-3xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
-          {content?.hero?.description || 'Empowering brands through Kite & Tail performance marketing, Meta & Google ads, social media reels, and custom software engineering.'}
+          Your brand is a kite designed to reach maximum market height. Nikki Technologies provides the strategic tail, balance, performance ad funnels, and software engineering that launches your brand to victory.
         </motion.p>
 
         <motion.div
@@ -328,6 +333,58 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
 
         {/* Client-Facing Services Showcase */}
         <ServicesHeroShowcase segments={segments} />
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────── Kite & Tail Philosophy Section
+function KiteTailPhilosophy() {
+  return (
+    <section id="philosophy" className="py-20 px-4 bg-slate-50 border-b border-slate-200">
+      <div className="max-w-6xl mx-auto text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-800 text-xs font-extrabold mb-4 shadow-xs">
+          <KiteTailLogo className="w-5 h-5" />
+          <span>THE KITE &amp; TAIL STRATEGIC CONCEPT</span>
+        </div>
+        <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
+          The Kite is Your Brand. The Tail is Nikki Technologies.
+        </h2>
+        <p className="text-slate-600 max-w-3xl mx-auto text-base md:text-lg font-medium leading-relaxed mb-12">
+          A kite cannot fly without a tail. Nikki Technologies acts as the grounding tail, strategic line, data-driven ad funnel, and engineering core that holds your brand steady against market turbulence and elevates you to ultimate market dominance.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+          <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center mb-5 font-bold">
+              <KiteTailLogo className="w-7 h-7" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">1. The Kite — Your Brand Vision</h3>
+            <p className="text-slate-600 text-sm leading-relaxed font-medium">
+              Your business identity, product vision, and market ambition. Designed to capture customer attention and achieve soaring heights of market reach.
+            </p>
+          </div>
+
+          <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center mb-5">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">2. The Tail — Strategic Guidance</h3>
+            <p className="text-slate-600 text-sm leading-relaxed font-medium">
+              Nikki Technologies acts as the balancing tail. Our performance ad funnels, viral reels, and SEO keep your brand flying steady and climbing higher.
+            </p>
+          </div>
+
+          <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center mb-5">
+              <Code2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">3. The Engine — Software Scale</h3>
+            <p className="text-slate-600 text-sm leading-relaxed font-medium">
+              Beyond marketing, our software studio builds the robust web apps, mobile apps, and business automation that power your daily operations as you scale.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -947,6 +1004,7 @@ export default function PublicSite() {
       <SEOHead />
       <Navigation content={content} />
       <Hero content={content} segments={segments} />
+      <KiteTailPhilosophy />
       <ClientLogos />
       <AnimatedStats content={content} />
       <SegmentSections segments={segments} />

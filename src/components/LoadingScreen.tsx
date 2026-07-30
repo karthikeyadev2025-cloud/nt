@@ -112,11 +112,11 @@ export default function LoadingScreen({ onLoadingComplete }: { onLoadingComplete
 
         {/* Core Service Pills at bottom */}
         <div className="flex justify-center gap-2 mt-6 pt-4 border-t border-slate-100 text-[11px] font-semibold text-slate-600">
-          <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
-            🚀 Digital Marketing
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+            <Rocket className="w-3.5 h-3.5 text-blue-700" /> Digital Marketing
           </span>
-          <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-            💻 Software Engineering
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+            <Code2 className="w-3.5 h-3.5 text-slate-600" /> Software Engineering
           </span>
         </div>
       </div>
