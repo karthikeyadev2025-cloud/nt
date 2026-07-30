@@ -10,6 +10,7 @@ import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge, EmployeeDocumentsModal } from './documents';
+import { ImageUpload } from './ImageUpload';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals, ShiftSwapBoard } from './features';
 import { TasksBoard } from './tasks';
 import { LeadsWorkspace } from './leads-workflow';
@@ -1072,7 +1073,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
                 <option value="active">Active</option><option value="coming_soon">Coming Soon</option><option value="hidden">Hidden</option>
               </select>
             </div>
-            <input className={inputCls} placeholder="Logo URL" value={editing.logo_url || ''} onChange={e => setEditing({ ...editing, logo_url: e.target.value })} />
+            <ImageUpload placeholder="Upload Product Logo" value={editing.logo_url || ''} onChange={url => setEditing({ ...editing, logo_url: url })} />
             <div>
               <div className="flex justify-between items-center mb-2">
                 <p className="text-slate-700 text-sm font-medium">Feature Cards</p>
@@ -1269,7 +1270,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
             <p className="text-slate-900 text-sm font-medium">Add Gallery Photo</p>
-            <input className={inputCls} placeholder="Image URL *" value={newGallery.image_url} onChange={e => setNewGallery({ ...newGallery, image_url: e.target.value })} />
+            <ImageUpload placeholder="Upload Gallery Image *" value={newGallery.image_url} onChange={url => setNewGallery({ ...newGallery, image_url: url })} />
             <input className={inputCls} placeholder="Caption (optional)" value={newGallery.title} onChange={e => setNewGallery({ ...newGallery, title: e.target.value })} />
             <select className={inputCls} value={newGallery.segment_slug} onChange={e => setNewGallery({ ...newGallery, segment_slug: e.target.value })}>
               <option value="">All segments</option>
@@ -1299,7 +1300,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
               <input className={inputCls} placeholder="Name *" value={newTeam.name} onChange={e => setNewTeam({ ...newTeam, name: e.target.value })} />
               <input className={inputCls} placeholder="Designation" value={newTeam.designation} onChange={e => setNewTeam({ ...newTeam, designation: e.target.value })} />
             </div>
-            <input className={inputCls} placeholder="Photo URL" value={newTeam.photo_url} onChange={e => setNewTeam({ ...newTeam, photo_url: e.target.value })} />
+            <ImageUpload placeholder="Upload Team Photo" value={newTeam.photo_url} onChange={url => setNewTeam({ ...newTeam, photo_url: url })} />
             <select className={inputCls} value={newTeam.segment_slug} onChange={e => setNewTeam({ ...newTeam, segment_slug: e.target.value })}>
               <option value="">All segments</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
@@ -1366,7 +1367,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
             <p className="text-slate-900 text-sm font-medium">Add Client Logo</p>
             <p className="text-slate-700 text-xs">Shows in the scrolling "Trusted By" strip on the homepage.</p>
             <input className={inputCls} placeholder="Client Name *" value={newLogo.name} onChange={e => setNewLogo({ ...newLogo, name: e.target.value })} />
-            <input className={inputCls} placeholder="Logo Image URL *" value={newLogo.logo_url} onChange={e => setNewLogo({ ...newLogo, logo_url: e.target.value })} />
+            <ImageUpload placeholder="Upload Client Logo *" value={newLogo.logo_url} onChange={url => setNewLogo({ ...newLogo, logo_url: url })} />
             <select className={inputCls} value={newLogo.segment_slug} onChange={e => setNewLogo({ ...newLogo, segment_slug: e.target.value })}>
               <option value="">All segments</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
