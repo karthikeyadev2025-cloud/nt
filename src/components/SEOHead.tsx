@@ -24,6 +24,7 @@ export default function SEOHead({
     document.title = title;
     updateMetaTag('description', description);
     updateMetaTag('keywords', seoConfig.keywords.join(', '));
+    updateMetaTag('robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
     updateMetaTag('og:title', title, 'property');
     updateMetaTag('og:description', description, 'property');
     updateMetaTag('og:type', 'website', 'property');
@@ -35,6 +36,7 @@ export default function SEOHead({
     updateMetaTag('geo.region', seoConfig.geo.region);
     updateMetaTag('geo.placename', seoConfig.geo.placename);
     updateMetaTag('geo.position', `${seoConfig.geo.latitude};${seoConfig.geo.longitude}`);
+    updateMetaTag('ICBM', `${seoConfig.geo.latitude}, ${seoConfig.geo.longitude}`);
 
     // Update canonical link
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
@@ -45,14 +47,25 @@ export default function SEOHead({
     }
     canonical.href = seoConfig.siteUrl;
 
-    let ld = document.getElementById('org-jsonld') as HTMLScriptElement | null;
-    if (!ld) {
-      ld = document.createElement('script');
-      ld.id = 'org-jsonld';
-      ld.type = 'application/ld+json';
-      document.head.appendChild(ld);
+    // Organization Schema (AEO & Search Engine Graph)
+    let orgLd = document.getElementById('org-jsonld') as HTMLScriptElement | null;
+    if (!orgLd) {
+      orgLd = document.createElement('script');
+      orgLd.id = 'org-jsonld';
+      orgLd.type = 'application/ld+json';
+      document.head.appendChild(orgLd);
     }
-    ld.textContent = JSON.stringify(seoConfig.organization);
+    orgLd.textContent = JSON.stringify(seoConfig.organization);
+
+    // FAQ Schema (Voice AI & Answer Engine Optimization)
+    let faqLd = document.getElementById('faq-jsonld') as HTMLScriptElement | null;
+    if (!faqLd) {
+      faqLd = document.createElement('script');
+      faqLd.id = 'faq-jsonld';
+      faqLd.type = 'application/ld+json';
+      document.head.appendChild(faqLd);
+    }
+    faqLd.textContent = JSON.stringify(seoConfig.faqSchema);
   }, [title, description]);
 
   return null;
