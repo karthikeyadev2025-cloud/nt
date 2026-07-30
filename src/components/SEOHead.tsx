@@ -30,9 +30,20 @@ export default function SEOHead({
     updateMetaTag('og:url', seoConfig.siteUrl, 'property');
     updateMetaTag('og:site_name', seoConfig.siteName, 'property');
     updateMetaTag('twitter:card', 'summary_large_image');
+    updateMetaTag('twitter:title', title);
+    updateMetaTag('twitter:description', description);
     updateMetaTag('geo.region', seoConfig.geo.region);
     updateMetaTag('geo.placename', seoConfig.geo.placename);
     updateMetaTag('geo.position', `${seoConfig.geo.latitude};${seoConfig.geo.longitude}`);
+
+    // Update canonical link
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    canonical.href = seoConfig.siteUrl;
 
     let ld = document.getElementById('org-jsonld') as HTMLScriptElement | null;
     if (!ld) {

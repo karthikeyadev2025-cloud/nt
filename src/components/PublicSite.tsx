@@ -166,13 +166,13 @@ function HeroLiveDemo() {
           <div className="w-3 h-3 rounded-full bg-red-500/80" />
           <div className="w-3 h-3 rounded-full bg-amber-500/80" />
           <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-          <span className="text-slate-500 text-xs font-mono ml-2">Nikki Enterprise Suite v2.4 • Live Interactive Demo</span>
+          <span className="text-slate-400 text-xs font-mono ml-2">Nikki Operations Hub • Internal Company Workflow Preview</span>
         </div>
         <div className="flex flex-wrap gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
           {[
-            { id: 'telecall', label: '📞 Telecalling Queue' },
-            { id: 'crm', label: '📊 Lead CRM' },
-            { id: 'field', label: '📍 Field GPS' },
+            { id: 'telecall', label: '📞 Outbound Telecalling' },
+            { id: 'crm', label: '📊 Lead CRM & Pipeline' },
+            { id: 'field', label: '📍 Field GPS Visits' },
             { id: 'payroll', label: '💼 HRMS & Payroll' },
           ].map(t => (
             <button
@@ -180,7 +180,7 @@ function HeroLiveDemo() {
               onClick={() => setActiveTab(t.id as any)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === t.id
-                  ? 'bg-sky-500 text-slate-950 shadow-md font-semibold'
+                  ? 'bg-blue-600 text-white shadow-md font-semibold'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -355,10 +355,10 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-semibold mb-6"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-semibold mb-6 shadow-sm"
         >
-          <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
-          <span>Enterprise SaaS &amp; Unified CRM ERP Platform</span>
+          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+          <span>Integrated Technology &amp; Enterprise Solutions</span>
         </motion.div>
 
         <motion.h1
@@ -374,9 +374,9 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-xl md:text-2xl bg-gradient-to-r from-sky-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent font-semibold mb-6 animate-gradient bg-[length:200%_auto]"
+          className="text-xl md:text-2xl bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent font-semibold mb-6 animate-gradient bg-[length:200%_auto]"
         >
-          {content?.hero?.subtitle || segments.map(s => s.name).join(' • ') || 'Digital Marketing • Software SaaS'}
+          {content?.hero?.subtitle || segments.map(s => s.name).join(' • ') || 'Broadband • Digital Marketing • Custom Software'}
         </motion.p>
 
         <motion.p
@@ -385,7 +385,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.25 }}
           className="text-slate-400 max-w-2xl mx-auto mb-10 text-lg leading-relaxed"
         >
-          {content?.hero?.description || 'One unified technology platform for telecalling campaigns, field GPS visits, automated payroll, and enterprise growth.'}
+          {content?.hero?.description || 'Your single technology partner for high-speed broadband, performance digital marketing, and custom software development.'}
         </motion.p>
 
         <motion.div
