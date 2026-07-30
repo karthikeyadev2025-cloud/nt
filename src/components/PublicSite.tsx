@@ -151,60 +151,34 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // ─────────────────────────────────────────────── Client-Facing Services Showcase (Hero Widget)
 function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
-  const [activeTab, setActiveTab] = useState<'broadband' | 'digital' | 'software' | 'surveillance'>('broadband');
+  const [activeTab, setActiveTab] = useState<'digital' | 'software'>('digital');
 
   const contentMap = {
-    broadband: {
-      title: 'High-Speed Enterprise Broadband & Leased Line',
-      desc: 'Dedicated optical fiber connectivity with 99.9% SLA uptime guarantee and 24/7 dedicated network support.',
-      badge: 'Fiber Broadband',
-      icon: '🌐',
-      highlights: [
-        'Dedicated Symmetric Speed (Up to 1 Gbps)',
-        'Dual Ring Redundancy & Low Latency',
-        '24/7 Network Operations Center (NOC) Monitoring',
-        'Quick On-Site Technical Support',
-      ],
-      stats: { uptime: '99.99%', latency: '< 5ms', support: '24/7 Live' }
-    },
     digital: {
-      title: 'Performance Digital Marketing & Brand Growth',
-      desc: 'Data-driven marketing campaigns, social media management, Google & Meta ads, and ROI-focused lead generation.',
-      badge: 'Digital Marketing',
+      title: 'Digital Media Marketing & Performance Growth',
+      desc: 'Data-driven marketing campaigns, social media management, Google & Meta ads, brand identity, reels production, and SEO lead generation.',
+      badge: 'Digital Marketing & Growth',
       icon: '🚀',
       highlights: [
-        'Targeted Meta & Google PPC Campaigns',
-        'High-Converting Social Media Creatives & Video Content',
-        'Local SEO & Organic Search Ranking',
-        'Conversion Funnel & Analytics Tracking',
+        'Targeted Meta (Instagram/FB) & Google PPC Campaigns',
+        'Social Media Management & Creative Reels Production',
+        'Search Engine Optimization (SEO) & Brand Identity Design',
+        'Lead Funnel Strategy & Conversion Analytics',
       ],
-      stats: { reach: '10M+', roas: '4.8x Avg', leads: '50K+' }
+      stats: { reach: '10M+ Impression Reach', roas: '4.8x Avg Ad ROAS', leads: '50,000+ Generated Leads' }
     },
     software: {
       title: 'Custom Software & Mobile App Development',
-      desc: 'Bespoke web applications, cross-platform mobile apps, cloud backends, and enterprise workflow automation.',
-      badge: 'Software Engineering',
+      desc: 'Bespoke web applications, cross-platform mobile apps (Android & iOS), cloud API backends, and enterprise business software.',
+      badge: 'Software & App Engineering',
       icon: '💻',
       highlights: [
-        'Modern Web Apps (React, TypeScript, Cloud Native)',
+        'Modern Web Applications (React, TypeScript, Cloud Backends)',
         'Native & Cross-Platform Mobile Apps (Android & iOS)',
-        'Database Architecture & Secure API Development',
-        'Automated Business ERP & CRM Systems',
+        'Scalable Database Systems & Secure API Architecture',
+        'Custom Business Automation & Enterprise Software',
       ],
-      stats: { delivery: '100%', security: 'SOC2 Ready', code: 'Clean & Scalable' }
-    },
-    surveillance: {
-      title: 'Enterprise Security & CCTV Surveillance',
-      desc: 'End-to-end security infrastructure, HD CCTV IP camera setup, biometric access control, and smart monitoring.',
-      badge: 'Security & Surveillance',
-      icon: '🔒',
-      highlights: [
-        'High-Definition IP Camera Network Installation',
-        'Remote Live Mobile Viewing & Cloud Storage',
-        'Biometric Attendance & Door Access Control',
-        'Commercial & Residential Security Audits',
-      ],
-      stats: { HD: '4K Ultra', Warranty: '2 Years', Install: 'Turnkey' }
+      stats: { delivery: '100% On-Time Delivery', tech: 'Modern Stack', architecture: 'Secure & Scalable' }
     }
   };
 
@@ -219,22 +193,20 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/90 pb-4 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-slate-700" />
-          <div className="w-3 h-3 rounded-full bg-slate-700" />
-          <div className="w-3 h-3 rounded-full bg-slate-700" />
-          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider ml-2">Nikki Technologies • Core Capabilities</span>
+          <div className="w-3 h-3 rounded-full bg-blue-600/80" />
+          <div className="w-3 h-3 rounded-full bg-indigo-600/80" />
+          <div className="w-3 h-3 rounded-full bg-blue-400/80" />
+          <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider ml-2">Nikki Technologies • Core Services</span>
         </div>
         <div className="flex flex-wrap gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
           {[
-            { id: 'broadband', label: '🌐 Broadband Fiber' },
             { id: 'digital', label: '🚀 Digital Marketing' },
-            { id: 'software', label: '💻 Software & Apps' },
-            { id: 'surveillance', label: '🔒 Security & CCTV' },
+            { id: 'software', label: '💻 Software Development' },
           ].map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === t.id
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
                   : 'text-slate-400 hover:text-slate-200'
@@ -313,7 +285,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-semibold mb-6 shadow-sm"
         >
           <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-          <span>Integrated Technology &amp; Enterprise Solutions</span>
+          <span>Digital Marketing &amp; Custom Software Engineering</span>
         </motion.div>
 
         <motion.h1
@@ -329,9 +301,9 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-xl md:text-2xl bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent font-semibold mb-6 animate-gradient bg-[length:200%_auto]"
+          className="text-xl md:text-2xl bg-gradient-to-r from-blue-400 via-indigo-300 to-sky-300 bg-clip-text text-transparent font-semibold mb-6 animate-gradient bg-[length:200%_auto]"
         >
-          {content?.hero?.subtitle || segments.map(s => s.name).join(' • ') || 'Broadband • Digital Marketing • Custom Software'}
+          {content?.hero?.subtitle || 'Digital Media Marketing • Custom Software & Mobile Apps'}
         </motion.p>
 
         <motion.p
@@ -340,7 +312,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.25 }}
           className="text-slate-400 max-w-2xl mx-auto mb-10 text-lg leading-relaxed"
         >
-          {content?.hero?.description || 'Your single technology partner for high-speed broadband, performance digital marketing, and custom software development.'}
+          {content?.hero?.description || 'We help brands grow through data-driven digital marketing, social media campaigns, performance ads, and custom software development.'}
         </motion.p>
 
         <motion.div
