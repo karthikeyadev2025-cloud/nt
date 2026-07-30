@@ -7,10 +7,10 @@ import { istDateStr } from '../../lib/dates';
 import { normalizePhone } from '../../lib/phone';
 
 export const inputCls =
-  'w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
+  'w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40 focus:outline-none transition-all placeholder-slate-500';
 export const btnCls =
-  'px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 text-sm font-semibold transition-colors';
-export const cardCls = 'p-5 rounded-2xl bg-slate-900/60 border border-slate-800';
+  'px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-blue-600/20 border border-blue-400/20 transition-all active:scale-[0.98]';
+export const cardCls = 'p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-md shadow-xl';
 
 export function SegmentTabs({
   segments, value, onChange, includeAll = true,
@@ -22,16 +22,16 @@ export function SegmentTabs({
     <div className="flex flex-wrap gap-2 mb-5">
       {showAll && (
         <button onClick={() => onChange('')}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${value === '' ? 'bg-sky-500 text-slate-950 border-sky-500' : 'border-slate-700 text-slate-300 hover:border-sky-600'}`}>
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === '' ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/25' : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700 hover:text-white'}`}>
           All Segments
         </button>
       )}
       {visible.map(s => (
         <button key={s.slug} onClick={() => onChange(s.slug)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${value === s.slug ? 'text-slate-950 border-transparent' : 'border-slate-700 text-slate-300 hover:border-sky-600'} ${s.active === false ? 'opacity-70' : ''}`}
-          style={value === s.slug ? { backgroundColor: s.color } : {}}
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === s.slug ? 'text-white border-blue-400/30 shadow-md' : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700 hover:text-white'} ${s.active === false ? 'opacity-70' : ''}`}
+          style={value === s.slug ? { backgroundColor: s.color || '#2563eb' } : {}}
           title={s.active === false ? 'Retired — hidden from the website, existing work still manageable' : undefined}>
-          {s.name}{s.active === false && <span className="ml-1.5 text-xs opacity-80">(retired)</span>}
+          {s.name}{s.active === false && <span className="ml-1.5 text-[10px] opacity-80">(retired)</span>}
         </button>
       ))}
     </div>
