@@ -54,15 +54,34 @@ function withTimeout<T>(p: PromiseLike<T>, ms = AUTH_TIMEOUT_MS, label = 'reques
 }
 
 async function fetchAppUser(userId: string): Promise<AppUser | null> {
-  const { data, error } = await withTimeout(
-    supabase.from('app_users').select('*').eq('id', userId).maybeSingle(),
-    AUTH_TIMEOUT_MS,
-    'user profile'
-  );
-  if (error) throw error; // Let network errors throw
-  if (!data) return null; // Not found
-  if (data.is_active === false) return null; // Disabled
-  return data as AppUser;
+  let retries = 4;
+  let delay = 250;
+  
+  while (retries > 0) {
+    const { data, error } = await withTimeout(
+      supabase.from('app_users').select('*').eq('id', userId).maybeSingle(),
+      AUTH_TIMEOUT_MS,
+      'user profile'
+    );
+    
+    if (error) throw error; // Let network errors throw
+    
+    if (data) {
+      if (data.is_active === false) return null; // Disabled
+      return data as AppUser;
+    }
+    
+    // data is null, which often happens immediately after sign-in because the PostgREST
+    // client hasn't caught up with the Supabase Auth token yet, so RLS blocks the query.
+    // We wait and retry to avoid aggressively signing out a valid user.
+    retries--;
+    if (retries > 0) {
+      await new Promise(r => setTimeout(r, delay));
+      delay *= 2; // exponential backoff: 250ms, 500ms, 1000ms
+    }
+  }
+  
+  return null; // Not found after retries
 }
 
 async function fetchRolePermissions(role: string): Promise<Record<string, boolean>> {
@@ -79,10 +98,21 @@ async function fetchRolePermissions(role: string): Promise<Record<string, boolea
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [permissions, setPermissions] = useState<Record<string, boolean>>({});
-  // Start true — we're about to check the session. AppContent shows a loader while this is true.
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<AppUser | null>(() => {
+    try {
+      const cached = localStorage.getItem(SESSION_KEY);
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  });
+  const [permissions, setPermissions] = useState<Record<string, boolean>>(() => {
+    try {
+      const cached = localStorage.getItem(SESSION_KEY + '_perms');
+      return cached ? JSON.parse(cached) : {};
+    } catch { return {}; }
+  });
+  const [loading, setLoading] = useState(() => {
+    try { return !localStorage.getItem(SESSION_KEY); } catch { return true; }
+  });
 
   async function loadUser(userId: string): Promise<AppUser | null> {
     const appUser = await fetchAppUser(userId);
@@ -91,15 +121,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ? { all: true }
       : await fetchRolePermissions(appUser.role);
     setUser(appUser);
-    setPermissions({ ...rolePerms, ...(appUser.permission_overrides || {}) });
-    try { localStorage.setItem(SESSION_KEY, JSON.stringify(appUser)); } catch { /* storage disabled */ }
+    const perms = { ...rolePerms, ...(appUser.permission_overrides || {}) };
+    setPermissions(perms);
+    try { 
+      localStorage.setItem(SESSION_KEY, JSON.stringify(appUser)); 
+      localStorage.setItem(SESSION_KEY + '_perms', JSON.stringify(perms));
+    } catch { /* storage disabled */ }
     return appUser;
   }
 
   function clearLocalSession() {
     setUser(null);
     setPermissions({});
-    try { localStorage.removeItem(SESSION_KEY); } catch { /* storage disabled */ }
+    try { 
+      localStorage.removeItem(SESSION_KEY); 
+      localStorage.removeItem(SESSION_KEY + '_perms');
+    } catch { /* storage disabled */ }
   }
 
   useEffect(() => {
