@@ -23,6 +23,13 @@ React 18 + Vite 5 + TypeScript + Tailwind + Supabase (Auth, Postgres, RLS, Edge 
 - Password reset via Supabase `resetPasswordForEmail`; UI never leaks whether an email exists.
 
 ## What's been implemented (this session — 2026-01-30)
+- **[FEATURE] Session Devices** — every user can now see every browser signed in to their account and revoke any of them with one click.
+  - New table `public.user_sessions` (migration file: `supabase/migrations/20260730120000_user_sessions.sql`) with RLS so users only see/manage their own rows.
+  - New helpers in `src/lib/sessionTracker.ts`: `beginSession`, `heartbeatSession`, `endSession`, `revokeSessionRow`, `revokeAllOtherSessions`, `listActiveSessions`. UA sniffing produces friendly labels like "Chrome on macOS · Desktop".
+  - `AuthContext` opens a row on sign-in, heart-beats it every 60s while the tab is open, and force-signs-out the tab as soon as it notices its row was revoked from another device. `signOut()` marks the row revoked before dropping the Supabase session.
+  - New UI: `src/components/SessionDevices.tsx` — device rows with icons per platform, "THIS DEVICE" badge, per-row Revoke button, "Sign out all other devices" bulk action, error handling if the migration isn't applied yet.
+  - Wired into `MyProfile` (StaffPortal) so every role sees it, plus a dedicated "My Sessions" tab on the Super Admin sidebar.
+  - Verified end-to-end: signing in from a second browser created a second row; clicking Revoke removed it optimistically and toast-confirmed.
 - **[FIX] Hanging sign-in** — every Supabase call in the auth flow is now wrapped in `withTimeout(15s)`. Button will never spin forever.
 - **[FIX / CRITICAL SECURITY]** Removed insecure `createFallbackUser` path that promoted ANY email containing "admin/nikki/tech/owner/karthikeya" to `super_admin` without password verification whenever Supabase errored.
 - **[FIX]** Post-login permissions now loaded from `role_permissions` table (super_admin still gets `all: true`); previously every logged-in user got `{ all: true }`.
