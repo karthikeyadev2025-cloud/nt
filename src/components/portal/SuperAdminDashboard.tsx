@@ -20,6 +20,7 @@ import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal'
 import { SecurityLogsViewer, TodayAtAGlance, SetupChecklist, QuickSearch, ExportStaffButton } from './admin-extras';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
+import { KiteTailLogo } from '../KiteTailLogo';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads', 'full_leads_view', 'bulk_assign_leads', 'approve_transfers',
@@ -1640,7 +1641,7 @@ export default function SuperAdminDashboard() {
     <div className="min-h-screen bg-slate-50 flex text-slate-900" key={refreshKey}>
       <aside className="w-60 shrink-0 border-r border-slate-200 bg-white p-4 hidden md:flex flex-col shadow-sm">
         <div className="flex items-center gap-2.5 mb-8 px-2">
-          <div className="w-9 h-9 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-blue-700/20">N</div>
+          <KiteTailLogo className="w-8 h-8 shrink-0" />
           <div>
             <p className="text-slate-900 font-extrabold text-sm leading-tight">Nikki Technologies</p>
             <p className="text-slate-500 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>

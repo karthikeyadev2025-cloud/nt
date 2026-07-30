@@ -6,6 +6,8 @@ import PWAInstallBanner from './components/PWAInstallBanner';
 
 const PublicSite = lazy(() => import('./components/PublicSite'));
 const UnifiedLogin = lazy(() => import('./components/UnifiedLogin'));
+import { KiteTailLogo } from './components/KiteTailLogo';
+
 const SuperAdminDashboard = lazy(() => import('./components/portal/SuperAdminDashboard'));
 const StaffPortal = lazy(() => import('./components/portal/StaffPortal'));
 const ForcePasswordChange = lazy(() => import('./components/ForcePasswordChange'));
@@ -13,9 +15,7 @@ const ForcePasswordChange = lazy(() => import('./components/ForcePasswordChange'
 function PageLoader() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center select-none">
-      <div className="w-14 h-14 rounded-2xl bg-blue-700 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg shadow-blue-700/20 mb-3">
-        N
-      </div>
+      <KiteTailLogo className="w-12 h-12 mb-3 drop-shadow-md" />
       <p className="text-slate-900 font-extrabold text-sm tracking-tight">Nikki Technologies</p>
       <div className="w-28 h-1 bg-slate-200 rounded-full mt-4 overflow-hidden">
         <div className="w-full h-full bg-blue-700 rounded-full animate-pulse" />

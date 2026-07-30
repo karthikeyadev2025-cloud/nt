@@ -124,7 +124,7 @@ function Navigation({ content }: { content: Record<string, Record<string, string
     <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="#" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-blue-700/20">N</div>
+          <KiteTailLogo className="w-8 h-8" />
           <div className="flex flex-col text-left">
             <span className="text-slate-900 font-extrabold text-lg tracking-tight leading-tight">{content?.hero?.title || 'Nikki Technologies'}</span>
           </div>

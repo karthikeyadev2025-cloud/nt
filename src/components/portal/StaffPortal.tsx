@@ -14,6 +14,7 @@ import { TelecallerQueue, LeadsWorkspace, ExecutiveFieldVisits } from './leads-w
 import { MyPerformanceChart } from './performance';
 import { MyPayslips } from './payroll';
 import CameraCapture from '../CameraCapture';
+import { KiteTailLogo } from '../KiteTailLogo';
 
 // ─────────────────────────── Self-service: attendance
 // ─────────────────────────── Role-aware Home
@@ -541,9 +542,7 @@ export default function StaffPortal() {
       <aside className={`hidden md:flex flex-col border-r border-slate-200 bg-white backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 shadow-sm ${collapsed ? 'w-20' : 'w-64'}`}>
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-blue-700/20 shrink-0">
-              N
-            </div>
+            <KiteTailLogo className="w-8 h-8 shrink-0" />
             {!collapsed && (
               <div className="min-w-0">
                 <p className="text-slate-900 font-bold text-sm tracking-tight truncate">Nikki Suite</p>
@@ -605,7 +604,9 @@ export default function StaffPortal() {
         {/* Top Header */}
         <header className="border-b border-slate-200 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="md:hidden w-8 h-8 rounded-lg bg-blue-700 flex items-center justify-center font-bold text-white text-sm">N</div>
+            <div className="md:hidden">
+              <KiteTailLogo className="w-8 h-8 shrink-0" />
+            </div>
             <div>
               <h1 className="text-slate-900 font-bold text-base md:text-lg tracking-tight">
                 {tabs.find(t => t.id === tab)?.label || 'Portal'}
