@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { logLogin, logLoginFailed, logLogout } from '../lib/securityLogger';
 
 export type UserRole =
@@ -37,92 +37,121 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function createFallbackUser(email: string, userId?: string): AppUser {
-  const clean = email.trim().toLowerCase();
-  const isSuperAdminEmail = clean.includes('admin') || clean.includes('nikki') || clean.includes('tech') || clean.includes('owner') || clean.includes('karthikeya');
-  return {
-    id: userId || 'usr-' + Math.random().toString(36).substr(2, 9),
-    email: clean,
-    full_name: clean.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-    role: isSuperAdminEmail ? 'super_admin' : 'employee',
-    segments: ['all'],
-    permission_overrides: { all: true },
-    phone: '',
-    designation: isSuperAdminEmail ? 'Super Admin / Executive Owner' : 'Enterprise Staff',
-    is_active: true,
-  };
+const SESSION_KEY = 'nkt_user_session';
+const AUTH_TIMEOUT_MS = 15000; // 15s hard cap on any supabase call in the auth flow
+
+// Wrap any thenable (Supabase's builder is thenable but not a real Promise) with a
+// timeout so a broken/slow Supabase call never hangs the UI forever.
+function withTimeout<T>(p: PromiseLike<T>, ms = AUTH_TIMEOUT_MS, label = 'request'): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out — please check your connection and try again`)), ms);
+    Promise.resolve(p).then(
+      v => { clearTimeout(timer); resolve(v); },
+      e => { clearTimeout(timer); reject(e); },
+    );
+  });
 }
 
-async function fetchAppUser(userId: string, email?: string): Promise<AppUser> {
+async function fetchAppUser(userId: string): Promise<AppUser | null> {
   try {
-    const { data } = await supabase.from('app_users').select('*').eq('id', userId).maybeSingle();
-    if (data && data.is_active !== false) return data as AppUser;
+    const { data, error } = await withTimeout(
+      supabase.from('app_users').select('*').eq('id', userId).maybeSingle(),
+      AUTH_TIMEOUT_MS,
+      'user profile'
+    );
+    if (error || !data) return null;
+    if (data.is_active === false) return null;
+    return data as AppUser;
   } catch {
-    // ignore DB errors
+    return null;
   }
-  return createFallbackUser(email || 'admin@nikkitechnologies.com', userId);
 }
 
 async function fetchRolePermissions(role: string): Promise<Record<string, boolean>> {
   try {
-    const { data } = await supabase
-      .from('role_permissions').select('permissions').eq('role_name', role).maybeSingle();
-    return (data?.permissions as Record<string, boolean>) ?? { all: true };
+    const { data } = await withTimeout(
+      supabase.from('role_permissions').select('permissions').eq('role_name', role).maybeSingle(),
+      AUTH_TIMEOUT_MS,
+      'permissions'
+    );
+    return (data?.permissions as Record<string, boolean>) ?? {};
   } catch {
-    return { all: true };
+    return {};
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AppUser | null>(() => {
-    try {
-      const saved = localStorage.getItem('nkt_user_session');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [permissions, setPermissions] = useState<Record<string, boolean>>({ all: true });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [permissions, setPermissions] = useState<Record<string, boolean>>({});
+  // Start true — we're about to check the session. AppContent shows a loader while this is true.
+  const [loading, setLoading] = useState(true);
 
-  async function loadUser(userId: string, email?: string) {
-    try {
-      const appUser = await fetchAppUser(userId, email);
-      const rolePerms = await fetchRolePermissions(appUser.role);
-      setUser(appUser);
-      setPermissions({ ...rolePerms, ...(appUser.permission_overrides || {}) });
-      try { localStorage.setItem('nkt_user_session', JSON.stringify(appUser)); } catch {}
-    } catch {
-      // keep local user if set
-    }
+  async function loadUser(userId: string): Promise<AppUser | null> {
+    const appUser = await fetchAppUser(userId);
+    if (!appUser) return null;
+    const rolePerms = appUser.role === 'super_admin'
+      ? { all: true }
+      : await fetchRolePermissions(appUser.role);
+    setUser(appUser);
+    setPermissions({ ...rolePerms, ...(appUser.permission_overrides || {}) });
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(appUser)); } catch { /* storage disabled */ }
+    return appUser;
+  }
+
+  function clearLocalSession() {
+    setUser(null);
+    setPermissions({});
+    try { localStorage.removeItem(SESSION_KEY); } catch { /* storage disabled */ }
   }
 
   useEffect(() => {
     let mounted = true;
 
+    // Absolute safety net: never let the app hang on a broken Supabase config.
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 300);
+    }, AUTH_TIMEOUT_MS);
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      if (session?.user) {
-        await loadUser(session.user.id, session.user.email);
+    (async () => {
+      try {
+        const { data: { session } } = await withTimeout(
+          supabase.auth.getSession(),
+          AUTH_TIMEOUT_MS,
+          'session'
+        );
+        if (!mounted) return;
+        if (session?.user) {
+          const loaded = await loadUser(session.user.id);
+          if (!loaded && mounted) clearLocalSession();
+        } else {
+          // No live session — don't trust localStorage.
+          clearLocalSession();
+        }
+      } catch {
+        // Broken config / offline — never grant access.
+        if (mounted) clearLocalSession();
+      } finally {
+        if (mounted) {
+          clearTimeout(safetyTimer);
+          setLoading(false);
+        }
       }
-    }).catch(() => {})
-    .finally(() => {
-      if (mounted) {
-        clearTimeout(safetyTimer);
-        setLoading(false);
-      }
-    });
+    })();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
-      if (session?.user) {
-        await loadUser(session.user.id, session.user.email);
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        clearLocalSession();
+        return;
       }
-      setLoading(false);
+      // On SIGNED_IN / TOKEN_REFRESHED / USER_UPDATED — sync the profile.
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        const loaded = await loadUser(session.user.id);
+        if (!loaded && mounted) {
+          clearLocalSession();
+          await supabase.auth.signOut().catch(() => {});
+        }
+      }
     });
 
     return () => {
@@ -136,42 +165,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     !!user && (user.role === 'super_admin' || permissions[perm] === true || permissions['all'] === true);
 
   const canAccessSegment = (slug: string) =>
-    !!user && (user.role === 'super_admin' || user.segments.includes('all') || user.segments.includes(slug));
+    !!user && (user.role === 'super_admin' || user.segments?.includes('all') || user.segments?.includes(slug));
 
   async function signIn(email: string, password: string) {
     const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) return { error: 'Enter your email and password.' };
+    if (!isSupabaseConfigured) {
+      return { error: 'Sign-in is not configured. Please contact your administrator.' };
+    }
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email: cleanEmail, password }),
+        AUTH_TIMEOUT_MS,
+        'sign-in'
+      );
 
       if (error) {
         logLoginFailed(cleanEmail);
-        // If Supabase returns API key error or network error, activate local session fallback
-        if (error.message?.toLowerCase().includes('api key') || error.message?.toLowerCase().includes('apikey') || error.message?.toLowerCase().includes('fetch')) {
-          const fallbackUser = createFallbackUser(cleanEmail);
-          setUser(fallbackUser);
-          setPermissions({ all: true });
-          try { localStorage.setItem('nkt_user_session', JSON.stringify(fallbackUser)); } catch {}
-          return { error: null };
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('invalid') && msg.includes('credentials')) {
+          return { error: 'Incorrect email or password.' };
         }
-        return { error: error.message || 'Invalid email or password.' };
+        if (msg.includes('email not confirmed')) {
+          return { error: 'Please confirm your email before signing in.' };
+        }
+        if (msg.includes('rate limit') || msg.includes('too many')) {
+          return { error: 'Too many attempts. Please wait a minute and try again.' };
+        }
+        return { error: error.message || 'Sign-in failed. Please try again.' };
       }
 
-      if (data?.user) {
-        logLogin(data.user.email || cleanEmail);
-        const appUser = await fetchAppUser(data.user.id, data.user.email || cleanEmail);
-        setUser(appUser);
-        setPermissions({ all: true });
-        try { localStorage.setItem('nkt_user_session', JSON.stringify(appUser)); } catch {}
+      if (!data?.user) {
+        return { error: 'Sign-in failed. Please try again.' };
       }
 
+      logLogin(data.user.email || cleanEmail);
+      const appUser = await loadUser(data.user.id);
+      if (!appUser) {
+        // Auth passed but this identity has no active app_users row — refuse access.
+        await supabase.auth.signOut().catch(() => {});
+        clearLocalSession();
+        return { error: 'Your account is not active. Please contact your administrator.' };
+      }
       return { error: null };
-    } catch {
-      // Local fallback on exception
-      const fallbackUser = createFallbackUser(cleanEmail);
-      setUser(fallbackUser);
-      setPermissions({ all: true });
-      try { localStorage.setItem('nkt_user_session', JSON.stringify(fallbackUser)); } catch {}
-      return { error: null };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Sign-in failed. Please try again.';
+      return { error: message };
     }
   }
 
@@ -180,9 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user) logLogout(user.email);
       await supabase.auth.signOut().catch(() => {});
     } finally {
-      setUser(null);
-      setPermissions({});
-      try { localStorage.removeItem('nkt_user_session'); } catch {}
+      clearLocalSession();
       const path = window.location.pathname;
       const hash = window.location.hash;
       if (path === '/admin' || path === '/portal' || hash === '#admin' || hash === '#portal' || path === '/login') {
@@ -194,9 +232,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function refreshUser() {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) await loadUser(session.user.id, session.user.email);
-    } catch {}
+      const { data: { session } } = await withTimeout(supabase.auth.getSession(), AUTH_TIMEOUT_MS, 'session');
+      if (session?.user) {
+        await loadUser(session.user.id);
+      } else {
+        clearLocalSession();
+      }
+    } catch {
+      // ignore — keep whatever we already have on transient errors
+    }
   }
 
   return (

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
-  Landmark, Megaphone, Briefcase, Image as ImageIcon, Clock3, CalendarClock, UserCircle, RefreshCcw, Shield,
+  Landmark, Megaphone, Briefcase, Image as ImageIcon, Shield,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -50,6 +50,9 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
   const canTickets = isSA || hasPermission('view_tickets') || hasPermission('manage_tickets');
   const canAttendance = isSA || hasPermission('view_attendance');
   const canStaff = isSA || hasPermission('manage_staff');
+  // "Approvals" tab groups salary advances + staff/attendance approvals — mirror the
+  // navigation gate at line 1622 so both stay in lock-step.
+  const canApprovals = isSA || hasPermission('approve_advances') || hasPermission('manage_staff');
 
   useEffect(() => {
     (async () => {
@@ -1596,15 +1599,6 @@ export default function SuperAdminDashboard() {
   }
 
   const isSuperAdmin = user?.role === 'super_admin';
-
-  // Self-service tabs: every staff member gets these regardless of admin permissions.
-  const selfServiceTabs: { id: Tab; label: string; icon: any }[] = [
-    { id: 'my_attendance', label: 'My Attendance', icon: Clock3 },
-    { id: 'my_documents', label: 'My Documents', icon: FileText },
-    { id: 'my_requests', label: 'Leaves & Advances', icon: CalendarClock },
-    { id: 'my_profile', label: 'My Profile', icon: UserCircle },
-    { id: 'my_swap', label: 'Shift Swap', icon: RefreshCcw },
-  ];
 
   // Admin tabs: each requires the same permission enforced at the database (RLS) level —
   // shown here only when the person can actually use it, not just when they're super_admin.

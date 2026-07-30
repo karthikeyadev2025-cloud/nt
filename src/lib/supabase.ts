@@ -1,13 +1,38 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohprabgcstqwswbcthjs.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-if (!supabaseUrl) {
-  console.warn('VITE_SUPABASE_URL is not set. Falling back to default project URL.');
+// A single flag the rest of the app can rely on to know whether real credentials are present.
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl && supabaseAnonKey &&
+  supabaseUrl.startsWith('https://') &&
+  !supabaseUrl.includes('YOUR-NEW-PROJECT') &&
+  !supabaseUrl.includes('placeholder') &&
+  supabaseAnonKey.length > 40 &&
+  supabaseAnonKey !== 'YOUR-ANON-KEY' &&
+  !supabaseAnonKey.startsWith('REPLACE_ME') &&
+  !supabaseAnonKey.includes('placeholder')
+);
+
+if (!isSupabaseConfigured) {
+  // Loud, once-only warning — the app will refuse sign-in until this is fixed.
+  // eslint-disable-next-line no-console
+  console.error(
+    '[Nikki] Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env, then restart the dev server.'
+  );
 }
 
+// We still create a client (with harmless placeholders if unconfigured) so imports don't crash;
+// AuthContext gates real calls behind `isSupabaseConfigured`.
 export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey || 'dummy-key-placeholder'
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-anon-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
 );

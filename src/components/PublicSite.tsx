@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette, TrendingUp,
   Boxes, Bot, Layers, Phone, Mail, MapPin, ExternalLink, Star, Menu, X,
-  Ticket, Send, CheckCircle2, ChevronRight, Briefcase, Upload, User, Rocket, Award, ShieldCheck,
+  Ticket, Send, CheckCircle2, ChevronRight, Briefcase, Upload, User,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSegments, useSiteContent } from '../lib/useSegments';
@@ -152,7 +152,7 @@ function Navigation({ content }: { content: Record<string, Record<string, string
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─────────────────────────────────────────────── Client-Facing Services Showcase (Hero Widget)
-function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
+function ServicesHeroShowcase(_props: { segments: Segment[] }) {
   const [activeTab, setActiveTab] = useState<'kite_tail' | 'software'>('kite_tail');
 
   const contentMap = {
@@ -385,7 +385,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.6, delay: 0.3 }}
           className="flex flex-wrap justify-center gap-4"
         >
-          {segments.map((s, i) => (
+          {segments.map((s) => (
             <a key={s.slug} href={`#seg-${s.slug}`}
               className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-300 bg-white hover:border-blue-600 hover:bg-slate-50 transition-all text-slate-900 shadow-md font-semibold text-sm">
               <Icon name={s.icon} className="w-5 h-5 text-blue-700" />

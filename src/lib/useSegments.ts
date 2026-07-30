@@ -8,22 +8,24 @@ const DEFAULT_FALLBACK_SEGMENTS: Segment[] = [
     slug: 'digital-marketing',
     name: 'Kite & Tail Media',
     tagline: 'Digital Media Marketing, Performance PPC & Social Growth',
+    description: '',
     icon: 'Rocket',
     color: '#1d4ed8',
+    ticket_prefix: 'NKT-DM',
     active: true,
     order_index: 1,
-    created_at: new Date().toISOString(),
   },
   {
     id: 'seg-soft',
     slug: 'software-development',
     name: 'Nikki Software Studio',
     tagline: 'Custom Web Apps, Mobile Apps & Enterprise Systems',
+    description: '',
     icon: 'Code',
     color: '#0284c7',
+    ticket_prefix: 'NKT-SW',
     active: true,
     order_index: 2,
-    created_at: new Date().toISOString(),
   },
 ];
 
@@ -33,7 +35,7 @@ export function useSegments(includeRetired = false) {
 
   useEffect(() => {
     let mounted = true;
-    
+
     // Instant safety timeout: Never hang loading for more than 300ms
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
@@ -41,25 +43,26 @@ export function useSegments(includeRetired = false) {
 
     let q = supabase.from('segments').select('*');
     if (!includeRetired) q = q.eq('active', true);
-    
-    q.order('order_index')
-      .then(({ data, error }) => {
+
+    // Supabase's builder is thenable but not a real Promise, so we wrap it once.
+    Promise.resolve(q.order('order_index')).then(
+      ({ data, error }) => {
         if (!mounted) return;
         if (data && data.length > 0 && !error) {
           setSegments(data as Segment[]);
         } else {
           setSegments(DEFAULT_FALLBACK_SEGMENTS);
         }
-      })
-      .catch(() => {
+      },
+      () => {
         if (mounted) setSegments(DEFAULT_FALLBACK_SEGMENTS);
-      })
-      .finally(() => {
-        if (mounted) {
-          clearTimeout(safetyTimer);
-          setLoading(false);
-        }
-      });
+      },
+    ).finally(() => {
+      if (mounted) {
+        clearTimeout(safetyTimer);
+        setLoading(false);
+      }
+    });
 
     return () => {
       mounted = false;
@@ -77,13 +80,12 @@ export function useSiteContent() {
   useEffect(() => {
     let mounted = true;
 
-    // Instant safety timeout: Never hang loading for more than 300ms
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
     }, 300);
 
-    supabase.from('site_content').select('*')
-      .then(({ data, error }) => {
+    Promise.resolve(supabase.from('site_content').select('*')).then(
+      ({ data, error }) => {
         if (!mounted) return;
         if (data && !error) {
           const organized: Record<string, Record<string, string>> = {};
@@ -93,16 +95,16 @@ export function useSiteContent() {
           });
           setContent(organized);
         }
-      })
-      .catch(() => {
+      },
+      () => {
         // Keep empty object fallback
-      })
-      .finally(() => {
-        if (mounted) {
-          clearTimeout(safetyTimer);
-          setLoading(false);
-        }
-      });
+      },
+    ).finally(() => {
+      if (mounted) {
+        clearTimeout(safetyTimer);
+        setLoading(false);
+      }
+    });
 
     return () => {
       mounted = false;

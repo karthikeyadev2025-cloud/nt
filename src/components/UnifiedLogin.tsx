@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Lock, Mail, AlertCircle, Users, Phone, Briefcase, HeartHandshake, Clock, CheckCircle2 } from 'lucide-react';
 import { KiteTailLogo } from './KiteTailLogo';
 
@@ -48,21 +48,30 @@ export default function UnifiedLogin() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError('');
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
     setLoading(true);
     try {
-      const cleanEmail = email.trim().toLowerCase();
       const { error } = await signIn(cleanEmail, password);
       if (error) {
         setError(error);
-      } else {
-        // Navigate cleanly to the portal hash
-        const cleanEmail = email.trim().toLowerCase();
-        const isSuper = cleanEmail.includes('admin') || cleanEmail.includes('nikki') || cleanEmail.includes('tech') || cleanEmail.includes('owner') || cleanEmail.includes('karthikeya');
-        window.location.hash = isSuper ? '#admin' : '#portal';
+        return;
       }
-    } catch (err: any) {
-      setError(err?.message || 'Login failed. Please check your credentials.');
+      // AuthContext has updated `user` synchronously via setUser; App.tsx will
+      // route to the right dashboard based on the actual role + permissions
+      // as soon as the hash flips to a login route. Prefer #portal — the app
+      // itself upgrades to #admin if the role warrants it.
+      if (!window.location.hash || window.location.hash === '#login') {
+        window.location.hash = '#portal';
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -70,11 +79,20 @@ export default function UnifiedLogin() {
 
   async function sendResetEmail(e: React.FormEvent) {
     e.preventDefault();
-    if (!resetEmail) return;
+    if (!resetEmail || resetLoading) return;
     setResetLoading(true);
-    await supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo: `${window.location.origin}/login` });
-    setResetLoading(false);
-    setResetSent(true); // always show success, regardless of whether the email exists — avoids leaking which emails are registered
+    try {
+      // Hard timeout so a broken network never leaves the button spinning forever.
+      await Promise.race([
+        supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo: `${window.location.origin}/login` }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000)),
+      ]);
+    } catch {
+      // Swallow — we always show a generic success so we don't leak which emails are registered.
+    } finally {
+      setResetLoading(false);
+      setResetSent(true);
+    }
   }
 
   return (
@@ -101,8 +119,16 @@ export default function UnifiedLogin() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200/90 p-8 shadow-xl">
+          {!isSupabaseConfigured && (
+            <div className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3" data-testid="config-warning">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-amber-800 text-sm font-semibold">
+                Sign-in isn't configured yet. Ask your administrator to set the Supabase credentials.
+              </p>
+            </div>
+          )}
           {error && (
-            <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+            <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3" data-testid="login-error">
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <p className="text-red-700 text-sm font-semibold">{error}</p>
             </div>
@@ -153,6 +179,7 @@ export default function UnifiedLogin() {
                   className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 transition-colors shadow-sm"
                   required
                   autoComplete="email"
+                  data-testid="login-email-input"
                 />
               </div>
             </div>
@@ -169,6 +196,7 @@ export default function UnifiedLogin() {
                   className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 transition-colors shadow-sm"
                   required
                   autoComplete="current-password"
+                  data-testid="login-password-input"
                 />
               </div>
               <button type="button" onClick={() => { setShowReset(true); setResetSent(false); setResetEmail(email); }} className="text-blue-700 text-xs mt-2 hover:text-blue-800 font-semibold">
@@ -178,8 +206,9 @@ export default function UnifiedLogin() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !isSupabaseConfigured}
               className="w-full py-3.5 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-blue-700/25 text-base border border-blue-600/20"
+              data-testid="login-submit-button"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

@@ -153,9 +153,10 @@ export function SetupChecklist({ segments }: { segments: Segment[] }) {
 }
 
 // ─────────────────────────── Quick Search for admin header
-export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, id: string) => void }) {
+type QuickFocus = { kind: 'staff' | 'lead' | 'ticket'; id: string };
+export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: QuickFocus) => void }) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<{ id: string; title: string; subtitle: string; tab: string }[]>([]);
+  const [results, setResults] = useState<{ id: string; title: string; subtitle: string; tab: string; kind: QuickFocus['kind'] }[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -170,10 +171,10 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, id: stri
         supabase.from('marketing_leads').select('id, customer_name, phone, segment_slug').or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5),
         supabase.from('support_tickets').select('id, ticket_number, subject').or(`ticket_number.ilike.%${q}%,subject.ilike.%${q}%`).limit(5),
       ]);
-      const res: any[] = [];
-      (staff || []).forEach(s => res.push({ id: s.id, title: s.full_name, subtitle: `${s.role} • ${s.email}`, tab: 'access' }));
-      (leads || []).forEach(l => res.push({ id: l.id, title: l.customer_name, subtitle: `Lead • ${l.phone}`, tab: 'crm' }));
-      (tickets || []).forEach(tk => res.push({ id: tk.id, title: tk.ticket_number, subtitle: tk.subject, tab: 'tickets' }));
+      const res: typeof results = [];
+      (staff || []).forEach(s => res.push({ id: s.id, title: s.full_name, subtitle: `${s.role} • ${s.email}`, tab: 'access', kind: 'staff' }));
+      (leads || []).forEach(l => res.push({ id: l.id, title: l.customer_name, subtitle: `Lead • ${l.phone}`, tab: 'crm', kind: 'lead' }));
+      (tickets || []).forEach(tk => res.push({ id: tk.id, title: tk.ticket_number, subtitle: tk.subject, tab: 'tickets', kind: 'ticket' }));
       setResults(res);
       setOpen(true);
     }, 200);
@@ -198,7 +199,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, id: stri
             <button
               key={r.id}
               onClick={() => {
-                onNavigate(r.tab, r.id);
+                onNavigate(r.tab, { kind: r.kind, id: r.id });
                 setOpen(false);
                 setQuery('');
               }}

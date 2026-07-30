@@ -3,8 +3,10 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  // lucide-react must be pre-bundled — excluding it makes Vite serve 1000+ separate
+  // icon requests which the preview proxy rate-limits with 429s.
   optimizeDeps: {
-    exclude: ['lucide-react'],
+    include: ['lucide-react'],
   },
   build: {
     rollupOptions: {
@@ -32,9 +34,16 @@ export default defineConfig({
     minify: 'esbuild',
   },
   server: {
+    host: '0.0.0.0',
+    port: 3000,
+    strictPort: true,
+    allowedHosts: true,
     historyApiFallback: true,
   },
   preview: {
+    host: '0.0.0.0',
+    port: 3000,
+    allowedHosts: true,
     historyApiFallback: true,
   },
 });
