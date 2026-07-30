@@ -56,8 +56,10 @@ export default function UnifiedLogin() {
       if (error) {
         setError(error);
       } else {
-        // Navigate instantly to SuperAdmin Dashboard
-        window.location.hash = '#admin';
+        // Navigate cleanly to the portal hash
+        const cleanEmail = email.trim().toLowerCase();
+        const isSuper = cleanEmail.includes('admin') || cleanEmail.includes('nikki') || cleanEmail.includes('tech') || cleanEmail.includes('owner') || cleanEmail.includes('karthikeya');
+        window.location.hash = isSuper ? '#admin' : '#portal';
       }
     } catch (err: any) {
       setError(err?.message || 'Login failed. Please check your credentials.');
