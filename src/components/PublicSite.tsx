@@ -415,27 +415,39 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
   return (
     <section id="segments" className="py-20 px-4 bg-slate-50">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">What We Do</h2>
-        <p className="text-center text-slate-600 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
+        <Reveal>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">What We Do</h2>
+          <p className="text-center text-slate-600 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
+        </Reveal>
         <div id="services" className="space-y-16">
           {segments.map(seg => (
             <div key={seg.slug} id={`seg-${seg.slug}`} className="scroll-mt-24">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xs" style={{ backgroundColor: seg.color + '15', color: seg.color }}>
-                  <Icon name={seg.icon} className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-900">{seg.name}</h3>
-                  <p className="text-slate-600 text-sm font-medium">{seg.tagline}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {services.filter(s => s.segment_slug === seg.slug).map(s => (
-                  <div key={s.id} className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md hover:shadow-lg hover:border-blue-300 transition-all">
-                    <Icon name={s.icon} className="w-8 h-8 mb-4 text-blue-700" />
-                    <h4 className="text-lg font-bold text-slate-900 mb-2">{s.title}</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed font-medium">{s.description}</p>
+              <Reveal>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xs" style={{ backgroundColor: seg.color + '15', color: seg.color }}>
+                    <Icon name={seg.icon} className="w-6 h-6" />
                   </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900">{seg.name}</h3>
+                    <p className="text-slate-600 text-sm font-medium">{seg.tagline}</p>
+                  </div>
+                </div>
+              </Reveal>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {services.filter(s => s.segment_slug === seg.slug).map((s, idx) => (
+                  <Reveal key={s.id} delay={idx * 100}>
+                    <motion.div
+                      whileHover={{ y: -6, scale: 1.01 }}
+                      transition={{ duration: 0.2 }}
+                      className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md hover:shadow-xl hover:border-blue-300 transition-all h-full flex flex-col justify-between"
+                    >
+                      <div>
+                        <Icon name={s.icon} className="w-8 h-8 mb-4 text-blue-700" />
+                        <h4 className="text-lg font-bold text-slate-900 mb-2">{s.title}</h4>
+                        <p className="text-slate-600 text-sm leading-relaxed font-medium">{s.description}</p>
+                      </div>
+                    </motion.div>
+                  </Reveal>
                 ))}
               </div>
             </div>
@@ -458,44 +470,50 @@ function Products() {
   return (
     <section id="products" className="py-20 px-4 bg-slate-100/60 border-y border-slate-200">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">Our Products</h2>
-        <p className="text-center text-slate-600 mb-14 max-w-2xl mx-auto font-medium">Software built by Nikki Technologies, powering businesses.</p>
+        <Reveal>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">Our Products</h2>
+          <p className="text-center text-slate-600 mb-14 max-w-2xl mx-auto font-medium">Software built by Nikki Technologies, powering businesses.</p>
+        </Reveal>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {products.map((p, i) => (
             <Reveal key={p.id} delay={i * 100}>
-            <div className="flex flex-col h-full p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all">
-              <div className="flex items-center gap-3 mb-3">
-                {p.logo_url
-                  ? <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-cover shadow-xs" />
-                  : <div className="w-11 h-11 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-lg shadow-md">{p.name[0]}</div>}
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">{p.name}</h3>
-                  <p className="text-blue-700 text-xs font-semibold">{p.tagline}</p>
-                </div>
-              </div>
-              <p className="text-slate-600 text-sm mb-5 leading-relaxed font-medium">{p.description}</p>
-              <div className="space-y-2.5 mb-6">
-                {(p.features || []).map((f, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-blue-700 mt-0.5 shrink-0" />
-                    <div>
-                      <span className="text-slate-900 text-sm font-semibold">{f.title}</span>
-                      <span className="text-slate-600 text-sm font-medium"> — {f.description}</span>
-                    </div>
+              <motion.div
+                whileHover={{ y: -6, scale: 1.01 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col h-full p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  {p.logo_url
+                    ? <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-cover shadow-xs" />
+                    : <div className="w-11 h-11 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-lg shadow-md">{p.name[0]}</div>}
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">{p.name}</h3>
+                    <p className="text-blue-700 text-xs font-semibold">{p.tagline}</p>
                   </div>
-                ))}
-              </div>
-              <div className="mt-auto">
-                {p.status === 'coming_soon' ? (
-                  <span className="inline-block px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-xs font-semibold">Coming Soon</span>
-                ) : p.external_url ? (
-                  <a href={p.external_url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20">
-                    {p.demo_cta || 'Visit Website'} <ExternalLink className="w-4 h-4" />
-                  </a>
-                ) : null}
-              </div>
-            </div>
+                </div>
+                <p className="text-slate-600 text-sm mb-5 leading-relaxed font-medium">{p.description}</p>
+                <div className="space-y-2.5 mb-6">
+                  {(p.features || []).map((f, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-blue-700 mt-0.5 shrink-0" />
+                      <div>
+                        <span className="text-slate-900 text-sm font-semibold">{f.title}</span>
+                        <span className="text-slate-600 text-sm font-medium"> — {f.description}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-auto">
+                  {p.status === 'coming_soon' ? (
+                    <span className="inline-block px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-xs font-semibold">Coming Soon</span>
+                  ) : p.external_url ? (
+                    <a href={p.external_url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20">
+                      {p.demo_cta || 'Visit Website'} <ExternalLink className="w-4 h-4" />
+                    </a>
+                  ) : null}
+                </div>
+              </motion.div>
             </Reveal>
           ))}
         </div>
