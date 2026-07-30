@@ -1120,9 +1120,16 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
 export default function PublicSite() {
   const { content } = useSiteContent();
   const { segments } = useSegments();
-  const [showLoading, setShowLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(() => {
+    try { return sessionStorage.getItem('nkt_intro_shown') !== 'true'; } catch { return false; }
+  });
 
-  if (showLoading) return <LoadingScreen onLoadingComplete={() => setShowLoading(false)} />;
+  const handleComplete = () => {
+    try { sessionStorage.setItem('nkt_intro_shown', 'true'); } catch {}
+    setShowLoading(false);
+  };
+
+  if (showLoading) return <LoadingScreen onLoadingComplete={handleComplete} />;
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900">

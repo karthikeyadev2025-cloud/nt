@@ -7,19 +7,19 @@ export default function LoadingScreen({ onLoadingComplete }: { onLoadingComplete
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    // Smooth progress counter 0% -> 100%
+    // Smooth rapid progress counter 0% -> 100%
     const progressTimer = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
           clearInterval(progressTimer);
           return 100;
         }
-        return prev + 4;
+        return prev + 10;
       });
-    }, 28);
+    }, 20);
 
-    const exitTimer = setTimeout(() => setExiting(true), 1500);
-    const doneTimer = setTimeout(onLoadingComplete, 1900);
+    const exitTimer = setTimeout(() => setExiting(true), 500);
+    const doneTimer = setTimeout(onLoadingComplete, 700);
 
     return () => {
       clearInterval(progressTimer);

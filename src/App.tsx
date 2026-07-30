@@ -30,7 +30,7 @@ function AppContent() {
   const [forceReady, setForceReady] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setForceReady(true), 2000);
+    const timer = setTimeout(() => setForceReady(true), 400);
     const checkRoute = () => {
       const path = window.location.pathname;
       const hash = window.location.hash;
