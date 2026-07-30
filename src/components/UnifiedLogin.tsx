@@ -127,12 +127,12 @@ export default function UnifiedLogin() {
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">New Password</label>
                   <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6}
-                    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm" />
+                    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Confirm Password</label>
                   <input type="password" value={newPasswordConfirm} onChange={e => setNewPasswordConfirm(e.target.value)} required minLength={6}
-                    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm" />
+                    className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm" />
                 </div>
                 <button type="submit" disabled={settingPassword} className="w-full py-3.5 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-xl disabled:opacity-60 transition-all text-base shadow-md shadow-blue-700/20">
                   {settingPassword ? 'Updating…' : 'Update Password'}
@@ -150,7 +150,7 @@ export default function UnifiedLogin() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 transition-colors shadow-sm"
+                  className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 transition-colors shadow-sm"
                   required
                   autoComplete="email"
                 />
@@ -166,7 +166,7 @@ export default function UnifiedLogin() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 transition-colors shadow-sm"
+                  className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 transition-colors shadow-sm"
                   required
                   autoComplete="current-password"
                 />
@@ -208,7 +208,7 @@ export default function UnifiedLogin() {
                     <input
                       type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} required
                       placeholder="you@nikkitechnologies.com"
-                      className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-700 mb-4 shadow-sm"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:border-blue-700 mb-4 shadow-sm"
                     />
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setShowReset(false)} className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-50">Cancel</button>

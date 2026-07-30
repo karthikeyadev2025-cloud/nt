@@ -682,7 +682,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-500';
 
   async function submit() {
     setError('');
@@ -855,7 +855,7 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
   const [phone, setPhone] = useState('');
   const [result, setResult] = useState<any | null | 'not_found'>(null);
   const [busy, setBusy] = useState(false);
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-500';
 
   async function lookup() {
     if (!ticketNo || !phone) return;
@@ -953,7 +953,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
     setForm({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
   }
 
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400 font-medium';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-500 font-medium';
 
   const isMarketingSeg = form.segment_slug.includes('marketing') || form.segment_slug.includes('media') || form.segment_slug.includes('digital') || form.segment_slug.includes('kt');
   const isSoftwareSeg = form.segment_slug.includes('software') || form.segment_slug.includes('dev') || form.segment_slug.includes('tech');
@@ -1030,7 +1030,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const c = content?.contact || {};
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-500';
 
   async function submit() {
     if (!form.segment_slug || !form.customer_name || !form.phone) {

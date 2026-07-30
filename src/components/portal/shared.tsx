@@ -7,7 +7,7 @@ import { istDateStr } from '../../lib/dates';
 import { normalizePhone } from '../../lib/phone';
 
 export const inputCls =
-  'w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 focus:outline-none transition-all placeholder-slate-400';
+  'w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 focus:outline-none transition-all placeholder-slate-500';
 export const btnCls =
   'px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-semibold shadow-md shadow-blue-700/20 border border-blue-600/30 transition-all active:scale-[0.98]';
 export const cardCls = 'p-5 rounded-2xl bg-white border border-slate-200/90 shadow-md shadow-slate-200/50 backdrop-blur-md';
