@@ -12,8 +12,14 @@ const ForcePasswordChange = lazy(() => import('./components/ForcePasswordChange'
 
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-sky-500/30 border-t-sky-500 rounded-full animate-spin" />
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center select-none">
+      <div className="w-14 h-14 rounded-2xl bg-blue-700 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg shadow-blue-700/20 mb-3">
+        N
+      </div>
+      <p className="text-slate-900 font-extrabold text-sm tracking-tight">Nikki Technologies</p>
+      <div className="w-28 h-1 bg-slate-200 rounded-full mt-4 overflow-hidden">
+        <div className="w-full h-full bg-blue-700 rounded-full animate-pulse" />
+      </div>
     </div>
   );
 }
