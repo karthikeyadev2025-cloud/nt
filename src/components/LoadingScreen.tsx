@@ -1,140 +1,175 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Megaphone, Code2, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Megaphone, Code2, TrendingUp, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { KiteTailLogo } from './KiteTailLogo';
 
-const SERVICE_STEPS = [
-  { icon: Megaphone, title: 'Kite & Tail Digital Marketing', desc: 'Loading Meta & Google PPC performance funnels...' },
-  { icon: Code2, title: 'Software Development Studio', desc: 'Initializing web app & mobile platform architecture...' },
-  { icon: TrendingUp, title: 'SEO & Growth Engine', desc: 'Preparing search optimization & creative media assets...' },
-  { icon: CheckCircle2, title: 'Nikki Technologies', desc: 'Readying enterprise digital experience...' },
+const STAGES = [
+  { id: 1, icon: Megaphone, title: 'Kite & Tail Media', desc: 'Initializing Meta & Google PPC performance funnels' },
+  { id: 2, icon: Code2, title: 'Software Studio', desc: 'Loading custom web & mobile app architecture' },
+  { id: 3, icon: TrendingUp, title: 'Growth & SEO Engine', desc: 'Indexing search funnels & creative media assets' },
+  { id: 4, icon: ShieldCheck, title: 'Nikki Technologies', desc: 'Readying enterprise digital experience' },
 ];
 
 export default function LoadingScreen({ onLoadingComplete }: { onLoadingComplete: () => void }) {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [activeStageIndex, setActiveStageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    // Step switcher timer
-    const stepTimer = setInterval(() => {
-      setStepIndex(prev => (prev < SERVICE_STEPS.length - 1 ? prev + 1 : prev));
-    }, 450);
+    // Stage switcher
+    const stageInterval = setInterval(() => {
+      setActiveStageIndex(prev => (prev < STAGES.length - 1 ? prev + 1 : prev));
+    }, 500);
 
-    // Smooth progress counter
-    const progressTimer = setInterval(() => {
+    // Smooth counter to 100%
+    const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
-          clearInterval(progressTimer);
+          clearInterval(progressInterval);
           return 100;
         }
-        return prev + 4;
+        return prev + 3;
       });
-    }, 40);
+    }, 35);
 
-    const exitTimer = setTimeout(() => setExiting(true), 2100);
-    const doneTimer = setTimeout(onLoadingComplete, 2500);
+    const exitTimeout = setTimeout(() => setExiting(true), 2150);
+    const completeTimeout = setTimeout(onLoadingComplete, 2550);
 
     return () => {
-      clearInterval(stepTimer);
-      clearInterval(progressTimer);
-      clearTimeout(exitTimer);
-      clearTimeout(doneTimer);
+      clearInterval(stageInterval);
+      clearInterval(progressInterval);
+      clearTimeout(exitTimeout);
+      clearTimeout(completeTimeout);
     };
   }, [onLoadingComplete]);
 
-  const currentStep = SERVICE_STEPS[stepIndex];
-  const StepIcon = currentStep.icon;
+  const currentStage = STAGES[activeStageIndex];
+  const StageIcon = currentStage.icon;
 
   return (
     <div
-      className={`fixed inset-0 bg-slate-50 flex flex-col items-center justify-center z-[100] transition-all duration-500 p-4 ${
+      className={`fixed inset-0 bg-slate-50 flex flex-col items-center justify-center z-[100] transition-all duration-700 p-4 select-none ${
         exiting ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
-      {/* Background Animated Floating Kites */}
-      <motion.div
-        animate={{ y: [0, -20, 0], rotate: [-4, 4, -4] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-16 left-[15%] opacity-20 w-32 h-32 pointer-events-none"
-      >
-        <KiteTailLogo className="w-full h-full text-blue-600" />
-      </motion.div>
+      {/* Dynamic Background Mesh & Animated Floating Kites */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-100/50 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-100/40 rounded-full blur-3xl" />
 
-      <motion.div
-        animate={{ y: [0, -25, 0], rotate: [4, -4, 4] }}
-        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        className="absolute bottom-16 right-[15%] opacity-20 w-36 h-36 pointer-events-none"
-      >
-        <KiteTailLogo className="w-full h-full text-indigo-600" />
-      </motion.div>
+        <motion.div
+          animate={{ y: [0, -30, 0], x: [0, 15, 0], rotate: [-4, 5, -4] }}
+          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-12 left-[12%] opacity-20 w-36 h-36"
+        >
+          <KiteTailLogo className="w-full h-full text-blue-600 drop-shadow-sm" />
+        </motion.div>
 
-      <div className="w-full max-w-md bg-white border border-slate-200/90 rounded-3xl p-8 shadow-2xl shadow-slate-200/60 text-center relative overflow-hidden backdrop-blur-md">
-        {/* Subtle background glow */}
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-blue-50 rounded-full blur-2xl pointer-events-none" />
+        <motion.div
+          animate={{ y: [0, -40, 0], x: [0, -20, 0], rotate: [5, -5, 5] }}
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+          className="absolute bottom-16 right-[12%] opacity-15 w-44 h-44 hidden sm:block"
+        >
+          <KiteTailLogo className="w-full h-full text-indigo-600 drop-shadow-sm" />
+        </motion.div>
+      </div>
 
-        {/* Brand Icon Mark */}
-        <div className="relative inline-flex mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-blue-700 text-white font-extrabold text-2xl flex items-center justify-center shadow-xl shadow-blue-700/25 border border-blue-600/30">
-            N
-          </div>
+      {/* Main Loading Glass Container */}
+      <div className="w-full max-w-lg bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-3xl p-8 sm:p-10 shadow-2xl shadow-slate-200/80 text-center relative z-10 overflow-hidden">
+        {/* Top Glowing Laser Accent */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-400" />
+
+        {/* Dual-Ring Rotating Badge */}
+        <div className="relative inline-flex items-center justify-center mb-7">
           <motion.div
-            animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.9, 0.4] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="absolute -inset-2 rounded-3xl border-2 border-blue-600/30 pointer-events-none"
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
+            className="w-24 h-24 rounded-full border-2 border-dashed border-blue-600/40 absolute"
           />
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ repeat: Infinity, duration: 12, ease: 'linear' }}
+            className="w-28 h-28 rounded-full border border-blue-400/20 absolute"
+          />
+          <div className="w-18 h-18 w-20 h-20 rounded-2xl bg-blue-700 text-white font-extrabold text-3xl flex items-center justify-center shadow-xl shadow-blue-700/30 border border-blue-500/30 z-10">
+            <KiteTailLogo className="w-11 h-11" />
+          </div>
         </div>
 
-        {/* Brand Title */}
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-1">
+        {/* Company Title & Brand Tagline */}
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">
           Nikki Technologies
         </h1>
-        <p className="text-xs font-bold uppercase tracking-widest text-blue-700 mb-6">
-          Digital Marketing &amp; Custom Software
-        </p>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-extrabold uppercase tracking-widest mb-7 shadow-xs">
+          <span>Kite &amp; Tail Digital</span>
+          <span className="w-1 h-1 rounded-full bg-blue-700" />
+          <span>Software Studio</span>
+        </div>
 
-        {/* Service Ticker Area */}
-        <div className="min-h-[64px] bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-6 flex items-center gap-3 text-left shadow-xs">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-            <StepIcon className="w-5 h-5" />
+        {/* Dynamic Stage Ticker Box */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 text-left shadow-xs min-h-[72px] flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-700/20">
+            <StageIcon className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
             <AnimatePresence mode="wait">
               <motion.div
-                key={stepIndex}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25 }}
+                key={activeStageIndex}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={{ duration: 0.2 }}
               >
-                <p className="text-xs font-bold text-slate-900 truncate">{currentStep.title}</p>
-                <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">{currentStep.desc}</p>
+                <p className="text-xs font-extrabold text-slate-900 truncate">{currentStage.title}</p>
+                <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">{currentStage.desc}</p>
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
 
+        {/* Completed Stage Dots Indicator */}
+        <div className="grid grid-cols-4 gap-2 mb-6">
+          {STAGES.map((stg, i) => {
+            const isDone = i < activeStageIndex;
+            const isCurrent = i === activeStageIndex;
+            return (
+              <div
+                key={stg.id}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  isDone
+                    ? 'bg-blue-700'
+                    : isCurrent
+                    ? 'bg-blue-500 animate-pulse'
+                    : 'bg-slate-200'
+                }`}
+              />
+            );
+          })}
+        </div>
+
         {/* Progress Bar & Percentage */}
         <div className="space-y-2">
-          <div className="flex justify-between items-center text-xs font-bold text-slate-600 px-1">
-            <span>Loading Experience</span>
-            <span className="text-blue-700 font-mono">{Math.min(progress, 100)}%</span>
+          <div className="flex justify-between items-center text-xs font-extrabold text-slate-700 px-1">
+            <span className="uppercase tracking-wider text-[10px] text-slate-500">Initializing Experience</span>
+            <span className="text-blue-700 font-mono text-sm font-bold">{Math.min(progress, 100)}%</span>
           </div>
-          <div className="w-full h-2 bg-slate-100 border border-slate-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-700 transition-all ease-out duration-100 rounded-full shadow-xs"
+          <div className="w-full h-2.5 bg-slate-100 border border-slate-200 rounded-full overflow-hidden p-0.5">
+            <motion.div
+              className="h-full bg-blue-700 rounded-full shadow-md shadow-blue-700/30"
               style={{ width: `${progress}%` }}
+              transition={{ ease: 'easeOut' }}
             />
           </div>
         </div>
 
-        {/* Core Service Pills at bottom */}
-        <div className="flex justify-center gap-2 mt-6 pt-4 border-t border-slate-100 text-[11px] font-semibold text-slate-600">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
-            <Megaphone className="w-3.5 h-3.5 text-blue-700" /> Kite &amp; Tail Digital
+        {/* Footer Brand Pillars */}
+        <div className="flex items-center justify-center gap-4 mt-7 pt-4 border-t border-slate-100 text-xs font-bold text-slate-600">
+          <span className="inline-flex items-center gap-1.5 text-slate-700">
+            <CheckCircle2 className="w-4 h-4 text-blue-700" /> Digital Marketing
           </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-            <Code2 className="w-3.5 h-3.5 text-slate-600" /> Software Studio
+          <span className="w-1 h-1 rounded-full bg-slate-300" />
+          <span className="inline-flex items-center gap-1.5 text-slate-700">
+            <CheckCircle2 className="w-4 h-4 text-blue-700" /> Software Engineering
           </span>
         </div>
       </div>
