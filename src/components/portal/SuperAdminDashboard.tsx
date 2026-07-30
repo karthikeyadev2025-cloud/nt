@@ -18,6 +18,7 @@ import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll
 import { RegularizationApprovals, HolidayManager, OffboardStaff, DanglingCheckins, OverdueTickets } from './lifecycle';
 import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
 import { SecurityLogsViewer, TodayAtAGlance, SetupChecklist, QuickSearch, ExportStaffButton } from './admin-extras';
+import SessionDevices from '../SessionDevices';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
 import { KiteTailLogo } from '../KiteTailLogo';
@@ -1583,7 +1584,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
 }
 
 type Tab = 'overview' | 'tasks' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content' | 'security'
-  | 'my_attendance' | 'my_documents' | 'my_requests' | 'my_profile' | 'my_swap';
+  | 'my_attendance' | 'my_documents' | 'my_requests' | 'my_profile' | 'my_swap' | 'my_sessions';
 
 export default function SuperAdminDashboard() {
   const { user, signOut, hasPermission } = useAuth();
@@ -1618,6 +1619,7 @@ export default function SuperAdminDashboard() {
     { id: 'careers', label: 'Careers / Hiring', icon: Briefcase, show: isSuperAdmin || hasPermission('view_careers') || hasPermission('manage_careers') },
     { id: 'media', label: 'Gallery / Team / Reviews', icon: ImageIcon, show: isSuperAdmin || hasPermission('manage_content') },
     { id: 'content', label: 'Website Content', icon: FileText, show: isSuperAdmin || hasPermission('manage_content') },
+    { id: 'my_sessions', label: 'My Sessions', icon: Shield, show: true },
     { id: 'security', label: 'Security Logs', icon: Shield, show: isSuperAdmin },
   ];
   const visibleAdminTabs = adminTabDefs.filter(t => t.show);
@@ -1691,6 +1693,7 @@ export default function SuperAdminDashboard() {
         {tab === 'media' && <SiteMediaManager segments={segments} />}
         {tab === 'content' && <ContentManager />}
         {tab === 'security' && <SecurityLogsViewer />}
+        {tab === 'my_sessions' && <SessionDevices />}
       </main>
     </div>
   );

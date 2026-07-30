@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { logLogin, logLoginFailed, logLogout } from '../lib/securityLogger';
+import { beginSession, heartbeatSession, endSession, SESSION_HEARTBEAT_MS, getCurrentSessionRowId } from '../lib/sessionTracker';
 
 export type UserRole =
   | 'super_admin' | 'manager' | 'hr' | 'marketing_executive'
@@ -161,6 +162,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Heartbeat: while a user is signed in, keep our `user_sessions` row alive
+  // and force sign-out if it was revoked from another device.
+  useEffect(() => {
+    if (!user) return;
+    let stopped = false;
+    let handle: number | undefined;
+
+    async function tick() {
+      if (stopped) return;
+      // If we somehow don't have a row yet (e.g., session restored from an
+      // older tab that predates this feature), create one now so the user
+      // still shows up in the devices list.
+      if (!getCurrentSessionRowId()) {
+        await beginSession(user!.id);
+      } else {
+        const { revoked } = await heartbeatSession();
+        if (revoked && !stopped) {
+          await signOut();
+          return;
+        }
+      }
+      handle = window.setTimeout(tick, SESSION_HEARTBEAT_MS);
+    }
+
+    // Run the first tick after a short delay so we don't hammer Supabase on load.
+    handle = window.setTimeout(tick, 3000);
+    return () => {
+      stopped = true;
+      if (handle !== undefined) window.clearTimeout(handle);
+    };
+    // Intentionally omit signOut — it's stable and referencing it here would
+    // re-arm the timer on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   const hasPermission = (perm: string) =>
     !!user && (user.role === 'super_admin' || permissions[perm] === true || permissions['all'] === true);
 
@@ -208,6 +244,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearLocalSession();
         return { error: 'Your account is not active. Please contact your administrator.' };
       }
+      // Register this browser as a device on the user's account so they can
+      // see and revoke it from the Session Devices panel.
+      await beginSession(data.user.id);
       return { error: null };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Sign-in failed. Please try again.';
@@ -218,6 +257,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     try {
       if (user) logLogout(user.email);
+      // Mark our device row as revoked before dropping the auth session.
+      await endSession();
       await supabase.auth.signOut().catch(() => {});
     } finally {
       clearLocalSession();

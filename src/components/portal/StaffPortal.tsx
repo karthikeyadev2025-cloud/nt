@@ -15,6 +15,7 @@ import { MyPerformanceChart } from './performance';
 import { MyPayslips } from './payroll';
 import CameraCapture from '../CameraCapture';
 import { KiteTailLogo } from '../KiteTailLogo';
+import SessionDevices from '../SessionDevices';
 
 // ─────────────────────────── Self-service: attendance
 // ─────────────────────────── Role-aware Home
@@ -498,15 +499,18 @@ export function MyDocuments() {
 // ─────────────────────────── My Profile: ID card + bank details
 export function MyProfile() {
   return (
-    <div className="grid md:grid-cols-2 gap-6">
-      <div className="space-y-6">
-        <IDCard />
-        <MyPhotoRequest />
+    <div className="space-y-6">
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <IDCard />
+          <MyPhotoRequest />
+        </div>
+        <div className="space-y-6">
+          <MyBankDetails />
+          <MyPromotionHistory />
+        </div>
       </div>
-      <div className="space-y-6">
-        <MyBankDetails />
-        <MyPromotionHistory />
-      </div>
+      <SessionDevices />
     </div>
   );
 }
