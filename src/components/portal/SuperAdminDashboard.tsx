@@ -1647,7 +1647,7 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto">
-          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 uppercase">MY WORKSPACE</p>
+          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 uppercase">EXECUTIVE OVERVIEW</p>
           <div className="space-y-1 mb-5">
             {selfServiceTabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
@@ -1656,7 +1656,7 @@ export default function SuperAdminDashboard() {
               </button>
             ))}
           </div>
-          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 border-t border-slate-200 pt-4 uppercase">ADMINISTRATION</p>
+          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-500 border-t border-slate-200 pt-4 uppercase">COMPANY MANAGEMENT</p>
           <div className="space-y-1">
             {visibleAdminTabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
@@ -1673,16 +1673,16 @@ export default function SuperAdminDashboard() {
 
       <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="md:hidden mb-4">
-          <div className="flex gap-1 bg-slate-900 rounded-lg p-1 mb-3 w-fit">
+          <div className="flex gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 mb-3 w-fit">
             <button onClick={() => setMobileGroup('me')}
-              className={`px-4 py-1.5 rounded-md text-xs font-medium ${mobileGroup === 'me' ? 'bg-sky-500/20 text-sky-300' : 'text-slate-400'}`}>Me</button>
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileGroup === 'me' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}>Overview</button>
             <button onClick={() => setMobileGroup('admin')}
-              className={`px-4 py-1.5 rounded-md text-xs font-medium ${mobileGroup === 'admin' ? 'bg-sky-500/20 text-sky-300' : 'text-slate-400'}`}>Admin</button>
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobileGroup === 'admin' ? 'bg-blue-700 text-white shadow-sm' : 'text-slate-600'}`}>Management</button>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
             {mobileTabs.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs border ${tab === t.id ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>
+                className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${tab === t.id ? 'bg-blue-700 text-white border-blue-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700'}`}>
                 {t.label}
               </button>
             ))}

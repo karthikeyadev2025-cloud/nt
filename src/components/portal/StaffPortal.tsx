@@ -620,10 +620,10 @@ export default function StaffPortal() {
         </header>
 
         {/* Mobile Horizontal Tabs */}
-        <div className="md:hidden px-4 py-2.5 flex gap-2 overflow-x-auto border-b border-slate-900 bg-slate-950">
+        <div className="md:hidden px-4 py-2.5 flex gap-2 overflow-x-auto border-b border-slate-200 bg-white">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${tab === t.id ? 'border-sky-500 text-sky-300 bg-sky-500/10' : 'border-slate-800 text-slate-400'}`}>
+              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${tab === t.id ? 'border-blue-600 text-white bg-blue-700 shadow-sm' : 'border-slate-200 text-slate-700 bg-slate-50'}`}>
               <t.icon className="w-3.5 h-3.5" /> {t.label}
             </button>
           ))}
