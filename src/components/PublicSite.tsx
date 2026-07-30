@@ -68,17 +68,17 @@ function AnimatedStats({ content }: { content: Record<string, Record<string, str
     { label: 'Years in Business', value: content?.stats?.years_in_business || '2+' },
     { label: 'Happy Clients', value: content?.stats?.clients_served || '50+' },
     { label: 'Projects Completed', value: content?.stats?.projects_completed || '100+' },
-    { label: 'Divisions', value: '3' },
+    { label: 'Divisions', value: '2' },
   ];
   return (
-    <section className="py-14 px-4 border-y border-slate-900">
+    <section className="py-14 px-4 border-y border-slate-200 bg-white">
       <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
         {stats.map(s => (
           <div key={s.label} className="text-center">
-            <p className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent">
+            <p className="text-4xl md:text-5xl font-extrabold text-blue-700">
               <AnimatedNumber value={s.value} />
             </p>
-            <p className="text-slate-500 text-sm mt-2">{s.label}</p>
+            <p className="text-slate-600 text-sm font-semibold mt-2">{s.label}</p>
           </div>
         ))}
       </div>
@@ -344,28 +344,28 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
   }, []);
 
   return (
-    <section id="segments" className="py-20 px-4">
+    <section id="segments" className="py-20 px-4 bg-slate-50">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-3">What We Do</h2>
-        <p className="text-center text-slate-400 mb-16 max-w-2xl mx-auto">Three specialized divisions. One trusted company.</p>
+        <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">What We Do</h2>
+        <p className="text-center text-slate-600 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
         <div id="services" className="space-y-16">
           {segments.map(seg => (
             <div key={seg.slug} id={`seg-${seg.slug}`} className="scroll-mt-24">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: seg.color + '22', color: seg.color }}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xs" style={{ backgroundColor: seg.color + '15', color: seg.color }}>
                   <Icon name={seg.icon} className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-white">{seg.name}</h3>
-                  <p className="text-slate-400 text-sm">{seg.tagline}</p>
+                  <h3 className="text-2xl font-bold text-slate-900">{seg.name}</h3>
+                  <p className="text-slate-600 text-sm font-medium">{seg.tagline}</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {services.filter(s => s.segment_slug === seg.slug).map(s => (
-                  <div key={s.id} className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-600 hover-lift transition-colors">
-                    <Icon name={s.icon} className="w-8 h-8 mb-4" />
-                    <h4 className="text-lg font-semibold text-white mb-2">{s.title}</h4>
-                    <p className="text-slate-400 text-sm leading-relaxed">{s.description}</p>
+                  <div key={s.id} className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md hover:shadow-lg hover:border-blue-300 transition-all">
+                    <Icon name={s.icon} className="w-8 h-8 mb-4 text-blue-700" />
+                    <h4 className="text-lg font-bold text-slate-900 mb-2">{s.title}</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed font-medium">{s.description}</p>
                   </div>
                 ))}
               </div>
@@ -387,41 +387,41 @@ function Products() {
   if (products.length === 0) return null;
 
   return (
-    <section id="products" className="py-20 px-4 bg-slate-900/40">
+    <section id="products" className="py-20 px-4 bg-slate-100/60 border-y border-slate-200">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-3">Our Products</h2>
-        <p className="text-center text-slate-400 mb-14 max-w-2xl mx-auto">Software built by Nikki Technologies, used by real businesses.</p>
+        <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">Our Products</h2>
+        <p className="text-center text-slate-600 mb-14 max-w-2xl mx-auto font-medium">Software built by Nikki Technologies, powering businesses.</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {products.map((p, i) => (
             <Reveal key={p.id} delay={i * 100}>
-            <div className="flex flex-col h-full p-7 rounded-2xl bg-slate-950 border border-slate-800 hover:border-sky-600 hover-lift transition-colors">
+            <div className="flex flex-col h-full p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all">
               <div className="flex items-center gap-3 mb-3">
                 {p.logo_url
-                  ? <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-cover" />
-                  : <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950 text-lg">{p.name[0]}</div>}
+                  ? <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-cover shadow-xs" />
+                  : <div className="w-11 h-11 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-lg shadow-md">{p.name[0]}</div>}
                 <div>
-                  <h3 className="text-xl font-bold text-white">{p.name}</h3>
-                  <p className="text-sky-400 text-xs font-medium">{p.tagline}</p>
+                  <h3 className="text-xl font-bold text-slate-900">{p.name}</h3>
+                  <p className="text-blue-700 text-xs font-semibold">{p.tagline}</p>
                 </div>
               </div>
-              <p className="text-slate-400 text-sm mb-5 leading-relaxed">{p.description}</p>
+              <p className="text-slate-600 text-sm mb-5 leading-relaxed font-medium">{p.description}</p>
               <div className="space-y-2.5 mb-6">
                 {(p.features || []).map((f, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-sky-500 mt-0.5 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-blue-700 mt-0.5 shrink-0" />
                     <div>
-                      <span className="text-white text-sm font-medium">{f.title}</span>
-                      <span className="text-slate-500 text-sm"> — {f.description}</span>
+                      <span className="text-slate-900 text-sm font-semibold">{f.title}</span>
+                      <span className="text-slate-600 text-sm font-medium"> — {f.description}</span>
                     </div>
                   </div>
                 ))}
               </div>
               <div className="mt-auto">
                 {p.status === 'coming_soon' ? (
-                  <span className="inline-block px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm font-semibold">Coming Soon</span>
+                  <span className="inline-block px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-xs font-semibold">Coming Soon</span>
                 ) : p.external_url ? (
                   <a href={p.external_url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold transition-colors">
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20">
                     {p.demo_cta || 'Visit Website'} <ExternalLink className="w-4 h-4" />
                   </a>
                 ) : null}
@@ -468,17 +468,17 @@ function TeamSection() {
   }, []);
   if (items.length === 0) return null;
   return (
-    <section className="py-20 px-4 bg-slate-900/40">
+    <section className="py-20 px-4 bg-slate-50">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold text-center text-white mb-12">Meet the Team</h2>
+        <h2 className="text-4xl font-bold text-center text-slate-900 mb-12 tracking-tight">Meet the Team</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {items.map(m => (
-            <div key={m.id} className="text-center">
-              <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-slate-800 flex items-center justify-center text-slate-500 font-bold text-2xl">
+            <div key={m.id} className="text-center p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
+              <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-2xl shadow-xs">
                 {m.photo_url ? <img src={m.photo_url} alt={m.name} className="w-full h-full object-cover" /> : m.name[0]}
               </div>
-              <p className="text-white font-semibold text-sm">{m.name}</p>
-              <p className="text-slate-500 text-xs">{m.designation}</p>
+              <p className="text-slate-900 font-bold text-sm">{m.name}</p>
+              <p className="text-slate-500 text-xs font-medium">{m.designation}</p>
             </div>
           ))}
         </div>
@@ -496,18 +496,18 @@ function Testimonials() {
   }, []);
   if (items.length === 0) return null;
   return (
-    <section id="testimonials" className="py-20 px-4">
+    <section id="testimonials" className="py-20 px-4 bg-slate-100/60 border-y border-slate-200">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold text-center text-white mb-14">What Clients Say</h2>
+        <h2 className="text-4xl font-extrabold text-center text-slate-900 mb-14 tracking-tight">What Clients Say</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {items.map((t, i) => (
             <Reveal key={t.id} delay={i * 100}>
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover-lift">
+            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-md">
               <div className="flex gap-1 mb-3">
                 {Array.from({ length: t.rating }).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
               </div>
-              <p className="text-slate-300 text-sm mb-4 leading-relaxed">"{t.content}"</p>
-              <p className="text-white font-semibold text-sm">{t.customer_name}</p>
+              <p className="text-slate-700 text-sm mb-4 leading-relaxed font-medium">"{t.content}"</p>
+              <p className="text-slate-900 font-bold text-sm">{t.customer_name}</p>
             </div>
             </Reveal>
           ))}
@@ -531,7 +531,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
-  const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400';
 
   async function submit() {
     setError('');
@@ -572,21 +572,21 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-5">
           <div>
-            <h3 className="text-white text-lg font-semibold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
+            <h3 className="text-slate-900 text-lg font-bold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
             {job && <p className="text-slate-500 text-xs mt-0.5">{job.location} • {job.employment_type.replace('_', ' ')}</p>}
           </div>
-          <button className="text-slate-400 hover:text-white" onClick={onClose}>✕</button>
+          <button className="text-slate-400 hover:text-slate-700" onClick={onClose}>✕</button>
         </div>
 
         {done ? (
           <div className="text-center py-10">
-            <CheckCircle2 className="w-12 h-12 text-sky-400 mx-auto mb-3" />
-            <p className="text-white font-semibold mb-1">Application submitted!</p>
-            <p className="text-slate-400 text-sm">We'll review your profile and get back to you.</p>
+            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
+            <p className="text-slate-900 font-bold mb-1">Application submitted!</p>
+            <p className="text-slate-600 text-sm">We'll review your profile and get back to you.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -608,7 +608,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
 
             {(job?.questions || []).map((q, i) => (
               <div key={i}>
-                <label className="text-slate-400 text-xs">{q}</label>
+                <label className="text-slate-700 text-xs font-medium">{q}</label>
                 <textarea className={inputCls + ' mt-1'} rows={2} value={answers[i] || ''}
                   onChange={e => setAnswers(prev => { const next = [...prev]; next[i] = e.target.value; return next; })} />
               </div>
@@ -617,19 +617,19 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
             <textarea className={inputCls} rows={2} placeholder="Anything else you'd like to share" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
 
             <div>
-              <label className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5" /> Passport size photo</label>
-              <input type="file" accept="image/*" className="text-slate-300 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-300 file:text-xs"
+              <label className="text-slate-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5 text-blue-700" /> Passport size photo</label>
+              <input type="file" accept="image/*" className="text-slate-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-100 file:text-slate-700 file:text-xs font-medium"
                 onChange={e => setPhoto(e.target.files?.[0] || null)} />
             </div>
             <div>
-              <label className="text-slate-400 text-xs flex items-center gap-1.5 mb-1"><Upload className="w-3.5 h-3.5" /> Resume (PDF/DOC) *</label>
-              <input type="file" accept=".pdf,.doc,.docx" className="text-slate-300 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-300 file:text-xs"
+              <label className="text-slate-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><Upload className="w-3.5 h-3.5 text-blue-700" /> Resume (PDF/DOC) *</label>
+              <input type="file" accept=".pdf,.doc,.docx" className="text-slate-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-100 file:text-slate-700 file:text-xs font-medium"
                 onChange={e => setResume(e.target.files?.[0] || null)} />
             </div>
 
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+            {error && <p className="text-red-600 text-xs font-medium">{error}</p>}
             <button onClick={submit} disabled={busy}
-              className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold transition-colors">
+              className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-blue-700/20">
               {busy ? 'Submitting…' : 'Submit Application'}
             </button>
           </div>
@@ -649,34 +649,34 @@ function Careers({ segments }: { segments: Segment[] }) {
   }, []);
 
   return (
-    <section id="careers" className="py-20 px-4 bg-slate-900/40">
+    <section id="careers" className="py-20 px-4 bg-slate-50">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-14">
-          <Briefcase className="w-10 h-10 text-sky-400 mx-auto mb-3" />
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-3">Careers at Nikki Technologies</h2>
-          <p className="text-slate-400 max-w-2xl mx-auto">
+          <Briefcase className="w-10 h-10 text-blue-700 mx-auto mb-3" />
+          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 tracking-tight">Careers at Nikki Technologies</h2>
+          <p className="text-slate-600 max-w-2xl mx-auto font-medium">
             {`We're hiring across ${segments.map(s => s.name).join(', ') || 'our divisions'}. Don't see a role that fits? Send us a general application.`}
           </p>
         </div>
 
         {jobs.length === 0 && (
-          <p className="text-slate-500 text-center mb-10">No open positions right now — check back soon, or apply generally below.</p>
+          <p className="text-slate-500 text-center mb-10 font-medium">No open positions right now — check back soon, or apply generally below.</p>
         )}
 
         <div className="space-y-3 mb-10">
           {jobs.map(job => {
             const seg = segments.find(s => s.slug === job.segment_slug);
             return (
-              <div key={job.id} className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-sky-600 transition-colors">
+              <div key={job.id} className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-white border border-slate-200 shadow-md hover:border-blue-500 transition-all">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-white font-semibold">{job.title}</h3>
-                    {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
+                    <h3 className="text-slate-900 font-bold">{job.title}</h3>
+                    {seg && <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: seg.color + '15', color: seg.color }}>{seg.name}</span>}
                   </div>
-                  <p className="text-slate-500 text-sm">{job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}</p>
+                  <p className="text-slate-500 text-sm font-medium">{job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}</p>
                 </div>
                 <button onClick={() => setApplyJob(job)}
-                  className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold transition-colors shrink-0">
+                  className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20 shrink-0">
                   Apply Now
                 </button>
               </div>
@@ -685,7 +685,7 @@ function Careers({ segments }: { segments: Segment[] }) {
         </div>
 
         <div className="text-center">
-          <button onClick={() => setApplyJob('general')} className="text-sky-400 text-sm font-medium underline">
+          <button onClick={() => setApplyJob('general')} className="text-blue-700 text-sm font-semibold underline hover:text-blue-800">
             Don't see your role? Submit a general application
           </button>
         </div>
@@ -699,13 +699,12 @@ function Careers({ segments }: { segments: Segment[] }) {
 }
 
 // ─────────────────────────────────────────────── Raise Ticket
-// ─────────────────────────────────────────────── Track Ticket
 function TrackTicket({ onBack }: { onBack: () => void }) {
   const [ticketNo, setTicketNo] = useState('');
   const [phone, setPhone] = useState('');
   const [result, setResult] = useState<any | null | 'not_found'>(null);
   const [busy, setBusy] = useState(false);
-  const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400';
 
   async function lookup() {
     if (!ticketNo || !phone) return;
@@ -716,45 +715,44 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
   }
 
   const statusColor: Record<string, string> = {
-    open: 'text-sky-400', in_progress: 'text-amber-400', waiting_customer: 'text-purple-400',
-    resolved: 'text-emerald-400', closed: 'text-slate-400',
+    open: 'text-blue-700', in_progress: 'text-amber-600', waiting_customer: 'text-purple-600',
+    resolved: 'text-emerald-600', closed: 'text-slate-500',
   };
 
   return (
-    <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800">
-      <button onClick={onBack} className="text-slate-500 text-xs mb-4">← Back to raise a ticket</button>
+    <div className="p-8 rounded-2xl bg-white border border-slate-200 shadow-xl">
+      <button onClick={onBack} className="text-slate-500 hover:text-slate-800 text-xs mb-4 font-semibold">← Back to raise a ticket</button>
       {!result ? (
         <div className="space-y-3">
           <input className={inputCls} placeholder="Ticket Number (e.g. NKT-CC-00001)" value={ticketNo} onChange={e => setTicketNo(e.target.value)} />
           <input className={inputCls} placeholder="Phone number used when raising it" value={phone} onChange={e => setPhone(e.target.value)} />
           <button onClick={lookup} disabled={busy || !ticketNo || !phone}
-            className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold transition-colors">
+            className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-blue-700/20">
             {busy ? 'Looking up…' : 'Check Status'}
           </button>
         </div>
       ) : result === 'not_found' ? (
         <div className="text-center py-6">
-          <p className="text-slate-300 text-sm mb-3">No ticket found matching that number and phone.</p>
-          <button onClick={() => setResult(null)} className="text-sky-400 text-sm">Try again</button>
+          <p className="text-slate-700 text-sm mb-3 font-medium">No ticket found matching that number and phone.</p>
+          <button onClick={() => setResult(null)} className="text-blue-700 text-sm font-semibold">Try again</button>
         </div>
       ) : (
         <div>
-          <p className="font-mono text-sky-400 text-sm mb-1">{result.ticket_no}</p>
-          <p className="text-white font-semibold mb-3">{result.subject}</p>
-          <div className="space-y-1.5 text-sm">
-            <p><span className="text-slate-500">Status: </span><span className={statusColor[result.status]}>{result.status.replace('_', ' ')}</span></p>
-            <p><span className="text-slate-500">Priority: </span><span className="text-slate-300">{result.priority}</span></p>
-            <p><span className="text-slate-500">Raised: </span><span className="text-slate-300">{new Date(result.created_at).toLocaleDateString()}</span></p>
-            {result.resolved_at && <p><span className="text-slate-500">Resolved: </span><span className="text-slate-300">{new Date(result.resolved_at).toLocaleDateString()}</span></p>}
+          <p className="font-mono text-blue-700 text-sm mb-1 font-bold">{result.ticket_no}</p>
+          <p className="text-slate-900 font-bold mb-3">{result.subject}</p>
+          <div className="space-y-1.5 text-sm font-medium">
+            <p><span className="text-slate-500">Status: </span><span className={`font-bold ${statusColor[result.status]}`}>{result.status.replace('_', ' ')}</span></p>
+            <p><span className="text-slate-500">Priority: </span><span className="text-slate-800">{result.priority}</span></p>
+            <p><span className="text-slate-500">Raised: </span><span className="text-slate-800">{new Date(result.created_at).toLocaleDateString()}</span></p>
+            {result.resolved_at && <p><span className="text-slate-500">Resolved: </span><span className="text-slate-800">{new Date(result.resolved_at).toLocaleDateString()}</span></p>}
           </div>
-          <button onClick={() => setResult(null)} className="text-sky-400 text-sm mt-4">Check another ticket</button>
+          <button onClick={() => setResult(null)} className="text-blue-700 text-sm font-semibold mt-4">Check another ticket</button>
         </div>
       )}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────── Raise Ticket
 function RaiseTicket({ segments }: { segments: Segment[] }) {
   const [mode, setMode] = useState<'raise' | 'track'>('raise');
   const [form, setForm] = useState({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
@@ -787,30 +785,30 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
     setForm({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
   }
 
-  const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400';
 
   return (
-    <section id="raise-ticket" className="py-20 px-4 bg-slate-900/40">
+    <section id="raise-ticket" className="py-20 px-4 bg-slate-100/60 border-y border-slate-200">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
-          <Ticket className="w-10 h-10 text-sky-400 mx-auto mb-3" />
-          <h2 className="text-4xl font-bold text-white mb-2">Raise a Support Ticket</h2>
-          <p className="text-slate-400">{`Existing customer? Get help from the right team — ${segments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
-          <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-sky-400 text-sm mt-2 underline">
+          <Ticket className="w-10 h-10 text-blue-700 mx-auto mb-3" />
+          <h2 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">Raise a Support Ticket</h2>
+          <p className="text-slate-600 font-medium">{`Existing customer? Get help from the right team — ${segments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
+          <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-blue-700 text-sm mt-2 font-semibold underline">
             {mode === 'raise' ? 'Already raised a ticket? Track its status' : 'Raise a new ticket instead'}
           </button>
         </div>
         {mode === 'track' ? (
           <TrackTicket onBack={() => setMode('raise')} />
         ) : done ? (
-          <div className="p-8 rounded-2xl bg-slate-950 border border-sky-700 text-center">
-            <CheckCircle2 className="w-12 h-12 text-sky-400 mx-auto mb-3" />
-            <p className="text-white text-lg font-semibold mb-1">Ticket created: {done}</p>
-            <p className="text-slate-400 text-sm mb-4">Our team will contact you shortly. Save your ticket number.</p>
-            <button onClick={() => setDone(null)} className="text-sky-400 text-sm font-medium">Raise another ticket</button>
+          <div className="p-8 rounded-2xl bg-white border border-blue-200 text-center shadow-xl">
+            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
+            <p className="text-slate-900 text-lg font-bold mb-1">Ticket created: {done}</p>
+            <p className="text-slate-600 text-sm mb-4">Our team will contact you shortly. Save your ticket number.</p>
+            <button onClick={() => setDone(null)} className="text-blue-700 text-sm font-semibold">Raise another ticket</button>
           </div>
         ) : (
-          <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+          <div className="p-8 rounded-2xl bg-white border border-slate-200 shadow-xl space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <select className={inputCls} value={form.segment_slug}
                 onChange={e => setForm({ ...form, segment_slug: e.target.value, ticket_type: '' })}>
@@ -830,9 +828,9 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
               <input className={inputCls} placeholder="Phone *" value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} />
               <input className={inputCls} placeholder="Email" value={form.customer_email} onChange={e => setForm({ ...form, customer_email: e.target.value })} />
             </div>
-            {err && <p className="text-red-400 text-sm">{err}</p>}
+            {err && <p className="text-red-600 text-sm font-medium">{err}</p>}
             <button onClick={submit} disabled={busy}
-              className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold flex items-center justify-center gap-2 transition-colors">
+              className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-700/20">
               <Send className="w-4 h-4" /> {busy ? 'Submitting…' : 'Submit Ticket'}
             </button>
           </div>
@@ -849,7 +847,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const c = content?.contact || {};
-  const inputCls = 'w-full px-4 py-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-sm focus:border-sky-500 focus:outline-none';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-400';
 
   async function submit() {
     if (!form.segment_slug || !form.customer_name || !form.phone) {
@@ -865,27 +863,27 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
   }
 
   return (
-    <section id="contact" className="py-20 px-4">
+    <section id="contact" className="py-20 px-4 bg-slate-50">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
         <div>
-          <h2 className="text-4xl font-bold text-white mb-6">Get In Touch</h2>
-          <div className="space-y-4 text-slate-300">
-            {hasRealPhone(c.phone) && <p className="flex items-center gap-3"><Phone className="w-5 h-5 text-sky-400" /> {c.phone}</p>}
-            {c.email && <p className="flex items-center gap-3"><Mail className="w-5 h-5 text-sky-400" /> {c.email}</p>}
-            {c.address && <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-sky-400" /> {c.address}</p>}
+          <h2 className="text-4xl font-extrabold text-slate-900 mb-6 tracking-tight">Get In Touch</h2>
+          <div className="space-y-4 text-slate-700 font-medium">
+            {hasRealPhone(c.phone) && <p className="flex items-center gap-3"><Phone className="w-5 h-5 text-blue-700" /> {c.phone}</p>}
+            {c.email && <p className="flex items-center gap-3"><Mail className="w-5 h-5 text-blue-700" /> {c.email}</p>}
+            {c.address && <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-blue-700" /> {c.address}</p>}
             {!hasRealPhone(c.phone) && (
-              <p className="text-slate-500 text-sm pt-2">
+              <p className="text-slate-600 text-sm pt-2">
                 Prefer to raise a request directly? Use the form here or{' '}
-                <a href="#raise-ticket" className="text-sky-400 underline">open a support ticket</a> — we respond to every one.
+                <a href="#raise-ticket" className="text-blue-700 font-semibold underline">open a support ticket</a> — we respond to every one.
               </p>
             )}
           </div>
         </div>
-        <div className="p-7 rounded-2xl bg-slate-900/60 border border-slate-800">
+        <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-xl">
           {sent ? (
             <div className="text-center py-10">
-              <CheckCircle2 className="w-12 h-12 text-sky-400 mx-auto mb-3" />
-              <p className="text-white font-semibold">Thanks! Our team will call you soon.</p>
+              <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
+              <p className="text-slate-900 font-bold">Thanks! Our team will call you soon.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -897,9 +895,9 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
               <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
               <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
               <textarea className={inputCls} rows={2} placeholder="Tell us what you need" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
-              {err && <p className="text-red-400 text-sm">{err}</p>}
+              {err && <p className="text-red-600 text-sm font-medium">{err}</p>}
               <button onClick={submit} disabled={busy}
-                className="w-full py-3 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-semibold transition-colors">
+                className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-blue-700/20">
                 {busy ? 'Sending…' : 'Request Free Consultation'}
               </button>
             </div>
@@ -913,24 +911,24 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
 // ─────────────────────────────────────────────── Footer
 function Footer({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
   return (
-    <footer className="border-t border-slate-800 py-12 px-4">
+    <footer className="border-t border-slate-800 bg-slate-900 py-12 px-4 text-slate-300">
       <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8 text-sm">
         <div>
           <p className="text-white font-bold text-lg mb-2">Nikki Technologies</p>
-          <p className="text-slate-500">{content?.footer?.about || 'Digital marketing and software solutions under one roof.'}</p>
+          <p className="text-slate-400">{content?.footer?.about || 'Digital marketing and software solutions under one roof.'}</p>
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Divisions</p>
-          {segments.map(s => <a key={s.slug} href={`#seg-${s.slug}`} className="block text-slate-400 hover:text-sky-400 py-0.5">{s.name}</a>)}
+          {segments.map(s => <a key={s.slug} href={`#seg-${s.slug}`} className="block text-slate-400 hover:text-blue-400 py-0.5">{s.name}</a>)}
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Quick Links</p>
-          <a href="#products" className="block text-slate-400 hover:text-sky-400 py-0.5">Products</a>
-          <a href="#raise-ticket" className="block text-slate-400 hover:text-sky-400 py-0.5">Support</a>
-          <a href="/login" className="block text-slate-400 hover:text-sky-400 py-0.5">Staff Login</a>
+          <a href="#products" className="block text-slate-400 hover:text-blue-400 py-0.5">Products</a>
+          <a href="#raise-ticket" className="block text-slate-400 hover:text-blue-400 py-0.5">Support</a>
+          <a href="/login" className="block text-slate-400 hover:text-blue-400 py-0.5">Staff Login</a>
         </div>
       </div>
-      <p className="text-center text-slate-600 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies. All rights reserved.</p>
+      <p className="text-center text-slate-500 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies. All rights reserved.</p>
     </footer>
   );
 }
@@ -945,7 +943,7 @@ export default function PublicSite() {
   if (contentLoading || segLoading) return null;
 
   return (
-    <div className="bg-slate-950 min-h-screen">
+    <div className="bg-slate-50 min-h-screen text-slate-900">
       <SEOHead />
       <Navigation content={content} />
       <Hero content={content} segments={segments} />
