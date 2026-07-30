@@ -1004,12 +1004,11 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
 
 // ─────────────────────────────────────────────── Composition
 export default function PublicSite() {
-  const { content, loading: contentLoading } = useSiteContent();
-  const { segments, loading: segLoading } = useSegments();
+  const { content } = useSiteContent();
+  const { segments } = useSegments();
   const [showLoading, setShowLoading] = useState(true);
 
   if (showLoading) return <LoadingScreen onLoadingComplete={() => setShowLoading(false)} />;
-  if (contentLoading || segLoading) return null;
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900">

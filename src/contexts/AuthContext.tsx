@@ -38,14 +38,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 async function fetchAppUser(userId: string): Promise<AppUser | null> {
-  const { data } = await supabase.from('app_users').select('*').eq('id', userId).maybeSingle();
-  return (data as AppUser) ?? null;
+  try {
+    const { data } = await supabase.from('app_users').select('*').eq('id', userId).maybeSingle();
+    return (data as AppUser) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchRolePermissions(role: string): Promise<Record<string, boolean>> {
-  const { data } = await supabase
-    .from('role_permissions').select('permissions').eq('role_name', role).maybeSingle();
-  return (data?.permissions as Record<string, boolean>) ?? {};
+  try {
+    const { data } = await supabase
+      .from('role_permissions').select('permissions').eq('role_name', role).maybeSingle();
+    return (data?.permissions as Record<string, boolean>) ?? {};
+  } catch {
+    return {};
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -54,27 +62,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function loadUser(userId: string) {
-    const appUser = await fetchAppUser(userId);
-    if (!appUser || !appUser.is_active) {
-      await supabase.auth.signOut();
-      setUser(null); setPermissions({});
-      return;
+    try {
+      const appUser = await fetchAppUser(userId);
+      if (!appUser || !appUser.is_active) {
+        await supabase.auth.signOut().catch(() => {});
+        setUser(null);
+        setPermissions({});
+        return;
+      }
+      const rolePerms = await fetchRolePermissions(appUser.role);
+      setUser(appUser);
+      setPermissions({ ...rolePerms, ...(appUser.permission_overrides || {}) });
+    } catch {
+      setUser(null);
+      setPermissions({});
     }
-    const rolePerms = await fetchRolePermissions(appUser.role);
-    setUser(appUser);
-    setPermissions({ ...rolePerms, ...(appUser.permission_overrides || {}) });
   }
 
   useEffect(() => {
+    let mounted = true;
+
+    // Guaranteed max safety timeout: Never block app for more than 2.5 seconds
+    const safetyTimer = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 2500);
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) await loadUser(session.user.id);
+      if (!mounted) return;
+      if (session?.user) {
+        await loadUser(session.user.id);
+      } else {
+        setUser(null);
+        setPermissions({});
+      }
+    }).catch(() => {
+      if (mounted) {
+        setUser(null);
+        setPermissions({});
+      }
+    }).finally(() => {
+      if (mounted) {
+        clearTimeout(safetyTimer);
+        setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+      if (session?.user) {
+        await loadUser(session.user.id);
+      } else {
+        setUser(null);
+        setPermissions({});
+      }
       setLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) await loadUser(session.user.id);
-      else { setUser(null); setPermissions({}); }
-    });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      mounted = false;
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const hasPermission = (perm: string) =>
@@ -84,30 +132,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     !!user && (user.role === 'super_admin' || user.segments.includes('all') || user.segments.includes(slug));
 
   async function signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { logLoginFailed(email); return { error: error.message }; }
-    if (data.user) {
-      const appUser = await fetchAppUser(data.user.id);
-      if (!appUser || !appUser.is_active) {
-        logLoginFailed(email);
-        await supabase.auth.signOut();
-        return { error: 'Your account is disabled. Contact admin.' };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { logLoginFailed(email); return { error: error.message }; }
+      if (data.user) {
+        const appUser = await fetchAppUser(data.user.id);
+        if (!appUser || !appUser.is_active) {
+          logLoginFailed(email);
+          await supabase.auth.signOut().catch(() => {});
+          return { error: 'Your account is disabled. Contact admin.' };
+        }
+        logLogin(appUser.email);
+        await loadUser(data.user.id);
       }
-      logLogin(appUser.email);
-      await loadUser(data.user.id);
+      return { error: null };
+    } catch (e: any) {
+      return { error: e?.message || 'Login failed. Please try again.' };
     }
-    return { error: null };
   }
 
   async function signOut() {
-    if (user) logLogout(user.email);
-    await supabase.auth.signOut();
-    setUser(null); setPermissions({});
+    try {
+      if (user) logLogout(user.email);
+      await supabase.auth.signOut().catch(() => {});
+    } finally {
+      setUser(null);
+      setPermissions({});
+      // If currently on an admin/portal route or hash, navigate back to home
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/admin' || path === '/portal' || hash === '#admin' || hash === '#portal') {
+        window.location.hash = '';
+        window.location.pathname = '/';
+      }
+    }
   }
 
   async function refreshUser() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) await loadUser(session.user.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) await loadUser(session.user.id);
+    } catch {
+      // Ignore refresh errors
+    }
   }
 
   return (

@@ -27,8 +27,10 @@ function PageLoader() {
 function AppContent() {
   const { user, loading, hasPermission } = useAuth();
   const [isLoginRoute, setIsLoginRoute] = useState(false);
+  const [forceReady, setForceReady] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setForceReady(true), 2000);
     const checkRoute = () => {
       const path = window.location.pathname;
       const hash = window.location.hash;
@@ -42,12 +44,13 @@ function AppContent() {
     window.addEventListener('popstate', checkRoute);
     window.addEventListener('hashchange', checkRoute);
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('popstate', checkRoute);
       window.removeEventListener('hashchange', checkRoute);
     };
   }, []);
 
-  if (loading) return <PageLoader />;
+  if (loading && !forceReady) return <PageLoader />;
 
   if (isLoginRoute) {
     if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
