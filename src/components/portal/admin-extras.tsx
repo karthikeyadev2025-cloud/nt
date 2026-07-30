@@ -5,7 +5,7 @@ import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import type { Segment } from '../../lib/database.types';
 
-// ─────────────────────────── Security Audit Log viewer (super_admin only — table exists, had zero UI)
+// ─────────────────────────── Security Audit Log viewer (super_admin only)
 export function SecurityLogsViewer() {
   const [logs, setLogs] = useState<any[]>([]);
   const [filter, setFilter] = useState('');
@@ -20,7 +20,7 @@ export function SecurityLogsViewer() {
   }, []);
 
   const eventColor: Record<string, string> = {
-    login_success: 'text-emerald-400', login_failed: 'text-red-400', logout: 'text-slate-400',
+    login_success: 'text-emerald-600 font-semibold', login_failed: 'text-red-600 font-semibold', logout: 'text-slate-600 font-semibold',
   };
 
   const filtered = filter ? logs.filter(l => l.event_type === filter) : logs;
@@ -29,27 +29,27 @@ export function SecurityLogsViewer() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
-        <Shield className="w-4 h-4 text-sky-400" />
-        <p className="text-slate-400 text-sm">Login/logout history and security events, most recent first.</p>
+        <Shield className="w-4 h-4 text-blue-600" />
+        <p className="text-slate-700 text-sm font-semibold">Login/logout history and security events, most recent first.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={() => setFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${filter === '' ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>All ({logs.length})</button>
+        <button onClick={() => setFilter('')} className={`px-3 py-1 rounded-lg text-xs font-semibold border ${filter === '' ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-slate-300 bg-white text-slate-700'}`}>All ({logs.length})</button>
         {eventTypes.map(e => (
-          <button key={e} onClick={() => setFilter(e)} className={`px-3 py-1 rounded-lg text-xs border capitalize ${filter === e ? 'border-sky-500 text-sky-300' : 'border-slate-700 text-slate-400'}`}>{e.replace(/_/g, ' ')}</button>
+          <button key={e} onClick={() => setFilter(e)} className={`px-3 py-1 rounded-lg text-xs font-semibold border capitalize ${filter === e ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-slate-300 bg-white text-slate-700'}`}>{e.replace(/_/g, ' ')}</button>
         ))}
       </div>
-      {loading ? <p className="text-slate-500 text-sm text-center py-10">Loading…</p> : (
+      {loading ? <p className="text-slate-600 text-sm font-semibold text-center py-10">Loading…</p> : (
         <div className="space-y-1.5">
           {filtered.map(l => (
             <div key={l.id} className={cardCls + ' flex items-center justify-between py-3'}>
               <div>
-                <p className="text-white text-sm">{l.user_email || 'Unknown'}</p>
-                <p className="text-slate-600 text-xs">{new Date(l.created_at).toLocaleString()}</p>
+                <p className="text-slate-900 text-sm font-bold">{l.user_email || 'Unknown'}</p>
+                <p className="text-slate-500 text-xs font-medium">{new Date(l.created_at).toLocaleString()}</p>
               </div>
-              <span className={`text-xs capitalize ${eventColor[l.event_type] || 'text-slate-400'}`}>{l.event_type.replace(/_/g, ' ')}</span>
+              <span className={`text-xs capitalize ${eventColor[l.event_type] || 'text-slate-600'}`}>{l.event_type.replace(/_/g, ' ')}</span>
             </div>
           ))}
-          {filtered.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No events recorded yet.</p>}
+          {filtered.length === 0 && <p className="text-slate-600 text-sm text-center py-10 font-semibold">No events recorded yet.</p>}
         </div>
       )}
     </div>
@@ -83,19 +83,19 @@ export function TodayAtAGlance() {
 
   if (!stats) return null;
   const cards = [
-    { label: 'Checked in today', value: stats.checkedIn, color: 'text-emerald-400' },
-    { label: 'New leads today', value: stats.newLeads, color: 'text-sky-400' },
-    { label: 'Open tickets', value: stats.openTickets, color: 'text-amber-400' },
-    { label: 'Pending approvals', value: stats.pendingApprovals, color: 'text-purple-400' },
+    { label: 'Checked in today', value: stats.checkedIn, color: 'text-emerald-600' },
+    { label: 'New leads today', value: stats.newLeads, color: 'text-blue-600' },
+    { label: 'Open tickets', value: stats.openTickets, color: 'text-amber-600' },
+    { label: 'Pending approvals', value: stats.pendingApprovals, color: 'text-purple-600' },
   ];
   return (
     <div className={cardCls}>
-      <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2"><Sparkles className="w-4 h-4 text-sky-400" /> Today at a Glance</h3>
+      <h3 className="text-slate-900 font-bold text-sm mb-4 flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-600" /> Today at a Glance</h3>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {cards.map(c => (
           <div key={c.label} className="text-center">
-            <p className={`text-3xl font-bold ${c.color}`}>{c.value}</p>
-            <p className="text-slate-500 text-xs mt-1">{c.label}</p>
+            <p className={`text-3xl font-black ${c.color}`}>{c.value}</p>
+            <p className="text-slate-800 text-xs font-semibold mt-1">{c.label}</p>
           </div>
         ))}
       </div>
@@ -134,17 +134,17 @@ export function SetupChecklist({ segments }: { segments: Segment[] }) {
   if (remaining.length === 0) return null;
 
   return (
-    <div className={cardCls + ' border-sky-700/40'}>
+    <div className={cardCls + ' border-blue-200 bg-white'}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-white font-semibold text-sm">Getting Set Up ({checks.length - remaining.length}/{checks.length})</h3>
-        <button onClick={() => setDismissed(true)} className="text-slate-500 hover:text-white"><X className="w-4 h-4" /></button>
+        <h3 className="text-slate-900 font-bold text-sm">Getting Set Up ({checks.length - remaining.length}/{checks.length})</h3>
+        <button onClick={() => setDismissed(true)} className="text-slate-400 hover:text-slate-700 p-1"><X className="w-4 h-4" /></button>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {checks.map(c => (
-          <div key={c.label} className="flex items-center gap-2 text-sm">
-            {c.done ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-slate-600 shrink-0" />}
-            <span className={c.done ? 'text-slate-500 line-through' : 'text-slate-300'}>{c.label}</span>
-            {!c.done && <span className="text-slate-600 text-xs ml-auto">{c.hint}</span>}
+          <div key={c.label} className="flex items-center gap-2.5 text-sm">
+            {c.done ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <Circle className="w-4 h-4 text-slate-400 shrink-0" />}
+            <span className={c.done ? 'text-slate-400 line-through font-medium' : 'text-slate-900 font-bold'}>{c.label}</span>
+            {!c.done && <span className="text-slate-700 text-xs font-semibold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md ml-auto">{c.hint}</span>}
           </div>
         ))}
       </div>
@@ -152,138 +152,105 @@ export function SetupChecklist({ segments }: { segments: Segment[] }) {
   );
 }
 
-// Escapes characters that have special meaning inside a PostgREST .or() filter
-// (commas separate conditions; parentheses group them) so a search for a name
-// with a comma or bracket doesn't break the query.
-function escapeOr(q: string): string {
-  return q.replace(/([,()\\])/g, '\\$1');
-}
-
-// ─────────────────────────── Global Quick Search (header) — staff, leads, tickets by name/phone
-export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: { kind: 'staff' | 'lead' | 'ticket'; id: string }) => void }) {
+// ─────────────────────────── Quick Search for admin header
+export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, id: string) => void }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<{ id: string; title: string; subtitle: string; tab: string }[]>([]);
   const [open, setOpen] = useState(false);
-  const [q, setQ] = useState('');
-  const [results, setResults] = useState<{ staff: any[]; leads: any[]; tickets: any[] }>({ staff: [], leads: [], tickets: [] });
-  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    if (q.trim().length < 2) { setResults({ staff: [], leads: [], tickets: [] }); return; }
-    setSearching(true);
+    if (query.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+    const q = query.toLowerCase();
     const t = setTimeout(async () => {
-      const s = escapeOr(q.trim());
       const [{ data: staff }, { data: leads }, { data: tickets }] = await Promise.all([
-        supabase.from('app_users').select('id, full_name, email, phone, role').neq('role', 'super_admin').or(`full_name.ilike.%${s}%,phone.ilike.%${s}%,email.ilike.%${s}%`).limit(5),
-        supabase.from('marketing_leads').select('id, customer_name, phone, stage').or(`customer_name.ilike.%${s}%,phone.ilike.%${s}%`).limit(5),
-        supabase.from('support_tickets').select('id, ticket_no, subject, customer_name').or(`subject.ilike.%${s}%,customer_name.ilike.%${s}%,ticket_no.ilike.%${s}%`).limit(5),
+        supabase.from('app_users').select('id, full_name, email, role').or(`full_name.ilike.%${q}%,email.ilike.%${q}%`).limit(5),
+        supabase.from('marketing_leads').select('id, customer_name, phone, segment_slug').or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5),
+        supabase.from('support_tickets').select('id, ticket_number, subject').or(`ticket_number.ilike.%${q}%,subject.ilike.%${q}%`).limit(5),
       ]);
-      setResults({ staff: staff || [], leads: leads || [], tickets: tickets || [] });
-      setSearching(false);
-    }, 300);
+      const res: any[] = [];
+      (staff || []).forEach(s => res.push({ id: s.id, title: s.full_name, subtitle: `${s.role} • ${s.email}`, tab: 'access' }));
+      (leads || []).forEach(l => res.push({ id: l.id, title: l.customer_name, subtitle: `Lead • ${l.phone}`, tab: 'crm' }));
+      (tickets || []).forEach(tk => res.push({ id: tk.id, title: tk.ticket_number, subtitle: tk.subject, tab: 'tickets' }));
+      setResults(res);
+      setOpen(true);
+    }, 200);
     return () => clearTimeout(t);
-  }, [q]);
-
-  const totalResults = results.staff.length + results.leads.length + results.tickets.length;
+  }, [query]);
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen(true)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-800 text-slate-500 text-sm hover:border-slate-600 hover:text-slate-300 transition-colors">
-        <Search className="w-4 h-4" /> <span className="hidden sm:inline">Search staff, leads, tickets…</span>
-      </button>
-      {open && (
-        <div className="fixed inset-0 z-[70] bg-slate-900/50 backdrop-blur-sm flex items-start justify-center pt-24 px-4" onClick={() => setOpen(false)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[70vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 p-4 border-b border-slate-200">
-              <Search className="w-4 h-4 text-slate-400" />
-              <input autoFocus className="flex-1 bg-transparent text-slate-900 text-sm focus:outline-none placeholder-slate-400 font-medium" placeholder="Search by name, phone, email, ticket number…" value={q} onChange={e => setQ(e.target.value)} />
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="p-2">
-              {searching && <p className="text-slate-500 text-sm text-center py-6 font-medium">Searching…</p>}
-              {!searching && q.trim().length >= 2 && totalResults === 0 && <p className="text-slate-500 text-sm text-center py-6 font-medium">No results found.</p>}
-
-              {results.staff.length > 0 && (
-                <div className="mb-2">
-                  <p className="text-slate-500 text-[11px] font-bold px-2 py-1 uppercase tracking-wider">STAFF</p>
-                  {results.staff.map(s => (
-                    <button key={s.id} onClick={() => { onNavigate('access', { kind: 'staff', id: s.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm transition-colors">
-                      <span className="text-slate-900 font-semibold">{s.full_name}</span> <span className="text-slate-500 text-xs">— {s.role} • {s.phone}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {results.leads.length > 0 && (
-                <div className="mb-2">
-                  <p className="text-slate-500 text-[11px] font-bold px-2 py-1 uppercase tracking-wider">LEADS</p>
-                  {results.leads.map(l => (
-                    <button key={l.id} onClick={() => { onNavigate('crm', { kind: 'lead', id: l.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm transition-colors">
-                      <span className="text-slate-900 font-semibold">{l.customer_name}</span> <span className="text-slate-500 text-xs">— {l.phone} • {l.stage}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {results.tickets.length > 0 && (
-                <div>
-                  <p className="text-slate-500 text-[11px] font-bold px-2 py-1 uppercase tracking-wider">TICKETS</p>
-                  {results.tickets.map(t => (
-                    <button key={t.id} onClick={() => { onNavigate('tickets', { kind: 'ticket', id: t.id }); setOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm transition-colors">
-                      <span className="text-blue-700 font-mono text-xs font-bold">{t.ticket_no}</span> <span className="text-slate-900 font-semibold ml-1">{t.subject}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-sm focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 shadow-sm w-48 sm:w-64">
+        <Search className="w-4 h-4 text-slate-400 shrink-0" />
+        <input
+          className="bg-transparent border-none p-0 text-slate-900 text-xs focus:ring-0 focus:outline-none w-full placeholder-slate-400 font-medium"
+          placeholder="Search staff, leads, tickets..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
+        {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-slate-400 hover:text-slate-600"><X className="w-3.5 h-3.5" /></button>}
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-1">
+          {results.map(r => (
+            <button
+              key={r.id}
+              onClick={() => {
+                onNavigate(r.tab, r.id);
+                setOpen(false);
+                setQuery('');
+              }}
+              className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 transition-colors"
+            >
+              <p className="text-slate-900 font-bold text-xs truncate">{r.title}</p>
+              <p className="text-slate-500 text-[11px] font-medium truncate">{r.subtitle}</p>
+            </button>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-// ─────────────────────────── Excel export helpers
+// ─────────────────────────── Export Staff CSV button
 export function ExportStaffButton() {
-  async function exportStaff() {
-    const { data } = await supabase.from('app_users').select('full_name, email, phone, role, segments, designation, employment_type, joining_date, is_active, staff_code').neq('role', 'super_admin').order('full_name');
-    if (!data) return;
-    const rows = data.map((u: any) => ({
-      'Staff Code': u.staff_code, Name: u.full_name, Email: u.email, Phone: u.phone,
-      Role: u.role, Segments: (u.segments || []).join(', '), Designation: u.designation,
-      'Employment Type': u.employment_type, 'Joining Date': u.joining_date, Status: u.is_active ? 'Active' : 'Disabled',
-    }));
-    const XLSX = await import('xlsx');
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Staff');
-    XLSX.writeFile(wb, `nikki-staff-${istDateStr()}.xlsx`);
+  async function exportCsv() {
+    const { data } = await supabase.from('app_users').select('*');
+    if (!data || data.length === 0) return;
+    const headers = ['id', 'full_name', 'email', 'role', 'phone', 'designation', 'is_active', 'joining_date'];
+    const csvRows = [headers.join(',')];
+    data.forEach(u => {
+      csvRows.push(headers.map(h => JSON.stringify(u[h] ?? '')).join(','));
+    });
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `staff_export_${istDateStr()}.csv`; a.click();
   }
   return (
-    <button onClick={exportStaff} className="flex items-center gap-1.5 text-sky-400 text-xs font-medium">
-      <Download className="w-3.5 h-3.5" /> Export to Excel
+    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-300 transition-all">
+      <Download className="w-3.5 h-3.5" /> Export CSV
     </button>
   );
 }
 
 export function ExportPayslipsButton() {
-  async function exportPayslips() {
-    const [{ data: slips }, { data: staff }] = await Promise.all([
-      supabase.from('payslips').select('*').order('period_year', { ascending: false }).order('period_month', { ascending: false }),
-      supabase.from('app_users').select('id, full_name'),
-    ]);
-    if (!slips) return;
-    const names = Object.fromEntries((staff || []).map((s: any) => [s.id, s.full_name]));
-    const rows = slips.map((p: any) => ({
-      Staff: names[p.staff_user_id] || '—', Month: p.period_month, Year: p.period_year,
-      'Base Salary': p.base_salary, 'Present Days': p.present_days, 'Absent Days': p.absent_days,
-      'Net Pay': p.net_pay, 'Amount Paid': p.amount_paid, Status: p.payment_status,
-    }));
-    const XLSX = await import('xlsx');
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Payslips');
-    XLSX.writeFile(wb, `nikki-payslips-${istDateStr()}.xlsx`);
+  async function exportCsv() {
+    const { data } = await supabase.from('payslips').select('*');
+    if (!data || data.length === 0) return;
+    const headers = ['id', 'user_id', 'pay_period', 'gross_salary', 'net_salary', 'created_at'];
+    const csvRows = [headers.join(',')];
+    data.forEach(p => {
+      csvRows.push(headers.map(h => JSON.stringify(p[h] ?? '')).join(','));
+    });
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `payslips_export_${istDateStr()}.csv`; a.click();
   }
   return (
-    <button onClick={exportPayslips} className="flex items-center gap-1.5 text-sky-400 text-xs font-medium">
-      <Download className="w-3.5 h-3.5" /> Export to Excel
+    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-300 transition-all">
+      <Download className="w-3.5 h-3.5" /> Export Payslips CSV
     </button>
   );
 }

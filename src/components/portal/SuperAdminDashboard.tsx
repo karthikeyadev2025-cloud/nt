@@ -119,35 +119,35 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
   const items = [
     { key: 'leaves', label: 'Leave requests to review', tab: 'hr', tone: 'text-amber-400', show: canLeaves },
     { key: 'advances', label: 'Advance requests to review', tab: 'hr', tone: 'text-amber-400', show: canAdvances },
-    { key: 'regularizations', label: 'Attendance corrections pending', tab: 'hr', tone: 'text-amber-400', show: canStaff },
-    { key: 'apptsSoon', label: 'Appointments in next 24h', tab: 'crm', tone: 'text-sky-300', show: canLeads },
-    { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-sky-300', show: true },
-    { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-400', show: canStaff || canLeads },
-    { key: 'overdueFollowups', label: 'Follow-ups overdue', tab: 'crm', tone: 'text-red-400', show: canLeads },
-    { key: 'transfers', label: 'Lead handoffs to approve', tab: 'crm', tone: 'text-purple-300', show: canTransfers },
-    { key: 'unassignedLeads', label: 'Leads with no owner', tab: 'crm', tone: 'text-sky-300', show: canLeads },
-    { key: 'unassignedTickets', label: 'Tickets with no owner', tab: 'tickets', tone: 'text-red-400', show: canTickets },
-    { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-slate-300', show: canTickets },
-    { key: 'notCheckedIn', label: 'Staff not checked in today', tab: 'hr', tone: 'text-slate-300', show: canAttendance },
+    { key: 'dangling', label: 'Check-ins missing check-out from yesterday', tab: 'hr', tone: 'text-amber-600 font-extrabold', show: canAttendance },
+    { key: 'pendingApprovals', label: 'Requests waiting for approval', tab: 'approvals', tone: 'text-amber-600 font-extrabold', show: canApprovals },
+    { key: 'overdueTickets', label: 'Overdue tickets (SLA missed)', tab: 'tickets', tone: 'text-red-600 font-extrabold', show: canTickets },
+    { key: 'unassignedLeads', label: 'Unassigned leads waiting', tab: 'crm', tone: 'text-amber-600 font-extrabold', show: canLeads },
+    { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-sky-700 font-extrabold', show: true },
+    { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-600 font-extrabold', show: canStaff || canLeads },
+    { key: 'overdueFollowups', label: 'Follow-ups overdue', tab: 'crm', tone: 'text-red-600 font-extrabold', show: canLeads },
+    { key: 'transfers', label: 'Lead handoffs to approve', tab: 'crm', tone: 'text-purple-700 font-extrabold', show: canTransfers },
+    { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-slate-900 font-extrabold', show: canTickets },
+    { key: 'notCheckedIn', label: 'Staff not checked in today', tab: 'hr', tone: 'text-slate-900 font-extrabold', show: canAttendance },
   ].filter(i => i.show && (c[i.key] ?? 0) > 0);
 
   if (items.length === 0) {
     return (
       <div className={cardCls + ' mb-6'}>
-        <p className="text-emerald-300 text-sm">Nothing waiting on you right now.</p>
+        <p className="text-emerald-700 font-bold text-sm">Nothing waiting on you right now.</p>
       </div>
     );
   }
 
   return (
     <div className="mb-6">
-      <h3 className="text-slate-400 text-xs font-semibold tracking-wider mb-2">NEEDS YOUR ATTENTION</h3>
+      <h3 className="text-slate-900 text-xs font-extrabold tracking-wider mb-2">NEEDS YOUR ATTENTION</h3>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {items.map(i => (
           <button key={i.key} onClick={() => onGo(i.tab)}
-            className={cardCls + ' text-left hover:border-slate-600 cursor-pointer'}>
-            <p className={`text-2xl font-semibold ${i.tone}`}>{c[i.key]}</p>
-            <p className="text-slate-500 text-xs mt-0.5">{i.label}</p>
+            className={cardCls + ' text-left hover:border-blue-400 cursor-pointer transition-all'}>
+            <p className={`text-3xl ${i.tone}`}>{c[i.key]}</p>
+            <p className="text-slate-700 text-xs font-semibold mt-1">{i.label}</p>
           </button>
         ))}
       </div>
@@ -162,9 +162,6 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
 
   useEffect(() => {
     (async () => {
-      // Head-count queries instead of shipping entire tables — tickets and
-      // leads grow unbounded, so counting server-side keeps Overview fast.
-      // Staff stays a single small fetch (needed for segments-array logic).
       const perSeg = await Promise.all(segments.map(async seg => {
         const [tickets, openTickets, leads, won] = await Promise.all([
           supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug),
@@ -174,9 +171,9 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
         ]);
         return { slug: seg.slug, tickets: tickets.count || 0, openTickets: openTickets.count || 0, leads: leads.count || 0, won: won.count || 0 };
       }));
-      const { data: staff } = await supabase.from('app_users').select('segments,is_active').neq('role', 'super_admin');
-      const s: Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }> = {};
-      segments.forEach(seg => { s[seg.slug] = { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 }; });
+      const s: Record<string, any> = {};
+      segments.forEach(seg => { s[seg.slug] = { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 } });
+      const { data: staff } = await supabase.from('app_users').select('segments, is_active');
       perSeg.forEach(p => { s[p.slug] = { ...s[p.slug], tickets: p.tickets, openTickets: p.openTickets, leads: p.leads, won: p.won } });
       (staff || []).forEach((u: any) => {
         if (!u.is_active) return;
@@ -190,9 +187,9 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
     <div className="space-y-5">
       <ActionCentre onGo={onGo} />
       {canOnboard && (
-        <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-sky-500/10 border border-sky-700/40">
-          <p className="text-sky-200 text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
-          <button onClick={onAddStaff} className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold whitespace-nowrap">+ Onboard Employee</button>
+        <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-blue-50 border border-blue-200 shadow-sm">
+          <p className="text-blue-950 font-bold text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
+          <button onClick={onAddStaff} className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-sm font-bold shadow-md shadow-blue-700/20 whitespace-nowrap">+ Onboard Employee</button>
         </div>
       )}
       <SetupChecklist segments={segments} />
