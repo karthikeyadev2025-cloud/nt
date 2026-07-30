@@ -536,24 +536,24 @@ export default function StaffPortal() {
     : segments.filter(s => user?.segments.includes(s.slug)).map(s => s.name).join(', ') || '—';
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row text-slate-100">
-      {/* ── Desktop Collapsible Sidebar Navigation ── */}
-      <aside className={`hidden md:flex flex-col border-r border-slate-800/80 bg-slate-950/95 backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 ${collapsed ? 'w-20' : 'w-64'}`}>
-        <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-900">
+      {/* ── Desktop Collapsible Sidebar Navigation (Classic Light Theme) ── */}
+      <aside className={`hidden md:flex flex-col border-r border-slate-200 bg-white backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 shadow-sm ${collapsed ? 'w-20' : 'w-64'}`}>
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-extrabold text-slate-950 text-base shadow-lg shadow-sky-500/20 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-blue-700/20 shrink-0">
               N
             </div>
             {!collapsed && (
               <div className="min-w-0">
-                <p className="text-white font-bold text-sm tracking-tight truncate">Nikki Suite</p>
+                <p className="text-slate-900 font-bold text-sm tracking-tight truncate">Nikki Suite</p>
                 <p className="text-slate-500 text-[11px] font-mono truncate">Enterprise Portal</p>
               </div>
             )}
           </div>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-900 transition-colors"
+            className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? '→' : '←'}
@@ -569,12 +569,12 @@ export default function StaffPortal() {
                 onClick={() => setTab(t.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   active
-                    ? 'bg-sky-500/15 border border-sky-500/40 text-sky-300 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/60 border border-transparent'
+                    ? 'bg-blue-50 border border-blue-200 text-blue-800 shadow-sm font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
                 }`}
                 title={collapsed ? t.label : undefined}
               >
-                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-sky-400' : 'text-slate-500'}`} />
+                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-blue-700' : 'text-slate-400'}`} />
                 {!collapsed && <span className="truncate">{t.label}</span>}
               </button>
             );
@@ -582,18 +582,18 @@ export default function StaffPortal() {
         </div>
 
         {/* User Card at bottom of sidebar */}
-        <div className="p-3 border-t border-slate-800/80">
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-900/60 border border-slate-850">
-            <div className="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 font-bold flex items-center justify-center text-xs shrink-0">
+        <div className="p-3 border-t border-slate-200">
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 border border-blue-200 text-blue-800 font-bold flex items-center justify-center text-xs shrink-0">
               {user?.full_name?.[0] || 'U'}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-white text-xs font-semibold truncate">{user?.full_name}</p>
+                <p className="text-slate-900 text-xs font-semibold truncate">{user?.full_name}</p>
                 <p className="text-slate-500 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
-            <button onClick={signOut} className="text-slate-500 hover:text-red-400 p-1" title="Sign out">
+            <button onClick={signOut} className="text-slate-400 hover:text-red-600 p-1" title="Sign out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -603,11 +603,11 @@ export default function StaffPortal() {
       {/* ── Main Area ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="border-b border-slate-800 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-slate-950/95 backdrop-blur z-30">
+        <header className="border-b border-slate-200 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="md:hidden w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950 text-sm">N</div>
+            <div className="md:hidden w-8 h-8 rounded-lg bg-blue-700 flex items-center justify-center font-bold text-white text-sm">N</div>
             <div>
-              <h1 className="text-white font-bold text-base md:text-lg tracking-tight">
+              <h1 className="text-slate-900 font-bold text-base md:text-lg tracking-tight">
                 {tabs.find(t => t.id === tab)?.label || 'Portal'}
               </h1>
               <p className="text-slate-500 text-xs hidden sm:block">{mySegNames}</p>
@@ -615,7 +615,7 @@ export default function StaffPortal() {
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
-            <button onClick={signOut} className="md:hidden text-slate-500 hover:text-red-400"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} className="md:hidden text-slate-400 hover:text-red-600"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 

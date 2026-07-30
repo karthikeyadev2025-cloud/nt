@@ -7,10 +7,10 @@ import { istDateStr } from '../../lib/dates';
 import { normalizePhone } from '../../lib/phone';
 
 export const inputCls =
-  'w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40 focus:outline-none transition-all placeholder-slate-500';
+  'w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 focus:outline-none transition-all placeholder-slate-400';
 export const btnCls =
-  'px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-blue-600/20 border border-blue-400/20 transition-all active:scale-[0.98]';
-export const cardCls = 'p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-md shadow-xl';
+  'px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-semibold shadow-md shadow-blue-700/20 border border-blue-600/30 transition-all active:scale-[0.98]';
+export const cardCls = 'p-5 rounded-2xl bg-white border border-slate-200/90 shadow-md shadow-slate-200/50 backdrop-blur-md';
 
 export function SegmentTabs({
   segments, value, onChange, includeAll = true,
@@ -22,14 +22,14 @@ export function SegmentTabs({
     <div className="flex flex-wrap gap-2 mb-5">
       {showAll && (
         <button onClick={() => onChange('')}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === '' ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/25' : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700 hover:text-white'}`}>
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === '' ? 'bg-blue-700 text-white border-blue-700 shadow-md shadow-blue-700/20' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'}`}>
           All Segments
         </button>
       )}
       {visible.map(s => (
         <button key={s.slug} onClick={() => onChange(s.slug)}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === s.slug ? 'text-white border-blue-400/30 shadow-md' : 'border-slate-800 bg-slate-900/60 text-slate-300 hover:border-slate-700 hover:text-white'} ${s.active === false ? 'opacity-70' : ''}`}
-          style={value === s.slug ? { backgroundColor: s.color || '#2563eb' } : {}}
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === s.slug ? 'text-white border-blue-700 shadow-md' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'} ${s.active === false ? 'opacity-70' : ''}`}
+          style={value === s.slug ? { backgroundColor: s.color || '#1d4ed8' } : {}}
           title={s.active === false ? 'Retired — hidden from the website, existing work still manageable' : undefined}>
           {s.name}{s.active === false && <span className="ml-1.5 text-[10px] opacity-80">(retired)</span>}
         </button>

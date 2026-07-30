@@ -64,68 +64,68 @@ export default function UnifiedLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/50 to-slate-100 flex items-center justify-center p-4">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-xl shadow-blue-600/25 border border-blue-400/30">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-700 rounded-2xl mb-4 shadow-xl shadow-blue-700/20 border border-blue-600/30">
             <Zap className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight mb-1">Nikki Technologies</h1>
-          <p className="text-slate-400 text-sm font-medium">Enterprise Staff Portal — Sign in to continue</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">Nikki Technologies</h1>
+          <p className="text-slate-600 text-sm font-medium">Enterprise Staff Portal — Sign in to continue</p>
         </div>
 
-        <div className="bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 px-5 py-3 mb-4 flex items-center justify-between gap-4 shadow-lg">
-          <span className="text-xs text-slate-400 truncate font-medium">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200 px-5 py-3 mb-4 flex items-center justify-between gap-4 shadow-md">
+          <span className="text-xs text-slate-600 truncate font-medium">
             {now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
-          <div className="flex items-center gap-1.5 text-slate-300 shrink-0">
-            <Clock className="w-3.5 h-3.5 text-blue-400" />
+          <div className="flex items-center gap-1.5 text-slate-700 shrink-0">
+            <Clock className="w-3.5 h-3.5 text-blue-700" />
             <span className="text-xs font-mono font-bold tabular-nums">
               {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
             </span>
           </div>
         </div>
 
-        <div className="bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-800/90 p-8 shadow-2xl">
+        <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200/90 p-8 shadow-2xl">
           {error && (
-            <div className="mb-5 p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <p className="text-red-700 text-sm font-medium">{error}</p>
             </div>
           )}
 
           {recoveryMode ? (
             passwordSetDone ? (
               <div className="text-center py-4">
-                <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-                <p className="text-white font-semibold mb-1">Password updated</p>
-                <p className="text-slate-400 text-sm mb-4">You're signed in — continue to your portal.</p>
-                <button onClick={() => { setRecoveryMode(false); window.location.href = '/login'; }} className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-sm shadow-md">
+                <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto mb-3" />
+                <p className="text-slate-900 font-semibold mb-1">Password updated</p>
+                <p className="text-slate-600 text-sm mb-4">You're signed in — continue to your portal.</p>
+                <button onClick={() => { setRecoveryMode(false); window.location.href = '/login'; }} className="w-full py-3 bg-blue-700 hover:bg-blue-600 text-white font-semibold rounded-xl text-sm shadow-md">
                   Continue
                 </button>
               </div>
             ) : (
               <form onSubmit={setNewPasswordSubmit} className="space-y-5">
                 <div>
-                  <h3 className="text-white font-semibold mb-1">Set a new password</h3>
-                  <p className="text-slate-500 text-sm">Choose a new password for your account.</p>
+                  <h3 className="text-slate-900 font-semibold mb-1">Set a new password</h3>
+                  <p className="text-slate-600 text-sm">Choose a new password for your account.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">New Password</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">New Password</label>
                   <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6}
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Confirm Password</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Confirm Password</label>
                   <input type="password" value={newPasswordConfirm} onChange={e => setNewPasswordConfirm(e.target.value)} required minLength={6}
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20" />
                 </div>
-                <button type="submit" disabled={settingPassword} className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl disabled:opacity-60 transition-all text-base shadow-lg shadow-blue-600/20">
+                <button type="submit" disabled={settingPassword} className="w-full py-3.5 bg-blue-700 hover:bg-blue-600 text-white font-semibold rounded-xl disabled:opacity-60 transition-all text-base shadow-lg shadow-blue-700/20">
                   {settingPassword ? 'Updating…' : 'Update Password'}
                 </button>
               </form>
@@ -133,15 +133,15 @@ export default function UnifiedLogin() {
           ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 transition-colors"
                   required
                   autoComplete="email"
                 />
@@ -149,20 +149,20 @@ export default function UnifiedLogin() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 transition-colors"
                   required
                   autoComplete="current-password"
                 />
               </div>
-              <button type="button" onClick={() => { setShowReset(true); setResetSent(false); setResetEmail(email); }} className="text-blue-400 text-xs mt-2 hover:text-blue-300 font-medium">
+              <button type="button" onClick={() => { setShowReset(true); setResetSent(false); setResetEmail(email); }} className="text-blue-700 text-xs mt-2 hover:text-blue-800 font-medium">
                 Forgot password?
               </button>
             </div>
@@ -170,7 +170,7 @@ export default function UnifiedLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-600/25 text-base border border-blue-400/20"
+              className="w-full py-3.5 bg-blue-700 hover:bg-blue-600 text-white font-semibold rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-700/25 text-base border border-blue-600/20"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

@@ -112,7 +112,6 @@ function ClientLogos() {
 function Navigation({ content }: { content: Record<string, Record<string, string>> }) {
   const [open, setOpen] = useState(false);
   const links = [
-    { href: '#segments', label: 'What We Do' },
     { href: '#services', label: 'Services' },
     { href: '#products', label: 'Products' },
     { href: '#careers', label: 'Careers' },
@@ -121,26 +120,26 @@ function Navigation({ content }: { content: Record<string, Record<string, string
     { href: '#contact', label: 'Contact' },
   ];
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 bg-slate-950/90 backdrop-blur border-b border-slate-800">
+    <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center font-bold text-slate-950">N</div>
-          <span className="text-white font-bold text-lg">{content?.hero?.title || 'Nikki Technologies'}</span>
+        <a href="#" className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-blue-700/20">N</div>
+          <span className="text-slate-900 font-extrabold text-lg tracking-tight">{content?.hero?.title || 'Nikki Technologies'}</span>
         </a>
         <div className="hidden md:flex items-center gap-6">
           {links.map(l => (
-            <a key={l.href} href={l.href} className="text-slate-300 hover:text-sky-400 text-sm font-medium transition-colors">{l.label}</a>
+            <a key={l.href} href={l.href} className="text-slate-700 hover:text-blue-700 text-sm font-semibold transition-colors">{l.label}</a>
           ))}
-          <a href="/login" className="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold transition-colors">Staff Login</a>
+          <a href="/login" className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold shadow-md shadow-blue-700/20 transition-all border border-blue-600/30">Staff Login</a>
         </div>
-        <button className="md:hidden text-white" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
+        <button className="md:hidden text-slate-700" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
       </div>
       {open && (
-        <div className="md:hidden bg-slate-950 border-t border-slate-800 px-4 py-3 space-y-2">
+        <div className="md:hidden bg-white border-t border-slate-200 px-4 py-3 space-y-2 shadow-lg">
           {links.map(l => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block text-slate-300 hover:text-sky-400 py-1.5">{l.label}</a>
+            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block text-slate-700 hover:text-blue-700 py-1.5 font-medium">{l.label}</a>
           ))}
-          <a href="/login" className="block text-sky-400 font-semibold py-1.5">Staff Login</a>
+          <a href="/login" className="block text-blue-700 font-bold py-1.5">Staff Login</a>
         </div>
       )}
     </nav>
@@ -189,16 +188,16 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
       initial={{ opacity: 0, y: 35 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.3 }}
-      className="mt-12 max-w-5xl mx-auto rounded-2xl bg-slate-900/90 border border-slate-800 p-5 md:p-7 shadow-2xl backdrop-blur-md relative overflow-hidden text-left"
+      className="mt-12 max-w-5xl mx-auto rounded-2xl bg-white border border-slate-200/90 p-5 md:p-7 shadow-xl shadow-slate-200/60 relative overflow-hidden text-left"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/90 pb-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-600/80" />
-          <div className="w-3 h-3 rounded-full bg-indigo-600/80" />
-          <div className="w-3 h-3 rounded-full bg-blue-400/80" />
-          <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider ml-2">Nikki Technologies • Core Services</span>
+          <div className="w-3 h-3 rounded-full bg-blue-600" />
+          <div className="w-3 h-3 rounded-full bg-indigo-600" />
+          <div className="w-3 h-3 rounded-full bg-blue-400" />
+          <span className="text-slate-700 text-xs font-bold uppercase tracking-wider ml-2">Nikki Technologies • Core Services</span>
         </div>
-        <div className="flex flex-wrap gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+        <div className="flex flex-wrap gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
           {[
             { id: 'digital', label: '🚀 Digital Marketing' },
             { id: 'software', label: '💻 Software Development' },
@@ -206,10 +205,10 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id as any)}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                 activeTab === t.id
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-blue-700 text-white shadow-md shadow-blue-700/20'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               {t.label}
@@ -230,35 +229,35 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-xl">{curr.icon}</span>
-              <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold">
+              <span className="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold">
                 {curr.badge}
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-white tracking-tight">{curr.title}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">{curr.desc}</p>
+            <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{curr.title}</h3>
+            <p className="text-slate-600 text-sm leading-relaxed font-medium">{curr.desc}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
               {curr.highlights.map((item, idx) => (
-                <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                  <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <div key={idx} className="flex items-start gap-2 text-xs text-slate-700 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
                   <span>{item}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-5 space-y-4 flex flex-col justify-between">
-            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Service Guarantee</p>
+          <div className="rounded-xl bg-slate-50 border border-slate-200 p-5 space-y-4 flex flex-col justify-between">
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Service Guarantee</p>
             <div className="space-y-3">
               {Object.entries(curr.stats).map(([k, v]) => (
-                <div key={k} className="flex justify-between items-center border-b border-slate-850 pb-2">
-                  <span className="text-slate-400 text-xs capitalize">{k}</span>
-                  <span className="text-white font-bold text-sm text-blue-400">{v}</span>
+                <div key={k} className="flex justify-between items-center border-b border-slate-200 pb-2">
+                  <span className="text-slate-500 text-xs capitalize font-medium">{k}</span>
+                  <span className="text-blue-800 font-bold text-xs">{v}</span>
                 </div>
               ))}
             </div>
             <a
               href="#contact"
-              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs text-center transition-all shadow-md shadow-blue-600/20"
+              className="w-full py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-semibold text-xs text-center transition-all shadow-md shadow-blue-700/20"
             >
               Get Free Consultation
             </a>
@@ -272,19 +271,15 @@ function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
 // ─────────────────────────────────────────────── Hero
 function Hero({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
   return (
-    <section className="relative pt-32 pb-24 px-4 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-sky-950/50 via-slate-950 to-slate-950" />
-      <div className="absolute top-20 left-1/4 w-96 h-96 bg-sky-500/15 rounded-full blur-3xl animate-float-slow pointer-events-none" />
-      <div className="absolute top-40 right-1/4 w-96 h-96 bg-cyan-400/15 rounded-full blur-3xl animate-float pointer-events-none" />
-      
+    <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-blue-50/60 via-slate-50 to-slate-50">
       <div className="max-w-6xl mx-auto text-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-semibold mb-6 shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-800 text-xs font-semibold mb-6 shadow-sm"
         >
-          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
           <span>Digital Marketing &amp; Custom Software Engineering</span>
         </motion.div>
 
@@ -292,7 +287,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-extrabold text-white mb-6 tracking-tight leading-tight"
+          className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-6 tracking-tight leading-tight"
         >
           {content?.hero?.title || 'Nikki Technologies'}
         </motion.h1>
@@ -301,7 +296,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-xl md:text-2xl bg-gradient-to-r from-blue-400 via-indigo-300 to-sky-300 bg-clip-text text-transparent font-semibold mb-6 animate-gradient bg-[length:200%_auto]"
+          className="text-xl md:text-2xl bg-gradient-to-r from-blue-800 via-indigo-700 to-blue-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
           {content?.hero?.subtitle || 'Digital Media Marketing • Custom Software & Mobile Apps'}
         </motion.p>
@@ -310,7 +305,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="text-slate-400 max-w-2xl mx-auto mb-10 text-lg leading-relaxed"
+          className="text-slate-600 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
           {content?.hero?.description || 'We help brands grow through data-driven digital marketing, social media campaigns, performance ads, and custom software development.'}
         </motion.p>
@@ -323,10 +318,10 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
         >
           {segments.map((s, i) => (
             <a key={s.slug} href={`#seg-${s.slug}`}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-700 bg-slate-900/80 hover:border-sky-500 hover:bg-slate-900 transition-all text-white shadow-lg">
-              <Icon name={s.icon} className="w-5 h-5 text-sky-400" />
-              <span className="font-medium text-sm">{s.name}</span>
-              <ChevronRight className="w-4 h-4 text-slate-500" />
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-300 bg-white hover:border-blue-600 hover:bg-slate-50 transition-all text-slate-900 shadow-md font-semibold text-sm">
+              <Icon name={s.icon} className="w-5 h-5 text-blue-700" />
+              <span>{s.name}</span>
+              <ChevronRight className="w-4 h-4 text-slate-400" />
             </a>
           ))}
         </motion.div>
