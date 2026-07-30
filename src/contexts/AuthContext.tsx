@@ -133,9 +133,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string) {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { logLoginFailed(email); return { error: error.message }; }
-      if (data.user) {
+      const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) =>
+        setTimeout(() => reject(new Error('Sign-in request timed out. Please check your internet connection or credentials.')), 5000)
+      );
+
+      const authPromise = supabase.auth.signInWithPassword({ email, password });
+      const res = await Promise.race([authPromise, timeoutPromise]);
+      const { data, error } = res || {};
+
+      if (error) {
+        logLoginFailed(email);
+        return { error: error.message || 'Invalid email or password.' };
+      }
+      if (data?.user) {
         const appUser = await fetchAppUser(data.user.id);
         if (!appUser || !appUser.is_active) {
           logLoginFailed(email);
