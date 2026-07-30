@@ -405,11 +405,58 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
 // ─────────────────────────────────────────────── Segments + Services
 interface Service { id: string; segment_slug: string; title: string; description: string; icon: string; }
 
+const DEFAULT_FALLBACK_SERVICES: Service[] = [
+  // Digital Marketing / Kite & Tail Media
+  {
+    id: 'srv-1',
+    segment_slug: 'digital-marketing',
+    title: 'Meta & Google PPC Ads',
+    description: 'High-ROAS lead generation & sales conversion funnels across Instagram, Facebook, and Google Search Ads.',
+    icon: 'Megaphone',
+  },
+  {
+    id: 'srv-2',
+    segment_slug: 'digital-marketing',
+    title: 'Viral Reels & Media Production',
+    description: 'High-converting ad video production, Instagram reels, YouTube shorts, and creative brand story assets.',
+    icon: 'Video',
+  },
+  {
+    id: 'srv-3',
+    segment_slug: 'digital-marketing',
+    title: 'SEO & Brand Identity',
+    description: 'Top-tier Google search engine optimization, local map pack ranking, logo design, and complete brand identity.',
+    icon: 'TrendingUp',
+  },
+  // Software Development / Nikki Software Studio
+  {
+    id: 'srv-4',
+    segment_slug: 'software-development',
+    title: 'Custom Web & Mobile Development',
+    description: 'High-performance React, TypeScript, Android, and iOS mobile applications engineered for scale.',
+    icon: 'Code2',
+  },
+  {
+    id: 'srv-5',
+    segment_slug: 'software-development',
+    title: 'SaaS & Enterprise Systems',
+    description: 'Bespoke B2B SaaS platforms, cloud infrastructure, multi-tenant architectures, and custom web apps.',
+    icon: 'Boxes',
+  },
+  {
+    id: 'srv-6',
+    segment_slug: 'software-development',
+    title: 'Business Process Automation',
+    description: 'Custom ERPs, CRMs, retail POS billing platforms (MyStore OS), attendance software (Punchly), and AI voice bots (Jovio AI).',
+    icon: 'Cpu',
+  },
+];
+
 function SegmentSections({ segments }: { segments: Segment[] }) {
   const [services, setServices] = useState<Service[]>([]);
   useEffect(() => {
     supabase.from('services').select('*').eq('active', true).order('order_index')
-      .then(({ data }) => { if (data) setServices(data as Service[]); });
+      .then(({ data }) => { if (data && data.length > 0) setServices(data as Service[]); });
   }, []);
 
   return (
@@ -420,38 +467,55 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
           <p className="text-center text-slate-600 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
         </Reveal>
         <div id="services" className="space-y-16">
-          {segments.map(seg => (
-            <div key={seg.slug} id={`seg-${seg.slug}`} className="scroll-mt-24">
-              <Reveal>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xs" style={{ backgroundColor: seg.color + '15', color: seg.color }}>
-                    <Icon name={seg.icon} className="w-6 h-6" />
+          {segments.map(seg => {
+            const isMarketingSeg = seg.slug.includes('marketing') || seg.slug.includes('media') || seg.slug.includes('digital') || seg.slug.includes('kt');
+            const isSoftwareSeg = seg.slug.includes('software') || seg.slug.includes('dev') || seg.slug.includes('tech');
+
+            const matchedServices = services.filter(s =>
+              s.segment_slug === seg.slug ||
+              (isMarketingSeg && (s.segment_slug.includes('marketing') || s.segment_slug.includes('media') || s.segment_slug.includes('digital'))) ||
+              (isSoftwareSeg && (s.segment_slug.includes('software') || s.segment_slug.includes('dev')))
+            );
+
+            const displayServices = matchedServices.length > 0
+              ? matchedServices
+              : DEFAULT_FALLBACK_SERVICES.filter(s =>
+                  isMarketingSeg ? s.segment_slug === 'digital-marketing' : isSoftwareSeg ? s.segment_slug === 'software-development' : true
+                );
+
+            return (
+              <div key={seg.slug} id={`seg-${seg.slug}`} className="scroll-mt-24">
+                <Reveal>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xs" style={{ backgroundColor: seg.color + '15', color: seg.color }}>
+                      <Icon name={seg.icon} className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-900">{seg.name}</h3>
+                      <p className="text-slate-600 text-sm font-medium">{seg.tagline}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-slate-900">{seg.name}</h3>
-                    <p className="text-slate-600 text-sm font-medium">{seg.tagline}</p>
-                  </div>
+                </Reveal>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {displayServices.map((s, idx) => (
+                    <Reveal key={s.id} delay={idx * 100}>
+                      <motion.div
+                        whileHover={{ y: -6, scale: 1.01 }}
+                        transition={{ duration: 0.2 }}
+                        className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md hover:shadow-xl hover:border-blue-300 transition-all h-full flex flex-col justify-between"
+                      >
+                        <div>
+                          <Icon name={s.icon} className="w-8 h-8 mb-4 text-blue-700" />
+                          <h4 className="text-lg font-bold text-slate-900 mb-2">{s.title}</h4>
+                          <p className="text-slate-600 text-sm leading-relaxed font-medium">{s.description}</p>
+                        </div>
+                      </motion.div>
+                    </Reveal>
+                  ))}
                 </div>
-              </Reveal>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {services.filter(s => s.segment_slug === seg.slug).map((s, idx) => (
-                  <Reveal key={s.id} delay={idx * 100}>
-                    <motion.div
-                      whileHover={{ y: -6, scale: 1.01 }}
-                      transition={{ duration: 0.2 }}
-                      className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md hover:shadow-xl hover:border-blue-300 transition-all h-full flex flex-col justify-between"
-                    >
-                      <div>
-                        <Icon name={s.icon} className="w-8 h-8 mb-4 text-blue-700" />
-                        <h4 className="text-lg font-bold text-slate-900 mb-2">{s.title}</h4>
-                        <p className="text-slate-600 text-sm leading-relaxed font-medium">{s.description}</p>
-                      </div>
-                    </motion.div>
-                  </Reveal>
-                ))}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
