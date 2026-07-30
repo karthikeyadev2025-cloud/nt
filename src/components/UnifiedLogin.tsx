@@ -74,8 +74,8 @@ export default function UnifiedLogin() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-700 rounded-2xl mb-4 shadow-xl shadow-blue-700/20 border border-blue-600/30 p-2.5">
-            <KiteTailLogo className="w-full h-full text-white" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <KiteTailLogo className="w-20 h-20 drop-shadow-md" />
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">Nikki Technologies</h1>
           <p className="text-slate-600 text-sm font-semibold">Enterprise Staff Portal — Sign in to continue</p>
