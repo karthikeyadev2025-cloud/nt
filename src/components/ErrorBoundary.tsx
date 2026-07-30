@@ -21,7 +21,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-sm text-center bg-white border border-slate-200/90 rounded-2xl p-7 shadow-xl">
             <div className="w-12 h-12 rounded-xl bg-blue-700 text-white font-extrabold text-xl flex items-center justify-center mx-auto mb-4 shadow-md shadow-blue-700/20">N</div>
             <p className="text-slate-900 text-lg font-bold mb-2">Something went wrong</p>
-            <p className="text-slate-600 text-sm mb-6">{this.state.message}</p>
+            <p className="text-slate-700 text-sm mb-6">{this.state.message}</p>
             <button
               onClick={() => window.location.reload()}
               className="w-full py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold shadow-md shadow-blue-700/20 transition-all"

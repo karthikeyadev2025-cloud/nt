@@ -65,7 +65,7 @@ export default function PWAInstallBanner() {
           </div>
           <button
             onClick={handleDismiss}
-            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-500 hover:text-slate-300 transition-colors shrink-0"
+            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-700 hover:text-slate-300 transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>

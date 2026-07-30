@@ -7,24 +7,24 @@ import { inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import type { Segment } from '../../lib/database.types';
 
 const PRIORITY_TONE: Record<string, string> = {
-  high: 'text-red-400 border-red-500/40 bg-red-500/10',
-  medium: 'text-amber-300 border-amber-500/40 bg-amber-500/10',
-  low: 'text-slate-500 border-slate-300 bg-slate-100/60',
+  high: 'text-red-700 border-red-500/40 bg-red-50',
+  medium: 'text-amber-700 border-amber-500/40 bg-amber-50',
+  low: 'text-slate-700 border-slate-300 bg-slate-100/60',
 };
 
 const STATUS_META: Record<string, { label: string; icon: any; tone: string }> = {
-  pending: { label: 'Pending', icon: Circle, tone: 'text-slate-500' },
-  in_progress: { label: 'In progress', icon: Clock3, tone: 'text-sky-300' },
-  completed: { label: 'Completed', icon: CheckCircle2, tone: 'text-emerald-400' },
-  cancelled: { label: 'Cancelled', icon: XCircle, tone: 'text-slate-600' },
+  pending: { label: 'Pending', icon: Circle, tone: 'text-slate-700' },
+  in_progress: { label: 'In progress', icon: Clock3, tone: 'text-sky-700' },
+  completed: { label: 'Completed', icon: CheckCircle2, tone: 'text-emerald-700' },
+  cancelled: { label: 'Cancelled', icon: XCircle, tone: 'text-slate-700' },
 };
 
 function dueTone(due: string | null, status: string) {
-  if (!due || status === 'completed' || status === 'cancelled') return 'text-slate-500';
+  if (!due || status === 'completed' || status === 'cancelled') return 'text-slate-700';
   const d = new Date(due + 'T23:59:59');
-  if (d < new Date()) return 'text-red-400 font-medium';
-  if (d.getTime() - Date.now() < 2 * 86400000) return 'text-amber-300';
-  return 'text-slate-500';
+  if (d < new Date()) return 'text-red-700 font-medium';
+  if (d.getTime() - Date.now() < 2 * 86400000) return 'text-amber-700';
+  return 'text-slate-700';
 }
 
 /**
@@ -126,7 +126,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
         <div className="flex gap-2">
           {([['open', 'Open'], ['mine', 'Assigned to me'], ['done', 'Completed']] as const).map(([v, label]) => (
             <button key={v} onClick={() => setScope(v)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>
+              className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>
               {label}
             </button>
           ))}
@@ -137,7 +137,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
       </div>
 
       {tasks.length === 0 && (
-        <p className="text-slate-500 text-sm text-center py-10">
+        <p className="text-slate-700 text-sm text-center py-10">
           {scope === 'done' ? 'Nothing completed yet.' : scope === 'mine' ? 'No tasks assigned to you.' : 'No open tasks.'}
         </p>
       )}
@@ -159,7 +159,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                       {t.priority}
                     </span>
                   </div>
-                  {t.description && <p className="text-slate-500 text-xs mt-1">{t.description}</p>}
+                  {t.description && <p className="text-slate-700 text-xs mt-1">{t.description}</p>}
                   <div className="flex flex-wrap gap-3 mt-1.5 text-xs">
                     {t.due_date && (
                       <span className={dueTone(t.due_date, t.status)}>
@@ -167,11 +167,11 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                         {new Date(t.due_date + 'T23:59:59') < new Date() && t.status !== 'completed' && t.status !== 'cancelled' ? ' — overdue' : ''}
                       </span>
                     )}
-                    <span className="text-slate-600">
+                    <span className="text-slate-700">
                       {t.assigned_to ? (isMine ? 'You' : nameOf(t.assigned_to) || 'Assigned') : 'Unassigned'}
                     </span>
-                    {t.category && <span className="text-slate-600">{t.category}</span>}
-                    {t.completion_note && <span className="text-emerald-400/80">“{t.completion_note}”</span>}
+                    {t.category && <span className="text-slate-700">{t.category}</span>}
+                    {t.completion_note && <span className="text-emerald-700/80">“{t.completion_note}”</span>}
                   </div>
                 </div>
 
@@ -179,7 +179,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                   {(isMine || canEditAll) && t.status !== 'completed' && t.status !== 'cancelled' && (
                     <div className="flex gap-2">
                       {t.status === 'pending' && (
-                        <button className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-600 text-xs"
+                        <button className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 text-xs"
                           disabled={busy === t.id} onClick={() => setStatus(t, 'in_progress')}>Start</button>
                       )}
                       <button className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
@@ -201,7 +201,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                     </select>
                   )}
                   {canEditAll && t.status !== 'completed' && t.status !== 'cancelled' && (
-                    <button className="text-slate-600 hover:text-red-400 text-xs"
+                    <button className="text-slate-700 hover:text-red-700 text-xs"
                       onClick={() => setStatus(t, 'cancelled')}>Cancel task</button>
                   )}
                 </div>

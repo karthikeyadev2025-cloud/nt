@@ -107,7 +107,7 @@ export default function SessionDevices() {
             <ShieldAlert className="w-4 h-4 text-blue-700" />
             Session Devices
           </h3>
-          <p className="text-slate-500 text-xs mt-1 font-medium">
+          <p className="text-slate-700 text-xs mt-1 font-medium">
             Every browser you've signed in from. Revoke any device with one click.
           </p>
         </div>
@@ -135,7 +135,7 @@ export default function SessionDevices() {
           <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading your devices…
         </div>
       ) : rows.length === 0 ? (
-        <div className="py-8 text-center text-slate-500 text-sm" data-testid="session-devices-empty">
+        <div className="py-8 text-center text-slate-700 text-sm" data-testid="session-devices-empty">
           No active devices found. If you just signed in on this device, refresh in a moment.
         </div>
       ) : (
@@ -149,7 +149,7 @@ export default function SessionDevices() {
                 data-testid={`session-row-${r.id}`}
                 className={`flex items-center gap-3 p-3.5 rounded-xl border ${isCurrent ? 'border-blue-300 bg-blue-50/60' : 'border-slate-200 bg-slate-50'}`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isCurrent ? 'bg-blue-700 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isCurrent ? 'bg-blue-700 text-white' : 'bg-white border border-slate-200 text-slate-700'}`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -161,7 +161,7 @@ export default function SessionDevices() {
                       </span>
                     )}
                   </div>
-                  <p className="text-slate-500 text-[11px] font-medium mt-0.5">
+                  <p className="text-slate-700 text-[11px] font-medium mt-0.5">
                     Active {relativeTime(r.last_seen_at)} · Signed in {relativeTime(r.created_at)}
                   </p>
                 </div>

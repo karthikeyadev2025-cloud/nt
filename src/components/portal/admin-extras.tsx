@@ -20,7 +20,7 @@ export function SecurityLogsViewer() {
   }, []);
 
   const eventColor: Record<string, string> = {
-    login_success: 'text-emerald-600 font-semibold', login_failed: 'text-red-600 font-semibold', logout: 'text-slate-600 font-semibold',
+    login_success: 'text-emerald-700 font-semibold', login_failed: 'text-red-700 font-semibold', logout: 'text-slate-700 font-semibold',
   };
 
   const filtered = filter ? logs.filter(l => l.event_type === filter) : logs;
@@ -29,7 +29,7 @@ export function SecurityLogsViewer() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
-        <Shield className="w-4 h-4 text-blue-600" />
+        <Shield className="w-4 h-4 text-blue-700" />
         <p className="text-slate-700 text-sm font-semibold">Login/logout history and security events, most recent first.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
@@ -38,18 +38,18 @@ export function SecurityLogsViewer() {
           <button key={e} onClick={() => setFilter(e)} className={`px-3 py-1 rounded-lg text-xs font-semibold border capitalize ${filter === e ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-slate-300 bg-white text-slate-700'}`}>{e.replace(/_/g, ' ')}</button>
         ))}
       </div>
-      {loading ? <p className="text-slate-600 text-sm font-semibold text-center py-10">Loading…</p> : (
+      {loading ? <p className="text-slate-700 text-sm font-semibold text-center py-10">Loading…</p> : (
         <div className="space-y-1.5">
           {filtered.map(l => (
             <div key={l.id} className={cardCls + ' flex items-center justify-between py-3'}>
               <div>
                 <p className="text-slate-900 text-sm font-bold">{l.user_email || 'Unknown'}</p>
-                <p className="text-slate-500 text-xs font-medium">{new Date(l.created_at).toLocaleString()}</p>
+                <p className="text-slate-700 text-xs font-medium">{new Date(l.created_at).toLocaleString()}</p>
               </div>
-              <span className={`text-xs capitalize ${eventColor[l.event_type] || 'text-slate-600'}`}>{l.event_type.replace(/_/g, ' ')}</span>
+              <span className={`text-xs capitalize ${eventColor[l.event_type] || 'text-slate-700'}`}>{l.event_type.replace(/_/g, ' ')}</span>
             </div>
           ))}
-          {filtered.length === 0 && <p className="text-slate-600 text-sm text-center py-10 font-semibold">No events recorded yet.</p>}
+          {filtered.length === 0 && <p className="text-slate-700 text-sm text-center py-10 font-semibold">No events recorded yet.</p>}
         </div>
       )}
     </div>
@@ -83,14 +83,14 @@ export function TodayAtAGlance() {
 
   if (!stats) return null;
   const cards = [
-    { label: 'Checked in today', value: stats.checkedIn, color: 'text-emerald-600' },
-    { label: 'New leads today', value: stats.newLeads, color: 'text-blue-600' },
-    { label: 'Open tickets', value: stats.openTickets, color: 'text-amber-600' },
-    { label: 'Pending approvals', value: stats.pendingApprovals, color: 'text-purple-600' },
+    { label: 'Checked in today', value: stats.checkedIn, color: 'text-emerald-700' },
+    { label: 'New leads today', value: stats.newLeads, color: 'text-blue-700' },
+    { label: 'Open tickets', value: stats.openTickets, color: 'text-amber-700' },
+    { label: 'Pending approvals', value: stats.pendingApprovals, color: 'text-purple-700' },
   ];
   return (
     <div className={cardCls}>
-      <h3 className="text-slate-900 font-bold text-sm mb-4 flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-600" /> Today at a Glance</h3>
+      <h3 className="text-slate-900 font-bold text-sm mb-4 flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-700" /> Today at a Glance</h3>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {cards.map(c => (
           <div key={c.label} className="text-center">
@@ -137,13 +137,13 @@ export function SetupChecklist({ segments }: { segments: Segment[] }) {
     <div className={cardCls + ' border-blue-200 bg-white'}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-slate-900 font-bold text-sm">Getting Set Up ({checks.length - remaining.length}/{checks.length})</h3>
-        <button onClick={() => setDismissed(true)} className="text-slate-500 hover:text-slate-700 p-1"><X className="w-4 h-4" /></button>
+        <button onClick={() => setDismissed(true)} className="text-slate-700 hover:text-slate-700 p-1"><X className="w-4 h-4" /></button>
       </div>
       <div className="space-y-2.5">
         {checks.map(c => (
           <div key={c.label} className="flex items-center gap-2.5 text-sm">
-            {c.done ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <Circle className="w-4 h-4 text-slate-500 shrink-0" />}
-            <span className={c.done ? 'text-slate-500 line-through font-medium' : 'text-slate-900 font-bold'}>{c.label}</span>
+            {c.done ? <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" /> : <Circle className="w-4 h-4 text-slate-700 shrink-0" />}
+            <span className={c.done ? 'text-slate-700 line-through font-medium' : 'text-slate-900 font-bold'}>{c.label}</span>
             {!c.done && <span className="text-slate-700 text-xs font-semibold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md ml-auto">{c.hint}</span>}
           </div>
         ))}
@@ -184,14 +184,14 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
   return (
     <div className="relative">
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-sm focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 shadow-sm w-48 sm:w-64">
-        <Search className="w-4 h-4 text-slate-500 shrink-0" />
+        <Search className="w-4 h-4 text-slate-700 shrink-0" />
         <input
           className="bg-transparent border-none p-0 text-slate-900 text-xs focus:ring-0 focus:outline-none w-full placeholder-slate-400 font-medium"
           placeholder="Search staff, leads, tickets..."
           value={query}
           onChange={e => setQuery(e.target.value)}
         />
-        {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-slate-500 hover:text-slate-600"><X className="w-3.5 h-3.5" /></button>}
+        {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-slate-700 hover:text-slate-700"><X className="w-3.5 h-3.5" /></button>}
       </div>
       {open && results.length > 0 && (
         <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-1">
@@ -206,7 +206,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
               className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 transition-colors"
             >
               <p className="text-slate-900 font-bold text-xs truncate">{r.title}</p>
-              <p className="text-slate-500 text-[11px] font-medium truncate">{r.subtitle}</p>
+              <p className="text-slate-700 text-[11px] font-medium truncate">{r.subtitle}</p>
             </button>
           ))}
         </div>

@@ -103,11 +103,11 @@ export default function UnifiedLogin() {
             <KiteTailLogo className="w-20 h-20 drop-shadow-md" />
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">Nikki Technologies</h1>
-          <p className="text-slate-600 text-sm font-semibold">Enterprise Staff Portal — Sign in to continue</p>
+          <p className="text-slate-700 text-sm font-semibold">Enterprise Staff Portal — Sign in to continue</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 px-5 py-3 mb-4 flex items-center justify-between gap-4 shadow-sm">
-          <span className="text-xs text-slate-600 truncate font-semibold">
+          <span className="text-xs text-slate-700 truncate font-semibold">
             {now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
           <div className="flex items-center gap-1.5 text-slate-700 shrink-0">
@@ -121,7 +121,7 @@ export default function UnifiedLogin() {
         <div className="bg-white rounded-2xl border border-slate-200/90 p-8 shadow-xl">
           {!isSupabaseConfigured && (
             <div className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3" data-testid="config-warning">
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
               <p className="text-amber-800 text-sm font-semibold">
                 Sign-in isn't configured yet. Ask your administrator to set the Supabase credentials.
               </p>
@@ -129,7 +129,7 @@ export default function UnifiedLogin() {
           )}
           {error && (
             <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3" data-testid="login-error">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-red-700 shrink-0 mt-0.5" />
               <p className="text-red-700 text-sm font-semibold">{error}</p>
             </div>
           )}
@@ -137,9 +137,9 @@ export default function UnifiedLogin() {
           {recoveryMode ? (
             passwordSetDone ? (
               <div className="text-center py-4">
-                <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto mb-3" />
+                <CheckCircle2 className="w-10 h-10 text-emerald-700 mx-auto mb-3" />
                 <p className="text-slate-900 font-bold mb-1">Password updated</p>
-                <p className="text-slate-600 text-sm mb-4">You're signed in — continue to your portal.</p>
+                <p className="text-slate-700 text-sm mb-4">You're signed in — continue to your portal.</p>
                 <button onClick={() => { setRecoveryMode(false); window.location.href = '/login'; }} className="w-full py-3 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-xl text-sm shadow-md">
                   Continue
                 </button>
@@ -148,7 +148,7 @@ export default function UnifiedLogin() {
               <form onSubmit={setNewPasswordSubmit} className="space-y-5">
                 <div>
                   <h3 className="text-slate-900 font-bold mb-1">Set a new password</h3>
-                  <p className="text-slate-600 text-sm">Choose a new password for your account.</p>
+                  <p className="text-slate-700 text-sm">Choose a new password for your account.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">New Password</label>
@@ -225,15 +225,15 @@ export default function UnifiedLogin() {
               <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
                 {resetSent ? (
                   <div className="text-center py-4">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto mb-3" />
+                    <CheckCircle2 className="w-10 h-10 text-emerald-700 mx-auto mb-3" />
                     <p className="text-slate-900 font-bold mb-1">Check your email</p>
-                    <p className="text-slate-600 text-sm">If an account exists for {resetEmail}, a reset link has been sent.</p>
+                    <p className="text-slate-700 text-sm">If an account exists for {resetEmail}, a reset link has been sent.</p>
                     <button className="text-blue-700 font-semibold text-sm mt-4" onClick={() => setShowReset(false)}>Close</button>
                   </div>
                 ) : (
                   <form onSubmit={sendResetEmail}>
                     <h3 className="text-slate-900 font-bold mb-1">Reset your password</h3>
-                    <p className="text-slate-600 text-sm mb-4">Enter your account email and we'll send a reset link.</p>
+                    <p className="text-slate-700 text-sm mb-4">Enter your account email and we'll send a reset link.</p>
                     <input
                       type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} required
                       placeholder="you@nikkitechnologies.com"
@@ -252,7 +252,7 @@ export default function UnifiedLogin() {
           )}
 
           <div className="mt-6 pt-5 border-t border-slate-200">
-            <p className="text-xs text-slate-500 text-center font-medium mb-3">Login is available for:</p>
+            <p className="text-xs text-slate-700 text-center font-medium mb-3">Login is available for:</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {[
                 { label: 'Admin', icon: Lock },
@@ -271,7 +271,7 @@ export default function UnifiedLogin() {
         </div>
 
         <div className="text-center mt-6">
-          <a href="/" className="text-sm text-slate-600 hover:text-blue-700 font-semibold transition-colors">
+          <a href="/" className="text-sm text-slate-700 hover:text-blue-700 font-semibold transition-colors">
             ← Back to website
           </a>
         </div>

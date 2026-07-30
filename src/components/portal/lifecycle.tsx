@@ -42,23 +42,23 @@ export function MyRegularizations() {
     load();
   }
 
-  const statusColor = (s: string) => s === 'approved' ? 'text-emerald-300' : s === 'rejected' ? 'text-red-300' : 'text-amber-300';
+  const statusColor = (s: string) => s === 'approved' ? 'text-emerald-700' : s === 'rejected' ? 'text-red-700' : 'text-amber-700';
 
   return (
     <div className={cardCls}>
       <h3 className="text-slate-900 font-semibold mb-1 text-sm flex items-center gap-2">
-        <CalendarCheck className="w-4 h-4 text-sky-400" /> Attendance Correction
+        <CalendarCheck className="w-4 h-4 text-sky-700" /> Attendance Correction
       </h3>
-      <p className="text-slate-500 text-xs mb-3">Forgot to check in or out? Request a correction — it needs manager/HR approval.</p>
+      <p className="text-slate-700 text-xs mb-3">Forgot to check in or out? Request a correction — it needs manager/HR approval.</p>
       <input type="date" className={inputCls + ' mb-2'} max={new Date().toISOString().slice(0, 10)}
         value={form.attendance_date} onChange={e => setForm({ ...form, attendance_date: e.target.value })} />
       <div className="grid grid-cols-2 gap-2 mb-2">
         <div>
-          <label className="text-slate-500 text-xs">Check-in time</label>
+          <label className="text-slate-700 text-xs">Check-in time</label>
           <input type="time" className={inputCls} value={form.requested_check_in} onChange={e => setForm({ ...form, requested_check_in: e.target.value })} />
         </div>
         <div>
-          <label className="text-slate-500 text-xs">Check-out time</label>
+          <label className="text-slate-700 text-xs">Check-out time</label>
           <input type="time" className={inputCls} value={form.requested_check_out} onChange={e => setForm({ ...form, requested_check_out: e.target.value })} />
         </div>
       </div>
@@ -69,7 +69,7 @@ export function MyRegularizations() {
         <div className="mt-4 space-y-1.5">
           {items.map(r => (
             <div key={r.id} className="flex justify-between text-xs">
-              <span className="text-slate-500">{r.attendance_date} — {r.reason.slice(0, 30)}{r.reason.length > 30 ? '…' : ''}</span>
+              <span className="text-slate-700">{r.attendance_date} — {r.reason.slice(0, 30)}{r.reason.length > 30 ? '…' : ''}</span>
               <span className={statusColor(r.status)}>{r.status}</span>
             </div>
           ))}
@@ -106,15 +106,15 @@ export function RegularizationApprovals() {
   const pending = items.filter(i => i.status === 'pending');
   const fmtTime = (t: string | null) => t ? new Date(t).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
 
-  if (pending.length === 0) return <p className="text-slate-500 text-sm text-center py-10">No pending attendance corrections.</p>;
+  if (pending.length === 0) return <p className="text-slate-700 text-sm text-center py-10">No pending attendance corrections.</p>;
 
   return (
     <div className="space-y-2">
       {pending.map(r => (
         <div key={r.id} className={cardCls}>
           <p className="text-slate-900 text-sm font-medium">{names[r.staff_user_id] || '—'} • {r.attendance_date}</p>
-          <p className="text-slate-500 text-xs mt-1">In: {fmtTime(r.requested_check_in)} • Out: {fmtTime(r.requested_check_out)}</p>
-          <p className="text-slate-500 text-xs mt-0.5">"{r.reason}"</p>
+          <p className="text-slate-700 text-xs mt-1">In: {fmtTime(r.requested_check_in)} • Out: {fmtTime(r.requested_check_out)}</p>
+          <p className="text-slate-700 text-xs mt-0.5">"{r.reason}"</p>
           {hasPermission('approve_leaves') && (
             <div className="flex gap-2 mt-3">
               <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs" onClick={() => review(r.id, 'approved')}>Approve</button>
@@ -161,8 +161,8 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className={cardCls + ' mb-5 space-y-2'}>
-        <h3 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><CalendarX className="w-4 h-4 text-sky-400" /> Add Holiday</h3>
-        <p className="text-slate-500 text-xs">Holidays are excluded from working-day counts, so payroll doesn't treat them as absences.</p>
+        <h3 className="text-slate-900 font-semibold text-sm flex items-center gap-2"><CalendarX className="w-4 h-4 text-sky-700" /> Add Holiday</h3>
+        <p className="text-slate-700 text-xs">Holidays are excluded from working-day counts, so payroll doesn't treat them as absences.</p>
         <div className="grid grid-cols-2 gap-2">
           <input type="date" className={inputCls} value={form.holiday_date} onChange={e => setForm({ ...form, holiday_date: e.target.value })} />
           <input className={inputCls} placeholder="Holiday name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
@@ -173,32 +173,32 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
         </select>
         <label className="flex items-center gap-2 text-sm text-slate-900 cursor-pointer">
           <input type="checkbox" checked={form.is_optional} onChange={e => setForm({ ...form, is_optional: e.target.checked })} />
-          Optional holiday <span className="text-slate-500 text-xs">(still counts as a working day)</span>
+          Optional holiday <span className="text-slate-700 text-xs">(still counts as a working day)</span>
         </label>
         <button className={btnCls} onClick={add}>Add Holiday</button>
       </div>
 
-      <p className="text-slate-500 text-xs font-medium mb-2">Upcoming ({upcoming.length})</p>
+      <p className="text-slate-700 text-xs font-medium mb-2">Upcoming ({upcoming.length})</p>
       <div className="space-y-1.5 mb-5">
         {upcoming.map(h => (
           <div key={h.id} className={cardCls + ' flex items-center justify-between py-2.5'}>
             <div>
-              <p className="text-slate-900 text-sm">{h.name} {h.is_optional && <span className="text-amber-400 text-xs">(optional)</span>}</p>
-              <p className="text-slate-500 text-xs">{new Date(h.holiday_date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+              <p className="text-slate-900 text-sm">{h.name} {h.is_optional && <span className="text-amber-700 text-xs">(optional)</span>}</p>
+              <p className="text-slate-700 text-xs">{new Date(h.holiday_date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                 {h.segment_slug && ` • ${segments.find(s => s.slug === h.segment_slug)?.name || h.segment_slug}`}</p>
             </div>
-            <button className="text-red-400 text-xs" onClick={() => remove(h.id)}>Remove</button>
+            <button className="text-red-700 text-xs" onClick={() => remove(h.id)}>Remove</button>
           </div>
         ))}
-        {upcoming.length === 0 && <p className="text-slate-500 text-sm">No upcoming holidays added yet.</p>}
+        {upcoming.length === 0 && <p className="text-slate-700 text-sm">No upcoming holidays added yet.</p>}
       </div>
 
       {past.length > 0 && (
         <details>
-          <summary className="text-slate-500 text-xs cursor-pointer">Past holidays ({past.length})</summary>
+          <summary className="text-slate-700 text-xs cursor-pointer">Past holidays ({past.length})</summary>
           <div className="space-y-1 mt-2">
             {past.map(h => (
-              <div key={h.id} className="flex justify-between text-xs text-slate-600">
+              <div key={h.id} className="flex justify-between text-xs text-slate-700">
                 <span>{h.name}</span><span>{h.holiday_date}</span>
               </div>
             ))}
@@ -246,17 +246,17 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: any; onDon
     <div className="space-y-3">
       <h3 className="text-slate-900 font-semibold">Offboard {staffMember.full_name}</h3>
       {openLeads > 0 && (
-        <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-600/40 text-amber-300 text-xs">
+        <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-600/40 text-amber-700 text-xs">
           ⚠ They still have <strong>{openLeads} active lead(s)</strong> assigned. Reassign those first
           (CRM → Reassign Leads) so nothing gets orphaned.
         </div>
       )}
       <div>
-        <label className="text-slate-500 text-xs">Last working day</label>
+        <label className="text-slate-700 text-xs">Last working day</label>
         <input type="date" className={inputCls} value={form.exit_date} onChange={e => setForm({ ...form, exit_date: e.target.value })} />
       </div>
       <div>
-        <label className="text-slate-500 text-xs">Reason</label>
+        <label className="text-slate-700 text-xs">Reason</label>
         <select className={inputCls} value={form.exit_reason} onChange={e => setForm({ ...form, exit_reason: e.target.value })}>
           {['resigned', 'terminated', 'contract_ended', 'retired', 'other'].map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
         </select>
@@ -269,7 +269,7 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: any; onDon
       <button className={btnCls + ' w-full'} disabled={busy} onClick={submit}>
         <UserMinus className="w-4 h-4 inline mr-1.5" /> {busy ? 'Saving…' : 'Confirm Offboarding'}
       </button>
-      <p className="text-slate-500 text-xs">Their record, documents, attendance and payslip history are all retained — nothing is deleted.</p>
+      <p className="text-slate-700 text-xs">Their record, documents, attendance and payslip history are all retained — nothing is deleted.</p>
     </div>
   );
 }
@@ -300,12 +300,12 @@ export function DanglingCheckins() {
   }
 
   if (items.length === 0) {
-    return <p className="text-slate-500 text-sm text-center py-10">No unclosed attendance days. All clear.</p>;
+    return <p className="text-slate-700 text-sm text-center py-10">No unclosed attendance days. All clear.</p>;
   }
 
   return (
     <div>
-      <p className="text-slate-500 text-sm mb-4">
+      <p className="text-slate-700 text-sm mb-4">
         These staff checked in but never checked out. Closing a day uses their shift end time unless you set one —
         it's marked as auto-closed, never counted as a real punch.
       </p>
@@ -315,9 +315,9 @@ export function DanglingCheckins() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-slate-900 text-sm font-medium">{r.full_name}</p>
-                <p className="text-slate-500 text-xs mt-0.5">
+                <p className="text-slate-700 text-xs mt-0.5">
                   {r.attendance_date} • in at {new Date(r.check_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                  <span className="text-amber-400 ml-2">{r.days_open} day(s) open</span>
+                  <span className="text-amber-700 ml-2">{r.days_open} day(s) open</span>
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -348,14 +348,14 @@ export function OverdueTickets({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-slate-500 text-sm">Open tickets past their SLA resolution target.</p>
+        <p className="text-slate-700 text-sm">Open tickets past their SLA resolution target.</p>
         <select className={inputCls + ' w-auto'} value={segment} onChange={e => setSegment(e.target.value)}>
           <option value="">All Segments</option>
           {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
         </select>
       </div>
       {items.length === 0 ? (
-        <p className="text-slate-500 text-sm text-center py-10">No tickets are overdue. Nice.</p>
+        <p className="text-slate-700 text-sm text-center py-10">No tickets are overdue. Nice.</p>
       ) : (
         <div className="space-y-2">
           {items.map(t => {
@@ -364,13 +364,13 @@ export function OverdueTickets({ segments }: { segments: Segment[] }) {
             return (
               <div key={t.id} className={cardCls + ' border-red-900/50'}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-sky-400 text-sm">{t.ticket_no}</span>
+                  <span className="font-mono text-sky-700 text-sm">{t.ticket_no}</span>
                   {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
-                  <span className="text-xs text-red-400 font-medium">{over}h over target</span>
-                  <span className="text-xs text-slate-500">{t.priority} • target {t.target_hours}h</span>
+                  <span className="text-xs text-red-700 font-medium">{over}h over target</span>
+                  <span className="text-xs text-slate-700">{t.priority} • target {t.target_hours}h</span>
                 </div>
                 <p className="text-slate-900 text-sm mt-1">{t.subject}</p>
-                <p className="text-slate-500 text-xs mt-0.5">{t.customer_name} • open {Math.round(Number(t.hours_open))}h</p>
+                <p className="text-slate-700 text-xs mt-0.5">{t.customer_name} • open {Math.round(Number(t.hours_open))}h</p>
               </div>
             );
           })}

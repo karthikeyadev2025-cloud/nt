@@ -203,7 +203,7 @@ export function TicketStatusChart() {
       </ResponsiveContainer>
       <div className="flex flex-wrap gap-3 justify-center mt-2">
         {data.map(d => (
-          <span key={d.name} className="text-xs text-slate-500 capitalize flex items-center gap-1">
+          <span key={d.name} className="text-xs text-slate-700 capitalize flex items-center gap-1">
             <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: colors[d.name.replace(' ', '_')] || '#0ea5e9' }} /> {d.name} ({d.value})
           </span>
         ))}

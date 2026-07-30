@@ -51,7 +51,7 @@ export default function ForcePasswordChange() {
             {busy ? 'Saving…' : 'Save & Continue'}
           </button>
         </form>
-        <button onClick={signOut} className="w-full text-center text-slate-500 hover:text-slate-300 text-sm mt-4">
+        <button onClick={signOut} className="w-full text-center text-slate-700 hover:text-slate-300 text-sm mt-4">
           Sign out
         </button>
       </div>

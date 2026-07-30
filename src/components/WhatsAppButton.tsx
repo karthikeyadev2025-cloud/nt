@@ -97,7 +97,7 @@ Looking forward to hearing from you!`;
               <span>Start Chat on WhatsApp</span>
             </button>
 
-            <p className="text-slate-500 text-xs text-center mt-4">
+            <p className="text-slate-700 text-xs text-center mt-4">
               Available: Monday - Saturday, 9 AM - 7 PM
             </p>
           </div>

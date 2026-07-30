@@ -79,7 +79,7 @@ function AnimatedStats({ content }: { content: Record<string, Record<string, str
             <p className="text-4xl md:text-5xl font-extrabold text-blue-700">
               <AnimatedNumber value={s.value} />
             </p>
-            <p className="text-slate-600 text-sm font-semibold mt-2">{s.label}</p>
+            <p className="text-slate-700 text-sm font-semibold mt-2">{s.label}</p>
           </div>
         ))}
       </div>
@@ -99,7 +99,7 @@ function ClientLogos() {
 
   return (
     <section className="py-12 px-4 overflow-hidden">
-      <p className="text-center text-slate-500 text-xs uppercase tracking-[0.2em] mb-8">Trusted By</p>
+      <p className="text-center text-slate-700 text-xs uppercase tracking-[0.2em] mb-8">Trusted By</p>
       <div className="flex gap-16 animate-marquee w-max">
         {track.map((l, i) => (
           <img key={`${l.id}-${i}`} src={l.logo_url} alt={l.name} className="h-10 md:h-12 object-contain opacity-60 hover:opacity-100 transition-opacity grayscale hover:grayscale-0" />
@@ -212,7 +212,7 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
               className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
                 activeTab === t.id
                   ? 'bg-blue-700 text-white shadow-md shadow-blue-700/20'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-700 hover:text-slate-900'
               }`}
             >
               {t.id === 'kite_tail' ? <Megaphone className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
@@ -239,7 +239,7 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
               </span>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{curr.title}</h3>
-            <p className="text-slate-600 text-sm leading-relaxed font-medium">{curr.desc}</p>
+            <p className="text-slate-700 text-sm leading-relaxed font-medium">{curr.desc}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
               {curr.highlights.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-2 text-xs text-slate-700 font-medium">
@@ -251,11 +251,11 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
           </div>
 
           <div className="rounded-xl bg-slate-50 border border-slate-200 p-5 space-y-4 flex flex-col justify-between shadow-xs">
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Performance Guarantee</p>
+            <p className="text-xs text-slate-700 font-bold uppercase tracking-wider">Performance Guarantee</p>
             <div className="space-y-3">
               {Object.entries(curr.stats).map(([k, v]) => (
                 <div key={k} className="flex justify-between items-center border-b border-slate-200 pb-2">
-                  <span className="text-slate-500 text-xs capitalize font-medium">{k}</span>
+                  <span className="text-slate-700 text-xs capitalize font-medium">{k}</span>
                   <span className="text-blue-800 font-extrabold text-xs">{v}</span>
                 </div>
               ))}
@@ -291,7 +291,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
         className="absolute top-16 left-[8%] opacity-25 w-24 h-24"
       >
-        <KiteTailLogo className="w-full h-full text-blue-600 drop-shadow-sm" />
+        <KiteTailLogo className="w-full h-full text-blue-700 drop-shadow-sm" />
       </motion.div>
 
       {/* Floating Kite 2 - Top Right */}
@@ -304,7 +304,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
         className="absolute top-28 right-[10%] opacity-20 w-32 h-32 hidden sm:block"
       >
-        <KiteTailLogo className="w-full h-full text-indigo-600 drop-shadow-sm" />
+        <KiteTailLogo className="w-full h-full text-indigo-700 drop-shadow-sm" />
       </motion.div>
 
       {/* Floating Kite 3 - Center Right */}
@@ -317,7 +317,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2.5 }}
         className="absolute top-1/2 right-[22%] opacity-15 w-20 h-20 hidden md:block"
       >
-        <KiteTailLogo className="w-full h-full text-sky-500" />
+        <KiteTailLogo className="w-full h-full text-sky-700" />
       </motion.div>
 
       {/* Floating Kite 4 - Center Left */}
@@ -374,7 +374,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="text-slate-600 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
+          className="text-slate-700 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
           {content?.hero?.description || 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.'}
         </motion.p>
@@ -464,7 +464,7 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
       <div className="max-w-7xl mx-auto">
         <Reveal>
           <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">What We Do</h2>
-          <p className="text-center text-slate-600 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
+          <p className="text-center text-slate-700 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
         </Reveal>
         <div id="services" className="space-y-16">
           {segments.map(seg => {
@@ -492,7 +492,7 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-slate-900">{seg.name}</h3>
-                      <p className="text-slate-600 text-sm font-medium">{seg.tagline}</p>
+                      <p className="text-slate-700 text-sm font-medium">{seg.tagline}</p>
                     </div>
                   </div>
                 </Reveal>
@@ -507,7 +507,7 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
                         <div>
                           <Icon name={s.icon} className="w-8 h-8 mb-4 text-blue-700" />
                           <h4 className="text-lg font-bold text-slate-900 mb-2">{s.title}</h4>
-                          <p className="text-slate-600 text-sm leading-relaxed font-medium">{s.description}</p>
+                          <p className="text-slate-700 text-sm leading-relaxed font-medium">{s.description}</p>
                         </div>
                       </motion.div>
                     </Reveal>
@@ -536,7 +536,7 @@ function Products() {
       <div className="max-w-7xl mx-auto">
         <Reveal>
           <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">Our Products</h2>
-          <p className="text-center text-slate-600 mb-14 max-w-2xl mx-auto font-medium">Software built by Nikki Technologies, powering businesses.</p>
+          <p className="text-center text-slate-700 mb-14 max-w-2xl mx-auto font-medium">Software built by Nikki Technologies, powering businesses.</p>
         </Reveal>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {products.map((p, i) => (
@@ -555,21 +555,21 @@ function Products() {
                     <p className="text-blue-700 text-xs font-semibold">{p.tagline}</p>
                   </div>
                 </div>
-                <p className="text-slate-600 text-sm mb-5 leading-relaxed font-medium">{p.description}</p>
+                <p className="text-slate-700 text-sm mb-5 leading-relaxed font-medium">{p.description}</p>
                 <div className="space-y-2.5 mb-6">
                   {(p.features || []).map((f, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-blue-700 mt-0.5 shrink-0" />
                       <div>
                         <span className="text-slate-900 text-sm font-semibold">{f.title}</span>
-                        <span className="text-slate-600 text-sm font-medium"> — {f.description}</span>
+                        <span className="text-slate-700 text-sm font-medium"> — {f.description}</span>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="mt-auto">
                   {p.status === 'coming_soon' ? (
-                    <span className="inline-block px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-xs font-semibold">Coming Soon</span>
+                    <span className="inline-block px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold">Coming Soon</span>
                   ) : p.external_url ? (
                     <a href={p.external_url} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20">
@@ -625,11 +625,11 @@ function TeamSection() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {items.map(m => (
             <div key={m.id} className="text-center p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
-              <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-2xl shadow-xs">
+              <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-2xl shadow-xs">
                 {m.photo_url ? <img src={m.photo_url} alt={m.name} className="w-full h-full object-cover" /> : m.name[0]}
               </div>
               <p className="text-slate-900 font-bold text-sm">{m.name}</p>
-              <p className="text-slate-500 text-xs font-medium">{m.designation}</p>
+              <p className="text-slate-700 text-xs font-medium">{m.designation}</p>
             </div>
           ))}
         </div>
@@ -728,16 +728,16 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
         <div className="flex justify-between items-start mb-5">
           <div>
             <h3 className="text-slate-900 text-lg font-bold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
-            {job && <p className="text-slate-500 text-xs mt-0.5">{job.location} • {job.employment_type.replace('_', ' ')}</p>}
+            {job && <p className="text-slate-700 text-xs mt-0.5">{job.location} • {job.employment_type.replace('_', ' ')}</p>}
           </div>
           <button className="text-slate-400 hover:text-slate-700" onClick={onClose}>✕</button>
         </div>
 
         {done ? (
           <div className="text-center py-10">
-            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
+            <CheckCircle2 className="w-12 h-12 text-emerald-700 mx-auto mb-3" />
             <p className="text-slate-900 font-bold mb-1">Application submitted!</p>
-            <p className="text-slate-600 text-sm">We'll review your profile and get back to you.</p>
+            <p className="text-slate-700 text-sm">We'll review your profile and get back to you.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -778,7 +778,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
                 onChange={e => setResume(e.target.files?.[0] || null)} />
             </div>
 
-            {error && <p className="text-red-600 text-xs font-medium">{error}</p>}
+            {error && <p className="text-red-700 text-xs font-medium">{error}</p>}
             <button onClick={submit} disabled={busy}
               className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-blue-700/20">
               {busy ? 'Submitting…' : 'Submit Application'}
@@ -805,13 +805,13 @@ function Careers({ segments }: { segments: Segment[] }) {
         <div className="text-center mb-14">
           <Briefcase className="w-10 h-10 text-blue-700 mx-auto mb-3" />
           <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 tracking-tight">Careers at Nikki Technologies</h2>
-          <p className="text-slate-600 max-w-2xl mx-auto font-medium">
+          <p className="text-slate-700 max-w-2xl mx-auto font-medium">
             {`We're hiring across ${segments.map(s => s.name).join(', ') || 'our divisions'}. Don't see a role that fits? Send us a general application.`}
           </p>
         </div>
 
         {jobs.length === 0 && (
-          <p className="text-slate-500 text-center mb-10 font-medium">No open positions right now — check back soon, or apply generally below.</p>
+          <p className="text-slate-700 text-center mb-10 font-medium">No open positions right now — check back soon, or apply generally below.</p>
         )}
 
         <div className="space-y-3 mb-10">
@@ -824,7 +824,7 @@ function Careers({ segments }: { segments: Segment[] }) {
                     <h3 className="text-slate-900 font-bold">{job.title}</h3>
                     {seg && <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: seg.color + '15', color: seg.color }}>{seg.name}</span>}
                   </div>
-                  <p className="text-slate-500 text-sm font-medium">{job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}</p>
+                  <p className="text-slate-700 text-sm font-medium">{job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}</p>
                 </div>
                 <button onClick={() => setApplyJob(job)}
                   className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20 shrink-0">
@@ -866,13 +866,13 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
   }
 
   const statusColor: Record<string, string> = {
-    open: 'text-blue-700', in_progress: 'text-amber-600', waiting_customer: 'text-purple-600',
-    resolved: 'text-emerald-600', closed: 'text-slate-500',
+    open: 'text-blue-700', in_progress: 'text-amber-700', waiting_customer: 'text-purple-700',
+    resolved: 'text-emerald-700', closed: 'text-slate-700',
   };
 
   return (
     <div className="p-8 rounded-2xl bg-white border border-slate-200 shadow-xl">
-      <button onClick={onBack} className="text-slate-500 hover:text-slate-800 text-xs mb-4 font-semibold">← Back to raise a ticket</button>
+      <button onClick={onBack} className="text-slate-700 hover:text-slate-800 text-xs mb-4 font-semibold">← Back to raise a ticket</button>
       {!result ? (
         <div className="space-y-3">
           <input className={inputCls} placeholder="Ticket Number (e.g. NKT-CC-00001)" value={ticketNo} onChange={e => setTicketNo(e.target.value)} />
@@ -892,10 +892,10 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
           <p className="font-mono text-blue-700 text-sm mb-1 font-bold">{result.ticket_no}</p>
           <p className="text-slate-900 font-bold mb-3">{result.subject}</p>
           <div className="space-y-1.5 text-sm font-medium">
-            <p><span className="text-slate-500">Status: </span><span className={`font-bold ${statusColor[result.status]}`}>{result.status.replace('_', ' ')}</span></p>
-            <p><span className="text-slate-500">Priority: </span><span className="text-slate-800">{result.priority}</span></p>
-            <p><span className="text-slate-500">Raised: </span><span className="text-slate-800">{new Date(result.created_at).toLocaleDateString()}</span></p>
-            {result.resolved_at && <p><span className="text-slate-500">Resolved: </span><span className="text-slate-800">{new Date(result.resolved_at).toLocaleDateString()}</span></p>}
+            <p><span className="text-slate-700">Status: </span><span className={`font-bold ${statusColor[result.status]}`}>{result.status.replace('_', ' ')}</span></p>
+            <p><span className="text-slate-700">Priority: </span><span className="text-slate-800">{result.priority}</span></p>
+            <p><span className="text-slate-700">Raised: </span><span className="text-slate-800">{new Date(result.created_at).toLocaleDateString()}</span></p>
+            {result.resolved_at && <p><span className="text-slate-700">Resolved: </span><span className="text-slate-800">{new Date(result.resolved_at).toLocaleDateString()}</span></p>}
           </div>
           <button onClick={() => setResult(null)} className="text-blue-700 text-sm font-semibold mt-4">Check another ticket</button>
         </div>
@@ -976,7 +976,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
         <div className="text-center mb-10">
           <Ticket className="w-10 h-10 text-blue-700 mx-auto mb-3" />
           <h2 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">Raise a Support Ticket</h2>
-          <p className="text-slate-600 font-medium">{`Existing customer? Get help from the right team — ${cleanSegments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
+          <p className="text-slate-700 font-medium">{`Existing customer? Get help from the right team — ${cleanSegments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
           <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-blue-700 text-sm mt-2 font-semibold underline">
             {mode === 'raise' ? 'Already raised a ticket? Track its status' : 'Raise a new ticket instead'}
           </button>
@@ -985,9 +985,9 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
           <TrackTicket onBack={() => setMode('raise')} />
         ) : done ? (
           <div className="p-8 rounded-2xl bg-white border border-blue-200 text-center shadow-xl">
-            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
+            <CheckCircle2 className="w-12 h-12 text-emerald-700 mx-auto mb-3" />
             <p className="text-slate-900 text-lg font-bold mb-1">Ticket created: {done}</p>
-            <p className="text-slate-600 text-sm mb-4">Our team will contact you shortly. Save your ticket number.</p>
+            <p className="text-slate-700 text-sm mb-4">Our team will contact you shortly. Save your ticket number.</p>
             <button onClick={() => setDone(null)} className="text-blue-700 text-sm font-semibold">Raise another ticket</button>
           </div>
         ) : (
@@ -1011,7 +1011,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
               <input className={inputCls} placeholder="Phone *" value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} />
               <input className={inputCls} placeholder="Email" value={form.customer_email} onChange={e => setForm({ ...form, customer_email: e.target.value })} />
             </div>
-            {err && <p className="text-red-600 text-sm font-medium">{err}</p>}
+            {err && <p className="text-red-700 text-sm font-medium">{err}</p>}
             <button onClick={submit} disabled={busy}
               className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-700/20">
               <Send className="w-4 h-4" /> {busy ? 'Submitting…' : 'Submit Ticket'}
@@ -1055,7 +1055,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
             {c.email && <p className="flex items-center gap-3"><Mail className="w-5 h-5 text-blue-700" /> {c.email}</p>}
             {c.address && <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-blue-700" /> {c.address}</p>}
             {!hasRealPhone(c.phone) && (
-              <p className="text-slate-600 text-sm pt-2">
+              <p className="text-slate-700 text-sm pt-2">
                 Prefer to raise a request directly? Use the form here or{' '}
                 <a href="#raise-ticket" className="text-blue-700 font-semibold underline">open a support ticket</a> — we respond to every one.
               </p>
@@ -1065,7 +1065,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
         <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-xl">
           {sent ? (
             <div className="text-center py-10">
-              <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
+              <CheckCircle2 className="w-12 h-12 text-emerald-700 mx-auto mb-3" />
               <p className="text-slate-900 font-bold">Thanks! Our team will call you soon.</p>
             </div>
           ) : (
@@ -1078,7 +1078,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
               <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
               <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
               <textarea className={inputCls} rows={2} placeholder="Tell us what you need" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
-              {err && <p className="text-red-600 text-sm font-medium">{err}</p>}
+              {err && <p className="text-red-700 text-sm font-medium">{err}</p>}
               <button onClick={submit} disabled={busy}
                 className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-blue-700/20">
                 {busy ? 'Sending…' : 'Request Free Consultation'}
@@ -1111,7 +1111,7 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
           <a href="/login" className="block text-slate-400 hover:text-blue-400 py-0.5">Staff Login</a>
         </div>
       </div>
-      <p className="text-center text-slate-500 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies. All rights reserved.</p>
+      <p className="text-center text-slate-700 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies. All rights reserved.</p>
     </footer>
   );
 }

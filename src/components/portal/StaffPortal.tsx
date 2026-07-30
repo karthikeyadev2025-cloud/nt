@@ -87,7 +87,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
     })();
   }, [user]);
 
-  if (loading) return <p className="text-slate-500 text-sm py-8 text-center">Loading…</p>;
+  if (loading) return <p className="text-slate-700 text-sm py-8 text-center">Loading…</p>;
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -96,7 +96,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const Tile = ({ label, value, tone = 'text-white', onClick }: any) => (
     <button onClick={onClick} disabled={!onClick}
       className={`${cardCls} text-left ${onClick ? 'hover:border-slate-300 cursor-pointer' : ''}`}>
-      <p className="text-slate-500 text-xs">{label}</p>
+      <p className="text-slate-700 text-xs">{label}</p>
       <p className={`text-2xl font-semibold mt-0.5 ${tone}`}>{value}</p>
     </button>
   );
@@ -105,7 +105,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
     <div className="space-y-5">
       <div>
         <h2 className="text-slate-900 text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
-        <p className="text-slate-500 text-sm">
+        <p className="text-slate-700 text-sm">
           {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           {user?.designation ? ` • ${user.designation}` : ''}
         </p>
@@ -117,24 +117,24 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <p className="text-slate-900 text-sm font-medium">Not checked in yet</p>
-              <p className="text-slate-500 text-xs">Start your day from My Attendance.</p>
+              <p className="text-slate-700 text-xs">Start your day from My Attendance.</p>
             </div>
             <button className={btnCls} onClick={() => onNavigate('attendance')}>Check In</button>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-emerald-300 text-sm font-medium">
+              <p className="text-emerald-700 text-sm font-medium">
                 Checked in at {new Date(stats.attendance.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 {stats.attendance.is_late ? ` • ${stats.attendance.minutes_late} min late` : ''}
               </p>
-              <p className="text-slate-500 text-xs capitalize">
+              <p className="text-slate-700 text-xs capitalize">
                 {(stats.attendance.work_mode || 'office').replace('_', ' ')}
                 {stats.attendance.check_out_at ? ' • checked out' : ''}
               </p>
             </div>
             {!stats.attendance.check_out_at && (
-              <button className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-sm"
+              <button className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-sm"
                 onClick={() => onNavigate('attendance')}>Check Out</button>
             )}
           </div>
@@ -147,16 +147,16 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
           <Tile label={isExec ? 'My leads' : 'In my queue'} value={stats.myLeads} onClick={() => onNavigate('leads')} />
           <Tile label={isExec ? 'Visits logged today' : 'Calls logged today'} value={stats.callsToday} />
           <Tile label="Callbacks due" value={stats.callbacksDue}
-            tone={stats.callbacksDue > 0 ? 'text-amber-400' : 'text-white'} onClick={() => onNavigate('leads')} />
+            tone={stats.callbacksDue > 0 ? 'text-amber-700' : 'text-white'} onClick={() => onNavigate('leads')} />
           <Tile label="Upcoming appointments" value={stats.appointments.length}
-            tone={stats.appointments.length > 0 ? 'text-sky-300' : 'text-white'} onClick={() => onNavigate('leads')} />
+            tone={stats.appointments.length > 0 ? 'text-sky-700' : 'text-white'} onClick={() => onNavigate('leads')} />
         </div>
       )}
 
       {isSupport && (
         <div className="grid grid-cols-2 gap-3">
           <Tile label="Assigned to me" value={stats.myTickets}
-            tone={stats.myTickets > 0 ? 'text-sky-300' : 'text-white'} onClick={() => onNavigate('tickets')} />
+            tone={stats.myTickets > 0 ? 'text-sky-700' : 'text-white'} onClick={() => onNavigate('tickets')} />
           <Tile label="Open in my segment" value={stats.openTickets} onClick={() => onNavigate('tickets')} />
         </div>
       )}
@@ -170,9 +170,9 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
               <div key={a.id} className="flex items-start justify-between gap-3 border-b border-slate-900 last:border-0 pb-2 last:pb-0">
                 <div className="min-w-0">
                   <p className="text-slate-900 text-sm">{a.customer_name}</p>
-                  <p className="text-slate-500 text-xs">{a.phone}{a.appointment_note ? ` • ${a.appointment_note}` : ''}</p>
+                  <p className="text-slate-700 text-xs">{a.phone}{a.appointment_note ? ` • ${a.appointment_note}` : ''}</p>
                 </div>
-                <p className="text-sky-300 text-xs whitespace-nowrap">
+                <p className="text-sky-700 text-xs whitespace-nowrap">
                   {new Date(a.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 </p>
               </div>
@@ -183,7 +183,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
       {stats.pendingLeaves > 0 && (
         <button className={cardCls + ' w-full text-left hover:border-slate-300'} onClick={() => onNavigate('requests')}>
-          <p className="text-amber-400 text-sm">
+          <p className="text-amber-700 text-sm">
             {stats.pendingLeaves} request{stats.pendingLeaves > 1 ? 's' : ''} awaiting approval
           </p>
         </button>
@@ -281,23 +281,23 @@ export function MyAttendance() {
       <MyStatsCard />
       <MyPerformanceChart />
       <div className={cardCls + ' text-center py-8'}>
-        <Clock className="w-8 h-8 text-sky-400 mx-auto mb-2" />
-        <p className="text-slate-500 text-sm mb-4">{new Date().toDateString()}</p>
+        <Clock className="w-8 h-8 text-sky-700 mx-auto mb-2" />
+        <p className="text-slate-700 text-sm mb-4">{new Date().toDateString()}</p>
         {!today ? (
           <button className={btnCls} disabled={busy} onClick={() => setPickingMode(true)}>
             <MapPin className="w-4 h-4 inline mr-1" /> Check In
           </button>
         ) : !today.check_out_at ? (
           <div>
-            <p className="text-emerald-300 text-sm mb-1">Checked in at {new Date(today.check_in_at).toLocaleTimeString()}</p>
-            <p className="text-slate-500 text-xs mb-3 capitalize">
+            <p className="text-emerald-700 text-sm mb-1">Checked in at {new Date(today.check_in_at).toLocaleTimeString()}</p>
+            <p className="text-slate-700 text-xs mb-3 capitalize">
               {(today.work_mode || 'office').replace('_', ' ')}
-              {today.is_late && <span className="text-amber-400 ml-2">Late by {today.minutes_late} min</span>}
+              {today.is_late && <span className="text-amber-700 ml-2">Late by {today.minutes_late} min</span>}
             </p>
             <button className={btnCls} disabled={busy} onClick={() => setShowCamera('out')}>Check Out</button>
           </div>
         ) : (
-          <p className="text-slate-600 text-sm">
+          <p className="text-slate-700 text-sm">
             Done for today — In {new Date(today.check_in_at).toLocaleTimeString()} • Out {new Date(today.check_out_at).toLocaleTimeString()}
           </p>
         )}
@@ -307,10 +307,10 @@ export function MyAttendance() {
         <div className="space-y-1.5">
           {history.map(r => (
             <div key={r.id} className="flex justify-between text-xs">
-              <span className="text-slate-500">{r.attendance_date}</span>
-              <span className="text-slate-600">
+              <span className="text-slate-700">{r.attendance_date}</span>
+              <span className="text-slate-700">
                 {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : '—'} → {r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : '—'}
-                {r.work_mode && r.work_mode !== 'office' && <span className="ml-2 text-amber-400 capitalize">{r.work_mode.replace('_', ' ')}</span>}
+                {r.work_mode && r.work_mode !== 'office' && <span className="ml-2 text-amber-700 capitalize">{r.work_mode.replace('_', ' ')}</span>}
               </span>
             </div>
           ))}
@@ -406,25 +406,25 @@ export function MyRequests() {
   }
 
   const statusColor = (s: string) =>
-    s === 'approved' || s === 'paid' ? 'text-emerald-300' : s === 'rejected' ? 'text-red-300' : 'text-amber-300';
+    s === 'approved' || s === 'paid' ? 'text-emerald-700' : s === 'rejected' ? 'text-red-700' : 'text-amber-700';
 
   return (
     <div className="space-y-6">
       {balances.length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-400" /> Leave Balance <span className="text-slate-500 text-xs font-normal">this year</span></h3>
+          <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-700" /> Leave Balance <span className="text-slate-700 text-xs font-normal">this year</span></h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {balances.map((b: any) => (
               <div key={b.leave_type} className="rounded-xl bg-white border border-slate-800 px-3 py-2.5">
-                <p className="text-slate-500 text-xs capitalize">{b.leave_type}</p>
+                <p className="text-slate-700 text-xs capitalize">{b.leave_type}</p>
                 {b.is_unlimited ? (
-                  <p className="text-sky-300 text-lg font-semibold leading-tight">—</p>
+                  <p className="text-sky-700 text-lg font-semibold leading-tight">—</p>
                 ) : (
-                  <p className={`text-lg font-semibold leading-tight ${Number(b.remaining) <= 0 ? 'text-red-400' : 'text-slate-900'}`}>
-                    {Number(b.remaining)}<span className="text-slate-600 text-xs font-normal"> / {Number(b.entitled)}</span>
+                  <p className={`text-lg font-semibold leading-tight ${Number(b.remaining) <= 0 ? 'text-red-700' : 'text-slate-900'}`}>
+                    {Number(b.remaining)}<span className="text-slate-700 text-xs font-normal"> / {Number(b.entitled)}</span>
                   </p>
                 )}
-                <p className="text-slate-600 text-[10px] mt-0.5">
+                <p className="text-slate-700 text-[10px] mt-0.5">
                   {b.is_unlimited ? 'unlimited' : `${Number(b.used)} used`}{Number(b.pending) > 0 ? ` • ${Number(b.pending)} pending` : ''}
                 </p>
               </div>
@@ -435,7 +435,7 @@ export function MyRequests() {
 
     <div className="grid md:grid-cols-2 gap-6">
       <div className={cardCls}>
-        <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-400" /> Leave Request</h3>
+        <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-700" /> Leave Request</h3>
         <div className="grid grid-cols-2 gap-2 mb-2">
           <input type="date" className={inputCls} value={leaveForm.from_date} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} />
           <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} />
@@ -452,21 +452,21 @@ export function MyRequests() {
         <div className="mt-4 space-y-1.5">
           {leaves.map(l => (
             <div key={l.id} className="flex justify-between text-xs">
-              <span className="text-slate-500">{l.from_date} → {l.to_date} ({l.leave_type})</span>
+              <span className="text-slate-700">{l.from_date} → {l.to_date} ({l.leave_type})</span>
               <span className={statusColor(l.status)}>{l.status}</span>
             </div>
           ))}
         </div>
       </div>
       <div className={cardCls}>
-        <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-sky-400" /> Salary Advance</h3>
+        <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-sky-700" /> Salary Advance</h3>
         <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} />
         <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} />
         <button className={btnCls + ' w-full'} disabled={busyAdv} onClick={requestAdvance}>{busyAdv ? 'Submitting…' : 'Request Advance'}</button>
         <div className="mt-4 space-y-1.5">
           {advances.map(a => (
             <div key={a.id} className="flex justify-between text-xs">
-              <span className="text-slate-500">₹{Number(a.amount).toLocaleString('en-IN')} • {new Date(a.created_at).toLocaleDateString()}</span>
+              <span className="text-slate-700">₹{Number(a.amount).toLocaleString('en-IN')} • {new Date(a.created_at).toLocaleDateString()}</span>
               <span className={statusColor(a.status)}>{a.status}</span>
             </div>
           ))}
@@ -550,13 +550,13 @@ export default function StaffPortal() {
             {!collapsed && (
               <div className="min-w-0">
                 <p className="text-slate-900 font-bold text-sm tracking-tight truncate">Nikki Suite</p>
-                <p className="text-slate-500 text-[11px] font-mono truncate">Enterprise Portal</p>
+                <p className="text-slate-700 text-[11px] font-mono truncate">Enterprise Portal</p>
               </div>
             )}
           </div>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-slate-500 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            className="text-slate-700 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? '→' : '←'}
@@ -573,11 +573,11 @@ export default function StaffPortal() {
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   active
                     ? 'bg-blue-50 border border-blue-200 text-blue-800 shadow-sm font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
                 }`}
                 title={collapsed ? t.label : undefined}
               >
-                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-blue-700' : 'text-slate-500'}`} />
+                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-blue-700' : 'text-slate-700'}`} />
                 {!collapsed && <span className="truncate">{t.label}</span>}
               </button>
             );
@@ -593,10 +593,10 @@ export default function StaffPortal() {
             {!collapsed && (
               <div className="min-w-0 flex-1">
                 <p className="text-slate-900 text-xs font-semibold truncate">{user?.full_name}</p>
-                <p className="text-slate-500 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
+                <p className="text-slate-700 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
-            <button onClick={signOut} className="text-slate-500 hover:text-red-600 p-1" title="Sign out">
+            <button onClick={signOut} className="text-slate-700 hover:text-red-700 p-1" title="Sign out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -615,12 +615,12 @@ export default function StaffPortal() {
               <h1 className="text-slate-900 font-bold text-base md:text-lg tracking-tight">
                 {tabs.find(t => t.id === tab)?.label || 'Portal'}
               </h1>
-              <p className="text-slate-500 text-xs hidden sm:block">{mySegNames}</p>
+              <p className="text-slate-700 text-xs hidden sm:block">{mySegNames}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
-            <button onClick={signOut} className="md:hidden text-slate-500 hover:text-red-600"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} className="md:hidden text-slate-700 hover:text-red-700"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
@@ -640,11 +640,11 @@ export default function StaffPortal() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-slate-900 font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
-                  <p className="text-slate-500 text-xs mt-0.5">
+                  <p className="text-slate-700 text-xs mt-0.5">
                     {user?.designation || user?.role} • {mySegNames} {(user as any)?.staff_code && `• ${(user as any).staff_code}`}
                   </p>
                 </div>
-                <div className="text-right text-xs text-slate-500">
+                <div className="text-right text-xs text-slate-700">
                   {user?.joining_date && <p>Joined {new Date(user.joining_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
                   {(user as any)?.reporting_time && <p className="mt-0.5">{(user as any).reporting_time}</p>}
                 </div>

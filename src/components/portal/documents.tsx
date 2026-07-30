@@ -124,7 +124,7 @@ function SignaturePad({ onCapture }: { onCapture: (dataUrl: string) => void }) {
         onTouchStart={start} onTouchMove={move} onTouchEnd={end}
       />
       <div className="flex justify-between items-center mt-2">
-        <button onClick={clear} className="flex items-center gap-1 text-slate-500 text-xs">
+        <button onClick={clear} className="flex items-center gap-1 text-slate-700 text-xs">
           <RotateCcw className="w-3.5 h-3.5" /> Clear
         </button>
         <button onClick={capture} disabled={empty} className={btnCls + ' disabled:opacity-40'}>
@@ -182,9 +182,9 @@ export function DocumentViewer({
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-slate-900 text-lg font-semibold">{title}</h3>
-            {meta && <p className="text-slate-500 text-xs mt-0.5">{meta}</p>}
+            {meta && <p className="text-slate-700 text-xs mt-0.5">{meta}</p>}
           </div>
-          <button className="text-slate-500 hover:text-slate-900" onClick={onClose}>✕</button>
+          <button className="text-slate-700 hover:text-slate-900" onClick={onClose}>✕</button>
         </div>
 
         <div className="bg-white text-slate-800 rounded-lg p-6 whitespace-pre-wrap text-sm leading-relaxed font-serif mb-5">
@@ -192,24 +192,24 @@ export function DocumentViewer({
           {signed && signatureDataUrl && (
             <div className="mt-8 pt-3 border-t border-slate-300 inline-block">
               <img src={signatureDataUrl} alt="Signature" className="h-14" />
-              <p className="text-xs text-slate-500 mt-1">Signed by {signedName} • {acknowledgedAt && new Date(acknowledgedAt).toLocaleString()}</p>
+              <p className="text-xs text-slate-700 mt-1">Signed by {signedName} • {acknowledgedAt && new Date(acknowledgedAt).toLocaleString()}</p>
             </div>
           )}
           {signed && !signatureDataUrl && (
-            <p className="text-xs text-slate-500 mt-6 pt-3 border-t border-slate-300">Acknowledged on {acknowledgedAt && new Date(acknowledgedAt).toLocaleString()}</p>
+            <p className="text-xs text-slate-700 mt-6 pt-3 border-t border-slate-300">Acknowledged on {acknowledgedAt && new Date(acknowledgedAt).toLocaleString()}</p>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-sky-400 text-sm font-medium mb-4">
+        <div className="flex items-center gap-1.5 text-sky-700 text-sm font-medium mb-4">
           <button onClick={handlePrint} className="flex items-center gap-1.5"><Printer className="w-4 h-4" /> Print / Save as PDF</button>
         </div>
 
         {canSubmit && !signed && requiresSignature && (
           <div className="border-t border-slate-800 pt-5">
-            <p className="text-slate-900 text-sm font-medium mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-400" /> Sign to accept this document</p>
+            <p className="text-slate-900 text-sm font-medium mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-700" /> Sign to accept this document</p>
             <div className="flex gap-2 mb-3">
-              <button onClick={() => setMode('draw')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'draw' ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>Draw Signature</button>
-              <button onClick={() => setMode('type')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'type' ? 'border-sky-500 text-sky-300' : 'border-slate-200 text-slate-500'}`}>Type Name</button>
+              <button onClick={() => setMode('draw')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'draw' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Draw Signature</button>
+              <button onClick={() => setMode('type')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'type' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Type Name</button>
             </div>
             {mode === 'draw' ? (
               <SignaturePad onCapture={dataUrl => onSign && onSign(dataUrl, '')} />
@@ -278,23 +278,23 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
   return (
     <div className="space-y-2">
       {pending > 0 && (
-        <div className="mb-3 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-600/40 text-amber-300 text-sm">
+        <div className="mb-3 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-600/40 text-amber-700 text-sm">
           You have {pending} document{pending > 1 ? 's' : ''} awaiting your signature/acknowledgement.
         </div>
       )}
-      {docs.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No documents issued yet.</p>}
+      {docs.length === 0 && <p className="text-slate-700 text-sm text-center py-10">No documents issued yet.</p>}
       {docs.map(d => (
         <div key={d.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-300'} onClick={() => setOpen(d)}>
           <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-sky-400" />
+            <FileText className="w-5 h-5 text-sky-700" />
             <div>
               <p className="text-slate-900 text-sm font-medium">{d.title}</p>
-              <p className="text-slate-500 text-xs">{DOC_TYPE_LABELS[d.doc_type]} • issued {new Date(d.issued_at).toLocaleDateString()}</p>
+              <p className="text-slate-700 text-xs">{DOC_TYPE_LABELS[d.doc_type]} • issued {new Date(d.issued_at).toLocaleDateString()}</p>
             </div>
           </div>
           {d.acknowledged_at
-            ? <span className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> {d.requires_signature ? 'Signed' : 'Acknowledged'}</span>
-            : <span className="text-xs text-amber-400">{d.requires_signature ? 'Needs signature' : 'Needs review'}</span>}
+            ? <span className="text-xs text-emerald-700 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> {d.requires_signature ? 'Signed' : 'Acknowledged'}</span>
+            : <span className="text-xs text-amber-700">{d.requires_signature ? 'Needs signature' : 'Needs review'}</span>}
         </div>
       ))}
       {open && (
@@ -324,14 +324,14 @@ export function MySalaryCard({ salary }: { salary?: { basic?: number; hra?: numb
     <div className={cardCls}>
       <h3 className="text-slate-900 font-semibold mb-4 text-sm">Salary Structure</h3>
       <div className="grid grid-cols-2 gap-y-3 text-sm">
-        <span className="text-slate-500">Basic</span><span className="text-slate-900 text-right">{rupee(s.basic)}</span>
-        <span className="text-slate-500">HRA</span><span className="text-slate-900 text-right">{rupee(s.hra)}</span>
-        <span className="text-slate-500">Allowances</span><span className="text-slate-900 text-right">{rupee(s.allowances)}</span>
-        {!!s.performance_bonus && (<><span className="text-slate-500">Performance Bonus</span><span className="text-emerald-400 text-right">{rupee(s.performance_bonus)}</span></>)}
-        {!!s.incentives && (<><span className="text-slate-500">Incentives</span><span className="text-emerald-400 text-right">{rupee(s.incentives)}</span></>)}
-        <span className="text-slate-500">Deductions</span><span className="text-red-300 text-right">− {rupee(s.deductions)}</span>
+        <span className="text-slate-700">Basic</span><span className="text-slate-900 text-right">{rupee(s.basic)}</span>
+        <span className="text-slate-700">HRA</span><span className="text-slate-900 text-right">{rupee(s.hra)}</span>
+        <span className="text-slate-700">Allowances</span><span className="text-slate-900 text-right">{rupee(s.allowances)}</span>
+        {!!s.performance_bonus && (<><span className="text-slate-700">Performance Bonus</span><span className="text-emerald-700 text-right">{rupee(s.performance_bonus)}</span></>)}
+        {!!s.incentives && (<><span className="text-slate-700">Incentives</span><span className="text-emerald-700 text-right">{rupee(s.incentives)}</span></>)}
+        <span className="text-slate-700">Deductions</span><span className="text-red-700 text-right">− {rupee(s.deductions)}</span>
         <div className="col-span-2 border-t border-slate-800 my-1" />
-        <span className="text-slate-900 font-semibold">Annual CTC</span><span className="text-sky-400 font-bold text-right">{rupee(s.ctc)}</span>
+        <span className="text-slate-900 font-semibold">Annual CTC</span><span className="text-sky-700 font-bold text-right">{rupee(s.ctc)}</span>
       </div>
     </div>
   );
@@ -346,10 +346,10 @@ export function OnboardingStatusBadge({ staffUserId }: { staffUserId: string }) 
         if (data) setStatus({ total: data.length, done: data.filter((d: any) => d.acknowledged_at).length });
       });
   }, [staffUserId]);
-  if (!status || status.total === 0) return <span className="text-xs text-slate-600">No documents</span>;
+  if (!status || status.total === 0) return <span className="text-xs text-slate-700">No documents</span>;
   const complete = status.done === status.total;
   return (
-    <span className={`text-xs px-2 py-0.5 rounded ${complete ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+    <span className={`text-xs px-2 py-0.5 rounded ${complete ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
       {complete ? 'Onboarding complete' : `${status.done}/${status.total} signed`}
     </span>
   );

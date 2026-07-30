@@ -64,7 +64,7 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <p className="text-slate-500 text-sm">Define shift timing, grace period and late-fine rules, then assign staff.</p>
+        <p className="text-slate-700 text-sm">Define shift timing, grace period and late-fine rules, then assign staff.</p>
         <button className={btnCls} onClick={() => setEditing({ segment_slug: '', name: '', start_time: '09:30', end_time: '18:30', break_minutes: 60, working_days: [1, 2, 3, 4, 5, 6], grace_minutes: 10, late_fine_type: 'none', late_fine_amount: 0, half_day_after_minutes: 120, is_active: true })}>+ New Shift</button>
       </div>
       <div className="space-y-2">
@@ -73,16 +73,16 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-900 font-medium">{s.name}</p>
-                <p className="text-slate-500 text-xs mt-0.5">{s.start_time} – {s.end_time} • grace {s.grace_minutes}min • {assignedCount(s.id)} staff assigned</p>
+                <p className="text-slate-700 text-xs mt-0.5">{s.start_time} – {s.end_time} • grace {s.grace_minutes}min • {assignedCount(s.id)} staff assigned</p>
               </div>
               <div className="flex gap-3">
-                <button className="text-sky-400 text-xs" onClick={() => setAssigningFor(s)}>Assign Staff</button>
-                <button className="text-sky-400 text-xs" onClick={() => setEditing(s)}>Edit</button>
+                <button className="text-sky-700 text-xs" onClick={() => setAssigningFor(s)}>Assign Staff</button>
+                <button className="text-sky-700 text-xs" onClick={() => setEditing(s)}>Edit</button>
               </div>
             </div>
           </div>
         ))}
-        {shifts.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No shifts defined yet.</p>}
+        {shifts.length === 0 && <p className="text-slate-700 text-sm text-center py-10">No shifts defined yet.</p>}
       </div>
 
       {editing && (
@@ -95,26 +95,26 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-slate-500 text-xs">Start Time</label><input type="time" className={inputCls} value={editing.start_time} onChange={e => setEditing({ ...editing, start_time: e.target.value })} /></div>
-              <div><label className="text-slate-500 text-xs">End Time</label><input type="time" className={inputCls} value={editing.end_time} onChange={e => setEditing({ ...editing, end_time: e.target.value })} /></div>
+              <div><label className="text-slate-700 text-xs">Start Time</label><input type="time" className={inputCls} value={editing.start_time} onChange={e => setEditing({ ...editing, start_time: e.target.value })} /></div>
+              <div><label className="text-slate-700 text-xs">End Time</label><input type="time" className={inputCls} value={editing.end_time} onChange={e => setEditing({ ...editing, end_time: e.target.value })} /></div>
             </div>
             <div>
-              <label className="text-slate-500 text-xs mb-1 block">Working Days</label>
+              <label className="text-slate-700 text-xs mb-1 block">Working Days</label>
               <div className="flex flex-wrap gap-1.5">
                 {DAYS.map(d => (
                   <button key={d.v} onClick={() => toggleDay(d.v)}
-                    className={`px-2.5 py-1 rounded-lg text-xs border ${(editing.working_days || []).includes(d.v) ? 'bg-sky-500 text-slate-950 border-sky-500' : 'border-slate-200 text-slate-500'}`}>
+                    className={`px-2.5 py-1 rounded-lg text-xs border ${(editing.working_days || []).includes(d.v) ? 'bg-sky-500 text-slate-950 border-sky-500' : 'border-slate-200 text-slate-700'}`}>
                     {d.l}
                   </button>
                 ))}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-slate-500 text-xs">Grace Period (min)</label><input type="number" className={inputCls} value={editing.grace_minutes} onChange={e => setEditing({ ...editing, grace_minutes: Number(e.target.value) })} /></div>
-              <div><label className="text-slate-500 text-xs">Break (min)</label><input type="number" className={inputCls} value={editing.break_minutes} onChange={e => setEditing({ ...editing, break_minutes: Number(e.target.value) })} /></div>
+              <div><label className="text-slate-700 text-xs">Grace Period (min)</label><input type="number" className={inputCls} value={editing.grace_minutes} onChange={e => setEditing({ ...editing, grace_minutes: Number(e.target.value) })} /></div>
+              <div><label className="text-slate-700 text-xs">Break (min)</label><input type="number" className={inputCls} value={editing.break_minutes} onChange={e => setEditing({ ...editing, break_minutes: Number(e.target.value) })} /></div>
             </div>
             <div>
-              <label className="text-slate-500 text-xs">Late Fine Policy</label>
+              <label className="text-slate-700 text-xs">Late Fine Policy</label>
               <select className={inputCls} value={editing.late_fine_type} onChange={e => setEditing({ ...editing, late_fine_type: e.target.value })}>
                 <option value="none">No fine — just flag as late</option>
                 <option value="fixed_per_occurrence">Fixed amount per late day</option>
@@ -123,10 +123,10 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
               </select>
             </div>
             {editing.late_fine_type !== 'none' && editing.late_fine_type !== 'half_day_after_minutes' && (
-              <div><label className="text-slate-500 text-xs">Fine Amount (₹)</label><input type="number" className={inputCls} value={editing.late_fine_amount} onChange={e => setEditing({ ...editing, late_fine_amount: Number(e.target.value) })} /></div>
+              <div><label className="text-slate-700 text-xs">Fine Amount (₹)</label><input type="number" className={inputCls} value={editing.late_fine_amount} onChange={e => setEditing({ ...editing, late_fine_amount: Number(e.target.value) })} /></div>
             )}
             {editing.late_fine_type === 'half_day_after_minutes' && (
-              <div><label className="text-slate-500 text-xs">Minutes late = half day</label><input type="number" className={inputCls} value={editing.half_day_after_minutes} onChange={e => setEditing({ ...editing, half_day_after_minutes: Number(e.target.value) })} /></div>
+              <div><label className="text-slate-700 text-xs">Minutes late = half day</label><input type="number" className={inputCls} value={editing.half_day_after_minutes} onChange={e => setEditing({ ...editing, half_day_after_minutes: Number(e.target.value) })} /></div>
             )}
             <button className={btnCls + ' w-full'} onClick={save}>Save Shift</button>
           </div>
@@ -271,7 +271,7 @@ export function PayslipManager() {
   }
 
   const staffName = (id: string) => staff.find(s => s.id === id)?.full_name || '—';
-  const statusColor: Record<string, string> = { unpaid: 'bg-red-500/20 text-red-300', partial: 'bg-amber-500/20 text-amber-300', paid: 'bg-emerald-500/20 text-emerald-300' };
+  const statusColor: Record<string, string> = { unpaid: 'bg-red-100 text-red-700', partial: 'bg-amber-100 text-amber-700', paid: 'bg-emerald-100 text-emerald-700' };
 
   return (
     <div>
@@ -284,12 +284,12 @@ export function PayslipManager() {
           <div key={p.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-300'} onClick={() => openPayments(p)}>
             <div>
               <p className="text-slate-900 text-sm font-medium">{staffName(p.staff_user_id)} — {p.period_month}/{p.period_year}</p>
-              <p className="text-slate-500 text-xs mt-0.5">Net Pay ₹{Number(p.net_pay).toLocaleString('en-IN')} • Paid ₹{Number(p.amount_paid).toLocaleString('en-IN')}</p>
+              <p className="text-slate-700 text-xs mt-0.5">Net Pay ₹{Number(p.net_pay).toLocaleString('en-IN')} • Paid ₹{Number(p.amount_paid).toLocaleString('en-IN')}</p>
             </div>
             <span className={`text-xs px-2 py-0.5 rounded capitalize ${statusColor[p.payment_status]}`}>{p.payment_status}</span>
           </div>
         ))}
-        {payslips.length === 0 && <p className="text-slate-500 text-sm text-center py-10">No payslips generated yet.</p>}
+        {payslips.length === 0 && <p className="text-slate-700 text-sm text-center py-10">No payslips generated yet.</p>}
       </div>
 
       {showGen && (
@@ -301,22 +301,22 @@ export function PayslipManager() {
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-slate-500 text-xs">Month</label><input type="number" min={1} max={12} className={inputCls} value={genForm.period_month} onChange={e => setGenForm({ ...genForm, period_month: Number(e.target.value) })} /></div>
-              <div><label className="text-slate-500 text-xs">Year</label><input type="number" className={inputCls} value={genForm.period_year} onChange={e => setGenForm({ ...genForm, period_year: Number(e.target.value) })} /></div>
+              <div><label className="text-slate-700 text-xs">Month</label><input type="number" min={1} max={12} className={inputCls} value={genForm.period_month} onChange={e => setGenForm({ ...genForm, period_month: Number(e.target.value) })} /></div>
+              <div><label className="text-slate-700 text-xs">Year</label><input type="number" className={inputCls} value={genForm.period_year} onChange={e => setGenForm({ ...genForm, period_year: Number(e.target.value) })} /></div>
             </div>
-            <button className="w-full py-2 rounded-lg border border-sky-600 text-sky-300 text-sm font-medium" onClick={autoFillFromAttendance}>
+            <button className="w-full py-2 rounded-lg border border-sky-600 text-sky-700 text-sm font-medium" onClick={autoFillFromAttendance}>
               Auto-fill from Attendance & Leave Records
             </button>
             <div className="grid grid-cols-2 gap-3">
               {(['working_days', 'present_days', 'absent_days', 'paid_leave_days', 'unpaid_leave_days', 'late_days'] as const).map(k => (
-                <div key={k}><label className="text-slate-500 text-xs capitalize">{k.replace(/_/g, ' ')}</label><input type="number" className={inputCls} value={(genForm as any)[k]} onChange={e => setGenForm({ ...genForm, [k]: Number(e.target.value) })} /></div>
+                <div key={k}><label className="text-slate-700 text-xs capitalize">{k.replace(/_/g, ' ')}</label><input type="number" className={inputCls} value={(genForm as any)[k]} onChange={e => setGenForm({ ...genForm, [k]: Number(e.target.value) })} /></div>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-slate-500 text-xs">Late Fine (₹)</label><input type="number" className={inputCls} value={genForm.late_fine} onChange={e => setGenForm({ ...genForm, late_fine: Number(e.target.value) })} /></div>
-              <div><label className="text-slate-500 text-xs">Other Deductions (₹)</label><input type="number" className={inputCls} value={genForm.other_deductions} onChange={e => setGenForm({ ...genForm, other_deductions: Number(e.target.value) })} /></div>
+              <div><label className="text-slate-700 text-xs">Late Fine (₹)</label><input type="number" className={inputCls} value={genForm.late_fine} onChange={e => setGenForm({ ...genForm, late_fine: Number(e.target.value) })} /></div>
+              <div><label className="text-slate-700 text-xs">Other Deductions (₹)</label><input type="number" className={inputCls} value={genForm.other_deductions} onChange={e => setGenForm({ ...genForm, other_deductions: Number(e.target.value) })} /></div>
             </div>
-            <p className="text-slate-500 text-xs">Auto-fill pulls real check-ins and approved leaves for the selected month — review before generating. Base pay, performance bonus and incentives come from the staff member's salary structure automatically.</p>
+            <p className="text-slate-700 text-xs">Auto-fill pulls real check-ins and approved leaves for the selected month — review before generating. Base pay, performance bonus and incentives come from the staff member's salary structure automatically.</p>
             <button className={btnCls + ' w-full'} onClick={generate}>Generate</button>
           </div>
         </div>
@@ -327,12 +327,12 @@ export function PayslipManager() {
           <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-slate-900 font-semibold">{staffName(openSlip.staff_user_id)} — {openSlip.period_month}/{openSlip.period_year}</h3>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
-              <span className="text-slate-500">Net Pay</span><span className="text-slate-900 text-right">₹{Number(openSlip.net_pay).toLocaleString('en-IN')}</span>
-              <span className="text-slate-500">Paid So Far</span><span className="text-emerald-400 text-right">₹{Number(openSlip.amount_paid).toLocaleString('en-IN')}</span>
-              <span className="text-slate-500">Balance</span><span className="text-amber-400 text-right">₹{Math.max(0, Number(openSlip.net_pay) - Number(openSlip.amount_paid)).toLocaleString('en-IN')}</span>
+              <span className="text-slate-700">Net Pay</span><span className="text-slate-900 text-right">₹{Number(openSlip.net_pay).toLocaleString('en-IN')}</span>
+              <span className="text-slate-700">Paid So Far</span><span className="text-emerald-700 text-right">₹{Number(openSlip.amount_paid).toLocaleString('en-IN')}</span>
+              <span className="text-slate-700">Balance</span><span className="text-amber-700 text-right">₹{Math.max(0, Number(openSlip.net_pay) - Number(openSlip.amount_paid)).toLocaleString('en-IN')}</span>
             </div>
             <div className="border-t border-slate-800 pt-3 space-y-2">
-              <p className="text-slate-600 text-sm font-medium">Record a Payment</p>
+              <p className="text-slate-700 text-sm font-medium">Record a Payment</p>
               <div className="grid grid-cols-2 gap-2">
                 <input type="number" className={inputCls} placeholder="Amount *" value={payForm.amount} onChange={e => setPayForm({ ...payForm, amount: e.target.value })} />
                 <select className={inputCls} value={payForm.method} onChange={e => setPayForm({ ...payForm, method: e.target.value })}>
@@ -344,10 +344,10 @@ export function PayslipManager() {
             </div>
             {payments.length > 0 && (
               <div className="border-t border-slate-800 pt-3 space-y-1.5">
-                <p className="text-slate-500 text-xs font-medium">Payment History</p>
+                <p className="text-slate-700 text-xs font-medium">Payment History</p>
                 {payments.map(p => (
                   <div key={p.id} className="flex justify-between text-xs">
-                    <span className="text-slate-500">{new Date(p.paid_at).toLocaleDateString()} • {p.method.replace('_', ' ')}</span>
+                    <span className="text-slate-700">{new Date(p.paid_at).toLocaleDateString()} • {p.method.replace('_', ' ')}</span>
                     <span className="text-slate-900">₹{Number(p.amount).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
@@ -370,16 +370,16 @@ export function MyPayslips() {
       .then(({ data }) => { if (data) setPayslips(data); });
   }, [user]);
 
-  const statusColor: Record<string, string> = { unpaid: 'bg-red-500/20 text-red-300', partial: 'bg-amber-500/20 text-amber-300', paid: 'bg-emerald-500/20 text-emerald-300' };
+  const statusColor: Record<string, string> = { unpaid: 'bg-red-100 text-red-700', partial: 'bg-amber-100 text-amber-700', paid: 'bg-emerald-100 text-emerald-700' };
   if (payslips.length === 0) return null;
 
   return (
     <div className={cardCls}>
-      <h3 className="text-slate-900 font-semibold text-sm mb-3 flex items-center gap-2"><FileText className="w-4 h-4 text-sky-400" /> My Payslips</h3>
+      <h3 className="text-slate-900 font-semibold text-sm mb-3 flex items-center gap-2"><FileText className="w-4 h-4 text-sky-700" /> My Payslips</h3>
       <div className="space-y-2">
         {payslips.map(p => (
           <div key={p.id} className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">{p.period_month}/{p.period_year} — ₹{Number(p.net_pay).toLocaleString('en-IN')}</span>
+            <span className="text-slate-700">{p.period_month}/{p.period_year} — ₹{Number(p.net_pay).toLocaleString('en-IN')}</span>
             <span className={`text-xs px-2 py-0.5 rounded capitalize ${statusColor[p.payment_status]}`}>{p.payment_status}</span>
           </div>
         ))}
@@ -418,7 +418,7 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-slate-500 text-xs text-left border-b border-slate-800">
+            <tr className="text-slate-700 text-xs text-left border-b border-slate-800">
               <th className="pb-2 font-normal">Staff</th>
               <th className="pb-2 font-normal">Present</th>
               <th className="pb-2 font-normal">Absent</th>
@@ -430,15 +430,15 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
             {rows.map(r => (
               <tr key={r.staff_user_id} className="border-b border-slate-900">
                 <td className="py-2 text-slate-900">{r.full_name}</td>
-                <td className="py-2 text-emerald-400">{r.days_present}</td>
-                <td className="py-2 text-red-400">{r.days_absent}</td>
-                <td className="py-2 text-amber-400">{r.days_on_leave}</td>
-                <td className="py-2 text-slate-600">{r.attendance_pct}%</td>
+                <td className="py-2 text-emerald-700">{r.days_present}</td>
+                <td className="py-2 text-red-700">{r.days_absent}</td>
+                <td className="py-2 text-amber-700">{r.days_on_leave}</td>
+                <td className="py-2 text-slate-700">{r.attendance_pct}%</td>
               </tr>
             ))}
           </tbody>
         </table>
-        {rows.length === 0 && <p className="text-slate-500 text-sm text-center py-6">No data.</p>}
+        {rows.length === 0 && <p className="text-slate-700 text-sm text-center py-6">No data.</p>}
       </div>
     </div>
   );
