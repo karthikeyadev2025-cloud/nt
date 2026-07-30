@@ -49,7 +49,8 @@ export default function UnifiedLogin() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const cleanEmail = email.trim().toLowerCase();
+    const { error } = await signIn(cleanEmail, password);
     if (error) setError(error);
     setLoading(false);
   }

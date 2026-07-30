@@ -2,14 +2,18 @@
   "name": "Nikki Technologies",
   "short_name": "Nikki Tech",
   "description": "Nikki Technologies — Digital Marketing & Software Development. Staff portal & CRM.",
-  "start_url": "/login",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#0ea5e9",
+  "background_color": "#f8fafc",
+  "theme_color": "#1d4ed8",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }
