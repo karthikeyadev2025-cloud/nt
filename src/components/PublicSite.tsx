@@ -149,39 +149,95 @@ function Navigation({ content }: { content: Record<string, Record<string, string
 
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ─────────────────────────────────────────────── Hero Live Demo (Interactive SaaS Dashboard Preview)
-function HeroLiveDemo() {
-  const [activeTab, setActiveTab] = useState<'telecall' | 'crm' | 'field' | 'payroll'>('telecall');
+// ─────────────────────────────────────────────── Client-Facing Services Showcase (Hero Widget)
+function ServicesHeroShowcase({ segments }: { segments: Segment[] }) {
+  const [activeTab, setActiveTab] = useState<'broadband' | 'digital' | 'software' | 'surveillance'>('broadband');
+
+  const contentMap = {
+    broadband: {
+      title: 'High-Speed Enterprise Broadband & Leased Line',
+      desc: 'Dedicated optical fiber connectivity with 99.9% SLA uptime guarantee and 24/7 dedicated network support.',
+      badge: 'Fiber Broadband',
+      icon: '🌐',
+      highlights: [
+        'Dedicated Symmetric Speed (Up to 1 Gbps)',
+        'Dual Ring Redundancy & Low Latency',
+        '24/7 Network Operations Center (NOC) Monitoring',
+        'Quick On-Site Technical Support',
+      ],
+      stats: { uptime: '99.99%', latency: '< 5ms', support: '24/7 Live' }
+    },
+    digital: {
+      title: 'Performance Digital Marketing & Brand Growth',
+      desc: 'Data-driven marketing campaigns, social media management, Google & Meta ads, and ROI-focused lead generation.',
+      badge: 'Digital Marketing',
+      icon: '🚀',
+      highlights: [
+        'Targeted Meta & Google PPC Campaigns',
+        'High-Converting Social Media Creatives & Video Content',
+        'Local SEO & Organic Search Ranking',
+        'Conversion Funnel & Analytics Tracking',
+      ],
+      stats: { reach: '10M+', roas: '4.8x Avg', leads: '50K+' }
+    },
+    software: {
+      title: 'Custom Software & Mobile App Development',
+      desc: 'Bespoke web applications, cross-platform mobile apps, cloud backends, and enterprise workflow automation.',
+      badge: 'Software Engineering',
+      icon: '💻',
+      highlights: [
+        'Modern Web Apps (React, TypeScript, Cloud Native)',
+        'Native & Cross-Platform Mobile Apps (Android & iOS)',
+        'Database Architecture & Secure API Development',
+        'Automated Business ERP & CRM Systems',
+      ],
+      stats: { delivery: '100%', security: 'SOC2 Ready', code: 'Clean & Scalable' }
+    },
+    surveillance: {
+      title: 'Enterprise Security & CCTV Surveillance',
+      desc: 'End-to-end security infrastructure, HD CCTV IP camera setup, biometric access control, and smart monitoring.',
+      badge: 'Security & Surveillance',
+      icon: '🔒',
+      highlights: [
+        'High-Definition IP Camera Network Installation',
+        'Remote Live Mobile Viewing & Cloud Storage',
+        'Biometric Attendance & Door Access Control',
+        'Commercial & Residential Security Audits',
+      ],
+      stats: { HD: '4K Ultra', Warranty: '2 Years', Install: 'Turnkey' }
+    }
+  };
+
+  const curr = contentMap[activeTab];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 35 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.3 }}
-      className="mt-14 max-w-5xl mx-auto rounded-2xl bg-slate-950/80 border border-sky-500/30 p-4 md:p-6 shadow-2xl backdrop-blur-xl relative overflow-hidden"
+      className="mt-12 max-w-5xl mx-auto rounded-2xl bg-slate-900/90 border border-slate-800 p-5 md:p-7 shadow-2xl backdrop-blur-md relative overflow-hidden text-left"
     >
-      <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/90 pb-4 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500/80" />
-          <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-          <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-          <span className="text-slate-400 text-xs font-mono ml-2">Nikki Operations Hub • Internal Company Workflow Preview</span>
+          <div className="w-3 h-3 rounded-full bg-slate-700" />
+          <div className="w-3 h-3 rounded-full bg-slate-700" />
+          <div className="w-3 h-3 rounded-full bg-slate-700" />
+          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider ml-2">Nikki Technologies • Core Capabilities</span>
         </div>
-        <div className="flex flex-wrap gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+        <div className="flex flex-wrap gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
           {[
-            { id: 'telecall', label: '📞 Outbound Telecalling' },
-            { id: 'crm', label: '📊 Lead CRM & Pipeline' },
-            { id: 'field', label: '📍 Field GPS Visits' },
-            { id: 'payroll', label: '💼 HRMS & Payroll' },
+            { id: 'broadband', label: '🌐 Broadband Fiber' },
+            { id: 'digital', label: '🚀 Digital Marketing' },
+            { id: 'software', label: '💻 Software & Apps' },
+            { id: 'surveillance', label: '🔒 Security & CCTV' },
           ].map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === t.id
-                  ? 'bg-blue-600 text-white shadow-md font-semibold'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {t.label}
@@ -191,152 +247,51 @@ function HeroLiveDemo() {
       </div>
 
       <AnimatePresence mode="wait">
-        {activeTab === 'telecall' && (
-          <motion.div
-            key="telecall"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left"
-          >
-            <div className="md:col-span-2 rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-medium flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Live Call Active — 02:45
-                </span>
-                <span className="text-slate-500 text-xs">Priority: High</span>
-              </div>
-              <div>
-                <p className="text-white font-semibold text-base">Apex Enterprises — Ramesh Kumar</p>
-                <p className="text-slate-400 text-xs">+91 98765 43210 • Software SaaS Inquiry</p>
-              </div>
-              <div className="flex items-center gap-1 h-6">
-                {[40, 70, 30, 90, 50, 80, 60, 40, 85, 45, 95, 30, 75].map((h, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ height: [`${h}%`, `${100 - h}%`, `${h}%`] }}
-                    transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.1 }}
-                    className="flex-1 bg-sky-400 rounded-full"
-                  />
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-800/80">
-                {['Interested — Appt', 'Callback Tomorrow', 'Converted ₹1,20,000', 'Send Quote'].map((btn, idx) => (
-                  <span key={idx} className="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 text-xs">
-                    {btn}
-                  </span>
-                ))}
-              </div>
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -15 }}
+          transition={{ duration: 0.3 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          <div className="md:col-span-2 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{curr.icon}</span>
+              <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold">
+                {curr.badge}
+              </span>
             </div>
-            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-3">
-              <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Queue Metrics</p>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between"><span className="text-slate-400">Calls Today</span><span className="text-white font-semibold">48 calls</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Appointments Booked</span><span className="text-sky-400 font-semibold">9 booked</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Avg Call Duration</span><span className="text-emerald-400 font-semibold">3m 12s</span></div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {activeTab === 'crm' && (
-          <motion.div
-            key="crm"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-left"
-          >
-            {[
-              { stage: 'New Enquiries', count: '14', color: 'border-sky-500/40 bg-sky-500/10', title: 'TechCorp Solutions', amt: '₹2,50,000' },
-              { stage: 'Contacted & Demo', count: '8', color: 'border-amber-500/40 bg-amber-500/10', title: 'Horizon Networks', amt: '₹4,80,000' },
-              { stage: 'Quoted / Negotiating', count: '5', color: 'border-purple-500/40 bg-purple-500/10', title: 'Global Infra Ltd', amt: '₹9,20,000' },
-              { stage: 'Won / Closed', count: '22', color: 'border-emerald-500/40 bg-emerald-500/10', title: 'Vanguard Retail', amt: '₹3,40,000' },
-            ].map(col => (
-              <div key={col.stage} className={`p-3 rounded-xl border ${col.color} space-y-2`}>
-                <div className="flex justify-between items-center text-xs font-semibold text-white">
-                  <span>{col.stage}</span>
-                  <span className="px-1.5 py-0.5 rounded bg-slate-950/60 text-slate-300">{col.count}</span>
+            <h3 className="text-2xl font-bold text-white tracking-tight">{curr.title}</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">{curr.desc}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+              {curr.highlights.map((item, idx) => (
+                <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+                  <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                  <span>{item}</span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                  <p className="text-white text-xs font-medium">{col.title}</p>
-                  <p className="text-emerald-400 font-semibold text-[11px] mt-1">{col.amt}</p>
-                  <p className="text-slate-500 text-[10px] mt-0.5">Updated 10m ago</p>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        )}
+              ))}
+            </div>
+          </div>
 
-        {activeTab === 'field' && (
-          <motion.div
-            key="field"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left"
-          >
-            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-3 relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                  📍 GPS Field Radar — Live Executive Check-In
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300">IndexedDB Synced</span>
-              </div>
-              <div className="h-28 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:12px_12px] opacity-20" />
-                <motion.div
-                  animate={{ scale: [1, 1.4, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="w-8 h-8 rounded-full bg-sky-500/30 border border-sky-400 flex items-center justify-center text-white"
-                >
-                  📍
-                </motion.div>
-              </div>
-              <p className="text-slate-300 text-xs">Address: 14th Main Rd, HSR Layout, Bengaluru, Karnataka</p>
-            </div>
-            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-3">
-              <p className="text-xs text-slate-400 font-medium">On-Site Verification Proof</p>
-              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-950 border border-slate-800">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-bold text-sm">📷</div>
-                <div>
-                  <p className="text-white text-xs font-medium">Site Installation Proof Photo</p>
-                  <p className="text-emerald-400 text-[10px]">Verified with GPS Timestamp</p>
+          <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-5 space-y-4 flex flex-col justify-between">
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Service Guarantee</p>
+            <div className="space-y-3">
+              {Object.entries(curr.stats).map(([k, v]) => (
+                <div key={k} className="flex justify-between items-center border-b border-slate-850 pb-2">
+                  <span className="text-slate-400 text-xs capitalize">{k}</span>
+                  <span className="text-white font-bold text-sm text-blue-400">{v}</span>
                 </div>
-              </div>
+              ))}
             </div>
-          </motion.div>
-        )}
-
-        {activeTab === 'payroll' && (
-          <motion.div
-            key="payroll"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left"
-          >
-            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-2">
-              <p className="text-slate-400 text-xs">Working Days (Shift Aware)</p>
-              <p className="text-2xl font-bold text-white">26 days</p>
-              <p className="text-emerald-400 text-[11px]">Excludes company holidays automatically</p>
-            </div>
-            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-2">
-              <p className="text-slate-400 text-xs">Shift Grace & Late Fines</p>
-              <p className="text-2xl font-bold text-sky-400">10m Grace</p>
-              <p className="text-slate-500 text-[11px]">Server-side trigger enforcement</p>
-            </div>
-            <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-4 space-y-2">
-              <p className="text-slate-400 text-xs">Automated Payslips</p>
-              <p className="text-2xl font-bold text-amber-400">100% Calculated</p>
-              <p className="text-purple-300 text-[11px]">One-click bank transfer export</p>
-            </div>
-          </motion.div>
-        )}
+            <a
+              href="#contact"
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs text-center transition-all shadow-md shadow-blue-600/20"
+            >
+              Get Free Consultation
+            </a>
+          </div>
+        </motion.div>
       </AnimatePresence>
     </motion.div>
   );
@@ -404,8 +359,8 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           ))}
         </motion.div>
 
-        {/* Live Interactive Hero Visual Mock */}
-        <HeroLiveDemo />
+        {/* Client-Facing Services Showcase */}
+        <ServicesHeroShowcase segments={segments} />
       </div>
     </section>
   );
