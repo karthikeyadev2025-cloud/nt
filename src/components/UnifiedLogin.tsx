@@ -53,9 +53,14 @@ export default function UnifiedLogin() {
     try {
       const cleanEmail = email.trim().toLowerCase();
       const { error } = await signIn(cleanEmail, password);
-      if (error) setError(error);
+      if (error) {
+        setError(error);
+      } else {
+        // Navigate instantly to SuperAdmin Dashboard
+        window.location.hash = '#admin';
+      }
     } catch (err: any) {
-      setError(err?.message || 'Login failed. Please try again.');
+      setError(err?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
