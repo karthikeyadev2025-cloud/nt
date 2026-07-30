@@ -1,13 +1,13 @@
 # Nikki Technologies — nikkitechnologies.com
 
-Multi-segment business platform: **CCTV Installation | Digital Media | Software Solutions** — one backend, one login, full no-code Super Admin control.
+Multi-segment business platform: **Kite & Tail Digital Media | Software Solutions** — one backend, one login, full no-code Super Admin control.
 
 ## Stack
 React 18 + Vite + TypeScript + Tailwind + Supabase (Postgres, Auth, RLS, Edge Functions).
 
 ## Architecture
-- **segments** table — verticals are dynamic. Add a 4th segment from Super Admin → tickets, leads, staff scoping, website sections all pick it up automatically.
-- **app_users** — role + `segments[]` (`{cctv}`, `{software}`, `{all}`) + per-user `permission_overrides` (jsonb). RLS enforces segment scoping at DB level.
+- **segments** table — verticals are dynamic. Add a segment from Super Admin → tickets, leads, staff scoping, website sections all pick it up automatically.
+- **app_users** — role + `segments[]` (`{digital-marketing}`, `{software-development}`, `{all}`) + per-user `permission_overrides` (jsonb). RLS enforces segment scoping at DB level.
 - **products** — Software Solutions catalog (MyStore OS, Punchly, Jovio pre-seeded). Add/edit from panel, link-out model.
 - **support_tickets** — auto-numbered per segment (NKT-CC-00001 / NKT-DM / NKT-SW), per-segment ticket types, public "Raise a Ticket" form, staff scoped views.
 - **marketing_leads** — CRM pipeline (new→contacted→qualified→quoted→won/lost), segment-routed from website form, remarks thread.
