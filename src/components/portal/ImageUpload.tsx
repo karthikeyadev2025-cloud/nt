@@ -126,7 +126,7 @@ export function ImageUpload({
           <img 
             src={value} 
             alt="Uploaded" 
-            className="w-full h-full object-cover rounded-xl border border-slate-200 shadow-sm"
+            className="w-full h-full object-cover rounded-xl border border-stone-200 shadow-sm"
           />
           <button 
             type="button"
@@ -142,10 +142,10 @@ export function ImageUpload({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="w-20 h-20 shrink-0 flex flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 hover:bg-slate-100 hover:border-slate-400 text-slate-500 transition-colors disabled:opacity-50"
+          className="w-20 h-20 shrink-0 flex flex-col items-center justify-center gap-1 border-2 border-dashed border-stone-300 rounded-xl bg-stone-50 hover:bg-stone-100 hover:border-stone-400 text-stone-500 transition-colors disabled:opacity-50"
         >
           {uploading ? (
-            <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+            <Loader2 className="w-5 h-5 animate-spin text-orange-600" />
           ) : (
             <ImageIcon className="w-5 h-5" />
           )}
@@ -159,14 +159,14 @@ export function ImageUpload({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="text-sm font-semibold text-blue-700 hover:text-blue-800 flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+            className="text-sm font-semibold text-orange-700 hover:text-orange-800 flex items-center gap-2 px-3 py-1.5 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
           >
             <UploadCloud className="w-4 h-4" />
             {placeholder}
           </button>
         )}
         {value && (
-          <p className="text-xs text-slate-500 max-w-[200px] truncate" title={value}>
+          <p className="text-xs text-stone-500 max-w-[200px] truncate" title={value}>
             {value}
           </p>
         )}

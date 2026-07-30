@@ -58,22 +58,22 @@ export default function CameraCapture({ title, onCapture, onCancel, onSkip }: Ca
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4" onClick={onCancel}>
-      <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-sm w-full p-5" onClick={e => e.stopPropagation()}>
+      <div className="bg-stone-950 border border-stone-700 rounded-2xl max-w-sm w-full p-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold text-sm flex items-center gap-2"><Camera className="w-4 h-4 text-sky-400" /> {title}</h3>
-          <button onClick={onCancel} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+          <h3 className="text-white font-semibold text-sm flex items-center gap-2"><Camera className="w-4 h-4 text-teal-400" /> {title}</h3>
+          <button onClick={onCancel} className="text-stone-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
         {error ? (
           <div className="text-center py-8">
             <p className="text-red-400 text-sm mb-4">{error}</p>
             {onSkip
-              ? <button className="text-slate-400 text-sm underline" onClick={onSkip}>Continue without photo</button>
-              : <button className="text-slate-400 text-sm underline" onClick={onCancel}>Close</button>}
+              ? <button className="text-stone-400 text-sm underline" onClick={onSkip}>Continue without photo</button>
+              : <button className="text-stone-400 text-sm underline" onClick={onCancel}>Close</button>}
           </div>
         ) : (
           <>
-            <div className="rounded-xl overflow-hidden bg-slate-900 aspect-square mb-4">
+            <div className="rounded-xl overflow-hidden bg-stone-900 aspect-square mb-4">
               {captured ? (
                 <img src={captured} alt="Captured selfie" className="w-full h-full object-cover" />
               ) : (
@@ -83,7 +83,7 @@ export default function CameraCapture({ title, onCapture, onCancel, onSkip }: Ca
             <canvas ref={canvasRef} className="hidden" />
             {captured ? (
               <div className="flex gap-2">
-                <button onClick={retake} className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 text-sm font-medium flex items-center justify-center gap-1.5">
+                <button onClick={retake} className="flex-1 py-2.5 rounded-lg border border-stone-700 text-stone-300 text-sm font-medium flex items-center justify-center gap-1.5">
                   <RotateCcw className="w-4 h-4" /> Retake
                 </button>
                 <button onClick={confirm} className={btnCls + ' flex-1 flex items-center justify-center gap-1.5'}>
@@ -96,7 +96,7 @@ export default function CameraCapture({ title, onCapture, onCancel, onSkip }: Ca
                   <Camera className="w-4 h-4" /> Take Photo
                 </button>
                 {onSkip && (
-                  <button onClick={onSkip} className="w-full py-2 text-slate-400 hover:text-slate-200 text-xs">
+                  <button onClick={onSkip} className="w-full py-2 text-stone-400 hover:text-stone-200 text-xs">
                     Skip photo &amp; continue
                   </button>
                 )}

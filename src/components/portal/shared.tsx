@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MapPin, Image as ImageIcon, Eye, X } from 'lucide-react';
+import { MapPin, Eye, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -9,10 +9,10 @@ import { normalizePhone } from '../../lib/phone';
 import { AttendanceDetailsModal } from './payroll';
 
 export const inputCls =
-  'w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 focus:outline-none transition-all placeholder-slate-500';
+  'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-600 focus:ring-2 focus:ring-orange-600/20 focus:outline-none transition-all placeholder-stone-500';
 export const btnCls =
-  'px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-semibold shadow-md shadow-blue-700/20 border border-blue-600/30 transition-all active:scale-[0.98]';
-export const cardCls = 'p-5 rounded-2xl bg-white border border-slate-200/90 shadow-md shadow-slate-200/50 backdrop-blur-md';
+  'px-4 py-2.5 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-semibold shadow-md shadow-orange-700/20 border border-orange-600/30 transition-all active:scale-[0.98]';
+export const cardCls = 'p-5 rounded-2xl bg-white border border-stone-200/90 shadow-md shadow-stone-200/50 backdrop-blur-md';
 
 export function SegmentTabs({
   segments, value, onChange, includeAll = true,
@@ -24,13 +24,13 @@ export function SegmentTabs({
     <div className="flex flex-wrap gap-2 mb-5">
       {showAll && (
         <button onClick={() => onChange('')}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === '' ? 'bg-blue-700 text-white border-blue-200 shadow-md shadow-blue-700/20' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'}`}>
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === '' ? 'bg-orange-700 text-white border-orange-200 shadow-md shadow-orange-700/20' : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50'}`}>
           All Segments
         </button>
       )}
       {visible.map(s => (
         <button key={s.slug} onClick={() => onChange(s.slug)}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === s.slug ? 'text-slate-900 border-blue-200 shadow-md' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'} ${s.active === false ? 'opacity-70' : ''}`}
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === s.slug ? 'text-stone-900 border-orange-200 shadow-md' : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50'} ${s.active === false ? 'opacity-70' : ''}`}
           style={value === s.slug ? { backgroundColor: s.color || '#1d4ed8' } : {}}
           title={s.active === false ? 'Retired — hidden from the website, existing work still manageable' : undefined}>
           {s.name}{s.active === false && <span className="ml-1.5 text-[10px] opacity-80">(retired)</span>}
@@ -41,11 +41,11 @@ export function SegmentTabs({
 }
 
 const ticketStatusColors: Record<string, string> = {
-  open: 'bg-sky-100 text-sky-700',
+  open: 'bg-teal-100 text-teal-700',
   in_progress: 'bg-amber-100 text-amber-700',
   waiting_customer: 'bg-purple-100 text-purple-700',
   resolved: 'bg-emerald-100 text-emerald-700',
-  closed: 'bg-slate-100 text-slate-700',
+  closed: 'bg-stone-100 text-stone-700',
 };
 
 export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focusId?: string }) {
@@ -119,7 +119,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
       <div className="flex flex-wrap gap-2 mb-5">
         {['', 'open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1 rounded-lg text-xs font-medium border ${statusFilter === s ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>
+            className={`px-3 py-1 rounded-lg text-xs font-medium border ${statusFilter === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
             {s === '' ? `All (${tickets.length})` : `${s.replace('_', ' ')} (${counts[s] || 0})`}
           </button>
         ))}
@@ -129,35 +129,35 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
         {tickets.map(t => {
           const seg = segments.find(s => s.slug === t.segment_slug);
           return (
-            <div key={t.id} className={cardCls + ' cursor-pointer hover:border-slate-300'}
+            <div key={t.id} className={cardCls + ' cursor-pointer hover:border-stone-300'}
               onClick={() => { setOpenTicket(t); loadReplies(t.id); }}>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="font-mono text-sky-700 text-sm">{t.ticket_no}</span>
+                <span className="font-mono text-teal-700 text-sm">{t.ticket_no}</span>
                 <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
                 <span className={`px-2 py-0.5 rounded text-xs ${ticketStatusColors[t.status]}`}>{t.status.replace('_', ' ')}</span>
-                <span className="text-xs text-slate-700">{t.ticket_type}</span>
-                <span className={`text-xs ${t.priority === 'urgent' ? 'text-red-700' : t.priority === 'high' ? 'text-amber-700' : 'text-slate-700'}`}>{t.priority}</span>
+                <span className="text-xs text-stone-700">{t.ticket_type}</span>
+                <span className={`text-xs ${t.priority === 'urgent' ? 'text-red-700' : t.priority === 'high' ? 'text-amber-700' : 'text-stone-700'}`}>{t.priority}</span>
               </div>
-              <p className="text-slate-900 font-medium mt-1.5">{t.subject}</p>
-              <p className="text-slate-700 text-xs mt-0.5">{t.customer_name} • {t.customer_phone} • {new Date(t.created_at).toLocaleString()}</p>
+              <p className="text-stone-900 font-medium mt-1.5">{t.subject}</p>
+              <p className="text-stone-700 text-xs mt-0.5">{t.customer_name} • {t.customer_phone} • {new Date(t.created_at).toLocaleString()}</p>
             </div>
           );
         })}
-        {tickets.length === 0 && <p className="text-slate-700 text-sm text-center py-10">No tickets found.</p>}
+        {tickets.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No tickets found.</p>}
       </div>
 
       {openTicket && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenTicket(null)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3">
               <div>
-                <p className="font-mono text-sky-700 text-sm">{openTicket.ticket_no}</p>
-                <h3 className="text-slate-900 text-lg font-semibold">{openTicket.subject}</h3>
-                <p className="text-slate-700 text-sm">{openTicket.customer_name} • {openTicket.customer_phone} {openTicket.customer_email && `• ${openTicket.customer_email}`}</p>
+                <p className="font-mono text-teal-700 text-sm">{openTicket.ticket_no}</p>
+                <h3 className="text-stone-900 text-lg font-semibold">{openTicket.subject}</h3>
+                <p className="text-stone-700 text-sm">{openTicket.customer_name} • {openTicket.customer_phone} {openTicket.customer_email && `• ${openTicket.customer_email}`}</p>
               </div>
-              <button className="text-slate-700 hover:text-slate-900" onClick={() => setOpenTicket(null)}>✕</button>
+              <button className="text-stone-700 hover:text-stone-900" onClick={() => setOpenTicket(null)}>✕</button>
             </div>
-            <p className="text-slate-700 text-sm mb-4 whitespace-pre-wrap">{openTicket.description}</p>
+            <p className="text-stone-700 text-sm mb-4 whitespace-pre-wrap">{openTicket.description}</p>
             {hasPermission('manage_tickets') && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                 <select className={inputCls} value={openTicket.status} onChange={e => update(openTicket.id, { status: e.target.value as SupportTicket['status'] })}>
@@ -172,12 +172,12 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
                 </select>
               </div>
             )}
-            <div className="border-t border-slate-800 pt-4 space-y-3">
+            <div className="border-t border-stone-800 pt-4 space-y-3">
               {replies.map(r => (
                 <div key={r.id} className="text-sm">
-                  <span className="text-sky-700 font-medium">{r.author_name}</span>
-                  <span className="text-slate-700 text-xs ml-2">{new Date(r.created_at).toLocaleString()}</span>
-                  <p className="text-slate-700 mt-0.5">{r.message}</p>
+                  <span className="text-teal-700 font-medium">{r.author_name}</span>
+                  <span className="text-stone-700 text-xs ml-2">{new Date(r.created_at).toLocaleString()}</span>
+                  <p className="text-stone-700 mt-0.5">{r.message}</p>
                 </div>
               ))}
               {hasPermission('manage_tickets') && (
@@ -196,10 +196,10 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
 
 const stages: Lead['stage'][] = ['new', 'contacted', 'qualified', 'quoted', 'won', 'lost', 'not_answered'];
 const stageColors: Record<string, string> = {
-  new: 'bg-sky-100 text-sky-700', contacted: 'bg-indigo-100 text-indigo-700',
+  new: 'bg-teal-100 text-teal-700', contacted: 'bg-indigo-100 text-indigo-700',
   qualified: 'bg-purple-100 text-purple-700', quoted: 'bg-amber-100 text-amber-700',
   won: 'bg-emerald-100 text-emerald-700', lost: 'bg-red-100 text-red-700',
-  not_answered: 'bg-slate-100 text-slate-700',
+  not_answered: 'bg-stone-100 text-stone-700',
 };
 
 export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; focusLeadId?: string }) {
@@ -310,9 +310,9 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2 mb-5">
-        <button onClick={() => setStageFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === '' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>All ({leads.length})</button>
+        <button onClick={() => setStageFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === '' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>All ({leads.length})</button>
         {stages.map(s => (
-          <button key={s} onClick={() => setStageFilter(s)} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === s ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>
+          <button key={s} onClick={() => setStageFilter(s)} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
             {s.replace('_', ' ')} ({funnel[s] || 0})
           </button>
         ))}
@@ -322,27 +322,27 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         {leads.map(l => {
           const seg = segments.find(s => s.slug === l.segment_slug);
           return (
-            <div key={l.id} className={cardCls + ' cursor-pointer hover:border-slate-300'} onClick={() => { setOpenLead(l); loadRemarks(l.id); }}>
+            <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => { setOpenLead(l); loadRemarks(l.id); }}>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-slate-900 font-medium">{l.customer_name}</span>
+                <span className="text-stone-900 font-medium">{l.customer_name}</span>
                 <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
                 <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
-                <span className="text-xs text-slate-700">{l.source}</span>
+                <span className="text-xs text-stone-700">{l.source}</span>
               </div>
-              <p className="text-slate-700 text-xs mt-1">
+              <p className="text-stone-700 text-xs mt-1">
                 {l.priority === 'high' && <span className="text-red-700 font-medium">● High </span>}
-                {l.priority === 'low' && <span className="text-slate-700">● Low </span>}
+                {l.priority === 'low' && <span className="text-stone-700">● Low </span>}
                 {l.phone} {l.interested_in && `• ${l.interested_in}`} • {new Date(l.created_at).toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}</p>
             </div>
           );
         })}
-        {leads.length === 0 && <p className="text-slate-700 text-sm text-center py-10">No leads found.</p>}
+        {leads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No leads found.</p>}
       </div>
 
       {showAdd && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold text-lg">New Lead</h3>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold text-lg">New Lead</h3>
             <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
               <option value="">Segment *</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
@@ -360,7 +360,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 {dupWarning.map((d: any) => (
                   <p key={d.id} className="text-amber-200/80">{d.customer_name} — {d.stage} {d.assignee_name ? `• with ${d.assignee_name}` : '• unassigned'}</p>
                 ))}
-                <p className="text-slate-700 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
+                <p className="text-stone-700 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
               </div>
             )}
             <button className={btnCls + ' w-full'} onClick={createLead}>{dupWarning ? 'Add Anyway' : 'Create Lead'}</button>
@@ -370,17 +370,17 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
 
       {openLead && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenLead(null)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between mb-3">
               <div>
-                <h3 className="text-slate-900 text-lg font-semibold">{openLead.customer_name}</h3>
-                <p className="text-slate-700 text-sm">{openLead.phone} {openLead.email && `• ${openLead.email}`}</p>
-                {openLead.interested_in && <p className="text-slate-700 text-sm mt-1">Interested in: {openLead.interested_in}</p>}
-                <p className="text-slate-700 text-xs mt-1.5">
+                <h3 className="text-stone-900 text-lg font-semibold">{openLead.customer_name}</h3>
+                <p className="text-stone-700 text-sm">{openLead.phone} {openLead.email && `• ${openLead.email}`}</p>
+                {openLead.interested_in && <p className="text-stone-700 text-sm mt-1">Interested in: {openLead.interested_in}</p>}
+                <p className="text-stone-700 text-xs mt-1.5">
                   Created {new Date(openLead.created_at).toLocaleString()} • source: {openLead.source}
                 </p>
               </div>
-              <button className="text-slate-700 hover:text-slate-900" onClick={() => setOpenLead(null)}>✕</button>
+              <button className="text-stone-700 hover:text-stone-900" onClick={() => setOpenLead(null)}>✕</button>
             </div>
             {hasPermission('manage_leads') && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -407,7 +407,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 )}
               </div>
             )}
-            <div className="border-t border-slate-800 pt-3 space-y-2">
+            <div className="border-t border-stone-800 pt-3 space-y-2">
               <div className="flex gap-2">
                 <input className={inputCls} placeholder="Add call remark / note…" value={newRemark} onChange={e => setNewRemark(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRemark(false)} />
                 <button className={btnCls} onClick={() => addRemark(false)}>Add</button>
@@ -416,19 +416,19 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                   title="Saves as a review and notifies whoever owns this lead"
                   onClick={() => addRemark(true)}>Send as Review</button>
               </div>
-              <p className="text-slate-700 text-xs font-medium mb-1">Full History</p>
+              <p className="text-stone-700 text-xs font-medium mb-1">Full History</p>
               {remarks.map(r => {
                 const isSystem = r.remark.startsWith('Stage changed:') || r.remark.startsWith('Reassigned:');
                 return (
-                  <div key={r.id} className={`text-sm ${isSystem ? 'pl-2 border-l-2 border-slate-800' : ''}`}>
-                    <span className="text-slate-700 text-xs">
+                  <div key={r.id} className={`text-sm ${isSystem ? 'pl-2 border-l-2 border-stone-800' : ''}`}>
+                    <span className="text-stone-700 text-xs">
                       {new Date(r.created_at).toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''}{!isSystem && ` • ${r.call_type}`}
                     </span>
-                    <p className={isSystem ? 'text-slate-700 text-xs italic' : 'text-slate-700'}>{r.remark}</p>
+                    <p className={isSystem ? 'text-stone-700 text-xs italic' : 'text-stone-700'}>{r.remark}</p>
                     {(r.address || r.photo_url) && (
                       <div className="flex gap-3 mt-0.5 text-xs">
-                        {r.address && <span className="text-slate-700">📍 {r.address}</span>}
-                        {r.photo_url && <button className="text-sky-700" onClick={() => viewLeadPhoto(r.photo_url as string)}>View Photo</button>}
+                        {r.address && <span className="text-stone-700">📍 {r.address}</span>}
+                        {r.photo_url && <button className="text-teal-700" onClick={() => viewLeadPhoto(r.photo_url as string)}>View Photo</button>}
                       </div>
                     )}
                   </div>
@@ -451,6 +451,8 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const [advances, setAdvances] = useState<any[]>([]);
   const [date, setDate] = useState(istDateStr());
   const [selectedStaffModal, setSelectedStaffModal] = useState<{ id: string; name: string } | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const { user, hasPermission } = useAuth();
   const toast = useToast();
 
@@ -461,7 +463,23 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   useEffect(() => {
     if (tab === 'attendance') {
       supabase.from('attendance_records').select('*').eq('attendance_date', date)
-        .then(({ data }) => { if (data) setAttendance(data); });
+        .then(async ({ data }) => {
+          if (!data) return;
+          setAttendance(data);
+          // selfies is a private bucket — resolve real signed URLs in bulk so
+          // photos render inline in the list instead of needing a click.
+          const paths = Array.from(new Set(
+            data.flatMap(r => [r.check_in_selfie_url, r.check_out_selfie_url]).filter(Boolean)
+          )) as string[];
+          if (paths.length > 0) {
+            const { data: signed } = await supabase.storage.from('selfies').createSignedUrls(paths, 3600);
+            if (signed) {
+              const map: Record<string, string> = {};
+              signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
+              setPhotoUrls(map);
+            }
+          }
+        });
     }
     if (tab === 'leaves') {
       supabase.from('leave_requests').select('*').order('created_at', { ascending: false }).limit(200)
@@ -509,12 +527,6 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
     setter((prev: any[]) => prev.map(r => r.id === id ? { ...r, status } : r));
   }
 
-  async function viewSelfie(path: string) {
-    const { data, error } = await supabase.storage.from('selfies').createSignedUrl(path, 300);
-    if (error || !data) { toast.error("Couldn't load photo"); return; }
-    window.open(data.signedUrl, '_blank');
-  }
-
   // Only show tabs this person can actually act on — a manager without
   // approve_advances would otherwise see an Advances tab that is always empty.
   const visibleTabs = ([
@@ -534,7 +546,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
       <div className="flex gap-2 mb-5">
         {visibleTabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${tab === t.id ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>{t.id}</button>
+            className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${tab === t.id ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>{t.id}</button>
         ))}
       </div>
 
@@ -543,8 +555,8 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
           {staff.filter(inSeg).map(s => (
             <div key={s.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
               <div>
-                <p className="text-slate-900 font-medium">{s.full_name} <span className="text-slate-700 text-xs">({s.role})</span></p>
-                <p className="text-slate-700 text-xs">{s.email} • {s.phone} • segments: {(s.segments || []).join(', ') || '—'}</p>
+                <p className="text-stone-900 font-medium">{s.full_name} <span className="text-stone-700 text-xs">({s.role})</span></p>
+                <p className="text-stone-700 text-xs">{s.email} • {s.phone} • segments: {(s.segments || []).join(', ') || '—'}</p>
               </div>
               <span className={`text-xs px-2 py-0.5 rounded ${s.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{s.is_active ? 'active' : 'disabled'}</span>
             </div>
@@ -554,10 +566,10 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
 
       {tab === 'attendance' && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-stone-200">
             <div>
-              <p className="text-slate-900 font-semibold text-sm">Daily Attendance Logs</p>
-              <p className="text-slate-500 text-xs">Select date to inspect check-in times, locations, and selfie photos</p>
+              <p className="text-stone-900 font-semibold text-sm">Daily Attendance Logs</p>
+              <p className="text-stone-500 text-xs">Select date to inspect check-in times, locations, and selfie photos</p>
             </div>
             <input type="date" className={inputCls + ' max-w-xs'} value={date} onChange={e => setDate(e.target.value)} />
           </div>
@@ -567,10 +579,10 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
               const rec = attendance.find(a => a.staff_user_id === s.id);
               return (
                 <div key={s.id} className={cardCls + ' space-y-3'}>
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3">
                     <div>
-                      <span className="text-slate-900 font-bold text-sm mr-2">{s.full_name}</span>
-                      <span className="text-slate-500 text-xs">({s.role.replace('_', ' ')})</span>
+                      <span className="text-stone-900 font-bold text-sm mr-2">{s.full_name}</span>
+                      <span className="text-stone-500 text-xs">({s.role.replace('_', ' ')})</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
@@ -584,9 +596,9 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                       
                       <button 
                         onClick={() => setSelectedStaffModal({ id: s.id, name: s.full_name })}
-                        className="px-3 py-1 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-lg border border-sky-200 transition-colors shadow-sm inline-flex items-center gap-1.5"
+                        className="px-3 py-1 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-200 transition-colors shadow-sm inline-flex items-center gap-1.5"
                       >
-                        <Eye className="w-3.5 h-3.5 text-sky-600" /> Full 30-Day History
+                        <Eye className="w-3.5 h-3.5 text-teal-600" /> Full 30-Day History
                       </button>
                     </div>
                   </div>
@@ -594,69 +606,71 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                   {rec ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                       {/* Check in */}
-                      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center justify-between gap-2">
-                        <div>
-                          <p className="text-slate-500 font-medium">Check In</p>
-                          <p className="text-slate-900 font-semibold text-sm">
-                            {rec.check_in_at ? new Date(rec.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
-                          </p>
-                          {rec.is_late && <p className="text-amber-700 text-[11px] font-medium">{rec.minutes_late}m late</p>}
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
+                      <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-100 flex items-center gap-3">
+                        {rec.check_in_selfie_url && (
+                          photoUrls[rec.check_in_selfie_url] ? (
+                            <button onClick={() => setPreviewImage(photoUrls[rec.check_in_selfie_url])} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                              <img src={photoUrls[rec.check_in_selfie_url]} alt="Check-in selfie" className="w-full h-full object-cover" />
+                            </button>
+                          ) : (
+                            <div className="shrink-0 w-14 h-14 rounded-lg bg-stone-200 animate-pulse" />
+                          )
+                        )}
+                        <div className="flex-1 flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-stone-500 font-medium">Check In</p>
+                            <p className="text-stone-900 font-semibold text-sm">
+                              {rec.check_in_at ? new Date(rec.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                            </p>
+                            {rec.is_late && <p className="text-amber-700 text-[11px] font-medium">{rec.minutes_late}m late</p>}
+                          </div>
                           {rec.check_in_lat && rec.check_in_lng && (
-                            <a 
-                              href={`https://maps.google.com/?q=${rec.check_in_lat},${rec.check_in_lng}`} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="text-sky-700 hover:text-sky-900 bg-sky-50 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-sky-100"
+                            <a
+                              href={`https://maps.google.com/?q=${rec.check_in_lat},${rec.check_in_lng}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-teal-100 shrink-0"
                             >
                               <MapPin className="w-3 h-3" /> Map
                             </a>
-                          )}
-                          {rec.check_in_selfie_url && (
-                            <button 
-                              className="text-sky-700 hover:text-sky-900 bg-white px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-slate-200" 
-                              onClick={() => viewSelfie(rec.check_in_selfie_url)}
-                            >
-                              <ImageIcon className="w-3 h-3 text-sky-600" /> Photo 📷
-                            </button>
                           )}
                         </div>
                       </div>
 
                       {/* Check out */}
-                      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center justify-between gap-2">
-                        <div>
-                          <p className="text-slate-500 font-medium">Check Out</p>
-                          <p className="text-slate-900 font-semibold text-sm">
-                            {rec.check_out_at ? new Date(rec.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
-                          </p>
-                          {rec.work_mode && <p className="text-slate-600 text-[11px] capitalize font-medium">{rec.work_mode.replace('_', ' ')}</p>}
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
+                      <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-100 flex items-center gap-3">
+                        {rec.check_out_selfie_url && (
+                          photoUrls[rec.check_out_selfie_url] ? (
+                            <button onClick={() => setPreviewImage(photoUrls[rec.check_out_selfie_url])} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                              <img src={photoUrls[rec.check_out_selfie_url]} alt="Check-out selfie" className="w-full h-full object-cover" />
+                            </button>
+                          ) : (
+                            <div className="shrink-0 w-14 h-14 rounded-lg bg-stone-200 animate-pulse" />
+                          )
+                        )}
+                        <div className="flex-1 flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-stone-500 font-medium">Check Out</p>
+                            <p className="text-stone-900 font-semibold text-sm">
+                              {rec.check_out_at ? new Date(rec.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                            </p>
+                            {rec.work_mode && <p className="text-stone-600 text-[11px] capitalize font-medium">{rec.work_mode.replace('_', ' ')}</p>}
+                          </div>
                           {rec.check_out_lat && rec.check_out_lng && (
-                            <a 
-                              href={`https://maps.google.com/?q=${rec.check_out_lat},${rec.check_out_lng}`} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="text-sky-700 hover:text-sky-900 bg-sky-50 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-sky-100"
+                            <a
+                              href={`https://maps.google.com/?q=${rec.check_out_lat},${rec.check_out_lng}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-teal-100 shrink-0"
                             >
                               <MapPin className="w-3 h-3" /> Map
                             </a>
-                          )}
-                          {rec.check_out_selfie_url && (
-                            <button 
-                              className="text-sky-700 hover:text-sky-900 bg-white px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-slate-200" 
-                              onClick={() => viewSelfie(rec.check_out_selfie_url)}
-                            >
-                              <ImageIcon className="w-3 h-3 text-sky-600" /> Photo 📷
-                            </button>
                           )}
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-slate-500 text-xs italic">No check-in recorded for this date.</p>
+                    <p className="text-stone-500 text-xs italic">No check-in recorded for this date.</p>
                   )}
                 </div>
               );
@@ -670,6 +684,15 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
               onClose={() => setSelectedStaffModal(null)}
             />
           )}
+
+          {previewImage && (
+            <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+              <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+                <X className="w-6 h-6" />
+              </button>
+              <img src={previewImage} alt="Selfie preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
+            </div>
+          )}
         </div>
       )}
 
@@ -679,15 +702,15 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             <div key={l.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-slate-900 text-sm font-medium">{staffById[l.staff_user_id]?.full_name || '—'} • {l.leave_type}</p>
-                  <p className="text-slate-700 text-xs">{l.from_date} → {l.to_date} • {l.reason}</p>
+                  <p className="text-stone-900 text-sm font-medium">{staffById[l.staff_user_id]?.full_name || '—'} • {l.leave_type}</p>
+                  <p className="text-stone-700 text-xs">{l.from_date} → {l.to_date} • {l.reason}</p>
                   {l.status === 'pending' && (() => {
                     const b = (leaveBalances[l.staff_user_id] || []).find((x: any) => x.leave_type === l.leave_type);
                     if (!b) return null;
-                    if (b.is_unlimited) return <p className="text-slate-700 text-xs mt-0.5">unpaid leave — no balance limit</p>;
+                    if (b.is_unlimited) return <p className="text-stone-700 text-xs mt-0.5">unpaid leave — no balance limit</p>;
                     const rem = Number(b.remaining);
                     return (
-                      <p className={`text-xs mt-0.5 ${rem <= 0 ? 'text-red-700' : 'text-slate-700'}`}>
+                      <p className={`text-xs mt-0.5 ${rem <= 0 ? 'text-red-700' : 'text-stone-700'}`}>
                         Balance: {rem} of {Number(b.entitled)} {l.leave_type} days left ({Number(b.used)} used)
                       </p>
                     );
@@ -698,7 +721,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                     <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs" onClick={() => review('leave_requests', l.id, 'approved', setLeaves)}>Approve</button>
                     <button className="px-3 py-1 rounded bg-red-600 text-white text-xs" onClick={() => review('leave_requests', l.id, 'rejected', setLeaves)}>Reject</button>
                   </div>
-                ) : <span className="text-xs text-slate-700">{l.status}</span>}
+                ) : <span className="text-xs text-stone-700">{l.status}</span>}
               </div>
             </div>
           ))}
@@ -711,15 +734,15 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             <div key={a.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-slate-900 text-sm font-medium">{staffById[a.staff_user_id]?.full_name || '—'} • ₹{Number(a.amount).toLocaleString('en-IN')}</p>
-                  <p className="text-slate-700 text-xs">{a.reason} • {new Date(a.created_at).toLocaleDateString()}</p>
+                  <p className="text-stone-900 text-sm font-medium">{staffById[a.staff_user_id]?.full_name || '—'} • ₹{Number(a.amount).toLocaleString('en-IN')}</p>
+                  <p className="text-stone-700 text-xs">{a.reason} • {new Date(a.created_at).toLocaleDateString()}</p>
                 </div>
                 {a.status === 'pending' && hasPermission('approve_advances') ? (
                   <div className="flex gap-2">
                     <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs" onClick={() => review('salary_advance_requests', a.id, 'approved', setAdvances)}>Approve</button>
                     <button className="px-3 py-1 rounded bg-red-600 text-white text-xs" onClick={() => review('salary_advance_requests', a.id, 'rejected', setAdvances)}>Reject</button>
                   </div>
-                ) : <span className="text-xs text-slate-700">{a.status}</span>}
+                ) : <span className="text-xs text-stone-700">{a.status}</span>}
               </div>
             </div>
           ))}

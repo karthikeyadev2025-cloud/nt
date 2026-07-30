@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Eye } from 'lucide-react';
+import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -87,7 +87,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
     })();
   }, [user]);
 
-  if (loading) return <p className="text-slate-700 text-sm py-8 text-center">Loading…</p>;
+  if (loading) return <p className="text-stone-700 text-sm py-8 text-center">Loading…</p>;
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -95,8 +95,8 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
   const Tile = ({ label, value, tone = 'text-white', onClick }: any) => (
     <button onClick={onClick} disabled={!onClick}
-      className={`${cardCls} text-left ${onClick ? 'hover:border-slate-300 cursor-pointer' : ''}`}>
-      <p className="text-slate-700 text-xs">{label}</p>
+      className={`${cardCls} text-left ${onClick ? 'hover:border-stone-300 cursor-pointer' : ''}`}>
+      <p className="text-stone-700 text-xs">{label}</p>
       <p className={`text-2xl font-semibold mt-0.5 ${tone}`}>{value}</p>
     </button>
   );
@@ -104,8 +104,8 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-slate-900 text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
-        <p className="text-slate-700 text-sm">
+        <h2 className="text-stone-900 text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
+        <p className="text-stone-700 text-sm">
           {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           {user?.designation ? ` • ${user.designation}` : ''}
         </p>
@@ -116,8 +116,8 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
         {!stats.attendance ? (
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-slate-900 text-sm font-medium">Not checked in yet</p>
-              <p className="text-slate-700 text-xs">Start your day from My Attendance.</p>
+              <p className="text-stone-900 text-sm font-medium">Not checked in yet</p>
+              <p className="text-stone-700 text-xs">Start your day from My Attendance.</p>
             </div>
             <button className={btnCls} onClick={() => onNavigate('attendance')}>Check In</button>
           </div>
@@ -128,13 +128,13 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
                 Checked in at {new Date(stats.attendance.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 {stats.attendance.is_late ? ` • ${stats.attendance.minutes_late} min late` : ''}
               </p>
-              <p className="text-slate-700 text-xs capitalize">
+              <p className="text-stone-700 text-xs capitalize">
                 {(stats.attendance.work_mode || 'office').replace('_', ' ')}
                 {stats.attendance.check_out_at ? ' • checked out' : ''}
               </p>
             </div>
             {!stats.attendance.check_out_at && (
-              <button className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-sm"
+              <button className="px-3 py-1.5 rounded-lg border border-stone-200 text-stone-700 text-sm"
                 onClick={() => onNavigate('attendance')}>Check Out</button>
             )}
           </div>
@@ -149,14 +149,14 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
           <Tile label="Callbacks due" value={stats.callbacksDue}
             tone={stats.callbacksDue > 0 ? 'text-amber-700' : 'text-white'} onClick={() => onNavigate('leads')} />
           <Tile label="Upcoming appointments" value={stats.appointments.length}
-            tone={stats.appointments.length > 0 ? 'text-sky-700' : 'text-white'} onClick={() => onNavigate('leads')} />
+            tone={stats.appointments.length > 0 ? 'text-teal-700' : 'text-white'} onClick={() => onNavigate('leads')} />
         </div>
       )}
 
       {isSupport && (
         <div className="grid grid-cols-2 gap-3">
           <Tile label="Assigned to me" value={stats.myTickets}
-            tone={stats.myTickets > 0 ? 'text-sky-700' : 'text-white'} onClick={() => onNavigate('tickets')} />
+            tone={stats.myTickets > 0 ? 'text-teal-700' : 'text-white'} onClick={() => onNavigate('tickets')} />
           <Tile label="Open in my segment" value={stats.openTickets} onClick={() => onNavigate('tickets')} />
         </div>
       )}
@@ -164,15 +164,15 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       {/* Next appointments — the thing a field executive most needs to see. */}
       {(isCaller || isExec) && stats.appointments.length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-slate-900 text-sm font-semibold mb-3">Next appointments</h3>
+          <h3 className="text-stone-900 text-sm font-semibold mb-3">Next appointments</h3>
           <div className="space-y-2">
             {stats.appointments.map((a: any) => (
-              <div key={a.id} className="flex items-start justify-between gap-3 border-b border-slate-900 last:border-0 pb-2 last:pb-0">
+              <div key={a.id} className="flex items-start justify-between gap-3 border-b border-stone-900 last:border-0 pb-2 last:pb-0">
                 <div className="min-w-0">
-                  <p className="text-slate-900 text-sm">{a.customer_name}</p>
-                  <p className="text-slate-700 text-xs">{a.phone}{a.appointment_note ? ` • ${a.appointment_note}` : ''}</p>
+                  <p className="text-stone-900 text-sm">{a.customer_name}</p>
+                  <p className="text-stone-700 text-xs">{a.phone}{a.appointment_note ? ` • ${a.appointment_note}` : ''}</p>
                 </div>
-                <p className="text-sky-700 text-xs whitespace-nowrap">
+                <p className="text-teal-700 text-xs whitespace-nowrap">
                   {new Date(a.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 </p>
               </div>
@@ -182,7 +182,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       )}
 
       {stats.pendingLeaves > 0 && (
-        <button className={cardCls + ' w-full text-left hover:border-slate-300'} onClick={() => onNavigate('requests')}>
+        <button className={cardCls + ' w-full text-left hover:border-stone-300'} onClick={() => onNavigate('requests')}>
           <p className="text-amber-700 text-sm">
             {stats.pendingLeaves} request{stats.pendingLeaves > 1 ? 's' : ''} awaiting approval
           </p>
@@ -289,8 +289,8 @@ export function MyAttendance() {
       <MyStatsCard />
       <MyPerformanceChart />
       <div className={cardCls + ' text-center py-8'}>
-        <Clock className="w-8 h-8 text-sky-700 mx-auto mb-2" />
-        <p className="text-slate-700 text-sm mb-4">{new Date().toDateString()}</p>
+        <Clock className="w-8 h-8 text-teal-700 mx-auto mb-2" />
+        <p className="text-stone-700 text-sm mb-4">{new Date().toDateString()}</p>
         {!today ? (
           <button className={btnCls} disabled={busy} onClick={() => setPickingMode(true)}>
             <MapPin className="w-4 h-4 inline mr-1" /> Check In
@@ -298,14 +298,14 @@ export function MyAttendance() {
         ) : !today.check_out_at ? (
           <div>
             <p className="text-emerald-700 text-sm mb-1 font-semibold">Checked in at {new Date(today.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
-            <p className="text-slate-700 text-xs mb-3 capitalize">
+            <p className="text-stone-700 text-xs mb-3 capitalize">
               {(today.work_mode || 'office').replace('_', ' ')}
               {today.is_late && <span className="text-amber-700 ml-2 font-medium">Late by {today.minutes_late} min</span>}
             </p>
             <button className={btnCls} disabled={busy} onClick={() => setShowCamera('out')}>Check Out</button>
           </div>
         ) : (
-          <p className="text-slate-700 text-sm font-medium">
+          <p className="text-stone-700 text-sm font-medium">
             Done for today — In {new Date(today.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })} • Out {new Date(today.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
           </p>
         )}
@@ -313,15 +313,15 @@ export function MyAttendance() {
 
       <div className={cardCls + ' space-y-4'}>
         <div>
-          <h3 className="text-slate-900 font-bold text-sm">Attendance History (Last 14 days)</h3>
-          <p className="text-slate-500 text-xs">View your check-in/out times, photos, and map locations</p>
+          <h3 className="text-stone-900 font-bold text-sm">Attendance History (Last 14 days)</h3>
+          <p className="text-stone-500 text-xs">View your check-in/out times, photos, and map locations</p>
         </div>
 
         <div className="space-y-3">
           {history.map(r => (
-            <div key={r.id} className="border border-slate-200 rounded-xl p-3 bg-white space-y-2">
-              <div className="flex items-center justify-between text-xs border-b border-slate-100 pb-2">
-                <span className="text-slate-900 font-bold">
+            <div key={r.id} className="border border-stone-200 rounded-xl p-3 bg-white space-y-2">
+              <div className="flex items-center justify-between text-xs border-b border-stone-100 pb-2">
+                <span className="text-stone-900 font-bold">
                   {new Date(r.attendance_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
                 <div className="flex items-center gap-2">
@@ -329,50 +329,50 @@ export function MyAttendance() {
                     {(r.status || 'present').toUpperCase()}
                   </span>
                   {r.is_late && <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">{r.minutes_late}m late</span>}
-                  {r.work_mode && <span className="text-slate-600 capitalize bg-slate-100 px-2 py-0.5 rounded font-medium">{r.work_mode.replace('_', ' ')}</span>}
+                  {r.work_mode && <span className="text-stone-600 capitalize bg-stone-100 px-2 py-0.5 rounded font-medium">{r.work_mode.replace('_', ' ')}</span>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {/* Check In */}
-                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center justify-between">
+                <div className="bg-stone-50 p-2 rounded-lg border border-stone-100 flex items-center justify-between">
                   <div>
-                    <span className="text-slate-500 font-medium block text-[11px]">Check In</span>
-                    <span className="text-slate-900 font-semibold">
+                    <span className="text-stone-500 font-medium block text-[11px]">Check In</span>
+                    <span className="text-stone-900 font-semibold">
                       {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     {r.check_in_lat && r.check_in_lng && (
-                      <a href={`https://maps.google.com/?q=${r.check_in_lat},${r.check_in_lng}`} target="_blank" rel="noreferrer" className="text-sky-700 hover:text-sky-900 bg-sky-50 px-2 py-1 rounded font-medium border border-sky-100 inline-flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-sky-600" /> Map
+                      <a href={`https://maps.google.com/?q=${r.check_in_lat},${r.check_in_lng}`} target="_blank" rel="noreferrer" className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-1 rounded font-medium border border-teal-100 inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-teal-600" /> Map
                       </a>
                     )}
                     {r.check_in_selfie_url && (
-                      <button onClick={() => viewSelfie(r.check_in_selfie_url)} className="text-sky-700 hover:text-sky-900 bg-white px-2 py-1 rounded font-medium border border-slate-200 inline-flex items-center gap-1">
-                        <ImageIcon className="w-3 h-3 text-sky-600" /> Photo 📷
+                      <button onClick={() => viewSelfie(r.check_in_selfie_url)} className="text-teal-700 hover:text-teal-900 bg-white px-2 py-1 rounded font-medium border border-stone-200 inline-flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3 text-teal-600" /> Photo 📷
                       </button>
                     )}
                   </div>
                 </div>
 
                 {/* Check Out */}
-                <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center justify-between">
+                <div className="bg-stone-50 p-2 rounded-lg border border-stone-100 flex items-center justify-between">
                   <div>
-                    <span className="text-slate-500 font-medium block text-[11px]">Check Out</span>
-                    <span className="text-slate-900 font-semibold">
+                    <span className="text-stone-500 font-medium block text-[11px]">Check Out</span>
+                    <span className="text-stone-900 font-semibold">
                       {r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     {r.check_out_lat && r.check_out_lng && (
-                      <a href={`https://maps.google.com/?q=${r.check_out_lat},${r.check_out_lng}`} target="_blank" rel="noreferrer" className="text-sky-700 hover:text-sky-900 bg-sky-50 px-2 py-1 rounded font-medium border border-sky-100 inline-flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-sky-600" /> Map
+                      <a href={`https://maps.google.com/?q=${r.check_out_lat},${r.check_out_lng}`} target="_blank" rel="noreferrer" className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-1 rounded font-medium border border-teal-100 inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-teal-600" /> Map
                       </a>
                     )}
                     {r.check_out_selfie_url && (
-                      <button onClick={() => viewSelfie(r.check_out_selfie_url)} className="text-sky-700 hover:text-sky-900 bg-white px-2 py-1 rounded font-medium border border-slate-200 inline-flex items-center gap-1">
-                        <ImageIcon className="w-3 h-3 text-sky-600" /> Photo 📷
+                      <button onClick={() => viewSelfie(r.check_out_selfie_url)} className="text-teal-700 hover:text-teal-900 bg-white px-2 py-1 rounded font-medium border border-stone-200 inline-flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3 text-teal-600" /> Photo 📷
                       </button>
                     )}
                   </div>
@@ -394,8 +394,8 @@ export function MyAttendance() {
 
       {pickingMode && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setPickingMode(false)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-xs w-full p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold text-sm mb-4">Where are you checking in from?</h3>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-xs w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold text-sm mb-4">Where are you checking in from?</h3>
             <div className="space-y-2">
               {[
                 { v: 'office', label: 'Office' },
@@ -403,7 +403,7 @@ export function MyAttendance() {
                 { v: 'field_visit', label: 'Field Visit' },
               ].map(m => (
                 <button key={m.v} onClick={() => { setWorkMode(m.v as any); setPickingMode(false); setShowCamera('in'); }}
-                  className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 text-slate-900 text-sm hover:border-sky-500 transition-colors">
+                  className="w-full text-left px-4 py-3 rounded-lg border border-stone-200 text-stone-900 text-sm hover:border-teal-500 transition-colors">
                   {m.label}
                 </button>
               ))}
@@ -487,19 +487,19 @@ export function MyRequests() {
     <div className="space-y-6">
       {balances.length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-700" /> Leave Balance <span className="text-slate-700 text-xs font-normal">this year</span></h3>
+          <h3 className="text-stone-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-teal-700" /> Leave Balance <span className="text-stone-700 text-xs font-normal">this year</span></h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {balances.map((b: any) => (
-              <div key={b.leave_type} className="rounded-xl bg-white border border-slate-800 px-3 py-2.5">
-                <p className="text-slate-700 text-xs capitalize">{b.leave_type}</p>
+              <div key={b.leave_type} className="rounded-xl bg-white border border-stone-800 px-3 py-2.5">
+                <p className="text-stone-700 text-xs capitalize">{b.leave_type}</p>
                 {b.is_unlimited ? (
-                  <p className="text-sky-700 text-lg font-semibold leading-tight">—</p>
+                  <p className="text-teal-700 text-lg font-semibold leading-tight">—</p>
                 ) : (
-                  <p className={`text-lg font-semibold leading-tight ${Number(b.remaining) <= 0 ? 'text-red-700' : 'text-slate-900'}`}>
-                    {Number(b.remaining)}<span className="text-slate-700 text-xs font-normal"> / {Number(b.entitled)}</span>
+                  <p className={`text-lg font-semibold leading-tight ${Number(b.remaining) <= 0 ? 'text-red-700' : 'text-stone-900'}`}>
+                    {Number(b.remaining)}<span className="text-stone-700 text-xs font-normal"> / {Number(b.entitled)}</span>
                   </p>
                 )}
-                <p className="text-slate-700 text-[10px] mt-0.5">
+                <p className="text-stone-700 text-[10px] mt-0.5">
                   {b.is_unlimited ? 'unlimited' : `${Number(b.used)} used`}{Number(b.pending) > 0 ? ` • ${Number(b.pending)} pending` : ''}
                 </p>
               </div>
@@ -510,7 +510,7 @@ export function MyRequests() {
 
     <div className="grid md:grid-cols-2 gap-6">
       <div className={cardCls}>
-        <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-sky-700" /> Leave Request</h3>
+        <h3 className="text-stone-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-teal-700" /> Leave Request</h3>
         <div className="grid grid-cols-2 gap-2 mb-2">
           <input type="date" className={inputCls} value={leaveForm.from_date} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} />
           <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} />
@@ -527,21 +527,21 @@ export function MyRequests() {
         <div className="mt-4 space-y-1.5">
           {leaves.map(l => (
             <div key={l.id} className="flex justify-between text-xs">
-              <span className="text-slate-700">{l.from_date} → {l.to_date} ({l.leave_type})</span>
+              <span className="text-stone-700">{l.from_date} → {l.to_date} ({l.leave_type})</span>
               <span className={statusColor(l.status)}>{l.status}</span>
             </div>
           ))}
         </div>
       </div>
       <div className={cardCls}>
-        <h3 className="text-slate-900 font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-sky-700" /> Salary Advance</h3>
+        <h3 className="text-stone-900 font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-teal-700" /> Salary Advance</h3>
         <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} />
         <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} />
         <button className={btnCls + ' w-full'} disabled={busyAdv} onClick={requestAdvance}>{busyAdv ? 'Submitting…' : 'Request Advance'}</button>
         <div className="mt-4 space-y-1.5">
           {advances.map(a => (
             <div key={a.id} className="flex justify-between text-xs">
-              <span className="text-slate-700">₹{Number(a.amount).toLocaleString('en-IN')} • {new Date(a.created_at).toLocaleDateString()}</span>
+              <span className="text-stone-700">₹{Number(a.amount).toLocaleString('en-IN')} • {new Date(a.created_at).toLocaleDateString()}</span>
               <span className={statusColor(a.status)}>{a.status}</span>
             </div>
           ))}
@@ -564,7 +564,7 @@ export function MyDocuments() {
       <MySalaryCard salary={(user as any).salary_structure} />
       <MyPayslips />
       <div>
-        <h3 className="text-slate-900 font-semibold mb-3 text-sm">My Documents</h3>
+        <h3 className="text-stone-900 font-semibold mb-3 text-sm">My Documents</h3>
         <MyDocumentsList staffUserId={user.id} employeeName={user.full_name} />
       </div>
     </div>
@@ -616,22 +616,22 @@ export default function StaffPortal() {
     : segments.filter(s => user?.segments.includes(s.slug)).map(s => s.name).join(', ') || '—';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-900">
+    <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row text-stone-900">
       {/* ── Desktop Collapsible Sidebar Navigation (Classic Light Theme) ── */}
-      <aside className={`hidden md:flex flex-col border-r border-slate-200 bg-white backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 shadow-sm ${collapsed ? 'w-20' : 'w-64'}`}>
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+      <aside className={`hidden md:flex flex-col border-r border-stone-200 bg-white backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 shadow-sm ${collapsed ? 'w-20' : 'w-64'}`}>
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <KiteTailLogo className="w-8 h-8 shrink-0" />
             {!collapsed && (
               <div className="min-w-0">
-                <p className="text-slate-900 font-bold text-sm tracking-tight truncate">Nikki Suite</p>
-                <p className="text-slate-700 text-[11px] font-mono truncate">Enterprise Portal</p>
+                <p className="text-stone-900 font-bold text-sm tracking-tight truncate">Nikki Suite</p>
+                <p className="text-stone-700 text-[11px] font-mono truncate">Enterprise Portal</p>
               </div>
             )}
           </div>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-slate-700 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            className="text-stone-700 hover:text-stone-700 p-1 rounded-lg hover:bg-stone-100 transition-colors"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? '→' : '←'}
@@ -647,12 +647,12 @@ export default function StaffPortal() {
                 onClick={() => setTab(t.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   active
-                    ? 'bg-blue-50 border border-blue-200 text-blue-800 shadow-sm font-semibold'
-                    : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+                    ? 'bg-orange-50 border border-orange-200 text-orange-800 shadow-sm font-semibold'
+                    : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100 border border-transparent'
                 }`}
                 title={collapsed ? t.label : undefined}
               >
-                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-blue-700' : 'text-slate-700'}`} />
+                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-orange-700' : 'text-stone-700'}`} />
                 {!collapsed && <span className="truncate">{t.label}</span>}
               </button>
             );
@@ -660,18 +660,18 @@ export default function StaffPortal() {
         </div>
 
         {/* User Card at bottom of sidebar */}
-        <div className="p-3 border-t border-slate-200">
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-slate-200">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 border border-blue-200 text-blue-800 font-bold flex items-center justify-center text-xs shrink-0">
+        <div className="p-3 border-t border-stone-200">
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-stone-50 border border-stone-200">
+            <div className="w-8 h-8 rounded-lg bg-orange-100 border border-orange-200 text-orange-800 font-bold flex items-center justify-center text-xs shrink-0">
               {user?.full_name?.[0] || 'U'}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-slate-900 text-xs font-semibold truncate">{user?.full_name}</p>
-                <p className="text-slate-700 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
+                <p className="text-stone-900 text-xs font-semibold truncate">{user?.full_name}</p>
+                <p className="text-stone-700 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
-            <button onClick={signOut} className="text-slate-700 hover:text-red-700 p-1" title="Sign out">
+            <button onClick={signOut} className="text-stone-700 hover:text-red-700 p-1" title="Sign out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -681,29 +681,29 @@ export default function StaffPortal() {
       {/* ── Main Area ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="border-b border-slate-200 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
+        <header className="border-b border-stone-200 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="md:hidden">
               <KiteTailLogo className="w-8 h-8 shrink-0" />
             </div>
             <div>
-              <h1 className="text-slate-900 font-bold text-base md:text-lg tracking-tight">
+              <h1 className="text-stone-900 font-bold text-base md:text-lg tracking-tight">
                 {tabs.find(t => t.id === tab)?.label || 'Portal'}
               </h1>
-              <p className="text-slate-700 text-xs hidden sm:block">{mySegNames}</p>
+              <p className="text-stone-700 text-xs hidden sm:block">{mySegNames}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
-            <button onClick={signOut} className="md:hidden text-slate-700 hover:text-red-700"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} className="md:hidden text-stone-700 hover:text-red-700"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
         {/* Mobile Horizontal Tabs */}
-        <div className="md:hidden px-4 py-2.5 flex gap-2 overflow-x-auto border-b border-slate-200 bg-white">
+        <div className="md:hidden px-4 py-2.5 flex gap-2 overflow-x-auto border-b border-stone-200 bg-white">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${tab === t.id ? 'border-blue-600 text-white bg-blue-700 shadow-sm' : 'border-slate-200 text-slate-700 bg-slate-50'}`}>
+              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${tab === t.id ? 'border-orange-600 text-white bg-orange-700 shadow-sm' : 'border-stone-200 text-stone-700 bg-stone-50'}`}>
               <t.icon className="w-3.5 h-3.5" /> {t.label}
             </button>
           ))}
@@ -714,12 +714,12 @@ export default function StaffPortal() {
             <div className={cardCls + ' mb-5'}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-slate-900 font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
-                  <p className="text-slate-700 text-xs mt-0.5">
+                  <p className="text-stone-900 font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
+                  <p className="text-stone-700 text-xs mt-0.5">
                     {user?.designation || user?.role} • {mySegNames} {(user as any)?.staff_code && `• ${(user as any).staff_code}`}
                   </p>
                 </div>
-                <div className="text-right text-xs text-slate-700">
+                <div className="text-right text-xs text-stone-700">
                   {user?.joining_date && <p>Joined {new Date(user.joining_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
                   {(user as any)?.reporting_time && <p className="mt-0.5">{(user as any).reporting_time}</p>}
                 </div>

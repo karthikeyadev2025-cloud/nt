@@ -30,13 +30,13 @@ export default function LoadingScreen({ onLoadingComplete }: { onLoadingComplete
 
   return (
     <div
-      className={`fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 flex flex-col items-center justify-center z-[100] transition-opacity duration-700 select-none overflow-hidden p-6 ${
+      className={`fixed inset-0 bg-gradient-to-br from-stone-950 via-stone-900 to-orange-950 flex flex-col items-center justify-center z-[100] transition-opacity duration-700 select-none overflow-hidden p-6 ${
         exiting ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
       {/* Ambient Radial Soft Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-1/3 left-1/4 w-[350px] h-[350px] bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-orange-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/3 left-1/4 w-[350px] h-[350px] bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* ── Cinematic Flying Background Kites ── */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -106,12 +106,12 @@ export default function LoadingScreen({ onLoadingComplete }: { onLoadingComplete
           <motion.div
             animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.6, 0.2] }}
             transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-32 h-32 rounded-full border border-sky-400/30 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            className="w-32 h-32 rounded-full border border-teal-400/30 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           />
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
-            className="w-36 h-36 rounded-full border border-dashed border-blue-500/20 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            className="w-36 h-36 rounded-full border border-dashed border-orange-500/20 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           />
 
           {/* Floating Hero Kite Logo Mark (NO BOX / NO CONTAINER) */}
@@ -133,19 +133,19 @@ export default function LoadingScreen({ onLoadingComplete }: { onLoadingComplete
         </h1>
 
         {/* Brand Subtitle */}
-        <p className="text-xs font-extrabold uppercase tracking-widest text-sky-400 mb-8 drop-shadow-sm">
+        <p className="text-xs font-extrabold uppercase tracking-widest text-teal-400 mb-8 drop-shadow-sm">
           Kite &amp; Tail Digital • Software Studio
         </p>
 
         {/* Cinematic Glowing Skyward Progress Line */}
         <div className="w-64 space-y-2">
-          <div className="flex justify-between items-center text-[11px] font-bold text-slate-300 px-1">
-            <span className="uppercase tracking-widest text-[10px] text-slate-400">Launching Experience</span>
-            <span className="text-sky-400 font-mono text-xs font-bold">{Math.min(progress, 100)}%</span>
+          <div className="flex justify-between items-center text-[11px] font-bold text-stone-300 px-1">
+            <span className="uppercase tracking-widest text-[10px] text-stone-400">Launching Experience</span>
+            <span className="text-teal-400 font-mono text-xs font-bold">{Math.min(progress, 100)}%</span>
           </div>
-          <div className="w-full h-1.5 bg-slate-900 border border-slate-800 rounded-full overflow-hidden p-0.5 shadow-inner">
+          <div className="w-full h-1.5 bg-stone-900 border border-stone-800 rounded-full overflow-hidden p-0.5 shadow-inner">
             <motion.div
-              className="h-full bg-gradient-to-r from-blue-600 via-sky-400 to-indigo-400 rounded-full shadow-[0_0_12px_rgba(56,189,248,0.7)]"
+              className="h-full bg-gradient-to-r from-orange-600 via-teal-400 to-indigo-400 rounded-full shadow-[0_0_12px_rgba(56,189,248,0.7)]"
               style={{ width: `${progress}%` }}
               transition={{ ease: 'easeOut' }}
             />

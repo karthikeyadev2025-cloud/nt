@@ -52,20 +52,20 @@ export default function PWAInstallBanner() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-[100] animate-in slide-in-from-bottom-4 duration-300">
-      <div className="bg-slate-900 border border-sky-500/30 rounded-2xl shadow-2xl shadow-black/50 p-4">
+      <div className="bg-stone-900 border border-teal-500/30 rounded-2xl shadow-2xl shadow-black/50 p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-cyan-400 rounded-xl flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-400 rounded-xl flex items-center justify-center shrink-0">
             <Smartphone className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white font-semibold text-sm">Install Nikki App</p>
-            <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">
+            <p className="text-stone-400 text-xs mt-0.5 leading-relaxed">
               Add to your home screen for quick access — works offline too!
             </p>
           </div>
           <button
             onClick={handleDismiss}
-            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-700 hover:text-slate-300 transition-colors shrink-0"
+            className="p-1.5 hover:bg-stone-800 rounded-lg text-stone-700 hover:text-stone-300 transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -73,14 +73,14 @@ export default function PWAInstallBanner() {
         <div className="flex gap-2 mt-3">
           <button
             onClick={handleDismiss}
-            className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-xs font-medium transition-colors"
+            className="flex-1 py-2 bg-stone-800 hover:bg-stone-700 text-stone-400 rounded-xl text-xs font-medium transition-colors"
           >
             Not now
           </button>
           <button
             onClick={handleInstall}
             disabled={installing}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-sky-500 to-cyan-400 hover:from-sky-400 hover:to-cyan-300 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-60"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-400 hover:to-cyan-300 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-60"
           >
             {installing ? (
               <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

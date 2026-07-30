@@ -65,14 +65,14 @@ Looking forward to hearing from you!`;
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowPopup(false)}>
           <div
-            className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 relative animate-scale-in"
+            className="bg-gradient-to-br from-stone-900 to-stone-800 border border-stone-700 rounded-2xl shadow-2xl max-w-md w-full p-6 relative animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setShowPopup(false)}
-              className="absolute top-4 right-4 w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded-full flex items-center justify-center transition-colors"
+              className="absolute top-4 right-4 w-8 h-8 bg-stone-800 hover:bg-stone-700 rounded-full flex items-center justify-center transition-colors"
             >
-              <X className="w-5 h-5 text-slate-400" />
+              <X className="w-5 h-5 text-stone-400" />
             </button>
 
             <div className="text-center mb-6">
@@ -80,11 +80,11 @@ Looking forward to hearing from you!`;
                 <MessageCircle className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-black text-white mb-2">Chat with Us on WhatsApp</h3>
-              <p className="text-slate-400">Get instant responses to your queries</p>
+              <p className="text-stone-400">Get instant responses to your queries</p>
             </div>
 
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
-              <p className="text-slate-300 text-sm leading-relaxed">
+            <div className="bg-stone-800/50 border border-stone-700 rounded-xl p-4 mb-6">
+              <p className="text-stone-300 text-sm leading-relaxed">
                 Hi! We're here to help with digital marketing and software solutions. Click below to start chatting with our team on WhatsApp.
               </p>
             </div>
@@ -97,7 +97,7 @@ Looking forward to hearing from you!`;
               <span>Start Chat on WhatsApp</span>
             </button>
 
-            <p className="text-slate-700 text-xs text-center mt-4">
+            <p className="text-stone-700 text-xs text-center mt-4">
               Available: Monday - Saturday, 9 AM - 7 PM
             </p>
           </div>

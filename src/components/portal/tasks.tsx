@@ -9,22 +9,22 @@ import type { Segment } from '../../lib/database.types';
 const PRIORITY_TONE: Record<string, string> = {
   high: 'text-red-700 border-red-500/40 bg-red-50',
   medium: 'text-amber-700 border-amber-500/40 bg-amber-50',
-  low: 'text-slate-700 border-slate-300 bg-slate-100/60',
+  low: 'text-stone-700 border-stone-300 bg-stone-100/60',
 };
 
 const STATUS_META: Record<string, { label: string; icon: any; tone: string }> = {
-  pending: { label: 'Pending', icon: Circle, tone: 'text-slate-700' },
-  in_progress: { label: 'In progress', icon: Clock3, tone: 'text-sky-700' },
+  pending: { label: 'Pending', icon: Circle, tone: 'text-stone-700' },
+  in_progress: { label: 'In progress', icon: Clock3, tone: 'text-teal-700' },
   completed: { label: 'Completed', icon: CheckCircle2, tone: 'text-emerald-700' },
-  cancelled: { label: 'Cancelled', icon: XCircle, tone: 'text-slate-700' },
+  cancelled: { label: 'Cancelled', icon: XCircle, tone: 'text-stone-700' },
 };
 
 function dueTone(due: string | null, status: string) {
-  if (!due || status === 'completed' || status === 'cancelled') return 'text-slate-700';
+  if (!due || status === 'completed' || status === 'cancelled') return 'text-stone-700';
   const d = new Date(due + 'T23:59:59');
   if (d < new Date()) return 'text-red-700 font-medium';
   if (d.getTime() - Date.now() < 2 * 86400000) return 'text-amber-700';
-  return 'text-slate-700';
+  return 'text-stone-700';
 }
 
 /**
@@ -126,7 +126,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
         <div className="flex gap-2">
           {([['open', 'Open'], ['mine', 'Assigned to me'], ['done', 'Completed']] as const).map(([v, label]) => (
             <button key={v} onClick={() => setScope(v)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>
+              className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
               {label}
             </button>
           ))}
@@ -137,7 +137,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
       </div>
 
       {tasks.length === 0 && (
-        <p className="text-slate-700 text-sm text-center py-10">
+        <p className="text-stone-700 text-sm text-center py-10">
           {scope === 'done' ? 'Nothing completed yet.' : scope === 'mine' ? 'No tasks assigned to you.' : 'No open tasks.'}
         </p>
       )}
@@ -154,12 +154,12 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Icon className={`w-4 h-4 shrink-0 ${meta.tone}`} />
-                    <p className="text-slate-900 text-sm font-medium">{t.title}</p>
+                    <p className="text-stone-900 text-sm font-medium">{t.title}</p>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded border capitalize ${PRIORITY_TONE[t.priority]}`}>
                       {t.priority}
                     </span>
                   </div>
-                  {t.description && <p className="text-slate-700 text-xs mt-1">{t.description}</p>}
+                  {t.description && <p className="text-stone-700 text-xs mt-1">{t.description}</p>}
                   <div className="flex flex-wrap gap-3 mt-1.5 text-xs">
                     {t.due_date && (
                       <span className={dueTone(t.due_date, t.status)}>
@@ -167,10 +167,10 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                         {new Date(t.due_date + 'T23:59:59') < new Date() && t.status !== 'completed' && t.status !== 'cancelled' ? ' — overdue' : ''}
                       </span>
                     )}
-                    <span className="text-slate-700">
+                    <span className="text-stone-700">
                       {t.assigned_to ? (isMine ? 'You' : nameOf(t.assigned_to) || 'Assigned') : 'Unassigned'}
                     </span>
-                    {t.category && <span className="text-slate-700">{t.category}</span>}
+                    {t.category && <span className="text-stone-700">{t.category}</span>}
                     {t.completion_note && <span className="text-emerald-700/80">“{t.completion_note}”</span>}
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                   {(isMine || canEditAll) && t.status !== 'completed' && t.status !== 'cancelled' && (
                     <div className="flex gap-2">
                       {t.status === 'pending' && (
-                        <button className="px-2.5 py-1 rounded-lg border border-slate-300 text-slate-700 text-xs"
+                        <button className="px-2.5 py-1 rounded-lg border border-stone-300 text-stone-700 text-xs"
                           disabled={busy === t.id} onClick={() => setStatus(t, 'in_progress')}>Start</button>
                       )}
                       <button className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
@@ -201,7 +201,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                     </select>
                   )}
                   {canEditAll && t.status !== 'completed' && t.status !== 'cancelled' && (
-                    <button className="text-slate-700 hover:text-red-700 text-xs"
+                    <button className="text-stone-700 hover:text-red-700 text-xs"
                       onClick={() => setStatus(t, 'cancelled')}>Cancel task</button>
                   )}
                 </div>
@@ -213,8 +213,8 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
 
       {showNew && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowNew(false)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold">New Task</h3>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold">New Task</h3>
             <input className={inputCls} placeholder="What needs doing? *"
               value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
             <textarea className={inputCls} rows={2} placeholder="Details (optional)"

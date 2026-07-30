@@ -14,11 +14,11 @@ const ForcePasswordChange = lazy(() => import('./components/ForcePasswordChange'
 
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center select-none">
+    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center select-none">
       <KiteTailLogo className="w-12 h-12 mb-3 drop-shadow-md" />
-      <p className="text-slate-900 font-extrabold text-sm tracking-tight">Nikki Technologies</p>
-      <div className="w-28 h-1 bg-slate-200 rounded-full mt-4 overflow-hidden">
-        <div className="w-full h-full bg-blue-700 rounded-full animate-pulse" />
+      <p className="text-stone-900 font-extrabold text-sm tracking-tight">Nikki Technologies</p>
+      <div className="w-28 h-1 bg-stone-200 rounded-full mt-4 overflow-hidden">
+        <div className="w-full h-full bg-orange-700 rounded-full animate-pulse" />
       </div>
     </div>
   );

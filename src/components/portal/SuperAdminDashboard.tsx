@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
   Landmark, Megaphone, Briefcase, Image as ImageIcon, Shield,
+  Clock, CalendarDays, CreditCard, Repeat, Menu, X,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -128,12 +129,12 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
     { key: 'pendingApprovals', label: 'Requests waiting for approval', tab: 'approvals', tone: 'text-amber-700 font-extrabold', show: canApprovals },
     { key: 'overdueTickets', label: 'Overdue tickets (SLA missed)', tab: 'tickets', tone: 'text-red-700 font-extrabold', show: canTickets },
     { key: 'unassignedLeads', label: 'Unassigned leads waiting', tab: 'crm', tone: 'text-amber-700 font-extrabold', show: canLeads },
-    { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-sky-700 font-extrabold', show: true },
+    { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-teal-700 font-extrabold', show: true },
     { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-700 font-extrabold', show: canStaff || canLeads },
     { key: 'overdueFollowups', label: 'Follow-ups overdue', tab: 'crm', tone: 'text-red-700 font-extrabold', show: canLeads },
     { key: 'transfers', label: 'Lead handoffs to approve', tab: 'crm', tone: 'text-purple-700 font-extrabold', show: canTransfers },
-    { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-slate-900 font-extrabold', show: canTickets },
-    { key: 'notCheckedIn', label: 'Staff not checked in today', tab: 'hr', tone: 'text-slate-900 font-extrabold', show: canAttendance },
+    { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-stone-900 font-extrabold', show: canTickets },
+    { key: 'notCheckedIn', label: 'Staff not checked in today', tab: 'hr', tone: 'text-stone-900 font-extrabold', show: canAttendance },
   ].filter(i => i.show && (c[i.key] ?? 0) > 0);
 
   if (items.length === 0) {
@@ -146,13 +147,13 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
 
   return (
     <div className="mb-6">
-      <h3 className="text-slate-900 text-xs font-extrabold tracking-wider mb-2">NEEDS YOUR ATTENTION</h3>
+      <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2">NEEDS YOUR ATTENTION</h3>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {items.map(i => (
           <button key={i.key} onClick={() => onGo(i.tab)}
-            className={cardCls + ' text-left hover:border-blue-400 cursor-pointer transition-all'}>
+            className={cardCls + ' text-left hover:border-orange-400 cursor-pointer transition-all'}>
             <p className={`text-3xl ${i.tone}`}>{c[i.key]}</p>
-            <p className="text-slate-700 text-xs font-semibold mt-1">{i.label}</p>
+            <p className="text-stone-700 text-xs font-semibold mt-1">{i.label}</p>
           </button>
         ))}
       </div>
@@ -192,9 +193,9 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
     <div className="space-y-5">
       <ActionCentre onGo={onGo} />
       {canOnboard && (
-        <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-blue-50 border border-blue-200 shadow-sm">
-          <p className="text-blue-950 font-bold text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
-          <button onClick={onAddStaff} className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-sm font-bold shadow-md shadow-blue-700/20 whitespace-nowrap">+ Onboard Employee</button>
+        <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-orange-50 border border-orange-200 shadow-sm">
+          <p className="text-orange-950 font-bold text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
+          <button onClick={onAddStaff} className="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold shadow-md shadow-orange-700/20 whitespace-nowrap">+ Onboard Employee</button>
         </div>
       )}
       <SetupChecklist segments={segments} />
@@ -215,13 +216,13 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
           <div key={seg.slug} className={cardCls}>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }} />
-              <h3 className="text-slate-900 font-bold">{seg.name}</h3>
+              <h3 className="text-stone-900 font-bold">{seg.name}</h3>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><p className="text-2xl font-extrabold text-slate-900">{st.openTickets}</p><p className="text-slate-700 text-xs">Open tickets</p></div>
-              <div><p className="text-2xl font-extrabold text-slate-900">{st.leads}</p><p className="text-slate-700 text-xs">Total leads</p></div>
-              <div><p className="text-2xl font-extrabold text-emerald-700">{st.won}</p><p className="text-slate-700 text-xs">Won deals</p></div>
-              <div><p className="text-2xl font-extrabold text-slate-900">{st.staff}</p><p className="text-slate-700 text-xs">Staff</p></div>
+              <div><p className="text-2xl font-extrabold text-stone-900">{st.openTickets}</p><p className="text-stone-700 text-xs">Open tickets</p></div>
+              <div><p className="text-2xl font-extrabold text-stone-900">{st.leads}</p><p className="text-stone-700 text-xs">Total leads</p></div>
+              <div><p className="text-2xl font-extrabold text-emerald-700">{st.won}</p><p className="text-stone-700 text-xs">Won deals</p></div>
+              <div><p className="text-2xl font-extrabold text-stone-900">{st.staff}</p><p className="text-stone-700 text-xs">Staff</p></div>
             </div>
           </div>
         );
@@ -361,17 +362,17 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+      <div className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-slate-900 font-semibold text-lg">Onboard New Employee</h3>
-          <button className="text-slate-700 hover:text-slate-900" onClick={onClose}>✕</button>
+          <h3 className="text-stone-900 font-semibold text-lg">Onboard New Employee</h3>
+          <button className="text-stone-700 hover:text-stone-900" onClick={onClose}>✕</button>
         </div>
         <div className="flex items-center gap-1 mb-6 text-xs">
           {steps.map((s, i) => (
-            <div key={s} className={`flex items-center gap-1 ${i <= step ? 'text-sky-700' : 'text-slate-700'}`}>
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center border ${i <= step ? 'border-sky-400' : 'border-slate-200'}`}>{i < step ? '✓' : i + 1}</span>
+            <div key={s} className={`flex items-center gap-1 ${i <= step ? 'text-teal-700' : 'text-stone-700'}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center border ${i <= step ? 'border-teal-400' : 'border-stone-200'}`}>{i < step ? '✓' : i + 1}</span>
               <span className="hidden sm:inline">{s}</span>
-              {i < steps.length - 1 && <ChevronRight className="w-3 h-3 mx-1 text-slate-700" />}
+              {i < steps.length - 1 && <ChevronRight className="w-3 h-3 mx-1 text-stone-700" />}
             </div>
           ))}
         </div>
@@ -382,13 +383,13 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             <input className={inputCls} placeholder="Email *" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
             <div className="flex gap-2">
               <input className={inputCls} placeholder="Temporary Password *" type="text" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
-              <button type="button" className="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs whitespace-nowrap"
+              <button type="button" className="px-3 py-2 rounded-lg border border-stone-200 text-stone-700 text-xs whitespace-nowrap"
                 onClick={() => {
                   const gen = Array.from(crypto.getRandomValues(new Uint8Array(9)))
                     .map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'[b % 55]).join('');
                   setForm({ ...form, password: gen });
                 }}>Generate</button>
-              <button type="button" className="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs whitespace-nowrap disabled:opacity-40"
+              <button type="button" className="px-3 py-2 rounded-lg border border-stone-200 text-stone-700 text-xs whitespace-nowrap disabled:opacity-40"
                 disabled={!form.password}
                 onClick={() => { navigator.clipboard?.writeText(form.password); toast.success('Password copied'); }}>Copy</button>
             </div>
@@ -404,17 +405,17 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
         {step === 1 && (
           <div className="space-y-4">
             <div>
-              <p className="text-slate-700 text-sm font-medium mb-2">Role</p>
+              <p className="text-stone-700 text-sm font-medium mb-2">Role</p>
               <select className={inputCls} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
                 {['manager', 'hr', 'marketing_executive', 'telecaller', 'support_agent', 'employee'].map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
             <div>
-              <p className="text-slate-700 text-sm font-medium mb-2">Segment Access</p>
+              <p className="text-stone-700 text-sm font-medium mb-2">Segment Access</p>
               <div className="flex flex-wrap gap-2">
                 {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
                   <button key={s.slug} onClick={() => toggleSeg(s.slug)}
-                    className={`px-3 py-1 rounded-full text-xs border ${form.segments.includes(s.slug) ? 'bg-sky-500 text-slate-950 border-sky-500' : 'border-slate-200 text-slate-700'}`}>
+                    className={`px-3 py-1 rounded-full text-xs border ${form.segments.includes(s.slug) ? 'bg-teal-500 text-stone-950 border-teal-500' : 'border-stone-200 text-stone-700'}`}>
                     {s.name}
                   </button>
                 ))}
@@ -422,22 +423,22 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-slate-700 text-sm font-medium mb-2">Employment Type</p>
+                <p className="text-stone-700 text-sm font-medium mb-2">Employment Type</p>
                 <select className={inputCls} value={form.employment_type} onChange={e => setForm({ ...form, employment_type: e.target.value })}>
                   {['full_time', 'part_time', 'contract', 'intern'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-slate-700 text-sm font-medium mb-2">Joining Date</p>
+                <p className="text-stone-700 text-sm font-medium mb-2">Joining Date</p>
                 <input type="date" className={inputCls} value={form.joining_date} onChange={e => setForm({ ...form, joining_date: e.target.value })} />
               </div>
               <div>
-                <p className="text-slate-700 text-sm font-medium mb-2">Date of Birth <span className="text-slate-700 font-normal">(optional)</span></p>
+                <p className="text-stone-700 text-sm font-medium mb-2">Date of Birth <span className="text-stone-700 font-normal">(optional)</span></p>
                 <input type="date" className={inputCls} value={form.date_of_birth} onChange={e => setForm({ ...form, date_of_birth: e.target.value })} />
               </div>
             </div>
             <div>
-              <p className="text-slate-700 text-sm font-medium mb-2">Work Shift <span className="text-slate-700 font-normal">(drives late tracking & punctuality)</span></p>
+              <p className="text-stone-700 text-sm font-medium mb-2">Work Shift <span className="text-stone-700 font-normal">(drives late tracking & punctuality)</span></p>
               {shifts.length === 0 ? (
                 <p className="text-amber-700 text-xs">No shifts defined yet — late tracking won't work for this employee. Create one under HR / Payroll → Shifts, or continue without.</p>
               ) : (
@@ -455,11 +456,11 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
               )}
             </div>
             <div>
-              <p className="text-slate-700 text-sm font-medium mb-2">Reporting Time / Shift <span className="text-slate-700 font-normal">(shown on offer & welcome letters)</span></p>
+              <p className="text-stone-700 text-sm font-medium mb-2">Reporting Time / Shift <span className="text-stone-700 font-normal">(shown on offer & welcome letters)</span></p>
               <input className={inputCls} value={form.reporting_time} onChange={e => setForm({ ...form, reporting_time: e.target.value })} placeholder="e.g. 9:30 AM – 6:30 PM, Monday to Saturday" />
             </div>
             <div>
-              <p className="text-slate-700 text-sm font-medium mb-2">Reports To <span className="text-slate-700 font-normal">(their direct manager gets their leave requests)</span></p>
+              <p className="text-stone-700 text-sm font-medium mb-2">Reports To <span className="text-stone-700 font-normal">(their direct manager gets their leave requests)</span></p>
               <select className={inputCls} value={form.reports_to} onChange={e => setForm({ ...form, reports_to: e.target.value })}>
                 <option value="">No direct manager — notify all approvers</option>
                 {managers.map(m => <option key={m.id} value={m.id}>{m.full_name} — {m.role.replace('_', ' ')}</option>)}
@@ -470,18 +471,18 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 
         {step === 2 && (
           <div className="space-y-3">
-            <p className="text-slate-700 text-sm">This breakdown will be visible to the employee in their portal for full transparency.</p>
+            <p className="text-stone-700 text-sm">This breakdown will be visible to the employee in their portal for full transparency.</p>
             <div className="grid grid-cols-2 gap-3">
               {(['basic', 'hra', 'allowances', 'deductions', 'performance_bonus', 'incentives'] as const).map(k => (
                 <div key={k}>
-                  <label className="text-slate-700 text-xs capitalize">{k.replace('_',' ')} (monthly ₹)</label>
+                  <label className="text-stone-700 text-xs capitalize">{k.replace('_',' ')} (monthly ₹)</label>
                   <input type="number" className={inputCls} value={form.salary_structure[k]}
                     onChange={e => setForm({ ...form, salary_structure: { ...form.salary_structure, [k]: Number(e.target.value) } })} />
                 </div>
               ))}
             </div>
             <div>
-              <label className="text-slate-700 text-xs">Annual CTC (₹)</label>
+              <label className="text-stone-700 text-xs">Annual CTC (₹)</label>
               <input type="number" className={inputCls} value={form.salary_structure.ctc}
                 onChange={e => setForm({ ...form, salary_structure: { ...form.salary_structure, ctc: Number(e.target.value) } })} />
             </div>
@@ -490,15 +491,15 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 
         {step === 3 && (
           <div className="space-y-2">
-            <p className="text-slate-700 text-sm mb-2">Select documents to auto-generate and place directly in the employee's portal.</p>
+            <p className="text-stone-700 text-sm mb-2">Select documents to auto-generate and place directly in the employee's portal.</p>
             {availableTemplates.length === 0 && <p className="text-amber-700 text-sm">Select a segment first to see relevant templates.</p>}
             {availableTemplates.map(t => (
               <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
-                <label className="flex items-center gap-2 text-sm text-slate-900 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-stone-900 cursor-pointer">
                   <input type="checkbox" checked={form.doc_types.includes(t.doc_type)} onChange={() => toggleDoc(t.doc_type)} />
-                  {t.title} <span className="text-slate-700 text-xs">({DOC_TYPE_LABELS[t.doc_type]}{t.requires_signature ? ' • needs signature' : ' • acknowledge only'})</span>
+                  {t.title} <span className="text-stone-700 text-xs">({DOC_TYPE_LABELS[t.doc_type]}{t.requires_signature ? ' • needs signature' : ' • acknowledge only'})</span>
                 </label>
-                <button className="text-sky-700 text-xs" onClick={() => previewDoc(t)}>Preview</button>
+                <button className="text-teal-700 text-xs" onClick={() => previewDoc(t)}>Preview</button>
               </div>
             ))}
           </div>
@@ -507,11 +508,11 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
         {step === 4 && (
           <div className="space-y-3 text-sm">
             <div className={cardCls}>
-              <p className="text-slate-900 font-medium">{form.full_name} — {form.designation || form.role}</p>
-              <p className="text-slate-700 text-xs mt-1">{form.email} • {primarySegment?.name || form.segments.join(', ')}</p>
-              <p className="text-slate-700 text-xs">Joining {form.joining_date} • {form.employment_type.replace('_', ' ')}</p>
-              <p className="text-slate-700 text-xs mt-1">CTC ₹{Number(form.salary_structure.ctc).toLocaleString('en-IN')}/yr</p>
-              <p className="text-slate-700 text-xs mt-1">Documents: {form.doc_types.map((d: string) => DOC_TYPE_LABELS[d]).join(', ') || 'none'}</p>
+              <p className="text-stone-900 font-medium">{form.full_name} — {form.designation || form.role}</p>
+              <p className="text-stone-700 text-xs mt-1">{form.email} • {primarySegment?.name || form.segments.join(', ')}</p>
+              <p className="text-stone-700 text-xs">Joining {form.joining_date} • {form.employment_type.replace('_', ' ')}</p>
+              <p className="text-stone-700 text-xs mt-1">CTC ₹{Number(form.salary_structure.ctc).toLocaleString('en-IN')}/yr</p>
+              <p className="text-stone-700 text-xs mt-1">Documents: {form.doc_types.map((d: string) => DOC_TYPE_LABELS[d]).join(', ') || 'none'}</p>
             </div>
             {msg && <p className="text-red-700 text-xs">{msg}</p>}
           </div>
@@ -520,7 +521,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
         {msg && step < 4 && <p className="text-red-700 text-xs mt-4">{msg}</p>}
 
         <div className="flex justify-between mt-6">
-          <button className="flex items-center gap-1 text-slate-700 text-sm disabled:opacity-30" disabled={step === 0} onClick={() => setStep(step - 1)}>
+          <button className="flex items-center gap-1 text-stone-700 text-sm disabled:opacity-30" disabled={step === 0} onClick={() => setStep(step - 1)}>
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
           {step < 4 ? (
@@ -548,6 +549,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
   const [showOffboard, setShowOffboard] = useState(false);
+  const [viewDocsFor, setViewDocsFor] = useState<any | null>(null);
 
   useEffect(() => { if (openSignal) setShowOnboard(true); }, [openSignal]);
 
@@ -623,7 +625,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <p className="text-slate-700 text-sm">Onboard staff, assign segment access and function permissions — no code needed.</p>
+        <p className="text-stone-700 text-sm">Onboard staff, assign segment access and function permissions — no code needed.</p>
         <div className="flex items-center gap-4">
           <ExportStaffButton />
           <button className={btnCls} onClick={() => setShowOnboard(true)}>+ Onboard Employee</button>
@@ -634,41 +636,41 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
           one of your own employees. */}
       {owners.length > 0 && (
         <div className="mb-5">
-          <p className="text-slate-700 text-xs uppercase tracking-wider mb-2">Owner account</p>
+          <p className="text-stone-700 text-xs uppercase tracking-wider mb-2">Owner account</p>
           {owners.map(u => (
-            <div key={u.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-3 border-sky-800/60'}>
+            <div key={u.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-3 border-teal-800/60'}>
               <div>
-                <p className="text-slate-900 font-medium">
+                <p className="text-stone-900 font-medium">
                   {u.full_name}
-                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-sky-100 text-sky-700">Owner · full access</span>
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-teal-100 text-teal-700">Owner · full access</span>
                 </p>
-                <p className="text-slate-700 text-xs">{u.email}</p>
+                <p className="text-stone-700 text-xs">{u.email}</p>
               </div>
-              <span className="text-slate-700 text-xs">Not a managed employee</span>
+              <span className="text-stone-700 text-xs">Not a managed employee</span>
             </div>
           ))}
         </div>
       )}
 
-      <p className="text-slate-700 text-xs uppercase tracking-wider mb-2">
+      <p className="text-stone-700 text-xs uppercase tracking-wider mb-2">
         Staff ({staffOnly.length})
       </p>
       <div className="space-y-2">
         {staffOnly.length === 0 && (
-          <p className="text-slate-700 text-sm text-center py-8">
+          <p className="text-stone-700 text-sm text-center py-8">
             No staff onboarded yet. Use “+ Onboard Employee” above to add your first team member.
           </p>
         )}
         {staffOnly.map(u => (
           <div key={u.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-3'}>
             <div>
-              <p className="text-slate-900 font-medium">{u.full_name} <span className="text-sky-700 text-xs">({u.role.replace('_', ' ')})</span></p>
-              <p className="text-slate-700 text-xs">{u.email} • segments: {(u.segments || []).join(', ') || 'none'}</p>
+              <p className="text-stone-900 font-medium">{u.full_name} <span className="text-teal-700 text-xs">({u.role.replace('_', ' ')})</span></p>
+              <p className="text-stone-700 text-xs">{u.email} • segments: {(u.segments || []).join(', ') || 'none'}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className={`text-xs px-2 py-0.5 rounded ${u.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{u.is_active ? 'active' : 'disabled'}</span>
               <OnboardingStatusBadge staffUserId={u.id} />
-              <button className="text-sky-700 text-sm font-medium" onClick={() => {
+              <button className="text-teal-700 text-sm font-medium" onClick={() => {
                 setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } });
                 setSnapshot({ designation: u.designation || '', ctc: u.salary_structure?.ctc || 0 });
                 setResetPasswordValue('');
@@ -685,8 +687,8 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
 
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold text-lg">{editing.full_name} — Access Control</h3>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold text-lg">{editing.full_name} — Access Control</h3>
             <div className="grid grid-cols-2 gap-3">
               <select className={inputCls} value={editing.role} onChange={e => setEditing({ ...editing, role: e.target.value })}>
                 {['manager', 'hr', 'marketing_executive', 'telecaller', 'support_agent', 'employee'].map(r => <option key={r} value={r}>{r}</option>)}
@@ -700,35 +702,35 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
               </select>
             </div>
             <div>
-              <p className="text-slate-700 text-sm font-medium mb-2">Salary Structure <span className="text-slate-700 font-normal">(visible to employee)</span></p>
+              <p className="text-stone-700 text-sm font-medium mb-2">Salary Structure <span className="text-stone-700 font-normal">(visible to employee)</span></p>
               <div className="grid grid-cols-2 gap-3">
                 {(['basic', 'hra', 'allowances', 'deductions', 'performance_bonus', 'incentives'] as const).map(k => (
                   <div key={k}>
-                    <label className="text-slate-700 text-xs capitalize">{k.replace('_',' ')} (monthly ₹)</label>
+                    <label className="text-stone-700 text-xs capitalize">{k.replace('_',' ')} (monthly ₹)</label>
                     <input type="number" className={inputCls} value={editing.salary_structure?.[k] || 0}
                       onChange={e => setEditing({ ...editing, salary_structure: { ...editing.salary_structure, [k]: Number(e.target.value) } })} />
                   </div>
                 ))}
                 <div className="col-span-2">
-                  <label className="text-slate-700 text-xs">Annual CTC (₹)</label>
+                  <label className="text-stone-700 text-xs">Annual CTC (₹)</label>
                   <input type="number" className={inputCls} value={editing.salary_structure?.ctc || 0}
                     onChange={e => setEditing({ ...editing, salary_structure: { ...editing.salary_structure, ctc: Number(e.target.value) } })} />
                 </div>
               </div>
             </div>
             <div>
-              <p className="text-slate-700 text-sm font-medium mb-2">Segment Access</p>
+              <p className="text-stone-700 text-sm font-medium mb-2">Segment Access</p>
               <div className="flex flex-wrap gap-2">
                 {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
                   <button key={s.slug} onClick={() => toggleSeg(editing, setEditing, s.slug)}
-                    className={`px-3 py-1 rounded-full text-xs border ${(editing.segments || []).includes(s.slug) ? 'bg-sky-500 text-slate-950 border-sky-500' : 'border-slate-200 text-slate-700'}`}>
+                    className={`px-3 py-1 rounded-full text-xs border ${(editing.segments || []).includes(s.slug) ? 'bg-teal-500 text-stone-950 border-teal-500' : 'border-stone-200 text-stone-700'}`}>
                     {s.name}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <p className="text-slate-700 text-sm font-medium mb-2">Function Permissions <span className="text-slate-700 font-normal">(override role defaults)</span></p>
+              <p className="text-stone-700 text-sm font-medium mb-2">Function Permissions <span className="text-stone-700 font-normal">(override role defaults)</span></p>
               <div className="grid grid-cols-2 gap-1.5">
                 {PERMISSION_KEYS.map(p => {
                   const val = editing.permission_overrides?.[p];
@@ -740,27 +742,27 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
                       else delete next[p];
                       setEditing({ ...editing, permission_overrides: next });
                     }}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs border text-left ${val === true ? 'border-emerald-500 text-emerald-700' : val === false ? 'border-red-500 text-red-700' : 'border-slate-200 text-slate-700'}`}>
+                      className={`px-2.5 py-1.5 rounded-lg text-xs border text-left ${val === true ? 'border-emerald-500 text-emerald-700' : val === false ? 'border-red-500 text-red-700' : 'border-stone-200 text-stone-700'}`}>
                       {p.replace(/_/g, ' ')} {val === true ? '✓' : val === false ? '✕' : '· role default'}
                     </button>
                   );
                 })}
               </div>
             </div>
-            <div className="border-t border-slate-800 pt-3">
-              <p className="text-slate-700 text-sm font-medium mb-2">Reset Password</p>
+            <div className="border-t border-stone-800 pt-3">
+              <p className="text-stone-700 text-sm font-medium mb-2">Reset Password</p>
               <div className="flex gap-2">
                 <input className={inputCls} type="password" placeholder="New password (min 6 characters)" value={resetPasswordValue} onChange={e => setResetPasswordValue(e.target.value)} />
                 <button className={btnCls} disabled={resettingPassword} onClick={doResetPassword}>{resettingPassword ? 'Setting…' : 'Set'}</button>
               </div>
-              <p className="text-slate-700 text-xs mt-1">Sets their password directly — tell them the new password securely. They can also self-reset via "Forgot password?" on the login page.</p>
+              <p className="text-stone-700 text-xs mt-1">Sets their password directly — tell them the new password securely. They can also self-reset via "Forgot password?" on the login page.</p>
             </div>
-            <div className="border-t border-slate-800 pt-3">
-              <button className="text-sky-700 text-sm font-medium mb-4 block" onClick={() => { setViewDocsFor(editing); setEditing(null); }}>View Documents</button>
+            <div className="border-t border-stone-800 pt-3">
+              <button className="text-teal-700 text-sm font-medium mb-4 block" onClick={() => { setViewDocsFor(editing); setEditing(null); }}>View Documents</button>
               {showOffboard ? (
                 <OffboardStaff staffMember={editing} onDone={() => { setShowOffboard(false); setEditing(null); load(); }} />
               ) : editing.exit_date ? (
-                <p className="text-slate-700 text-xs">
+                <p className="text-stone-700 text-xs">
                   Offboarded on {new Date(editing.exit_date).toLocaleDateString()} — {String(editing.exit_reason || '').replace('_', ' ')}
                 </p>
               ) : (
@@ -770,6 +772,13 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
             <button className={btnCls + ' w-full'} onClick={saveUser}>Save Access</button>
           </div>
         </div>
+      )}
+      {viewDocsFor && (
+        <EmployeeDocumentsModal
+          staffUserId={viewDocsFor.id}
+          staffName={viewDocsFor.full_name}
+          onClose={() => setViewDocsFor(null)}
+        />
       )}
     </div>
   );
@@ -781,8 +790,8 @@ function TicketsSection({ segments, focusId }: { segments: Segment[]; focusId?: 
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setSub('queue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'queue' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>All Tickets</button>
-        <button onClick={() => setSub('overdue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'overdue' ? 'border-red-500 text-red-700' : 'border-slate-200 text-slate-700'}`}>Overdue (SLA)</button>
+        <button onClick={() => setSub('queue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'queue' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>All Tickets</button>
+        <button onClick={() => setSub('overdue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'overdue' ? 'border-red-500 text-red-700' : 'border-stone-200 text-stone-700'}`}>Overdue (SLA)</button>
       </div>
       {sub === 'queue' && <TicketsBoard segments={segments} focusId={focusId} />}
       {sub === 'overdue' && <OverdueTickets segments={segments} />}
@@ -813,14 +822,14 @@ function LeavePolicyManager() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-slate-900 font-semibold mb-1 text-sm">Annual Leave Entitlements</h3>
-      <p className="text-slate-700 text-xs mb-4">Days granted per employee per calendar year. Balances are calculated from approved requests, counting working days only.</p>
+      <h3 className="text-stone-900 font-semibold mb-1 text-sm">Annual Leave Entitlements</h3>
+      <p className="text-stone-700 text-xs mb-4">Days granted per employee per calendar year. Balances are calculated from approved requests, counting working days only.</p>
       <div className="space-y-2">
         {rows.map(r => (
           <div key={r.id} className="flex items-center justify-between gap-3">
-            <span className="text-slate-700 text-sm capitalize">{r.leave_type}</span>
+            <span className="text-stone-700 text-sm capitalize">{r.leave_type}</span>
             {r.is_unlimited ? (
-              <span className="text-slate-700 text-xs">unlimited (unpaid)</span>
+              <span className="text-stone-700 text-xs">unlimited (unpaid)</span>
             ) : (
               <input type="number" min={0} className={inputCls + ' w-24 text-right'} defaultValue={r.annual_days}
                 disabled={busy} onBlur={e => { const v = Number(e.target.value); if (v !== Number(r.annual_days)) save(r.id, v); }} />
@@ -846,14 +855,14 @@ function HRSection({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex gap-2 mb-5 flex-wrap">
-        <button onClick={() => setSub('core')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'core' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Staff & Leaves</button>
-        {canApprove && <button onClick={() => setSub('corrections')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'corrections' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Attendance Corrections</button>}
-        {canSummary && <button onClick={() => setSub('dangling')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'dangling' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Unclosed Days</button>}
-        {canShifts && <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Shifts</button>}
-        {canPayroll && <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Payslips</button>}
-        {canSummary && <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Attendance Summary</button>}
-        {canPolicy && <button onClick={() => setSub('policy')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'policy' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Leave Policy</button>}
-        {canPolicy && <button onClick={() => setSub('holidays')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'holidays' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Holidays</button>}
+        <button onClick={() => setSub('core')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'core' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Staff & Leaves</button>
+        {canApprove && <button onClick={() => setSub('corrections')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'corrections' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Attendance Corrections</button>}
+        {canSummary && <button onClick={() => setSub('dangling')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'dangling' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Unclosed Days</button>}
+        {canShifts && <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Shifts</button>}
+        {canPayroll && <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Payslips</button>}
+        {canSummary && <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Attendance Summary</button>}
+        {canPolicy && <button onClick={() => setSub('policy')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'policy' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Leave Policy</button>}
+        {canPolicy && <button onClick={() => setSub('holidays')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'holidays' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Holidays</button>}
       </div>
       {sub === 'core' && <HRBoard segments={segments} />}
       {sub === 'corrections' && canApprove && <RegularizationApprovals />}
@@ -873,8 +882,8 @@ function ApprovalsSection() {
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setSub('bank')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bank' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Bank Details</button>
-        <button onClick={() => setSub('photo')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'photo' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Profile Photos</button>
+        <button onClick={() => setSub('bank')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bank' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Bank Details</button>
+        <button onClick={() => setSub('photo')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'photo' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Profile Photos</button>
       </div>
       {sub === 'bank' && <BankChangeApprovals />}
       {sub === 'photo' && <PhotoChangeApprovals />}
@@ -945,7 +954,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <p className="text-slate-700 text-sm">Add a new business vertical anytime — tickets, leads, staff scoping pick it up automatically.</p>
+        <p className="text-stone-700 text-sm">Add a new business vertical anytime — tickets, leads, staff scoping pick it up automatically.</p>
         <button className={btnCls} onClick={() => setEditing({ slug: '', name: '', tagline: '', description: '', icon: 'Layers', color: '#0ea5e9', ticket_prefix: '', order_index: rows.length + 1, active: true })}>+ New Segment</button>
       </div>
       <div className="space-y-2">
@@ -954,10 +963,10 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
               <div>
-                <p className="text-slate-900 font-bold">{s.name} <span className="text-slate-700 text-xs">({s.slug} • NKT-{s.ticket_prefix}-)</span></p>
-                <p className="text-slate-700 text-xs">{s.tagline}</p>
+                <p className="text-stone-900 font-bold">{s.name} <span className="text-stone-700 text-xs">({s.slug} • NKT-{s.ticket_prefix}-)</span></p>
+                <p className="text-stone-700 text-xs">{s.tagline}</p>
                 {usage[s.slug] && (usage[s.slug].staff > 0 || usage[s.slug].leads > 0 || usage[s.slug].tickets > 0) && (
-                  <p className="text-slate-700 text-xs mt-0.5">
+                  <p className="text-stone-700 text-xs mt-0.5">
                     {usage[s.slug].staff} staff · {usage[s.slug].leads} open leads · {usage[s.slug].tickets} open tickets
                   </p>
                 )}
@@ -965,7 +974,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
             </div>
             <div className="flex items-center gap-3">
               <span className={`text-xs ${s.active ? 'text-emerald-700' : 'text-amber-700'}`}>{s.active ? 'live' : 'retired'}</span>
-              <button className="text-sky-700 text-sm" onClick={() => setEditing(s)}>Edit</button>
+              <button className="text-teal-700 text-sm" onClick={() => setEditing(s)}>Edit</button>
               <button className={s.active ? 'text-amber-700 text-sm' : 'text-emerald-700 text-sm'} onClick={() => toggleActive(s)}>
                 {s.active ? 'Retire' : 'Reactivate'}
               </button>
@@ -975,8 +984,8 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
       </div>
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold">{editing.id ? 'Edit' : 'New'} Segment</h3>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold">{editing.id ? 'Edit' : 'New'} Segment</h3>
             <input className={inputCls} placeholder="Name *" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} />
             <input className={inputCls} placeholder="Slug * (e.g. ai_automation)" value={editing.slug || ''} disabled={!!editing.id} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') })} />
             <input className={inputCls} placeholder="Ticket Prefix * (e.g. AI)" value={editing.ticket_prefix || ''} onChange={e => setEditing({ ...editing, ticket_prefix: e.target.value.toUpperCase() })} />
@@ -1035,19 +1044,19 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-5">
-        <p className="text-slate-700 text-sm">Add any new software product without code — it appears on the website instantly.</p>
+        <p className="text-stone-700 text-sm">Add any new software product without code — it appears on the website instantly.</p>
         <button className={btnCls} onClick={() => setEditing({ segment_slug: 'software', slug: '', name: '', tagline: '', description: '', external_url: '', demo_cta: 'Visit Website', status: 'active', order_index: rows.length + 1, features: [] })}>+ Add Product</button>
       </div>
       <div className="space-y-2">
         {rows.map(p => (
           <div key={p.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
             <div>
-              <p className="text-slate-900 font-bold">{p.name} <span className="text-slate-700 text-xs">/{p.slug}</span></p>
-              <p className="text-slate-700 text-xs">{p.tagline} {p.external_url && `• ${p.external_url}`}</p>
+              <p className="text-stone-900 font-bold">{p.name} <span className="text-stone-700 text-xs">/{p.slug}</span></p>
+              <p className="text-stone-700 text-xs">{p.tagline} {p.external_url && `• ${p.external_url}`}</p>
             </div>
             <div className="flex items-center gap-3">
-              <span className={`text-xs px-2 py-0.5 rounded ${p.status === 'active' ? 'bg-emerald-100 text-emerald-700' : p.status === 'coming_soon' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>{p.status}</span>
-              <button className="text-sky-700 text-sm" onClick={() => setEditing({ ...p, features: p.features || [] })}>Edit</button>
+              <span className={`text-xs px-2 py-0.5 rounded ${p.status === 'active' ? 'bg-emerald-100 text-emerald-700' : p.status === 'coming_soon' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'}`}>{p.status}</span>
+              <button className="text-teal-700 text-sm" onClick={() => setEditing({ ...p, features: p.features || [] })}>Edit</button>
               <button className="text-red-700 text-sm" onClick={() => remove(p.id)}>Delete</button>
             </div>
           </div>
@@ -1055,8 +1064,8 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
       </div>
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold">{editing.id ? 'Edit' : 'Add'} Product</h3>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold">{editing.id ? 'Edit' : 'Add'} Product</h3>
             <div className="grid grid-cols-2 gap-3">
               <input className={inputCls} placeholder="Name *" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} />
               <input className={inputCls} placeholder="Slug *" value={editing.slug} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} />
@@ -1076,8 +1085,8 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
             <ImageUpload placeholder="Upload Product Logo" value={editing.logo_url || ''} onChange={url => setEditing({ ...editing, logo_url: url })} />
             <div>
               <div className="flex justify-between items-center mb-2">
-                <p className="text-slate-700 text-sm font-medium">Feature Cards</p>
-                <button className="text-sky-700 text-xs" onClick={() => setEditing({ ...editing, features: [...editing.features, { title: '', description: '', icon: 'CheckCircle2' }] })}>+ Add feature</button>
+                <p className="text-stone-700 text-sm font-medium">Feature Cards</p>
+                <button className="text-teal-700 text-xs" onClick={() => setEditing({ ...editing, features: [...editing.features, { title: '', description: '', icon: 'CheckCircle2' }] })}>+ Add feature</button>
               </div>
               {editing.features.map((f: any, i: number) => (
                 <div key={i} className="grid grid-cols-[1fr_2fr_auto] gap-2 mb-2">
@@ -1150,11 +1159,11 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
       <SegmentTabs segments={segments} value={seg} onChange={s => setSeg(s || segments[0]?.slug || '')} includeAll={false} />
       <div className="grid md:grid-cols-2 gap-6">
         <div className={cardCls}>
-          <h3 className="text-slate-900 font-bold mb-3">Services on Website</h3>
+          <h3 className="text-stone-900 font-bold mb-3">Services on Website</h3>
           <div className="space-y-2 mb-4">
             {services.filter(s => s.segment_slug === seg).map(s => (
               <div key={s.id} className="flex justify-between items-center text-sm">
-                <span className="text-slate-800 font-medium">{s.title}</span>
+                <span className="text-stone-800 font-medium">{s.title}</span>
                 <button className="text-red-700 text-xs font-semibold" onClick={() => removeService(s.id)}>Remove</button>
               </div>
             ))}
@@ -1164,11 +1173,11 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
           <button className={btnCls} onClick={addService}>Add Service</button>
         </div>
         <div className={cardCls}>
-          <h3 className="text-slate-900 font-bold mb-3">Ticket Types (support form options)</h3>
+          <h3 className="text-stone-900 font-bold mb-3">Ticket Types (support form options)</h3>
           <div className="space-y-2 mb-4">
             {types.filter(t => t.segment_slug === seg).map(t => (
               <div key={t.id} className="flex justify-between items-center text-sm">
-                <span className="text-slate-800 font-medium">{t.name}</span>
+                <span className="text-stone-800 font-medium">{t.name}</span>
                 <button className="text-red-700 text-xs font-semibold" onClick={() => removeType(t.id)}>Remove</button>
               </div>
             ))}
@@ -1260,16 +1269,16 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setTab('gallery')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'gallery' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Gallery ({gallery.length})</button>
-        <button onClick={() => setTab('team')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'team' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Team ({team.length})</button>
-        <button onClick={() => setTab('testimonials')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'testimonials' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Testimonials ({testimonials.length})</button>
-        <button onClick={() => setTab('logos')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'logos' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Client Logos ({logos.length})</button>
+        <button onClick={() => setTab('gallery')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'gallery' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Gallery ({gallery.length})</button>
+        <button onClick={() => setTab('team')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'team' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Team ({team.length})</button>
+        <button onClick={() => setTab('testimonials')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'testimonials' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Testimonials ({testimonials.length})</button>
+        <button onClick={() => setTab('logos')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'logos' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Client Logos ({logos.length})</button>
       </div>
 
       {tab === 'gallery' && (
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
-            <p className="text-slate-900 text-sm font-medium">Add Gallery Photo</p>
+            <p className="text-stone-900 text-sm font-medium">Add Gallery Photo</p>
             <ImageUpload placeholder="Upload Gallery Image *" value={newGallery.image_url} onChange={url => setNewGallery({ ...newGallery, image_url: url })} />
             <input className={inputCls} placeholder="Caption (optional)" value={newGallery.title} onChange={e => setNewGallery({ ...newGallery, title: e.target.value })} />
             <select className={inputCls} value={newGallery.segment_slug} onChange={e => setNewGallery({ ...newGallery, segment_slug: e.target.value })}>
@@ -1280,10 +1289,10 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {gallery.map(g => (
-              <div key={g.id} className="relative rounded-lg overflow-hidden border border-slate-800">
+              <div key={g.id} className="relative rounded-lg overflow-hidden border border-stone-800">
                 <img src={g.image_url} alt={g.title} className="w-full h-28 object-cover" />
                 <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                  <button className="text-xs text-slate-900" onClick={() => toggleActive('gallery_items', g.id, g.active, load)}>{g.active ? 'Hide' : 'Show'}</button>
+                  <button className="text-xs text-stone-900" onClick={() => toggleActive('gallery_items', g.id, g.active, load)}>{g.active ? 'Hide' : 'Show'}</button>
                   <button className="text-xs text-red-700" onClick={() => remove('gallery_items', g.id, load)}>Delete</button>
                 </div>
               </div>
@@ -1295,7 +1304,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
       {tab === 'team' && (
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
-            <p className="text-slate-900 text-sm font-medium">Add Team Member</p>
+            <p className="text-stone-900 text-sm font-medium">Add Team Member</p>
             <div className="grid grid-cols-2 gap-2">
               <input className={inputCls} placeholder="Name *" value={newTeam.name} onChange={e => setNewTeam({ ...newTeam, name: e.target.value })} />
               <input className={inputCls} placeholder="Designation" value={newTeam.designation} onChange={e => setNewTeam({ ...newTeam, designation: e.target.value })} />
@@ -1313,12 +1322,12 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
                 <div className="flex items-center gap-3">
                   {t.photo_url && <img src={t.photo_url} className="w-9 h-9 rounded-full object-cover" />}
                   <div>
-                    <p className="text-slate-900 text-sm">{t.name}</p>
-                    <p className="text-slate-700 text-xs">{t.designation}</p>
+                    <p className="text-stone-900 text-sm">{t.name}</p>
+                    <p className="text-stone-700 text-xs">{t.designation}</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <button className="text-slate-700 text-xs" onClick={() => toggleActive('team_members', t.id, t.active, load)}>{t.active ? 'Hide' : 'Show'}</button>
+                  <button className="text-stone-700 text-xs" onClick={() => toggleActive('team_members', t.id, t.active, load)}>{t.active ? 'Hide' : 'Show'}</button>
                   <button className="text-red-700 text-xs" onClick={() => remove('team_members', t.id, load)}>Delete</button>
                 </div>
               </div>
@@ -1330,7 +1339,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
       {tab === 'testimonials' && (
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
-            <p className="text-slate-900 text-sm font-medium">Add Testimonial</p>
+            <p className="text-stone-900 text-sm font-medium">Add Testimonial</p>
             <input className={inputCls} placeholder="Customer Name *" value={newTestimonial.customer_name} onChange={e => setNewTestimonial({ ...newTestimonial, customer_name: e.target.value })} />
             <textarea className={inputCls} rows={2} placeholder="Testimonial text *" value={newTestimonial.content} onChange={e => setNewTestimonial({ ...newTestimonial, content: e.target.value })} />
             <div className="grid grid-cols-2 gap-2">
@@ -1348,13 +1357,13 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
             {testimonials.map(t => (
               <div key={t.id} className={cardCls}>
                 <div className="flex items-center justify-between">
-                  <p className="text-slate-900 text-sm font-medium">{t.customer_name} <span className="text-amber-700 text-xs">{'★'.repeat(t.rating)}</span></p>
+                  <p className="text-stone-900 text-sm font-medium">{t.customer_name} <span className="text-amber-700 text-xs">{'★'.repeat(t.rating)}</span></p>
                   <div className="flex gap-3">
-                    <button className="text-slate-700 text-xs" onClick={() => toggleActive('testimonials', t.id, t.active, load)}>{t.active ? 'Hide' : 'Show'}</button>
+                    <button className="text-stone-700 text-xs" onClick={() => toggleActive('testimonials', t.id, t.active, load)}>{t.active ? 'Hide' : 'Show'}</button>
                     <button className="text-red-700 text-xs" onClick={() => remove('testimonials', t.id, load)}>Delete</button>
                   </div>
                 </div>
-                <p className="text-slate-700 text-sm mt-1">{t.content}</p>
+                <p className="text-stone-700 text-sm mt-1">{t.content}</p>
               </div>
             ))}
           </div>
@@ -1364,8 +1373,8 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
       {tab === 'logos' && (
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
-            <p className="text-slate-900 text-sm font-medium">Add Client Logo</p>
-            <p className="text-slate-700 text-xs">Shows in the scrolling "Trusted By" strip on the homepage.</p>
+            <p className="text-stone-900 text-sm font-medium">Add Client Logo</p>
+            <p className="text-stone-700 text-xs">Shows in the scrolling "Trusted By" strip on the homepage.</p>
             <input className={inputCls} placeholder="Client Name *" value={newLogo.name} onChange={e => setNewLogo({ ...newLogo, name: e.target.value })} />
             <ImageUpload placeholder="Upload Client Logo *" value={newLogo.logo_url} onChange={url => setNewLogo({ ...newLogo, logo_url: url })} />
             <select className={inputCls} value={newLogo.segment_slug} onChange={e => setNewLogo({ ...newLogo, segment_slug: e.target.value })}>
@@ -1376,15 +1385,15 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {logos.map(l => (
-              <div key={l.id} className="relative rounded-lg overflow-hidden border border-slate-800 bg-white p-4 flex items-center justify-center">
+              <div key={l.id} className="relative rounded-lg overflow-hidden border border-stone-800 bg-white p-4 flex items-center justify-center">
                 <img src={l.logo_url} alt={l.name} className="max-h-10 object-contain" />
                 <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                  <button className="text-xs text-slate-900" onClick={() => toggleActive('client_logos', l.id, l.active, load)}>{l.active ? 'Hide' : 'Show'}</button>
+                  <button className="text-xs text-stone-900" onClick={() => toggleActive('client_logos', l.id, l.active, load)}>{l.active ? 'Hide' : 'Show'}</button>
                   <button className="text-xs text-red-700" onClick={() => remove('client_logos', l.id, load)}>Delete</button>
                 </div>
               </div>
             ))}
-            {logos.length === 0 && <p className="text-slate-700 text-sm col-span-full text-center py-6">No client logos yet.</p>}
+            {logos.length === 0 && <p className="text-stone-700 text-sm col-span-full text-center py-6">No client logos yet.</p>}
           </div>
         </div>
       )}
@@ -1411,14 +1420,14 @@ function ContentManager() {
   const sections = [...new Set(rows.map(r => r.section))];
   return (
     <div className="space-y-6">
-      <p className="text-slate-700 text-sm">Edit any text on the public website. Changes go live immediately.</p>
+      <p className="text-stone-700 text-sm">Edit any text on the public website. Changes go live immediately.</p>
       {sections.map(sec => (
         <div key={sec} className={cardCls}>
-          <h3 className="text-slate-900 font-semibold capitalize mb-3">{sec}</h3>
+          <h3 className="text-stone-900 font-semibold capitalize mb-3">{sec}</h3>
           <div className="space-y-3">
             {rows.filter(r => r.section === sec).map(r => (
               <div key={r.id}>
-                <label className="text-slate-700 text-xs capitalize">{r.key}</label>
+                <label className="text-stone-700 text-xs capitalize">{r.key}</label>
                 <div className="flex gap-2 mt-1">
                   <textarea className={inputCls} rows={r.value.length > 80 ? 2 : 1} value={r.value}
                     onChange={e => setRows(prev => prev.map(x => x.id === r.id ? { ...x, value: e.target.value } : x))} />
@@ -1508,19 +1517,19 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
     <div className="space-y-8">
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-slate-900 font-semibold">Document Templates</h3>
+          <h3 className="text-stone-900 font-semibold">Document Templates</h3>
           <button className={btnCls} onClick={() => setEditingTpl({ segment_slug: '', doc_type: 'other', title: '', body: '', active: true, requires_signature: true })}>+ New Template</button>
         </div>
         <div className="space-y-2">
           {templates.map(t => (
             <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
               <div>
-                <p className="text-slate-900 text-sm font-medium">{t.title}</p>
-                <p className="text-slate-700 text-xs">{DOC_TYPE_LABELS[t.doc_type]} • {segments.find(s => s.slug === t.segment_slug)?.name || 'All segments'} • {t.requires_signature ? 'needs signature' : 'acknowledge only'}</p>
+                <p className="text-stone-900 text-sm font-medium">{t.title}</p>
+                <p className="text-stone-700 text-xs">{DOC_TYPE_LABELS[t.doc_type]} • {segments.find(s => s.slug === t.segment_slug)?.name || 'All segments'} • {t.requires_signature ? 'needs signature' : 'acknowledge only'}</p>
               </div>
               <div className="flex gap-3">
-                <button className="text-sky-700 text-xs" onClick={() => setPreview({ title: t.title, content: t.body })}>Preview</button>
-                <button className="text-sky-700 text-xs" onClick={() => setEditingTpl(t)}>Edit</button>
+                <button className="text-teal-700 text-xs" onClick={() => setPreview({ title: t.title, content: t.body })}>Preview</button>
+                <button className="text-teal-700 text-xs" onClick={() => setEditingTpl(t)}>Edit</button>
               </div>
             </div>
           ))}
@@ -1528,19 +1537,19 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       </div>
 
       <div>
-        <h3 className="text-slate-900 font-semibold mb-4">Issue Documents to Existing Staff</h3>
+        <h3 className="text-stone-900 font-semibold mb-4">Issue Documents to Existing Staff</h3>
         <div className="space-y-2">
           {staff.map(s => (
             <div key={s.id} className={cardCls + ' flex items-center justify-between'}>
-              <p className="text-slate-900 text-sm">{s.full_name} <span className="text-slate-700 text-xs">({s.role})</span></p>
+              <p className="text-stone-900 text-sm">{s.full_name} <span className="text-stone-700 text-xs">({s.role})</span></p>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 border-r border-slate-200 pr-3">
+                <div className="flex items-center gap-2 border-r border-stone-200 pr-3">
                   <OnboardingStatusBadge staffUserId={s.id} />
-                  <button onClick={() => setViewDocsFor(s)} className="text-[11px] font-semibold text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 px-2 py-1 rounded transition-colors">
+                  <button onClick={() => setViewDocsFor(s)} className="text-[11px] font-semibold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2 py-1 rounded transition-colors">
                     View Collected
                   </button>
                 </div>
-                <button className="text-sky-700 text-xs font-medium hover:text-sky-900" onClick={() => openIssue(s)}>Issue Document</button>
+                <button className="text-teal-700 text-xs font-medium hover:text-teal-900" onClick={() => openIssue(s)}>Issue Document</button>
               </div>
             </div>
           ))}
@@ -1549,8 +1558,8 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
 
       {editingTpl && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingTpl(null)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold">{editingTpl.id ? 'Edit' : 'New'} Template</h3>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold">{editingTpl.id ? 'Edit' : 'New'} Template</h3>
             <input className={inputCls} placeholder="Title *" value={editingTpl.title} onChange={e => setEditingTpl({ ...editingTpl, title: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
               <select className={inputCls} value={editingTpl.doc_type} onChange={e => setEditingTpl({ ...editingTpl, doc_type: e.target.value })}>
@@ -1561,11 +1570,11 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
                 {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
             </div>
-            <p className="text-slate-700 text-xs">Placeholders: {'{{name}} {{designation}} {{role}} {{segment}} {{joining_date}} {{ctc}} {{employment_type}} {{company}}'}</p>
+            <p className="text-stone-700 text-xs">Placeholders: {'{{name}} {{designation}} {{role}} {{segment}} {{joining_date}} {{ctc}} {{employment_type}} {{company}}'}</p>
             <textarea className={inputCls} rows={10} value={editingTpl.body} onChange={e => setEditingTpl({ ...editingTpl, body: e.target.value })} />
-            <label className="flex items-center gap-2 text-sm text-slate-900 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-stone-900 cursor-pointer">
               <input type="checkbox" checked={editingTpl.requires_signature !== false} onChange={e => setEditingTpl({ ...editingTpl, requires_signature: e.target.checked })} />
-              Requires employee signature <span className="text-slate-700 text-xs">(off = simple acknowledge)</span>
+              Requires employee signature <span className="text-stone-700 text-xs">(off = simple acknowledge)</span>
             </label>
             <button className={btnCls + ' w-full'} onClick={saveTemplate}>Save Template</button>
           </div>
@@ -1574,10 +1583,10 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
 
       {issueFor && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setIssueFor(null)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold">Issue documents to {issueFor.full_name}</h3>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold">Issue documents to {issueFor.full_name}</h3>
             {relevantTemplates(issueFor).map(t => (
-              <label key={t.id} className="flex items-center gap-2 text-sm text-slate-900 cursor-pointer">
+              <label key={t.id} className="flex items-center gap-2 text-sm text-stone-900 cursor-pointer">
                 <input type="checkbox" checked={issueDocs.includes(t.id)} onChange={() => setIssueDocs(prev => prev.includes(t.id) ? prev.filter(x => x !== t.id) : [...prev, t.id])} />
                 {t.title}
               </label>
@@ -1615,75 +1624,131 @@ export default function SuperAdminDashboard() {
   }
 
   const isSuperAdmin = user?.role === 'super_admin';
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Admin tabs: each requires the same permission enforced at the database (RLS) level —
   // shown here only when the person can actually use it, not just when they're super_admin.
-  const adminTabDefs: { id: Tab; label: string; icon: any; show: boolean }[] = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard, show: true },
-    { id: 'tickets', label: 'Tickets', icon: Ticket, show: isSuperAdmin || hasPermission('view_tickets') || hasPermission('manage_tickets') },
-    { id: 'tasks', label: 'Tasks', icon: ClipboardList, show: true },
-    { id: 'crm', label: 'CRM / Leads', icon: ClipboardList, show: isSuperAdmin || hasPermission('view_leads') || hasPermission('manage_leads') },
-    { id: 'hr', label: 'HR / Payroll', icon: Users2, show: isSuperAdmin || hasPermission('view_staff') || hasPermission('manage_staff') || hasPermission('view_attendance') || hasPermission('manage_payroll') },
-    { id: 'access', label: 'Access Control', icon: UserCog, show: isSuperAdmin || hasPermission('manage_staff') },
-    { id: 'segments', label: 'Segments', icon: Layers, show: isSuperAdmin },
-    { id: 'products', label: 'Products', icon: Boxes, show: isSuperAdmin || hasPermission('manage_content') },
-    { id: 'catalog', label: 'Services & Ticket Types', icon: Wrench, show: isSuperAdmin || hasPermission('manage_content') },
-    { id: 'documents', label: 'Documents & Onboarding', icon: FileText, show: isSuperAdmin || hasPermission('manage_staff') },
-    { id: 'approvals', label: 'Approvals', icon: Landmark, show: isSuperAdmin || hasPermission('approve_advances') || hasPermission('manage_staff') },
-    { id: 'announcements', label: 'Announcements', icon: Megaphone, show: isSuperAdmin || hasPermission('manage_staff') },
-    { id: 'careers', label: 'Careers / Hiring', icon: Briefcase, show: isSuperAdmin || hasPermission('view_careers') || hasPermission('manage_careers') },
-    { id: 'media', label: 'Gallery / Team / Reviews', icon: ImageIcon, show: isSuperAdmin || hasPermission('manage_content') },
-    { id: 'content', label: 'Website Content', icon: FileText, show: isSuperAdmin || hasPermission('manage_content') },
-    { id: 'my_sessions', label: 'My Sessions', icon: Shield, show: true },
-    { id: 'security', label: 'Security Logs', icon: Shield, show: isSuperAdmin },
+  // Grouped so the sidebar (and mobile drawer) reads as sections, not one flat list of 20+ items.
+  type TabDef = { id: Tab; label: string; icon: any; show: boolean };
+  const rawGroups: { label: string; items: TabDef[] }[] = [
+    {
+      label: 'My Workspace',
+      items: [
+        { id: 'my_attendance', label: 'My Attendance', icon: Clock, show: true },
+        { id: 'my_documents', label: 'My Documents', icon: FileText, show: true },
+        { id: 'my_requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
+        { id: 'my_profile', label: 'My Profile', icon: CreditCard, show: true },
+        { id: 'my_swap', label: 'Shift Swap', icon: Repeat, show: true },
+        { id: 'my_sessions', label: 'My Sessions', icon: Shield, show: true },
+      ],
+    },
+    {
+      label: 'Executive Overview',
+      items: [
+        { id: 'overview', label: 'Overview', icon: LayoutDashboard, show: true },
+        { id: 'tickets', label: 'Tickets', icon: Ticket, show: isSuperAdmin || hasPermission('view_tickets') || hasPermission('manage_tickets') },
+        { id: 'tasks', label: 'Tasks', icon: ClipboardList, show: true },
+        { id: 'crm', label: 'CRM / Leads', icon: ClipboardList, show: isSuperAdmin || hasPermission('view_leads') || hasPermission('manage_leads') },
+        { id: 'hr', label: 'HR / Payroll', icon: Users2, show: isSuperAdmin || hasPermission('view_staff') || hasPermission('manage_staff') || hasPermission('view_attendance') || hasPermission('manage_payroll') },
+      ],
+    },
+    {
+      label: 'Administration',
+      items: [
+        { id: 'access', label: 'Access Control', icon: UserCog, show: isSuperAdmin || hasPermission('manage_staff') },
+        { id: 'segments', label: 'Segments', icon: Layers, show: isSuperAdmin },
+        { id: 'products', label: 'Products', icon: Boxes, show: isSuperAdmin || hasPermission('manage_content') },
+        { id: 'catalog', label: 'Services & Ticket Types', icon: Wrench, show: isSuperAdmin || hasPermission('manage_content') },
+        { id: 'documents', label: 'Documents & Onboarding', icon: FileText, show: isSuperAdmin || hasPermission('manage_staff') },
+        { id: 'approvals', label: 'Approvals', icon: Landmark, show: isSuperAdmin || hasPermission('approve_advances') || hasPermission('manage_staff') },
+        { id: 'announcements', label: 'Announcements', icon: Megaphone, show: isSuperAdmin || hasPermission('manage_staff') },
+        { id: 'careers', label: 'Careers / Hiring', icon: Briefcase, show: isSuperAdmin || hasPermission('view_careers') || hasPermission('manage_careers') },
+        { id: 'media', label: 'Gallery / Team / Reviews', icon: ImageIcon, show: isSuperAdmin || hasPermission('manage_content') },
+        { id: 'content', label: 'Website Content', icon: FileText, show: isSuperAdmin || hasPermission('manage_content') },
+        { id: 'security', label: 'Security Logs', icon: Shield, show: isSuperAdmin },
+      ],
+    },
   ];
-  const visibleAdminTabs = adminTabDefs.filter(t => t.show);
-  const tabs = visibleAdminTabs;
+  const tabGroups = rawGroups
+    .map(g => ({ ...g, items: g.items.filter(t => t.show) }))
+    .filter(g => g.items.length > 0);
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex text-slate-900" key={refreshKey}>
-      <aside className="w-60 shrink-0 border-r border-slate-200 bg-white p-4 hidden md:flex flex-col shadow-sm">
-        <div className="flex items-center gap-2.5 mb-8 px-2">
-          <KiteTailLogo className="w-8 h-8 shrink-0" />
-          <div>
-            <p className="text-slate-900 font-extrabold text-sm leading-tight">Nikki Technologies</p>
-            <p className="text-slate-700 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
-          </div>
-        </div>
-        <nav className="flex-1 overflow-y-auto">
-          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-slate-700 uppercase">EXECUTIVE OVERVIEW</p>
-          <div className="space-y-1 mb-5">
-            {visibleAdminTabs.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-blue-50 border border-blue-200 text-blue-800 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 border border-transparent'}`}>
-                <t.icon className={`w-4 h-4 ${tab === t.id ? 'text-blue-700' : 'text-slate-700'}`} /> {t.label}
+  const tabs = tabGroups.flatMap(g => g.items);
+
+  function goTo(t: Tab) {
+    setTab(t);
+    setMobileNavOpen(false);
+  }
+
+  const navGroups = (
+    <>
+      {tabGroups.map(g => (
+        <div key={g.label} className="mb-5">
+          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-stone-700 uppercase">{g.label}</p>
+          <div className="space-y-1">
+            {g.items.map(t => (
+              <button key={t.id} onClick={() => goTo(t.id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-orange-50 border border-orange-200 text-orange-800 shadow-sm' : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100 border border-transparent'}`}>
+                <t.icon className={`w-4 h-4 shrink-0 ${tab === t.id ? 'text-orange-700' : 'text-stone-700'}`} /> {t.label}
               </button>
             ))}
           </div>
-        </nav>
-        <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:text-red-700 text-sm font-semibold mt-auto border-t border-slate-200 pt-3">
+        </div>
+      ))}
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-stone-50 flex text-stone-900" key={refreshKey}>
+      <aside className="w-60 shrink-0 border-r border-stone-200 bg-white p-4 hidden md:flex flex-col shadow-sm">
+        <div className="flex items-center gap-2.5 mb-8 px-2">
+          <KiteTailLogo className="w-8 h-8 shrink-0" />
+          <div>
+            <p className="text-stone-900 font-extrabold text-sm leading-tight">Nikki Technologies</p>
+            <p className="text-stone-700 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
+          </div>
+        </div>
+        <nav className="flex-1 overflow-y-auto">{navGroups}</nav>
+        <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold mt-auto border-t border-stone-200 pt-3">
           <LogOut className="w-4 h-4" /> Sign Out
         </button>
       </aside>
 
-      <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
-        <div className="md:hidden mb-4">
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-            {visibleAdminTabs.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${tab === t.id ? 'bg-blue-700 text-white border-blue-600 shadow-sm' : 'bg-white border-slate-200 text-slate-700'}`}>
-                {t.label}
-              </button>
-            ))}
+      {/* Mobile nav drawer — a flat 20+ item horizontal scroll strip doesn't scale,
+          so mobile gets the same grouped sections as the desktop sidebar, in an overlay. */}
+      {mobileNavOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-stone-900/50" onClick={() => setMobileNavOpen(false)} />
+          <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
+            <div className="flex items-center justify-between mb-6 px-1">
+              <div className="flex items-center gap-2.5">
+                <KiteTailLogo className="w-8 h-8 shrink-0" />
+                <div>
+                  <p className="text-stone-900 font-extrabold text-sm leading-tight">Nikki Technologies</p>
+                  <p className="text-stone-700 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
+                </div>
+              </div>
+              <button onClick={() => setMobileNavOpen(false)} className="p-1 text-stone-700"><X className="w-5 h-5" /></button>
+            </div>
+            <nav className="flex-1">{navGroups}</nav>
+            <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-stone-200 pt-3">
+              <LogOut className="w-4 h-4" /> Sign Out
+            </button>
           </div>
         </div>
+      )}
+
+      <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{tabs.find(t => t.id === tab)?.label}</h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setMobileNavOpen(true)} className="md:hidden p-1.5 -ml-1.5 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight truncate">{tabs.find(t => t.id === tab)?.label}</h1>
+          </div>
           <div className="flex items-center gap-3">
             <QuickSearch onNavigate={navigateWithFocus} />
             <NotificationBell onNavigate={(t) => setTab(t as Tab)} />
-            <span className="text-slate-700 text-sm hidden sm:block">{user?.full_name}</span>
-            <button onClick={signOut} className="md:hidden text-slate-700"><LogOut className="w-5 h-5" /></button>
+            <span className="text-stone-700 text-sm hidden sm:block">{user?.full_name}</span>
+            <button onClick={signOut} className="md:hidden text-stone-700"><LogOut className="w-5 h-5" /></button>
           </div>
         </div>
 

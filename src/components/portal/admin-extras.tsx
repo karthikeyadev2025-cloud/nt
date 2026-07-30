@@ -20,7 +20,7 @@ export function SecurityLogsViewer() {
   }, []);
 
   const eventColor: Record<string, string> = {
-    login_success: 'text-emerald-700 font-semibold', login_failed: 'text-red-700 font-semibold', logout: 'text-slate-700 font-semibold',
+    login_success: 'text-emerald-700 font-semibold', login_failed: 'text-red-700 font-semibold', logout: 'text-stone-700 font-semibold',
   };
 
   const filtered = filter ? logs.filter(l => l.event_type === filter) : logs;
@@ -29,27 +29,27 @@ export function SecurityLogsViewer() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
-        <Shield className="w-4 h-4 text-blue-700" />
-        <p className="text-slate-700 text-sm font-semibold">Login/logout history and security events, most recent first.</p>
+        <Shield className="w-4 h-4 text-orange-700" />
+        <p className="text-stone-700 text-sm font-semibold">Login/logout history and security events, most recent first.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={() => setFilter('')} className={`px-3 py-1 rounded-lg text-xs font-semibold border ${filter === '' ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-slate-300 bg-white text-slate-700'}`}>All ({logs.length})</button>
+        <button onClick={() => setFilter('')} className={`px-3 py-1 rounded-lg text-xs font-semibold border ${filter === '' ? 'border-orange-600 bg-orange-50 text-orange-800' : 'border-stone-300 bg-white text-stone-700'}`}>All ({logs.length})</button>
         {eventTypes.map(e => (
-          <button key={e} onClick={() => setFilter(e)} className={`px-3 py-1 rounded-lg text-xs font-semibold border capitalize ${filter === e ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-slate-300 bg-white text-slate-700'}`}>{e.replace(/_/g, ' ')}</button>
+          <button key={e} onClick={() => setFilter(e)} className={`px-3 py-1 rounded-lg text-xs font-semibold border capitalize ${filter === e ? 'border-orange-600 bg-orange-50 text-orange-800' : 'border-stone-300 bg-white text-stone-700'}`}>{e.replace(/_/g, ' ')}</button>
         ))}
       </div>
-      {loading ? <p className="text-slate-700 text-sm font-semibold text-center py-10">Loading…</p> : (
+      {loading ? <p className="text-stone-700 text-sm font-semibold text-center py-10">Loading…</p> : (
         <div className="space-y-1.5">
           {filtered.map(l => (
             <div key={l.id} className={cardCls + ' flex items-center justify-between py-3'}>
               <div>
-                <p className="text-slate-900 text-sm font-bold">{l.user_email || 'Unknown'}</p>
-                <p className="text-slate-700 text-xs font-medium">{new Date(l.created_at).toLocaleString()}</p>
+                <p className="text-stone-900 text-sm font-bold">{l.user_email || 'Unknown'}</p>
+                <p className="text-stone-700 text-xs font-medium">{new Date(l.created_at).toLocaleString()}</p>
               </div>
-              <span className={`text-xs capitalize ${eventColor[l.event_type] || 'text-slate-700'}`}>{l.event_type.replace(/_/g, ' ')}</span>
+              <span className={`text-xs capitalize ${eventColor[l.event_type] || 'text-stone-700'}`}>{l.event_type.replace(/_/g, ' ')}</span>
             </div>
           ))}
-          {filtered.length === 0 && <p className="text-slate-700 text-sm text-center py-10 font-semibold">No events recorded yet.</p>}
+          {filtered.length === 0 && <p className="text-stone-700 text-sm text-center py-10 font-semibold">No events recorded yet.</p>}
         </div>
       )}
     </div>
@@ -84,18 +84,18 @@ export function TodayAtAGlance() {
   if (!stats) return null;
   const cards = [
     { label: 'Checked in today', value: stats.checkedIn, color: 'text-emerald-700' },
-    { label: 'New leads today', value: stats.newLeads, color: 'text-blue-700' },
+    { label: 'New leads today', value: stats.newLeads, color: 'text-orange-700' },
     { label: 'Open tickets', value: stats.openTickets, color: 'text-amber-700' },
     { label: 'Pending approvals', value: stats.pendingApprovals, color: 'text-purple-700' },
   ];
   return (
     <div className={cardCls}>
-      <h3 className="text-slate-900 font-bold text-sm mb-4 flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-700" /> Today at a Glance</h3>
+      <h3 className="text-stone-900 font-bold text-sm mb-4 flex items-center gap-2"><Sparkles className="w-4 h-4 text-orange-700" /> Today at a Glance</h3>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {cards.map(c => (
           <div key={c.label} className="text-center">
             <p className={`text-3xl font-black ${c.color}`}>{c.value}</p>
-            <p className="text-slate-800 text-xs font-semibold mt-1">{c.label}</p>
+            <p className="text-stone-800 text-xs font-semibold mt-1">{c.label}</p>
           </div>
         ))}
       </div>
@@ -134,17 +134,17 @@ export function SetupChecklist({ segments }: { segments: Segment[] }) {
   if (remaining.length === 0) return null;
 
   return (
-    <div className={cardCls + ' border-blue-200 bg-white'}>
+    <div className={cardCls + ' border-orange-200 bg-white'}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-slate-900 font-bold text-sm">Getting Set Up ({checks.length - remaining.length}/{checks.length})</h3>
-        <button onClick={() => setDismissed(true)} className="text-slate-700 hover:text-slate-700 p-1"><X className="w-4 h-4" /></button>
+        <h3 className="text-stone-900 font-bold text-sm">Getting Set Up ({checks.length - remaining.length}/{checks.length})</h3>
+        <button onClick={() => setDismissed(true)} className="text-stone-700 hover:text-stone-700 p-1"><X className="w-4 h-4" /></button>
       </div>
       <div className="space-y-2.5">
         {checks.map(c => (
           <div key={c.label} className="flex items-center gap-2.5 text-sm">
-            {c.done ? <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" /> : <Circle className="w-4 h-4 text-slate-700 shrink-0" />}
-            <span className={c.done ? 'text-slate-700 line-through font-medium' : 'text-slate-900 font-bold'}>{c.label}</span>
-            {!c.done && <span className="text-slate-700 text-xs font-semibold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md ml-auto">{c.hint}</span>}
+            {c.done ? <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" /> : <Circle className="w-4 h-4 text-stone-700 shrink-0" />}
+            <span className={c.done ? 'text-stone-700 line-through font-medium' : 'text-stone-900 font-bold'}>{c.label}</span>
+            {!c.done && <span className="text-stone-700 text-xs font-semibold bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-md ml-auto">{c.hint}</span>}
           </div>
         ))}
       </div>
@@ -169,12 +169,12 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
       const [{ data: staff }, { data: leads }, { data: tickets }] = await Promise.all([
         supabase.from('app_users').select('id, full_name, email, role').or(`full_name.ilike.%${q}%,email.ilike.%${q}%`).limit(5),
         supabase.from('marketing_leads').select('id, customer_name, phone, segment_slug').or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5),
-        supabase.from('support_tickets').select('id, ticket_number, subject').or(`ticket_number.ilike.%${q}%,subject.ilike.%${q}%`).limit(5),
+        supabase.from('support_tickets').select('id, ticket_no, subject').or(`ticket_no.ilike.%${q}%,subject.ilike.%${q}%`).limit(5),
       ]);
       const res: typeof results = [];
       (staff || []).forEach(s => res.push({ id: s.id, title: s.full_name, subtitle: `${s.role} • ${s.email}`, tab: 'access', kind: 'staff' }));
       (leads || []).forEach(l => res.push({ id: l.id, title: l.customer_name, subtitle: `Lead • ${l.phone}`, tab: 'crm', kind: 'lead' }));
-      (tickets || []).forEach(tk => res.push({ id: tk.id, title: tk.ticket_number, subtitle: tk.subject, tab: 'tickets', kind: 'ticket' }));
+      (tickets || []).forEach(tk => res.push({ id: tk.id, title: tk.ticket_no, subtitle: tk.subject, tab: 'tickets', kind: 'ticket' }));
       setResults(res);
       setOpen(true);
     }, 200);
@@ -183,18 +183,18 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-sm focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/20 shadow-sm w-48 sm:w-64">
-        <Search className="w-4 h-4 text-slate-700 shrink-0" />
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-sm focus-within:border-orange-600 focus-within:ring-2 focus-within:ring-orange-600/20 shadow-sm w-48 sm:w-64">
+        <Search className="w-4 h-4 text-stone-700 shrink-0" />
         <input
-          className="bg-transparent border-none p-0 text-slate-900 text-xs focus:ring-0 focus:outline-none w-full placeholder-slate-400 font-medium"
+          className="bg-transparent border-none p-0 text-stone-900 text-xs focus:ring-0 focus:outline-none w-full placeholder-stone-400 font-medium"
           placeholder="Search staff, leads, tickets..."
           value={query}
           onChange={e => setQuery(e.target.value)}
         />
-        {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-slate-700 hover:text-slate-700"><X className="w-3.5 h-3.5" /></button>}
+        {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-stone-700 hover:text-stone-700"><X className="w-3.5 h-3.5" /></button>}
       </div>
       {open && results.length > 0 && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-1">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-stone-200 rounded-2xl shadow-xl z-50 p-2 space-y-1">
           {results.map(r => (
             <button
               key={r.id}
@@ -203,10 +203,10 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
                 setOpen(false);
                 setQuery('');
               }}
-              className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 transition-colors"
+              className="w-full text-left p-2.5 rounded-xl hover:bg-stone-100 transition-colors"
             >
-              <p className="text-slate-900 font-bold text-xs truncate">{r.title}</p>
-              <p className="text-slate-700 text-[11px] font-medium truncate">{r.subtitle}</p>
+              <p className="text-stone-900 font-bold text-xs truncate">{r.title}</p>
+              <p className="text-stone-700 text-[11px] font-medium truncate">{r.subtitle}</p>
             </button>
           ))}
         </div>
@@ -230,7 +230,7 @@ export function ExportStaffButton() {
     const a = document.createElement('a'); a.href = url; a.download = `staff_export_${istDateStr()}.csv`; a.click();
   }
   return (
-    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-300 transition-all">
+    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold border border-stone-300 transition-all">
       <Download className="w-3.5 h-3.5" /> Export CSV
     </button>
   );
@@ -238,19 +238,24 @@ export function ExportStaffButton() {
 
 export function ExportPayslipsButton() {
   async function exportCsv() {
-    const { data } = await supabase.from('payslips').select('*');
+    const [{ data }, { data: staff }] = await Promise.all([
+      supabase.from('payslips').select('*'),
+      supabase.from('app_users').select('id, full_name'),
+    ]);
     if (!data || data.length === 0) return;
-    const headers = ['id', 'user_id', 'pay_period', 'gross_salary', 'net_salary', 'created_at'];
+    const names = Object.fromEntries((staff || []).map((s: any) => [s.id, s.full_name]));
+    const headers = ['id', 'staff_name', 'period_month', 'period_year', 'base_salary', 'net_pay', 'payment_status', 'amount_paid'];
     const csvRows = [headers.join(',')];
-    data.forEach(p => {
-      csvRows.push(headers.map(h => JSON.stringify(p[h] ?? '')).join(','));
+    data.forEach((p: any) => {
+      const row = { ...p, staff_name: names[p.staff_user_id] || '' };
+      csvRows.push(headers.map(h => JSON.stringify(row[h] ?? '')).join(','));
     });
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `payslips_export_${istDateStr()}.csv`; a.click();
   }
   return (
-    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-300 transition-all">
+    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold border border-stone-300 transition-all">
       <Download className="w-3.5 h-3.5" /> Export Payslips CSV
     </button>
   );

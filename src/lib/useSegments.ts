@@ -30,8 +30,11 @@ const DEFAULT_FALLBACK_SEGMENTS: Segment[] = [
 ];
 
 export function useSegments(includeRetired = false) {
-  const [segments, setSegments] = useState<Segment[]>(DEFAULT_FALLBACK_SEGMENTS);
-  const [loading, setLoading] = useState(false);
+  // Start empty (not the fallback copy) so a page load never briefly shows
+  // placeholder segment names before the real ones arrive — DEFAULT_FALLBACK_SEGMENTS
+  // is only for when the fetch genuinely fails or returns nothing.
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -78,7 +81,7 @@ export function useSegments(includeRetired = false) {
 
 export function useSiteContent() {
   const [content, setContent] = useState<Record<string, Record<string, string>>>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;

@@ -46,7 +46,7 @@ export function TelecallerStatsDashboard() {
 
   if (!stats) return null;
   const cards = [
-    { label: 'Leads in my queue', value: stats.assigned, color: 'text-sky-700' },
+    { label: 'Leads in my queue', value: stats.assigned, color: 'text-teal-700' },
     { label: 'Calls made today', value: stats.calledToday, color: 'text-white' },
     { label: 'Callbacks pending', value: stats.callbacks, color: 'text-amber-700' },
     { label: 'Converted this month', value: stats.convertedMonth, color: 'text-emerald-700' },
@@ -57,7 +57,7 @@ export function TelecallerStatsDashboard() {
       {cards.map(c => (
         <div key={c.label} className={cardCls + ' text-center'}>
           <p className={`text-3xl font-bold ${c.color}`}>{c.value}</p>
-          <p className="text-slate-700 text-xs mt-1">{c.label}</p>
+          <p className="text-stone-700 text-xs mt-1">{c.label}</p>
         </div>
       ))}
     </div>
@@ -187,13 +187,13 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
     <div>
       <TelecallerStatsDashboard />
       <MyCallsChart />
-      <h3 className="text-slate-900 font-semibold text-sm mb-3 mt-6">My Call Queue ({leads.length})</h3>
+      <h3 className="text-stone-900 font-semibold text-sm mb-3 mt-6">My Call Queue ({leads.length})</h3>
       <div className="space-y-2">
         {leads.map(l => (
           <div key={l.id} className={cardCls + ' flex items-center justify-between'}>
             <div className="min-w-0 cursor-pointer" onClick={() => openLead(l)}>
-              <p className="text-slate-900 text-sm font-medium truncate">{l.customer_name}</p>
-              <p className="text-slate-700 text-xs mt-0.5">
+              <p className="text-stone-900 text-sm font-medium truncate">{l.customer_name}</p>
+              <p className="text-stone-700 text-xs mt-0.5">
                 {l.interested_in || 'No notes'} {l.callback_at && (
                   new Date(l.callback_at) <= new Date()
                     ? <span className="text-red-700 ml-2 font-medium">⚠ Overdue callback: {new Date(l.callback_at).toLocaleString()}</span>
@@ -205,17 +205,17 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
               <button onClick={() => call(l.phone)} className="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-white" title="Call">
                 <Phone className="w-4 h-4" />
               </button>
-              <button onClick={() => openLead(l)} className="text-sky-700 text-xs font-medium">Add Remark</button>
+              <button onClick={() => openLead(l)} className="text-teal-700 text-xs font-medium">Add Remark</button>
             </div>
           </div>
         ))}
         {leads.length === 0 && (
-          <p className="text-slate-700 text-sm text-center py-10">Your queue is empty. Claim leads from the unassigned pool below, or ask your manager to assign you some.</p>
+          <p className="text-stone-700 text-sm text-center py-10">Your queue is empty. Claim leads from the unassigned pool below, or ask your manager to assign you some.</p>
         )}
       </div>
 
       <div className="mt-8">
-        <button onClick={() => setShowPool(!showPool)} className="text-sky-700 text-sm font-medium">
+        <button onClick={() => setShowPool(!showPool)} className="text-teal-700 text-sm font-medium">
           {showPool ? '▾' : '▸'} Unassigned Pool — claim new leads
         </button>
         {showPool && <div className="mt-4"><UnassignedLeadsPool segments={segments} onChanged={load} /></div>}
@@ -223,14 +223,14 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
 
       {active && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="text-slate-900 font-semibold">{active.customer_name}</h3>
+              <h3 className="text-stone-900 font-semibold">{active.customer_name}</h3>
               <button onClick={() => call(active.phone)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm">
                 <PhoneCall className="w-4 h-4" /> {active.phone}
               </button>
             </div>
-            <p className="text-slate-700 text-xs">{active.interested_in}</p>
+            <p className="text-stone-700 text-xs">{active.interested_in}</p>
 
             <select className={inputCls} value={outcome} onChange={e => setOutcome(e.target.value)}>
               {OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -239,21 +239,21 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
               <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} />
             )}
             {outcome === 'appointment' && (
-              <div className="space-y-2 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
-                <p className="text-sky-700 text-xs font-medium">Appointment date &amp; time *</p>
+              <div className="space-y-2 rounded-lg border border-teal-500/30 bg-teal-500/5 p-3">
+                <p className="text-teal-700 text-xs font-medium">Appointment date &amp; time *</p>
                 <input type="datetime-local" className={inputCls} value={appointmentDate}
                   min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                   onChange={e => setAppointmentDate(e.target.value)} />
                 <input className={inputCls} placeholder="Location / what to bring (optional)"
                   value={appointmentNote} onChange={e => setAppointmentNote(e.target.value)} />
-                <p className="text-slate-700 text-[11px]">Your manager will be notified to assign a field executive.</p>
+                <p className="text-stone-700 text-[11px]">Your manager will be notified to assign a field executive.</p>
               </div>
             )}
             <textarea className={inputCls} rows={2} placeholder="Remark *" value={remark} onChange={e => setRemark(e.target.value)} />
             <button className={btnCls + ' w-full'} disabled={busy} onClick={submitOutcome}>Save Outcome</button>
 
-            <div className="border-t border-slate-800 pt-3">
-              <p className="text-slate-700 text-xs mb-2 flex items-center gap-1.5"><ArrowRightLeft className="w-3.5 h-3.5" /> Appointment fixed? Hand off to a field executive:</p>
+            <div className="border-t border-stone-800 pt-3">
+              <p className="text-stone-700 text-xs mb-2 flex items-center gap-1.5"><ArrowRightLeft className="w-3.5 h-3.5" /> Appointment fixed? Hand off to a field executive:</p>
               <select className={inputCls + ' mb-2'} value={transferTo} onChange={e => setTransferTo(e.target.value)}>
                 <option value="">Select executive</option>
                 {executives.map(ex => <option key={ex.id} value={ex.id}>{ex.full_name}</option>)}
@@ -264,16 +264,16 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
             </div>
 
             {history.length > 0 && (
-              <div className="border-t border-slate-800 pt-3 space-y-2 max-h-48 overflow-y-auto">
-                <p className="text-slate-700 text-xs font-medium">Previous History {history.length > 0 && '— read before calling'}</p>
+              <div className="border-t border-stone-800 pt-3 space-y-2 max-h-48 overflow-y-auto">
+                <p className="text-stone-700 text-xs font-medium">Previous History {history.length > 0 && '— read before calling'}</p>
                 {history.map(h => {
                   const isSystem = h.remark.startsWith('Stage changed:') || h.remark.startsWith('Reassigned:');
                   return (
-                    <div key={h.id} className={`text-xs ${isSystem ? 'pl-2 border-l-2 border-slate-800' : ''}`}>
-                      <p className="text-slate-700">
+                    <div key={h.id} className={`text-xs ${isSystem ? 'pl-2 border-l-2 border-stone-800' : ''}`}>
+                      <p className="text-stone-700">
                         {new Date(h.created_at).toLocaleString()} • {h.author_name || 'System'}{h.author_staff_code ? ` (${h.author_staff_code})` : ''}
                       </p>
-                      <p className={isSystem ? 'text-slate-700 italic' : 'text-slate-700'}>{h.remark}</p>
+                      <p className={isSystem ? 'text-stone-700 italic' : 'text-stone-700'}>{h.remark}</p>
                     </div>
                   );
                 })}
@@ -301,25 +301,44 @@ export function TransferApprovals() {
   useEffect(() => { load(); }, []);
 
   async function resolve(id: string, approve: boolean, targetExec: string) {
-    const patch: any = { transfer_status: approve ? 'approved' : 'rejected', updated_at: new Date().toISOString() };
-    if (approve) patch.assigned_to = targetExec;
-    const { error } = await supabase.from('marketing_leads').update(patch).eq('id', id);
-    if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
-    toast.success(approve ? 'Handoff approved' : 'Handoff rejected');
+    // Two sequential updates, deliberately not one:
+    // 1) Transition to 'approved'/'rejected' first — trg_lead_transfer_notify
+    //    (20260712000002_telecaller_workflow.sql) only fires its notifications
+    //    to the telecaller/executive on the exact OLD='pending' → NEW='approved'
+    //    (or 'rejected') transition. Skipping straight to 'none' would silently
+    //    kill both notifications.
+    // 2) Then reset to 'none' — nothing else in the app ever reads 'approved'/
+    //    'rejected' back (the trigger only fires once, on step 1; this second
+    //    update doesn't match any of its OLD/NEW branches), and leaving it on
+    //    anything but 'none' means the lead would vanish from any telecaller's
+    //    queue forever the next time it's reassigned to one — the queue only
+    //    shows transfer_status = 'none', and executives have no handoff
+    //    mechanism of their own to move it out of that stuck state.
+    const step1: any = { transfer_status: approve ? 'approved' : 'rejected', updated_at: new Date().toISOString() };
+    if (approve) step1.assigned_to = targetExec;
+    const { error: err1 } = await supabase.from('marketing_leads').update(step1).eq('id', id);
+    if (err1) { toast.error(`Couldn't update: ${err1.message}`); return; }
+
+    const { error: err2 } = await supabase.from('marketing_leads').update({
+      transfer_status: 'none', pending_transfer_to: null, transfer_requested_by: null, transfer_note: null,
+    }).eq('id', id);
+    if (err2) { toast.error(`Saved, but cleanup failed: ${err2.message}`); return; }
+
+    toast.success(approve ? 'Handoff approved' : 'Handoff rejected — lead returned to their queue');
     load();
   }
 
-  if (items.length === 0) return <p className="text-slate-700 text-sm text-center py-10">No pending handoff requests.</p>;
+  if (items.length === 0) return <p className="text-stone-700 text-sm text-center py-10">No pending handoff requests.</p>;
 
   return (
     <div className="space-y-2">
       {items.map(l => (
         <div key={l.id} className={cardCls}>
-          <p className="text-slate-900 text-sm font-medium">{l.customer_name} <span className="text-slate-700 text-xs">• {l.phone}</span></p>
-          <p className="text-slate-700 text-xs mt-1">
-            Requested by <span className="text-slate-700">{names[l.transfer_requested_by] || '—'}</span> → to <span className="text-slate-700">{names[l.pending_transfer_to] || '—'}</span>
+          <p className="text-stone-900 text-sm font-medium">{l.customer_name} <span className="text-stone-700 text-xs">• {l.phone}</span></p>
+          <p className="text-stone-700 text-xs mt-1">
+            Requested by <span className="text-stone-700">{names[l.transfer_requested_by] || '—'}</span> → to <span className="text-stone-700">{names[l.pending_transfer_to] || '—'}</span>
           </p>
-          {l.transfer_note && <p className="text-slate-700 text-xs mt-1">"{l.transfer_note}"</p>}
+          {l.transfer_note && <p className="text-stone-700 text-xs mt-1">"{l.transfer_note}"</p>}
           <div className="flex gap-2 mt-3">
             <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs flex items-center gap-1" onClick={() => resolve(l.id, true, l.pending_transfer_to)}>
               <CheckCircle2 className="w-3.5 h-3.5" /> Approve
@@ -418,11 +437,11 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-slate-900 font-semibold text-sm mb-1 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4 text-sky-700" /> Bulk Upload Leads (Excel/CSV)</h3>
-      <p className="text-slate-700 text-xs mb-4">Columns expected: Name, Phone, Email (optional), Notes (optional).</p>
+      <h3 className="text-stone-900 font-semibold text-sm mb-1 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4 text-teal-700" /> Bulk Upload Leads (Excel/CSV)</h3>
+      <p className="text-stone-700 text-xs mb-4">Columns expected: Name, Phone, Email (optional), Notes (optional).</p>
 
       <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile}
-        className="text-slate-700 text-sm w-full mb-3 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 file:text-xs" />
+        className="text-stone-700 text-sm w-full mb-3 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs" />
 
       {rows.length > 0 && (
         <div className="mb-3">
@@ -499,16 +518,16 @@ export function TeamActivityFeed() {
   useEffect(() => { load(); }, [typeFilter, personFilter, days]);
 
   const typeColor: Record<string, string> = {
-    outgoing: 'text-sky-700', incoming: 'text-emerald-700', visit: 'text-amber-700',
-    whatsapp: 'text-emerald-700', email: 'text-purple-700', note: 'text-slate-700',
+    outgoing: 'text-teal-700', incoming: 'text-emerald-700', visit: 'text-amber-700',
+    whatsapp: 'text-emerald-700', email: 'text-purple-700', note: 'text-stone-700',
     review: 'text-purple-700',
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-slate-700 text-sm">Every call, visit and note across your team, most recent first.</p>
-        <button className="text-sky-700 text-xs" onClick={load}>Refresh</button>
+        <p className="text-stone-700 text-sm">Every call, visit and note across your team, most recent first.</p>
+        <button className="text-teal-700 text-xs" onClick={load}>Refresh</button>
       </div>
       <div className="flex gap-2 mb-4 flex-wrap">
         <select className={inputCls + ' w-auto'} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
@@ -530,36 +549,36 @@ export function TeamActivityFeed() {
           <option value={0}>All time</option>
         </select>
       </div>
-      {loading ? <p className="text-slate-700 text-sm text-center py-10">Loading…</p> : (
+      {loading ? <p className="text-stone-700 text-sm text-center py-10">Loading…</p> : (
         <div className="space-y-2">
           {items.map(r => (
             <div key={r.id} className={cardCls}>
               <div className="flex items-center justify-between">
-                <p className="text-slate-900 text-sm font-medium">{leadNames[r.lead_id]?.name || 'Unknown lead'}</p>
-                <span className={`text-xs ${typeColor[r.call_type] || 'text-slate-700'} capitalize`}>{r.call_type.replace('_', ' ')}</span>
+                <p className="text-stone-900 text-sm font-medium">{leadNames[r.lead_id]?.name || 'Unknown lead'}</p>
+                <span className={`text-xs ${typeColor[r.call_type] || 'text-stone-700'} capitalize`}>{r.call_type.replace('_', ' ')}</span>
               </div>
-              <p className="text-slate-700 text-sm mt-1">{r.remark}</p>
-              <p className="text-slate-700 text-xs mt-1">
+              <p className="text-stone-700 text-sm mt-1">{r.remark}</p>
+              <p className="text-stone-700 text-xs mt-1">
                 {userNames[r.user_id] || 'Unknown'} • {new Date(r.occurred_at || r.created_at).toLocaleString()}
                 {r.occurred_at && new Date(r.created_at).getTime() - new Date(r.occurred_at).getTime() > 3600000 && (
-                  <span className="text-slate-700"> • synced later</span>
+                  <span className="text-stone-700"> • synced later</span>
                 )}
               </p>
               {(r.address || r.photo_url || r.latitude) && (
                 <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
-                  {r.address && <span className="text-slate-700">📍 {r.address}</span>}
+                  {r.address && <span className="text-stone-700">📍 {r.address}</span>}
                   {!r.address && r.latitude && (
-                    <a className="text-sky-700" target="_blank" rel="noreferrer"
+                    <a className="text-teal-700" target="_blank" rel="noreferrer"
                       href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}>📍 View on map</a>
                   )}
                   {r.photo_url && (
-                    <button className="text-sky-700" onClick={() => viewPhoto(r.photo_url)}>📷 Proof photo</button>
+                    <button className="text-teal-700" onClick={() => viewPhoto(r.photo_url)}>📷 Proof photo</button>
                   )}
                 </div>
               )}
             </div>
           ))}
-          {items.length === 0 && <p className="text-slate-700 text-sm text-center py-10">No activity yet.</p>}
+          {items.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No activity yet.</p>}
         </div>
       )}
     </div>
@@ -603,16 +622,14 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
   async function assign(toId: string, ids: string[]) {
     if (!toId || ids.length === 0) return;
     setBusy(true);
+    // Note: no manual notification insert here — tg_lead_change_log already
+    // fires notify_user() per-lead on any assigned_to UPDATE (unlike a raw
+    // INSERT, which it deliberately skips to avoid spamming bulk uploads).
+    // Adding one here would double-notify the assignee.
     const { error } = await supabase.from('marketing_leads')
       .update({ assigned_to: toId, updated_at: new Date().toISOString() }).in('id', ids);
     setBusy(false);
     if (error) { toast.error(`Couldn't assign: ${error.message}`); return; }
-    if (toId !== user?.id) {
-      await supabase.from('notifications').insert({
-        user_id: toId, kind: 'lead_assigned', title: 'Leads assigned to you',
-        body: `${ids.length} lead(s) from the unassigned pool were assigned to you.`, link: '/portal',
-      });
-    }
     toast.success(toId === user?.id ? `${ids.length} lead(s) claimed — now in your queue` : `${ids.length} lead(s) assigned`);
     load();
     onChanged?.();
@@ -622,12 +639,12 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
-        <button className="text-sky-700 text-xs" onClick={load}>Refresh</button>
+        <button className="text-teal-700 text-xs" onClick={load}>Refresh</button>
       </div>
 
       {selected.size > 0 && staff.length > 0 && (
         <div className={cardCls + ' mb-4 flex flex-wrap items-center gap-3'}>
-          <span className="text-slate-700 text-sm">{selected.size} selected</span>
+          <span className="text-stone-700 text-sm">{selected.size} selected</span>
           <select className={inputCls + ' w-auto flex-1 min-w-[180px]'} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
             <option value="">Assign selected to…</option>
             {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
@@ -646,19 +663,19 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
               <label className="flex items-center gap-3 cursor-pointer min-w-0 flex-1">
                 <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)} />
                 <div className="min-w-0">
-                  <p className="text-slate-900 text-sm font-medium truncate">{l.customer_name}
+                  <p className="text-stone-900 text-sm font-medium truncate">{l.customer_name}
                     {seg && <span className="text-xs px-2 py-0.5 rounded ml-2" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
                   </p>
-                  <p className="text-slate-700 text-xs mt-0.5">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at).toLocaleDateString()}</p>
+                  <p className="text-stone-700 text-xs mt-0.5">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at).toLocaleDateString()}</p>
                 </div>
               </label>
-              <button className="text-sky-700 text-xs font-medium shrink-0" disabled={busy} onClick={() => user && assign(user.id, [l.id])}>
+              <button className="text-teal-700 text-xs font-medium shrink-0" disabled={busy} onClick={() => user && assign(user.id, [l.id])}>
                 Claim
               </button>
             </div>
           );
         })}
-        {leads.length === 0 && <p className="text-slate-700 text-sm text-center py-10">The unassigned pool is empty.</p>}
+        {leads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">The unassigned pool is empty.</p>}
       </div>
     </div>
   );
@@ -730,14 +747,14 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
       <div className="flex gap-2 mb-4">
         {([['upcoming', 'Upcoming'], ['unassigned', 'Needs Executive'], ['past', 'Past']] as const).map(([v, label]) => (
           <button key={v} onClick={() => setScope(v)}
-            className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>
+            className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
             {label}
           </button>
         ))}
       </div>
 
       {leads.length === 0 && (
-        <p className="text-slate-700 text-sm text-center py-10">
+        <p className="text-stone-700 text-sm text-center py-10">
           {scope === 'unassigned' ? 'Every appointment has an executive assigned.' : 'No appointments here.'}
         </p>
       )}
@@ -750,12 +767,12 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
             <div key={l.id} className={cardCls}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-slate-900 text-sm font-medium">{l.customer_name} <span className="text-slate-700">• {l.phone}</span></p>
-                  <p className={`text-xs mt-0.5 ${overdue ? 'text-amber-700' : 'text-sky-700'}`}>
+                  <p className="text-stone-900 text-sm font-medium">{l.customer_name} <span className="text-stone-700">• {l.phone}</span></p>
+                  <p className={`text-xs mt-0.5 ${overdue ? 'text-amber-700' : 'text-teal-700'}`}>
                     {fmt(l.appointment_at)}{overdue ? ' — date passed' : ''}
                   </p>
-                  {l.appointment_note && <p className="text-slate-700 text-xs mt-0.5">{l.appointment_note}</p>}
-                  <p className="text-slate-700 text-[11px] mt-1">
+                  {l.appointment_note && <p className="text-stone-700 text-xs mt-0.5">{l.appointment_note}</p>}
+                  <p className="text-stone-700 text-[11px] mt-1">
                     {assignedExec ? `Executive: ${assignedExec.full_name}` : 'No executive assigned yet'}
                   </p>
                 </div>
@@ -788,13 +805,13 @@ export function LeadsWorkspace({ segments, focusLeadId }: { segments: Segment[];
   return (
     <div>
       <div className="flex gap-2 mb-5 flex-wrap">
-        <button onClick={() => setSub('board')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'board' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Leads Board</button>
-        <button onClick={() => setSub('appointments')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'appointments' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Appointments</button>
-        <button onClick={() => setSub('pool')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'pool' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Unassigned Pool</button>
-        <button onClick={() => setSub('activity')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'activity' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Team Activity</button>
-        {showBulk && <button onClick={() => setSub('bulk')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bulk' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Bulk Upload</button>}
-        {showBulk && <button onClick={() => setSub('reassign')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'reassign' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Reassign Leads</button>}
-        {showTransfers && <button onClick={() => setSub('transfers')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'transfers' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Handoff Approvals</button>}
+        <button onClick={() => setSub('board')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'board' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Leads Board</button>
+        <button onClick={() => setSub('appointments')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'appointments' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Appointments</button>
+        <button onClick={() => setSub('pool')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'pool' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Unassigned Pool</button>
+        <button onClick={() => setSub('activity')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'activity' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Team Activity</button>
+        {showBulk && <button onClick={() => setSub('bulk')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bulk' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Bulk Upload</button>}
+        {showBulk && <button onClick={() => setSub('reassign')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'reassign' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Reassign Leads</button>}
+        {showTransfers && <button onClick={() => setSub('transfers')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'transfers' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Handoff Approvals</button>}
       </div>
       {sub === 'board' && <LeadsBoard segments={segments} focusLeadId={focusLeadId} />}
       {sub === 'appointments' && <AppointmentsBoard segments={segments} />}
@@ -1041,27 +1058,27 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   return (
     <div>
       {(!online || pendingCount > 0) && (
-        <div className={`mb-3 rounded-xl border px-4 py-3 ${online ? 'border-amber-600/40 bg-amber-50' : 'border-slate-300 bg-slate-100/60'}`}>
+        <div className={`mb-3 rounded-xl border px-4 py-3 ${online ? 'border-amber-600/40 bg-amber-50' : 'border-stone-300 bg-stone-100/60'}`}>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <p className={`text-sm font-medium ${online ? 'text-amber-700' : 'text-slate-700'}`}>
+              <p className={`text-sm font-medium ${online ? 'text-amber-700' : 'text-stone-700'}`}>
                 {online
                   ? `${pendingCount} visit${pendingCount === 1 ? '' : 's'} waiting to sync`
                   : `Offline${pendingCount > 0 ? ` — ${pendingCount} visit${pendingCount === 1 ? '' : 's'} saved on this phone` : ' — visits will be saved on this phone'}`}
               </p>
-              <p className="text-slate-700 text-xs mt-0.5">
+              <p className="text-stone-700 text-xs mt-0.5">
                 {online ? 'Retrying automatically.' : 'Keep working — everything syncs when signal returns.'}
               </p>
             </div>
             {online && pendingCount > 0 && (
-              <button className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-200 text-xs whitespace-nowrap"
+              <button className="px-3 py-1.5 rounded-lg border border-stone-300 text-stone-200 text-xs whitespace-nowrap"
                 disabled={syncing} onClick={syncNow}>{syncing ? 'Syncing…' : 'Sync now'}</button>
             )}
           </div>
           {pendingItems.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-slate-200/60 space-y-1">
+            <div className="mt-2 pt-2 border-t border-stone-200/60 space-y-1">
               {pendingItems.slice(0, 5).map(p => (
-                <p key={p.id} className="text-slate-700 text-[11px]">
+                <p key={p.id} className="text-stone-700 text-[11px]">
                   {p.leadName} — {new Date(p.occurredAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                   {p.photo ? ' • photo' : ''}{p.attempts > 0 ? ` • ${p.attempts} attempt(s)` : ''}
                 </p>
@@ -1072,22 +1089,22 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       )}
 
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-slate-900 font-semibold text-sm">My Field Leads ({leads.length})</h3>
-        <button className="text-sky-700 text-xs font-medium" onClick={() => { setDuplicateInfo(null); setShowAddLead(true); }}>+ Add Lead</button>
+        <h3 className="text-stone-900 font-semibold text-sm">My Field Leads ({leads.length})</h3>
+        <button className="text-teal-700 text-xs font-medium" onClick={() => { setDuplicateInfo(null); setShowAddLead(true); }}>+ Add Lead</button>
       </div>
       <div className="space-y-2">
         {leads.map(l => (
-          <div key={l.id} className={cardCls + ' cursor-pointer hover:border-slate-300'} onClick={() => openLead(l)}>
-            <p className="text-slate-900 text-sm font-medium">{l.customer_name}</p>
-            <p className="text-slate-700 text-xs mt-0.5">{l.phone} • {l.address || l.interested_in || 'No address captured yet'}</p>
+          <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => openLead(l)}>
+            <p className="text-stone-900 text-sm font-medium">{l.customer_name}</p>
+            <p className="text-stone-700 text-xs mt-0.5">{l.phone} • {l.address || l.interested_in || 'No address captured yet'}</p>
             {l.next_followup_at && !l.appointment_at && (
-              <p className={`text-xs mt-1 ${new Date(l.next_followup_at) < new Date() ? 'text-red-700 font-medium' : 'text-slate-700'}`}>
+              <p className={`text-xs mt-1 ${new Date(l.next_followup_at) < new Date() ? 'text-red-700 font-medium' : 'text-stone-700'}`}>
                 {new Date(l.next_followup_at) < new Date() ? '⚠ Follow-up overdue: ' : '↻ Follow-up: '}
                 {new Date(l.next_followup_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
               </p>
             )}
             {l.appointment_at && (
-              <p className={`text-xs mt-1 font-medium ${new Date(l.appointment_at) < new Date() ? 'text-amber-700' : 'text-sky-700'}`}>
+              <p className={`text-xs mt-1 font-medium ${new Date(l.appointment_at) < new Date() ? 'text-amber-700' : 'text-teal-700'}`}>
                 📅 {new Date(l.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 {l.appointment_note ? ` — ${l.appointment_note}` : ''}
                 {new Date(l.appointment_at) < new Date() ? ' (date passed)' : ''}
@@ -1095,11 +1112,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             )}
           </div>
         ))}
-        {leads.length === 0 && <p className="text-slate-700 text-sm text-center py-10">No field leads assigned. Claim from the unassigned pool below, add your own, or ask for a handoff.</p>}
+        {leads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No field leads assigned. Claim from the unassigned pool below, add your own, or ask for a handoff.</p>}
       </div>
 
       <div className="mt-8">
-        <button onClick={() => setShowPool(!showPool)} className="text-sky-700 text-sm font-medium">
+        <button onClick={() => setShowPool(!showPool)} className="text-teal-700 text-sm font-medium">
           {showPool ? '▾' : '▸'} Unassigned Pool — claim new leads
         </button>
         {showPool && <div className="mt-4"><UnassignedLeadsPool segments={segments} onChanged={load} /></div>}
@@ -1107,28 +1124,28 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
       {active && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold">{active.customer_name}</h3>
-            <p className="text-slate-700 text-xs">{active.phone} {active.email && `• ${active.email}`}</p>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold">{active.customer_name}</h3>
+            <p className="text-stone-700 text-xs">{active.phone} {active.email && `• ${active.email}`}</p>
 
-            <div className="border-t border-slate-800 pt-3">
-              <p className="text-slate-700 text-sm font-medium mb-2">Log a Visit</p>
+            <div className="border-t border-stone-800 pt-3">
+              <p className="text-stone-700 text-sm font-medium mb-2">Log a Visit</p>
 
               {photoDataUrl ? (
                 <img src={photoDataUrl} alt="Captured" className="w-full rounded-lg mb-2" />
               ) : (
-                <button className="w-full py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm flex items-center justify-center gap-1.5 mb-2" onClick={() => setCapturing(true)}>
+                <button className="w-full py-2.5 rounded-lg border border-stone-200 text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" onClick={() => setCapturing(true)}>
                   <Camera className="w-4 h-4" /> Take Client/Site Photo
                 </button>
               )}
 
               {location ? (
-                <div className="mb-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-800">
+                <div className="mb-2 px-3 py-2 rounded-lg bg-stone-50 border border-stone-800">
                   <p className="text-emerald-700 text-xs">📍 {location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
-                  <button className="text-sky-700 text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
+                  <button className="text-teal-700 text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
                 </div>
               ) : (
-                <button className="w-full py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={captureLocation}>
+                <button className="w-full py-2.5 rounded-lg border border-stone-200 text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={captureLocation}>
                   <MapPin className="w-4 h-4" /> {locating ? 'Getting location…' : 'Capture Location & Address'}
                 </button>
               )}
@@ -1145,12 +1162,12 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               {outcome !== 'won' && outcome !== 'lost' && (
                 <div className="grid grid-cols-1 gap-2 mt-2">
                   <div>
-                    <p className="text-slate-700 text-xs mb-1">Next follow-up (reminds you)</p>
+                    <p className="text-stone-700 text-xs mb-1">Next follow-up (reminds you)</p>
                     <input type="datetime-local" className={inputCls} value={nextFollowup}
                       onChange={e => setNextFollowup(e.target.value)} />
                   </div>
                   <div>
-                    <p className="text-slate-700 text-xs mb-1">Next appointment (visible to manager)</p>
+                    <p className="text-stone-700 text-xs mb-1">Next appointment (visible to manager)</p>
                     <input type="datetime-local" className={inputCls} value={apptAt}
                       onChange={e => setApptAt(e.target.value)} />
                   </div>
@@ -1160,15 +1177,15 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             </div>
 
             {remarks.length > 0 && (
-              <div className="border-t border-slate-800 pt-3 space-y-2">
-                <p className="text-slate-700 text-xs font-medium">Full History</p>
+              <div className="border-t border-stone-800 pt-3 space-y-2">
+                <p className="text-stone-700 text-xs font-medium">Full History</p>
                 {remarks.map(r => (
                   <div key={r.id} className="text-xs">
-                    <p className="text-slate-700">{new Date(r.created_at).toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''} • {r.call_type}</p>
-                    <p className="text-slate-700">{r.remark}</p>
+                    <p className="text-stone-700">{new Date(r.created_at).toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''} • {r.call_type}</p>
+                    <p className="text-stone-700">{r.remark}</p>
                     <div className="flex gap-3 mt-0.5">
-                      {r.address && <span className="text-slate-700">📍 {r.address}</span>}
-                      {r.photo_url && <button className="text-sky-700" onClick={() => viewPhoto(r.photo_url)}>View Photo</button>}
+                      {r.address && <span className="text-stone-700">📍 {r.address}</span>}
+                      {r.photo_url && <button className="text-teal-700" onClick={() => viewPhoto(r.photo_url)}>View Photo</button>}
                     </div>
                   </div>
                 ))}
@@ -1188,9 +1205,9 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
       {showAddLead && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowAddLead(false)}>
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-slate-900 font-semibold">Add Field Lead</h3>
-            <p className="text-slate-700 text-xs">Found a new prospect on-site? Add them directly — it lands in your own queue.</p>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-stone-900 font-semibold">Add Field Lead</h3>
+            <p className="text-stone-700 text-xs">Found a new prospect on-site? Add them directly — it lands in your own queue.</p>
             <select className={inputCls} value={newLead.segment_slug} onChange={e => { setNewLead({ ...newLead, segment_slug: e.target.value }); setDuplicateInfo(null); }}>
               <option value="">Segment *</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
@@ -1204,7 +1221,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 {duplicateInfo.map((d: any) => (
                   <p key={d.id} className="text-amber-200/80">{d.customer_name} — {d.stage} {d.assignee_name ? `• with ${d.assignee_name}` : '• unassigned'}</p>
                 ))}
-                <p className="text-slate-700 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
+                <p className="text-stone-700 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
               </div>
             )}
             <button className={btnCls + ' w-full'} onClick={addFieldLead}>{duplicateInfo ? 'Add Anyway' : 'Add Lead'}</button>
@@ -1266,17 +1283,17 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
 
   return (
     <div>
-      <p className="text-slate-700 text-sm mb-4">Move someone's active leads to another staff member — useful when they're on leave, offboarded, or you're rebalancing workload.</p>
+      <p className="text-stone-700 text-sm mb-4">Move someone's active leads to another staff member — useful when they're on leave, offboarded, or you're rebalancing workload.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
         <div>
-          <label className="text-slate-700 text-xs">From (current owner)</label>
+          <label className="text-stone-700 text-xs">From (current owner)</label>
           <select className={inputCls} value={fromId} onChange={e => { setFromId(e.target.value); setToId(''); }}>
             <option value="">Select staff member</option>
             {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}{!s.is_active ? ' (disabled)' : ''}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-slate-700 text-xs">To (new owner)</label>
+          <label className="text-stone-700 text-xs">To (new owner)</label>
           <select className={inputCls} value={toId} onChange={e => setToId(e.target.value)} disabled={!fromId}>
             <option value="">Select staff member</option>
             {staff.filter(s => s.id !== fromId && s.is_active).map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
@@ -1287,9 +1304,9 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
       {fromId && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-slate-700 text-sm">{leads.length} active lead(s) assigned to {fromName}</p>
+            <p className="text-stone-700 text-sm">{leads.length} active lead(s) assigned to {fromName}</p>
             {leads.length > 0 && (
-              <button className="text-sky-700 text-xs" onClick={() => setSelected(selected.size === leads.length ? new Set() : new Set(leads.map(l => l.id)))}>
+              <button className="text-teal-700 text-xs" onClick={() => setSelected(selected.size === leads.length ? new Set() : new Set(leads.map(l => l.id)))}>
                 {selected.size === leads.length ? 'Deselect all' : 'Select all'}
               </button>
             )}
@@ -1301,14 +1318,14 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
                 <label key={l.id} className={cardCls + ' flex items-center gap-3 cursor-pointer py-2.5'}>
                   <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)} />
                   <div className="flex-1">
-                    <span className="text-slate-900 text-sm">{l.customer_name}</span>
-                    <span className="text-slate-700 text-xs ml-2">{l.phone} • {l.stage}</span>
+                    <span className="text-stone-900 text-sm">{l.customer_name}</span>
+                    <span className="text-stone-700 text-xs ml-2">{l.phone} • {l.stage}</span>
                   </div>
                   {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
                 </label>
               );
             })}
-            {leads.length === 0 && <p className="text-slate-700 text-sm text-center py-8">No active leads currently assigned to this person.</p>}
+            {leads.length === 0 && <p className="text-stone-700 text-sm text-center py-8">No active leads currently assigned to this person.</p>}
           </div>
           {leads.length > 0 && (
             <button className={btnCls} disabled={busy || !toId} onClick={reassign}>

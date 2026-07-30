@@ -72,14 +72,14 @@ function AnimatedStats({ content }: { content: Record<string, Record<string, str
     { label: 'Divisions', value: '2' },
   ];
   return (
-    <section className="py-14 px-4 border-y border-slate-200 bg-white">
+    <section className="py-14 px-4 border-y border-stone-200 bg-white">
       <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
         {stats.map(s => (
           <div key={s.label} className="text-center">
-            <p className="text-4xl md:text-5xl font-extrabold text-blue-700">
+            <p className="text-4xl md:text-5xl font-extrabold text-orange-700">
               <AnimatedNumber value={s.value} />
             </p>
-            <p className="text-slate-700 text-sm font-semibold mt-2">{s.label}</p>
+            <p className="text-stone-700 text-sm font-semibold mt-2">{s.label}</p>
           </div>
         ))}
       </div>
@@ -99,7 +99,7 @@ function ClientLogos() {
 
   return (
     <section className="py-12 px-4 overflow-hidden">
-      <p className="text-center text-slate-700 text-xs uppercase tracking-[0.2em] mb-8">Trusted By</p>
+      <p className="text-center text-stone-700 text-xs uppercase tracking-[0.2em] mb-8">Trusted By</p>
       <div className="flex gap-16 animate-marquee w-max">
         {track.map((l, i) => (
           <img key={`${l.id}-${i}`} src={l.logo_url} alt={l.name} className="h-10 md:h-12 object-contain opacity-60 hover:opacity-100 transition-opacity grayscale hover:grayscale-0" />
@@ -121,28 +121,28 @@ function Navigation({ content }: { content: Record<string, Record<string, string
     { href: '#contact', label: 'Contact' },
   ];
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+    <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="#" className="flex items-center gap-2.5">
           <KiteTailLogo className="w-8 h-8" />
           <div className="flex flex-col text-left">
-            <span className="text-slate-900 font-extrabold text-lg tracking-tight leading-tight">{content?.hero?.title || 'Nikki Technologies'}</span>
+            <span className="text-stone-900 font-extrabold text-lg tracking-tight leading-tight">{content?.hero?.title || 'Nikki Technologies'}</span>
           </div>
         </a>
         <div className="hidden md:flex items-center gap-6">
           {links.map(l => (
-            <a key={l.href} href={l.href} className="text-slate-700 hover:text-blue-700 text-sm font-semibold transition-colors">{l.label}</a>
+            <a key={l.href} href={l.href} className="text-stone-700 hover:text-orange-700 text-sm font-semibold transition-colors">{l.label}</a>
           ))}
-          <a href="/login" className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-sm font-semibold shadow-md shadow-blue-700/20 transition-all border border-blue-600/30">Staff Login</a>
+          <a href="/login" className="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-semibold shadow-md shadow-orange-700/20 transition-all border border-orange-600/30">Staff Login</a>
         </div>
-        <button className="md:hidden text-slate-700" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
+        <button className="md:hidden text-stone-700" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
       </div>
       {open && (
-        <div className="md:hidden bg-white border-t border-slate-200 px-4 py-3 space-y-2 shadow-lg">
+        <div className="md:hidden bg-white border-t border-stone-200 px-4 py-3 space-y-2 shadow-lg">
           {links.map(l => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block text-slate-700 hover:text-blue-700 py-1.5 font-medium">{l.label}</a>
+            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block text-stone-700 hover:text-orange-700 py-1.5 font-medium">{l.label}</a>
           ))}
-          <a href="/login" className="block text-blue-700 font-bold py-1.5">Staff Login</a>
+          <a href="/login" className="block text-orange-700 font-bold py-1.5">Staff Login</a>
         </div>
       )}
     </nav>
@@ -192,16 +192,16 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
       initial={{ opacity: 0, y: 35 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.3 }}
-      className="mt-12 max-w-5xl mx-auto rounded-2xl bg-white border border-slate-200/90 p-5 md:p-7 shadow-xl shadow-slate-200/60 relative overflow-hidden text-left"
+      className="mt-12 max-w-5xl mx-auto rounded-2xl bg-white border border-stone-200/90 p-5 md:p-7 shadow-xl shadow-stone-200/60 relative overflow-hidden text-left"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 pb-4 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-600" />
+          <div className="w-3 h-3 rounded-full bg-orange-600" />
           <div className="w-3 h-3 rounded-full bg-indigo-600" />
-          <div className="w-3 h-3 rounded-full bg-sky-400" />
-          <span className="text-slate-700 text-xs font-extrabold uppercase tracking-wider ml-1">Nikki Technologies • Core Divisions</span>
+          <div className="w-3 h-3 rounded-full bg-teal-400" />
+          <span className="text-stone-700 text-xs font-extrabold uppercase tracking-wider ml-1">Nikki Technologies • Core Divisions</span>
         </div>
-        <div className="flex flex-wrap gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <div className="flex flex-wrap gap-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200">
           {[
             { id: 'kite_tail', label: 'Kite & Tail Digital' },
             { id: 'software', label: 'Software Studio' },
@@ -211,8 +211,8 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
               onClick={() => setActiveTab(t.id as any)}
               className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
                 activeTab === t.id
-                  ? 'bg-blue-700 text-white shadow-md shadow-blue-700/20'
-                  : 'text-slate-700 hover:text-slate-900'
+                  ? 'bg-orange-700 text-white shadow-md shadow-orange-700/20'
+                  : 'text-stone-700 hover:text-stone-900'
               }`}
             >
               {t.id === 'kite_tail' ? <Megaphone className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
@@ -233,36 +233,36 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
         >
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
-              <IconComponent className="w-5 h-5 text-blue-700" />
-              <span className="px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-extrabold shadow-xs">
+              <IconComponent className="w-5 h-5 text-orange-700" />
+              <span className="px-3.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-xs font-extrabold shadow-xs">
                 {curr.badge}
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{curr.title}</h3>
-            <p className="text-slate-700 text-sm leading-relaxed font-medium">{curr.desc}</p>
+            <h3 className="text-2xl font-bold text-stone-900 tracking-tight">{curr.title}</h3>
+            <p className="text-stone-700 text-sm leading-relaxed font-medium">{curr.desc}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
               {curr.highlights.map((item, idx) => (
-                <div key={idx} className="flex items-start gap-2 text-xs text-slate-700 font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
+                <div key={idx} className="flex items-start gap-2 text-xs text-stone-700 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-orange-700 shrink-0 mt-0.5" />
                   <span>{item}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-5 space-y-4 flex flex-col justify-between shadow-xs">
-            <p className="text-xs text-slate-700 font-bold uppercase tracking-wider">Performance Guarantee</p>
+          <div className="rounded-xl bg-stone-50 border border-stone-200 p-5 space-y-4 flex flex-col justify-between shadow-xs">
+            <p className="text-xs text-stone-700 font-bold uppercase tracking-wider">Performance Guarantee</p>
             <div className="space-y-3">
               {Object.entries(curr.stats).map(([k, v]) => (
-                <div key={k} className="flex justify-between items-center border-b border-slate-200 pb-2">
-                  <span className="text-slate-700 text-xs capitalize font-medium">{k}</span>
-                  <span className="text-blue-800 font-extrabold text-xs">{v}</span>
+                <div key={k} className="flex justify-between items-center border-b border-stone-200 pb-2">
+                  <span className="text-stone-700 text-xs capitalize font-medium">{k}</span>
+                  <span className="text-orange-800 font-extrabold text-xs">{v}</span>
                 </div>
               ))}
             </div>
             <a
               href="#contact"
-              className="w-full py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-bold text-xs text-center transition-all shadow-md shadow-blue-700/20"
+              className="w-full py-2.5 rounded-xl bg-orange-700 hover:bg-orange-600 text-white font-bold text-xs text-center transition-all shadow-md shadow-orange-700/20"
             >
               Get Free Consultation
             </a>
@@ -278,7 +278,7 @@ function HeroicFlyingKites() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
       {/* Soft ambient background gradient blur circles */}
-      <div className="absolute -top-24 -left-20 w-96 h-96 bg-blue-100/50 rounded-full blur-3xl" />
+      <div className="absolute -top-24 -left-20 w-96 h-96 bg-orange-100/50 rounded-full blur-3xl" />
       <div className="absolute top-1/3 -right-20 w-80 h-80 bg-indigo-100/40 rounded-full blur-3xl" />
 
       {/* Floating Kite 1 - Top Left */}
@@ -291,7 +291,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
         className="absolute top-16 left-[8%] opacity-25 w-24 h-24"
       >
-        <KiteTailLogo className="w-full h-full text-blue-700 drop-shadow-sm" />
+        <KiteTailLogo className="w-full h-full text-orange-700 drop-shadow-sm" />
       </motion.div>
 
       {/* Floating Kite 2 - Top Right */}
@@ -317,7 +317,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2.5 }}
         className="absolute top-1/2 right-[22%] opacity-15 w-20 h-20 hidden md:block"
       >
-        <KiteTailLogo className="w-full h-full text-sky-700" />
+        <KiteTailLogo className="w-full h-full text-teal-700" />
       </motion.div>
 
       {/* Floating Kite 4 - Center Left */}
@@ -330,7 +330,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 3.5 }}
         className="absolute top-2/3 left-[16%] opacity-20 w-28 h-28 hidden lg:block"
       >
-        <KiteTailLogo className="w-full h-full text-blue-700" />
+        <KiteTailLogo className="w-full h-full text-orange-700" />
       </motion.div>
     </div>
   );
@@ -339,16 +339,16 @@ function HeroicFlyingKites() {
 // ─────────────────────────────────────────────── Hero
 function Hero({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
   return (
-    <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-blue-50/60 via-slate-50 to-slate-50">
+    <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-orange-50/60 via-stone-50 to-stone-50">
       <HeroicFlyingKites />
       <div className="max-w-6xl mx-auto text-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-800 text-xs font-extrabold mb-6 shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100/80 border border-orange-200 text-orange-800 text-xs font-extrabold mb-6 shadow-sm"
         >
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
           <span>Digital Marketing &amp; Custom Software Engineering</span>
         </motion.div>
 
@@ -356,7 +356,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-6 tracking-tight leading-tight"
+          className="font-display text-5xl md:text-7xl font-semibold text-stone-900 mb-6 tracking-tight leading-tight"
         >
           {content?.hero?.title || 'Nikki Technologies'}
         </motion.h1>
@@ -365,7 +365,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-xl md:text-2xl bg-gradient-to-r from-blue-800 via-indigo-700 to-blue-900 bg-clip-text text-transparent font-extrabold mb-6"
+          className="text-xl md:text-2xl bg-gradient-to-r from-orange-800 via-indigo-700 to-orange-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
           {content?.hero?.subtitle || 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps'}
         </motion.p>
@@ -374,7 +374,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="text-slate-700 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
+          className="text-stone-700 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
           {content?.hero?.description || 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.'}
         </motion.p>
@@ -387,10 +387,10 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
         >
           {segments.map((s) => (
             <a key={s.slug} href={`#seg-${s.slug}`}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-slate-300 bg-white hover:border-blue-600 hover:bg-slate-50 transition-all text-slate-900 shadow-md font-semibold text-sm">
-              <Icon name={s.icon} className="w-5 h-5 text-blue-700" />
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-stone-300 bg-white hover:border-orange-600 hover:bg-stone-50 transition-all text-stone-900 shadow-md font-semibold text-sm">
+              <Icon name={s.icon} className="w-5 h-5 text-orange-700" />
               <span>{s.name}</span>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+              <ChevronRight className="w-4 h-4 text-stone-400" />
             </a>
           ))}
         </motion.div>
@@ -460,11 +460,11 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
   }, []);
 
   return (
-    <section id="segments" className="py-20 px-4 bg-slate-50">
+    <section id="segments" className="py-20 px-4 bg-stone-50">
       <div className="max-w-7xl mx-auto">
         <Reveal>
-          <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">What We Do</h2>
-          <p className="text-center text-slate-700 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
+          <h2 className="font-display text-4xl md:text-5xl font-extrabold text-center text-stone-900 mb-3 tracking-tight">What We Do</h2>
+          <p className="text-center text-stone-700 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
         </Reveal>
         <div id="services" className="space-y-16">
           {segments.map(seg => {
@@ -491,8 +491,8 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
                       <Icon name={seg.icon} className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-slate-900">{seg.name}</h3>
-                      <p className="text-slate-700 text-sm font-medium">{seg.tagline}</p>
+                      <h3 className="text-2xl font-bold text-stone-900">{seg.name}</h3>
+                      <p className="text-stone-700 text-sm font-medium">{seg.tagline}</p>
                     </div>
                   </div>
                 </Reveal>
@@ -502,12 +502,12 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
                       <motion.div
                         whileHover={{ y: -6, scale: 1.01 }}
                         transition={{ duration: 0.2 }}
-                        className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-md hover:shadow-xl hover:border-blue-300 transition-all h-full flex flex-col justify-between"
+                        className="p-6 rounded-2xl bg-white border border-stone-200/90 shadow-md hover:shadow-xl hover:border-orange-300 transition-all h-full flex flex-col justify-between"
                       >
                         <div>
-                          <Icon name={s.icon} className="w-8 h-8 mb-4 text-blue-700" />
-                          <h4 className="text-lg font-bold text-slate-900 mb-2">{s.title}</h4>
-                          <p className="text-slate-700 text-sm leading-relaxed font-medium">{s.description}</p>
+                          <Icon name={s.icon} className="w-8 h-8 mb-4 text-orange-700" />
+                          <h4 className="text-lg font-bold text-stone-900 mb-2">{s.title}</h4>
+                          <p className="text-stone-700 text-sm leading-relaxed font-medium">{s.description}</p>
                         </div>
                       </motion.div>
                     </Reveal>
@@ -532,11 +532,11 @@ function Products() {
   if (products.length === 0) return null;
 
   return (
-    <section id="products" className="py-20 px-4 bg-slate-100/60 border-y border-slate-200">
+    <section id="products" className="py-20 px-4 bg-stone-100/60 border-y border-stone-200">
       <div className="max-w-7xl mx-auto">
         <Reveal>
-          <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">Our Products</h2>
-          <p className="text-center text-slate-700 mb-14 max-w-2xl mx-auto font-medium">Software built by Nikki Technologies, powering businesses.</p>
+          <h2 className="font-display text-4xl md:text-5xl font-extrabold text-center text-stone-900 mb-3 tracking-tight">Our Products</h2>
+          <p className="text-center text-stone-700 mb-14 max-w-2xl mx-auto font-medium">Software built by Nikki Technologies, powering businesses.</p>
         </Reveal>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {products.map((p, i) => (
@@ -544,35 +544,35 @@ function Products() {
               <motion.div
                 whileHover={{ y: -6, scale: 1.01 }}
                 transition={{ duration: 0.2 }}
-                className="flex flex-col h-full p-7 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-xl transition-all"
+                className="flex flex-col h-full p-7 rounded-2xl bg-white border border-stone-200 shadow-md hover:shadow-xl transition-all"
               >
                 <div className="flex items-center gap-3 mb-3">
                   {p.logo_url
                     ? <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-cover shadow-xs" />
-                    : <div className="w-11 h-11 rounded-xl bg-blue-700 flex items-center justify-center font-extrabold text-white text-lg shadow-md">{p.name[0]}</div>}
+                    : <div className="w-11 h-11 rounded-xl bg-orange-700 flex items-center justify-center font-extrabold text-white text-lg shadow-md">{p.name[0]}</div>}
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">{p.name}</h3>
-                    <p className="text-blue-700 text-xs font-semibold">{p.tagline}</p>
+                    <h3 className="text-xl font-bold text-stone-900">{p.name}</h3>
+                    <p className="text-orange-700 text-xs font-semibold">{p.tagline}</p>
                   </div>
                 </div>
-                <p className="text-slate-700 text-sm mb-5 leading-relaxed font-medium">{p.description}</p>
+                <p className="text-stone-700 text-sm mb-5 leading-relaxed font-medium">{p.description}</p>
                 <div className="space-y-2.5 mb-6">
                   {(p.features || []).map((f, i) => (
                     <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-blue-700 mt-0.5 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-orange-700 mt-0.5 shrink-0" />
                       <div>
-                        <span className="text-slate-900 text-sm font-semibold">{f.title}</span>
-                        <span className="text-slate-700 text-sm font-medium"> — {f.description}</span>
+                        <span className="text-stone-900 text-sm font-semibold">{f.title}</span>
+                        <span className="text-stone-700 text-sm font-medium"> — {f.description}</span>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="mt-auto">
                   {p.status === 'coming_soon' ? (
-                    <span className="inline-block px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold">Coming Soon</span>
+                    <span className="inline-block px-4 py-2 rounded-xl bg-stone-100 border border-stone-200 text-stone-700 text-xs font-semibold">Coming Soon</span>
                   ) : p.external_url ? (
                     <a href={p.external_url} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20">
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-md shadow-orange-700/20">
                       {p.demo_cta || 'Visit Website'} <ExternalLink className="w-4 h-4" />
                     </a>
                   ) : null}
@@ -597,10 +597,10 @@ function GallerySection() {
   return (
     <section className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold text-center text-white mb-12">Our Work</h2>
+        <h2 className="font-display text-4xl font-bold text-center text-white mb-12">Our Work</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {items.map(g => (
-            <div key={g.id} className="rounded-xl overflow-hidden aspect-square bg-slate-900">
+            <div key={g.id} className="rounded-xl overflow-hidden aspect-square bg-stone-900">
               <img src={g.image_url} alt={g.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
             </div>
           ))}
@@ -619,17 +619,17 @@ function TeamSection() {
   }, []);
   if (items.length === 0) return null;
   return (
-    <section className="py-20 px-4 bg-slate-50">
+    <section className="py-20 px-4 bg-stone-50">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold text-center text-slate-900 mb-12 tracking-tight">Meet the Team</h2>
+        <h2 className="font-display text-4xl font-bold text-center text-stone-900 mb-12 tracking-tight">Meet the Team</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {items.map(m => (
-            <div key={m.id} className="text-center p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
-              <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-2xl shadow-xs">
+            <div key={m.id} className="text-center p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm">
+              <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-700 font-bold text-2xl shadow-xs">
                 {m.photo_url ? <img src={m.photo_url} alt={m.name} className="w-full h-full object-cover" /> : m.name[0]}
               </div>
-              <p className="text-slate-900 font-bold text-sm">{m.name}</p>
-              <p className="text-slate-700 text-xs font-medium">{m.designation}</p>
+              <p className="text-stone-900 font-bold text-sm">{m.name}</p>
+              <p className="text-stone-700 text-xs font-medium">{m.designation}</p>
             </div>
           ))}
         </div>
@@ -647,18 +647,18 @@ function Testimonials() {
   }, []);
   if (items.length === 0) return null;
   return (
-    <section id="testimonials" className="py-20 px-4 bg-slate-100/60 border-y border-slate-200">
+    <section id="testimonials" className="py-20 px-4 bg-stone-100/60 border-y border-stone-200">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-extrabold text-center text-slate-900 mb-14 tracking-tight">What Clients Say</h2>
+        <h2 className="font-display text-4xl font-extrabold text-center text-stone-900 mb-14 tracking-tight">What Clients Say</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {items.map((t, i) => (
             <Reveal key={t.id} delay={i * 100}>
-            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-md">
+            <div className="p-6 rounded-2xl bg-white border border-stone-200 shadow-md">
               <div className="flex gap-1 mb-3">
                 {Array.from({ length: t.rating }).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
               </div>
-              <p className="text-slate-700 text-sm mb-4 leading-relaxed font-medium">"{t.content}"</p>
-              <p className="text-slate-900 font-bold text-sm">{t.customer_name}</p>
+              <p className="text-stone-700 text-sm mb-4 leading-relaxed font-medium">"{t.content}"</p>
+              <p className="text-stone-900 font-bold text-sm">{t.customer_name}</p>
             </div>
             </Reveal>
           ))}
@@ -682,7 +682,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-500';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm placeholder-stone-500';
 
   async function submit() {
     setError('');
@@ -723,21 +723,21 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-5">
           <div>
-            <h3 className="text-slate-900 text-lg font-bold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
-            {job && <p className="text-slate-700 text-xs mt-0.5">{job.location} • {job.employment_type.replace('_', ' ')}</p>}
+            <h3 className="text-stone-900 text-lg font-bold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
+            {job && <p className="text-stone-700 text-xs mt-0.5">{job.location} • {job.employment_type.replace('_', ' ')}</p>}
           </div>
-          <button className="text-slate-400 hover:text-slate-700" onClick={onClose}>✕</button>
+          <button className="text-stone-400 hover:text-stone-700" onClick={onClose}>✕</button>
         </div>
 
         {done ? (
           <div className="text-center py-10">
             <CheckCircle2 className="w-12 h-12 text-emerald-700 mx-auto mb-3" />
-            <p className="text-slate-900 font-bold mb-1">Application submitted!</p>
-            <p className="text-slate-700 text-sm">We'll review your profile and get back to you.</p>
+            <p className="text-stone-900 font-bold mb-1">Application submitted!</p>
+            <p className="text-stone-700 text-sm">We'll review your profile and get back to you.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -759,7 +759,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
 
             {(job?.questions || []).map((q, i) => (
               <div key={i}>
-                <label className="text-slate-700 text-xs font-medium">{q}</label>
+                <label className="text-stone-700 text-xs font-medium">{q}</label>
                 <textarea className={inputCls + ' mt-1'} rows={2} value={answers[i] || ''}
                   onChange={e => setAnswers(prev => { const next = [...prev]; next[i] = e.target.value; return next; })} />
               </div>
@@ -768,19 +768,19 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
             <textarea className={inputCls} rows={2} placeholder="Anything else you'd like to share" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
 
             <div>
-              <label className="text-slate-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5 text-blue-700" /> Passport size photo</label>
-              <input type="file" accept="image/*" className="text-slate-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-100 file:text-slate-700 file:text-xs font-medium"
+              <label className="text-stone-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5 text-orange-700" /> Passport size photo</label>
+              <input type="file" accept="image/*" className="text-stone-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs font-medium"
                 onChange={e => setPhoto(e.target.files?.[0] || null)} />
             </div>
             <div>
-              <label className="text-slate-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><Upload className="w-3.5 h-3.5 text-blue-700" /> Resume (PDF/DOC) *</label>
-              <input type="file" accept=".pdf,.doc,.docx" className="text-slate-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-slate-100 file:text-slate-700 file:text-xs font-medium"
+              <label className="text-stone-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><Upload className="w-3.5 h-3.5 text-orange-700" /> Resume (PDF/DOC) *</label>
+              <input type="file" accept=".pdf,.doc,.docx" className="text-stone-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs font-medium"
                 onChange={e => setResume(e.target.files?.[0] || null)} />
             </div>
 
             {error && <p className="text-red-700 text-xs font-medium">{error}</p>}
             <button onClick={submit} disabled={busy}
-              className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-blue-700/20">
+              className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-orange-700/20">
               {busy ? 'Submitting…' : 'Submit Application'}
             </button>
           </div>
@@ -800,34 +800,34 @@ function Careers({ segments }: { segments: Segment[] }) {
   }, []);
 
   return (
-    <section id="careers" className="py-20 px-4 bg-slate-50">
+    <section id="careers" className="py-20 px-4 bg-stone-50">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-14">
-          <Briefcase className="w-10 h-10 text-blue-700 mx-auto mb-3" />
-          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-3 tracking-tight">Careers at Nikki Technologies</h2>
-          <p className="text-slate-700 max-w-2xl mx-auto font-medium">
+          <Briefcase className="w-10 h-10 text-orange-700 mx-auto mb-3" />
+          <h2 className="font-display text-4xl md:text-5xl font-extrabold text-stone-900 mb-3 tracking-tight">Careers at Nikki Technologies</h2>
+          <p className="text-stone-700 max-w-2xl mx-auto font-medium">
             {`We're hiring across ${segments.map(s => s.name).join(', ') || 'our divisions'}. Don't see a role that fits? Send us a general application.`}
           </p>
         </div>
 
         {jobs.length === 0 && (
-          <p className="text-slate-700 text-center mb-10 font-medium">No open positions right now — check back soon, or apply generally below.</p>
+          <p className="text-stone-700 text-center mb-10 font-medium">No open positions right now — check back soon, or apply generally below.</p>
         )}
 
         <div className="space-y-3 mb-10">
           {jobs.map(job => {
             const seg = segments.find(s => s.slug === job.segment_slug);
             return (
-              <div key={job.id} className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-white border border-slate-200 shadow-md hover:border-blue-500 transition-all">
+              <div key={job.id} className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-white border border-stone-200 shadow-md hover:border-orange-500 transition-all">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-slate-900 font-bold">{job.title}</h3>
+                    <h3 className="text-stone-900 font-bold">{job.title}</h3>
                     {seg && <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: seg.color + '15', color: seg.color }}>{seg.name}</span>}
                   </div>
-                  <p className="text-slate-700 text-sm font-medium">{job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}</p>
+                  <p className="text-stone-700 text-sm font-medium">{job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}</p>
                 </div>
                 <button onClick={() => setApplyJob(job)}
-                  className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-md shadow-blue-700/20 shrink-0">
+                  className="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-md shadow-orange-700/20 shrink-0">
                   Apply Now
                 </button>
               </div>
@@ -836,7 +836,7 @@ function Careers({ segments }: { segments: Segment[] }) {
         </div>
 
         <div className="text-center">
-          <button onClick={() => setApplyJob('general')} className="text-blue-700 text-sm font-semibold underline hover:text-blue-800">
+          <button onClick={() => setApplyJob('general')} className="text-orange-700 text-sm font-semibold underline hover:text-orange-800">
             Don't see your role? Submit a general application
           </button>
         </div>
@@ -855,7 +855,7 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
   const [phone, setPhone] = useState('');
   const [result, setResult] = useState<any | null | 'not_found'>(null);
   const [busy, setBusy] = useState(false);
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-500';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm placeholder-stone-500';
 
   async function lookup() {
     if (!ticketNo || !phone) return;
@@ -866,38 +866,38 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
   }
 
   const statusColor: Record<string, string> = {
-    open: 'text-blue-700', in_progress: 'text-amber-700', waiting_customer: 'text-purple-700',
-    resolved: 'text-emerald-700', closed: 'text-slate-700',
+    open: 'text-orange-700', in_progress: 'text-amber-700', waiting_customer: 'text-purple-700',
+    resolved: 'text-emerald-700', closed: 'text-stone-700',
   };
 
   return (
-    <div className="p-8 rounded-2xl bg-white border border-slate-200 shadow-xl">
-      <button onClick={onBack} className="text-slate-700 hover:text-slate-800 text-xs mb-4 font-semibold">← Back to raise a ticket</button>
+    <div className="p-8 rounded-2xl bg-white border border-stone-200 shadow-xl">
+      <button onClick={onBack} className="text-stone-700 hover:text-stone-800 text-xs mb-4 font-semibold">← Back to raise a ticket</button>
       {!result ? (
         <div className="space-y-3">
           <input className={inputCls} placeholder="Ticket Number (e.g. NKT-CC-00001)" value={ticketNo} onChange={e => setTicketNo(e.target.value)} />
           <input className={inputCls} placeholder="Phone number used when raising it" value={phone} onChange={e => setPhone(e.target.value)} />
           <button onClick={lookup} disabled={busy || !ticketNo || !phone}
-            className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-blue-700/20">
+            className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-orange-700/20">
             {busy ? 'Looking up…' : 'Check Status'}
           </button>
         </div>
       ) : result === 'not_found' ? (
         <div className="text-center py-6">
-          <p className="text-slate-700 text-sm mb-3 font-medium">No ticket found matching that number and phone.</p>
-          <button onClick={() => setResult(null)} className="text-blue-700 text-sm font-semibold">Try again</button>
+          <p className="text-stone-700 text-sm mb-3 font-medium">No ticket found matching that number and phone.</p>
+          <button onClick={() => setResult(null)} className="text-orange-700 text-sm font-semibold">Try again</button>
         </div>
       ) : (
         <div>
-          <p className="font-mono text-blue-700 text-sm mb-1 font-bold">{result.ticket_no}</p>
-          <p className="text-slate-900 font-bold mb-3">{result.subject}</p>
+          <p className="font-mono text-orange-700 text-sm mb-1 font-bold">{result.ticket_no}</p>
+          <p className="text-stone-900 font-bold mb-3">{result.subject}</p>
           <div className="space-y-1.5 text-sm font-medium">
-            <p><span className="text-slate-700">Status: </span><span className={`font-bold ${statusColor[result.status]}`}>{result.status.replace('_', ' ')}</span></p>
-            <p><span className="text-slate-700">Priority: </span><span className="text-slate-800">{result.priority}</span></p>
-            <p><span className="text-slate-700">Raised: </span><span className="text-slate-800">{new Date(result.created_at).toLocaleDateString()}</span></p>
-            {result.resolved_at && <p><span className="text-slate-700">Resolved: </span><span className="text-slate-800">{new Date(result.resolved_at).toLocaleDateString()}</span></p>}
+            <p><span className="text-stone-700">Status: </span><span className={`font-bold ${statusColor[result.status]}`}>{result.status.replace('_', ' ')}</span></p>
+            <p><span className="text-stone-700">Priority: </span><span className="text-stone-800">{result.priority}</span></p>
+            <p><span className="text-stone-700">Raised: </span><span className="text-stone-800">{new Date(result.created_at).toLocaleDateString()}</span></p>
+            {result.resolved_at && <p><span className="text-stone-700">Resolved: </span><span className="text-stone-800">{new Date(result.resolved_at).toLocaleDateString()}</span></p>}
           </div>
-          <button onClick={() => setResult(null)} className="text-blue-700 text-sm font-semibold mt-4">Check another ticket</button>
+          <button onClick={() => setResult(null)} className="text-orange-700 text-sm font-semibold mt-4">Check another ticket</button>
         </div>
       )}
     </div>
@@ -953,7 +953,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
     setForm({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
   }
 
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-500 font-medium';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm placeholder-stone-500 font-medium';
 
   const isMarketingSeg = form.segment_slug.includes('marketing') || form.segment_slug.includes('media') || form.segment_slug.includes('digital') || form.segment_slug.includes('kt');
   const isSoftwareSeg = form.segment_slug.includes('software') || form.segment_slug.includes('dev') || form.segment_slug.includes('tech');
@@ -971,27 +971,27 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
       );
 
   return (
-    <section id="raise-ticket" className="py-20 px-4 bg-slate-100/60 border-y border-slate-200">
+    <section id="raise-ticket" className="py-20 px-4 bg-stone-100/60 border-y border-stone-200">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
-          <Ticket className="w-10 h-10 text-blue-700 mx-auto mb-3" />
-          <h2 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">Raise a Support Ticket</h2>
-          <p className="text-slate-700 font-medium">{`Existing customer? Get help from the right team — ${cleanSegments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
-          <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-blue-700 text-sm mt-2 font-semibold underline">
+          <Ticket className="w-10 h-10 text-orange-700 mx-auto mb-3" />
+          <h2 className="font-display text-4xl font-extrabold text-stone-900 mb-2 tracking-tight">Raise a Support Ticket</h2>
+          <p className="text-stone-700 font-medium">{`Existing customer? Get help from the right team — ${cleanSegments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
+          <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-orange-700 text-sm mt-2 font-semibold underline">
             {mode === 'raise' ? 'Already raised a ticket? Track its status' : 'Raise a new ticket instead'}
           </button>
         </div>
         {mode === 'track' ? (
           <TrackTicket onBack={() => setMode('raise')} />
         ) : done ? (
-          <div className="p-8 rounded-2xl bg-white border border-blue-200 text-center shadow-xl">
+          <div className="p-8 rounded-2xl bg-white border border-orange-200 text-center shadow-xl">
             <CheckCircle2 className="w-12 h-12 text-emerald-700 mx-auto mb-3" />
-            <p className="text-slate-900 text-lg font-bold mb-1">Ticket created: {done}</p>
-            <p className="text-slate-700 text-sm mb-4">Our team will contact you shortly. Save your ticket number.</p>
-            <button onClick={() => setDone(null)} className="text-blue-700 text-sm font-semibold">Raise another ticket</button>
+            <p className="text-stone-900 text-lg font-bold mb-1">Ticket created: {done}</p>
+            <p className="text-stone-700 text-sm mb-4">Our team will contact you shortly. Save your ticket number.</p>
+            <button onClick={() => setDone(null)} className="text-orange-700 text-sm font-semibold">Raise another ticket</button>
           </div>
         ) : (
-          <div className="p-8 rounded-2xl bg-white border border-slate-200 shadow-xl space-y-4">
+          <div className="p-8 rounded-2xl bg-white border border-stone-200 shadow-xl space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <select className={inputCls} value={form.segment_slug}
                 onChange={e => setForm({ ...form, segment_slug: e.target.value, ticket_type: '' })}>
@@ -1013,7 +1013,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
             </div>
             {err && <p className="text-red-700 text-sm font-medium">{err}</p>}
             <button onClick={submit} disabled={busy}
-              className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-700/20">
+              className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-orange-700/20">
               <Send className="w-4 h-4" /> {busy ? 'Submitting…' : 'Submit Ticket'}
             </button>
           </div>
@@ -1030,7 +1030,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const c = content?.contact || {};
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-sm focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 shadow-sm placeholder-slate-500';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm placeholder-stone-500';
 
   async function submit() {
     if (!form.segment_slug || !form.customer_name || !form.phone) {
@@ -1046,27 +1046,27 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
   }
 
   return (
-    <section id="contact" className="py-20 px-4 bg-slate-50">
+    <section id="contact" className="py-20 px-4 bg-stone-50">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
         <div>
-          <h2 className="text-4xl font-extrabold text-slate-900 mb-6 tracking-tight">Get In Touch</h2>
-          <div className="space-y-4 text-slate-700 font-medium">
-            {hasRealPhone(c.phone) && <p className="flex items-center gap-3"><Phone className="w-5 h-5 text-blue-700" /> {c.phone}</p>}
-            {c.email && <p className="flex items-center gap-3"><Mail className="w-5 h-5 text-blue-700" /> {c.email}</p>}
-            {c.address && <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-blue-700" /> {c.address}</p>}
+          <h2 className="font-display text-4xl font-extrabold text-stone-900 mb-6 tracking-tight">Get In Touch</h2>
+          <div className="space-y-4 text-stone-700 font-medium">
+            {hasRealPhone(c.phone) && <p className="flex items-center gap-3"><Phone className="w-5 h-5 text-orange-700" /> {c.phone}</p>}
+            {c.email && <p className="flex items-center gap-3"><Mail className="w-5 h-5 text-orange-700" /> {c.email}</p>}
+            {c.address && <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-orange-700" /> {c.address}</p>}
             {!hasRealPhone(c.phone) && (
-              <p className="text-slate-700 text-sm pt-2">
+              <p className="text-stone-700 text-sm pt-2">
                 Prefer to raise a request directly? Use the form here or{' '}
-                <a href="#raise-ticket" className="text-blue-700 font-semibold underline">open a support ticket</a> — we respond to every one.
+                <a href="#raise-ticket" className="text-orange-700 font-semibold underline">open a support ticket</a> — we respond to every one.
               </p>
             )}
           </div>
         </div>
-        <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-xl">
+        <div className="p-7 rounded-2xl bg-white border border-stone-200 shadow-xl">
           {sent ? (
             <div className="text-center py-10">
               <CheckCircle2 className="w-12 h-12 text-emerald-700 mx-auto mb-3" />
-              <p className="text-slate-900 font-bold">Thanks! Our team will call you soon.</p>
+              <p className="text-stone-900 font-bold">Thanks! Our team will call you soon.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1080,7 +1080,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
               <textarea className={inputCls} rows={2} placeholder="Tell us what you need" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
               {err && <p className="text-red-700 text-sm font-medium">{err}</p>}
               <button onClick={submit} disabled={busy}
-                className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-blue-700/20">
+                className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-orange-700/20">
                 {busy ? 'Sending…' : 'Request Free Consultation'}
               </button>
             </div>
@@ -1094,32 +1094,32 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
 // ─────────────────────────────────────────────── Footer
 function Footer({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
   return (
-    <footer className="border-t border-slate-800 bg-slate-900 py-12 px-4 text-slate-300">
+    <footer className="border-t border-stone-800 bg-stone-900 py-12 px-4 text-stone-300">
       <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8 text-sm">
         <div>
           <p className="text-white font-bold text-lg mb-2">Nikki Technologies</p>
-          <p className="text-slate-400">{content?.footer?.about || 'Digital marketing and software solutions under one roof.'}</p>
+          <p className="text-stone-400">{content?.footer?.about || 'Digital marketing and software solutions under one roof.'}</p>
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Divisions</p>
-          {segments.map(s => <a key={s.slug} href={`#seg-${s.slug}`} className="block text-slate-400 hover:text-blue-400 py-0.5">{s.name}</a>)}
+          {segments.map(s => <a key={s.slug} href={`#seg-${s.slug}`} className="block text-stone-400 hover:text-orange-400 py-0.5">{s.name}</a>)}
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Quick Links</p>
-          <a href="#products" className="block text-slate-400 hover:text-blue-400 py-0.5">Products</a>
-          <a href="#raise-ticket" className="block text-slate-400 hover:text-blue-400 py-0.5">Support</a>
-          <a href="/login" className="block text-slate-400 hover:text-blue-400 py-0.5">Staff Login</a>
+          <a href="#products" className="block text-stone-400 hover:text-orange-400 py-0.5">Products</a>
+          <a href="#raise-ticket" className="block text-stone-400 hover:text-orange-400 py-0.5">Support</a>
+          <a href="/login" className="block text-stone-400 hover:text-orange-400 py-0.5">Staff Login</a>
         </div>
       </div>
-      <p className="text-center text-slate-700 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies. All rights reserved.</p>
+      <p className="text-center text-stone-700 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies. All rights reserved.</p>
     </footer>
   );
 }
 
 // ─────────────────────────────────────────────── Composition
 export default function PublicSite() {
-  const { content } = useSiteContent();
-  const { segments } = useSegments();
+  const { content, loading: contentLoading } = useSiteContent();
+  const { segments, loading: segmentsLoading } = useSegments();
   const [showLoading, setShowLoading] = useState(() => {
     try { return sessionStorage.getItem('nkt_intro_shown') !== 'true'; } catch { return false; }
   });
@@ -1131,8 +1131,19 @@ export default function PublicSite() {
 
   if (showLoading) return <LoadingScreen onLoadingComplete={handleComplete} />;
 
+  // Real Website Content / segment names haven't arrived from Supabase yet —
+  // render a brief neutral loader instead of hardcoded placeholder copy that
+  // would otherwise flash on screen and then get replaced a moment later.
+  if (contentLoading || segmentsLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <KiteTailLogo className="w-12 h-12 animate-pulse" />
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-slate-50 min-h-screen text-slate-900">
+    <div className="bg-stone-50 min-h-screen text-stone-900">
       <SEOHead />
       <Navigation content={content} />
       <Hero content={content} segments={segments} />

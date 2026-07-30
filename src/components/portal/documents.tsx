@@ -119,12 +119,12 @@ function SignaturePad({ onCapture }: { onCapture: (dataUrl: string) => void }) {
         ref={canvasRef}
         width={480}
         height={140}
-        className="w-full bg-white rounded-lg touch-none border border-slate-300"
+        className="w-full bg-white rounded-lg touch-none border border-stone-300"
         onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
         onTouchStart={start} onTouchMove={move} onTouchEnd={end}
       />
       <div className="flex justify-between items-center mt-2">
-        <button onClick={clear} className="flex items-center gap-1 text-slate-700 text-xs">
+        <button onClick={clear} className="flex items-center gap-1 text-stone-700 text-xs">
           <RotateCcw className="w-3.5 h-3.5" /> Clear
         </button>
         <button onClick={capture} disabled={empty} className={btnCls + ' disabled:opacity-40'}>
@@ -178,45 +178,45 @@ export function DocumentViewer({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
+      <div className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-slate-900 text-lg font-semibold">{title}</h3>
-            {meta && <p className="text-slate-700 text-xs mt-0.5">{meta}</p>}
+            <h3 className="text-stone-900 text-lg font-semibold">{title}</h3>
+            {meta && <p className="text-stone-700 text-xs mt-0.5">{meta}</p>}
           </div>
-          <button className="text-slate-700 hover:text-slate-900" onClick={onClose}>✕</button>
+          <button className="text-stone-700 hover:text-stone-900" onClick={onClose}>✕</button>
         </div>
 
-        <div className="bg-white text-slate-800 rounded-lg p-6 whitespace-pre-wrap text-sm leading-relaxed font-serif mb-5">
+        <div className="bg-white text-stone-800 rounded-lg p-6 whitespace-pre-wrap text-sm leading-relaxed font-serif mb-5">
           {content}
           {signed && signatureDataUrl && (
-            <div className="mt-8 pt-3 border-t border-slate-300 inline-block">
+            <div className="mt-8 pt-3 border-t border-stone-300 inline-block">
               <img src={signatureDataUrl} alt="Signature" className="h-14" />
-              <p className="text-xs text-slate-700 mt-1">Signed by {signedName} • {acknowledgedAt && new Date(acknowledgedAt).toLocaleString()}</p>
+              <p className="text-xs text-stone-700 mt-1">Signed by {signedName} • {acknowledgedAt && new Date(acknowledgedAt).toLocaleString()}</p>
             </div>
           )}
           {signed && !signatureDataUrl && (
-            <p className="text-xs text-slate-700 mt-6 pt-3 border-t border-slate-300">Acknowledged on {acknowledgedAt && new Date(acknowledgedAt).toLocaleString()}</p>
+            <p className="text-xs text-stone-700 mt-6 pt-3 border-t border-stone-300">Acknowledged on {acknowledgedAt && new Date(acknowledgedAt).toLocaleString()}</p>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-sky-700 text-sm font-medium mb-4">
+        <div className="flex items-center gap-1.5 text-teal-700 text-sm font-medium mb-4">
           <button onClick={handlePrint} className="flex items-center gap-1.5"><Printer className="w-4 h-4" /> Print / Save as PDF</button>
         </div>
 
         {canSubmit && !signed && requiresSignature && (
-          <div className="border-t border-slate-800 pt-5">
-            <p className="text-slate-900 text-sm font-medium mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-700" /> Sign to accept this document</p>
+          <div className="border-t border-stone-800 pt-5">
+            <p className="text-stone-900 text-sm font-medium mb-3 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-teal-700" /> Sign to accept this document</p>
             <div className="flex gap-2 mb-3">
-              <button onClick={() => setMode('draw')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'draw' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Draw Signature</button>
-              <button onClick={() => setMode('type')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'type' ? 'border-sky-500 text-sky-700' : 'border-slate-200 text-slate-700'}`}>Type Name</button>
+              <button onClick={() => setMode('draw')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'draw' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Draw Signature</button>
+              <button onClick={() => setMode('type')} className={`px-3 py-1 rounded-lg text-xs border ${mode === 'type' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Type Name</button>
             </div>
             {mode === 'draw' ? (
               <SignaturePad onCapture={dataUrl => onSign && onSign(dataUrl, '')} />
             ) : (
               <div className="space-y-2">
                 <input className={inputCls} placeholder="Type your full legal name" value={typedName} onChange={e => setTypedName(e.target.value)} />
-                {typedName && <p className="text-2xl text-slate-900 bg-white rounded-lg px-4 py-3" style={{ fontFamily: 'cursive' }}>{typedName}</p>}
+                {typedName && <p className="text-2xl text-stone-900 bg-white rounded-lg px-4 py-3" style={{ fontFamily: 'cursive' }}>{typedName}</p>}
                 <button className={btnCls + ' w-full'} disabled={!typedName.trim()} onClick={() => onSign && onSign('', typedName.trim())}>
                   Confirm & Sign
                 </button>
@@ -226,7 +226,7 @@ export function DocumentViewer({
         )}
 
         {canSubmit && !signed && !requiresSignature && (
-          <div className="border-t border-slate-800 pt-5 flex justify-end">
+          <div className="border-t border-stone-800 pt-5 flex justify-end">
             <button className={btnCls} onClick={onAcknowledge}>I acknowledge I've read this</button>
           </div>
         )}
@@ -282,14 +282,14 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
           You have {pending} document{pending > 1 ? 's' : ''} awaiting your signature/acknowledgement.
         </div>
       )}
-      {docs.length === 0 && <p className="text-slate-700 text-sm text-center py-10">No documents issued yet.</p>}
+      {docs.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No documents issued yet.</p>}
       {docs.map(d => (
-        <div key={d.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-slate-300'} onClick={() => setOpen(d)}>
+        <div key={d.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => setOpen(d)}>
           <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-sky-700" />
+            <FileText className="w-5 h-5 text-teal-700" />
             <div>
-              <p className="text-slate-900 text-sm font-medium">{d.title}</p>
-              <p className="text-slate-700 text-xs">{DOC_TYPE_LABELS[d.doc_type]} • issued {new Date(d.issued_at).toLocaleDateString()}</p>
+              <p className="text-stone-900 text-sm font-medium">{d.title}</p>
+              <p className="text-stone-700 text-xs">{DOC_TYPE_LABELS[d.doc_type]} • issued {new Date(d.issued_at).toLocaleDateString()}</p>
             </div>
           </div>
           {d.acknowledged_at
@@ -322,16 +322,16 @@ export function MySalaryCard({ salary }: { salary?: { basic?: number; hra?: numb
   const rupee = (n?: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
   return (
     <div className={cardCls}>
-      <h3 className="text-slate-900 font-semibold mb-4 text-sm">Salary Structure</h3>
+      <h3 className="text-stone-900 font-semibold mb-4 text-sm">Salary Structure</h3>
       <div className="grid grid-cols-2 gap-y-3 text-sm">
-        <span className="text-slate-700">Basic</span><span className="text-slate-900 text-right">{rupee(s.basic)}</span>
-        <span className="text-slate-700">HRA</span><span className="text-slate-900 text-right">{rupee(s.hra)}</span>
-        <span className="text-slate-700">Allowances</span><span className="text-slate-900 text-right">{rupee(s.allowances)}</span>
-        {!!s.performance_bonus && (<><span className="text-slate-700">Performance Bonus</span><span className="text-emerald-700 text-right">{rupee(s.performance_bonus)}</span></>)}
-        {!!s.incentives && (<><span className="text-slate-700">Incentives</span><span className="text-emerald-700 text-right">{rupee(s.incentives)}</span></>)}
-        <span className="text-slate-700">Deductions</span><span className="text-red-700 text-right">− {rupee(s.deductions)}</span>
-        <div className="col-span-2 border-t border-slate-800 my-1" />
-        <span className="text-slate-900 font-semibold">Annual CTC</span><span className="text-sky-700 font-bold text-right">{rupee(s.ctc)}</span>
+        <span className="text-stone-700">Basic</span><span className="text-stone-900 text-right">{rupee(s.basic)}</span>
+        <span className="text-stone-700">HRA</span><span className="text-stone-900 text-right">{rupee(s.hra)}</span>
+        <span className="text-stone-700">Allowances</span><span className="text-stone-900 text-right">{rupee(s.allowances)}</span>
+        {!!s.performance_bonus && (<><span className="text-stone-700">Performance Bonus</span><span className="text-emerald-700 text-right">{rupee(s.performance_bonus)}</span></>)}
+        {!!s.incentives && (<><span className="text-stone-700">Incentives</span><span className="text-emerald-700 text-right">{rupee(s.incentives)}</span></>)}
+        <span className="text-stone-700">Deductions</span><span className="text-red-700 text-right">− {rupee(s.deductions)}</span>
+        <div className="col-span-2 border-t border-stone-800 my-1" />
+        <span className="text-stone-900 font-semibold">Annual CTC</span><span className="text-teal-700 font-bold text-right">{rupee(s.ctc)}</span>
       </div>
     </div>
   );
@@ -346,7 +346,7 @@ export function OnboardingStatusBadge({ staffUserId }: { staffUserId: string }) 
         if (data) setStatus({ total: data.length, done: data.filter((d: any) => d.acknowledged_at).length });
       });
   }, [staffUserId]);
-  if (!status || status.total === 0) return <span className="text-xs text-slate-700">No documents</span>;
+  if (!status || status.total === 0) return <span className="text-xs text-stone-700">No documents</span>;
   const complete = status.done === status.total;
   return (
     <span className={`text-xs px-2 py-0.5 rounded ${complete ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -373,59 +373,59 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
   }, [staffUserId]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
           <div>
-            <h2 className="text-slate-900 font-bold text-lg">{staffName}</h2>
-            <p className="text-slate-700 text-sm">Collected Documents & Agreements</p>
+            <h2 className="text-stone-900 font-bold text-lg">{staffName}</h2>
+            <p className="text-stone-700 text-sm">Collected Documents & Agreements</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full text-slate-700"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-2 hover:bg-stone-200 rounded-full text-stone-700"><X className="w-5 h-5" /></button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+        <div className="flex-1 overflow-y-auto p-4 bg-stone-50">
           {loading ? (
-            <p className="text-center text-slate-700 py-10">Loading documents...</p>
+            <p className="text-center text-stone-700 py-10">Loading documents...</p>
           ) : docs.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
-              <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-700 font-medium">No documents issued yet.</p>
-              <p className="text-slate-500 text-sm mt-1">Issue an offer letter or policy document to get started.</p>
+            <div className="bg-white rounded-xl border border-stone-200 p-8 text-center">
+              <FileText className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+              <p className="text-stone-700 font-medium">No documents issued yet.</p>
+              <p className="text-stone-500 text-sm mt-1">Issue an offer letter or policy document to get started.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {docs.map(doc => (
-                <div key={doc.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row gap-6">
+                <div key={doc.id} className="bg-white border border-stone-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row gap-6">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-slate-900 font-bold text-lg">{doc.title}</span>
+                      <span className="text-stone-900 font-bold text-lg">{doc.title}</span>
                       <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${doc.acknowledged_at ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                         {doc.acknowledged_at ? 'SIGNED' : 'PENDING'}
                       </span>
-                      <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-medium">{DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}</span>
+                      <span className="text-xs bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium">{DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}</span>
                     </div>
-                    <p className="text-sm text-slate-500 mb-4">Issued on {new Date(doc.issued_at).toLocaleDateString()}</p>
+                    <p className="text-sm text-stone-500 mb-4">Issued on {new Date(doc.issued_at).toLocaleDateString()}</p>
                     
                     {doc.acknowledged_at ? (
-                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 mb-4">
+                      <div className="bg-stone-50 p-4 rounded-lg border border-stone-100 mb-4">
                         <div className="flex items-center gap-2 mb-3">
                           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span className="text-sm font-semibold text-slate-900">Signatory Record</span>
+                          <span className="text-sm font-semibold text-stone-900">Signatory Record</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Signed By</p>
-                            <p className="text-sm text-slate-900 font-bold">{doc.signed_name || staffName}</p>
+                            <p className="text-xs text-stone-500 font-medium uppercase tracking-wider mb-1">Signed By</p>
+                            <p className="text-sm text-stone-900 font-bold">{doc.signed_name || staffName}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Timestamp</p>
-                            <p className="text-sm text-slate-900 font-medium">{new Date(doc.acknowledged_at).toLocaleString()}</p>
+                            <p className="text-xs text-stone-500 font-medium uppercase tracking-wider mb-1">Timestamp</p>
+                            <p className="text-sm text-stone-900 font-medium">{new Date(doc.acknowledged_at).toLocaleString()}</p>
                           </div>
                         </div>
                         {doc.signature_data_url && (
                           <div className="mt-4">
-                            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">Digital Signature</p>
-                            <div className="bg-white border border-slate-200 rounded p-2 inline-block">
+                            <p className="text-xs text-stone-500 font-medium uppercase tracking-wider mb-2">Digital Signature</p>
+                            <div className="bg-white border border-stone-200 rounded p-2 inline-block">
                               <img src={doc.signature_data_url} alt="Signature" className="h-12 object-contain" />
                             </div>
                           </div>
@@ -452,10 +452,11 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
       </div>
       
       {viewDoc && (
-        <DocumentViewer 
-          doc={viewDoc} 
-          onClose={() => setViewDoc(null)} 
-          onSigned={() => {}} 
+        <DocumentViewer
+          title={viewDoc.title}
+          content={viewDoc.content}
+          meta={`${DOC_TYPE_LABELS[viewDoc.doc_type] || viewDoc.doc_type} • Issued ${new Date(viewDoc.issued_at).toLocaleDateString()}`}
+          onClose={() => setViewDoc(null)}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { logLogin, logLoginFailed, logLogout } from '../lib/securityLogger';
 import { beginSession, heartbeatSession, endSession, SESSION_HEARTBEAT_MS, getCurrentSessionRowId } from '../lib/sessionTracker';
@@ -114,20 +114,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { return !localStorage.getItem(SESSION_KEY); } catch { return true; }
   });
 
+  // signIn() and the onAuthStateChange(SIGNED_IN) listener both fire for the
+  // same login and independently used to call loadUser(). Each one retries
+  // its own DB read to work around the RLS-propagation delay right after
+  // sign-in, and signs the user out on failure — so if the two independent
+  // retry loops ever disagreed (one succeeds, the other's retries exhaust),
+  // the failing copy would sign out a login that had just succeeded. Sharing
+  // one in-flight promise per user id means both callers always get the same
+  // outcome instead of racing each other.
+  const inFlightLoadRef = useRef<{ userId: string; promise: Promise<AppUser | null> } | null>(null);
+
   async function loadUser(userId: string): Promise<AppUser | null> {
-    const appUser = await fetchAppUser(userId);
-    if (!appUser) return null;
-    const rolePerms = appUser.role === 'super_admin'
-      ? { all: true }
-      : await fetchRolePermissions(appUser.role);
-    setUser(appUser);
-    const perms = { ...rolePerms, ...(appUser.permission_overrides || {}) };
-    setPermissions(perms);
-    try { 
-      localStorage.setItem(SESSION_KEY, JSON.stringify(appUser)); 
-      localStorage.setItem(SESSION_KEY + '_perms', JSON.stringify(perms));
-    } catch { /* storage disabled */ }
-    return appUser;
+    const existing = inFlightLoadRef.current;
+    if (existing && existing.userId === userId) return existing.promise;
+
+    const promise = (async () => {
+      const appUser = await fetchAppUser(userId);
+      if (!appUser) return null;
+      const rolePerms = appUser.role === 'super_admin'
+        ? { all: true }
+        : await fetchRolePermissions(appUser.role);
+      setUser(appUser);
+      const perms = { ...rolePerms, ...(appUser.permission_overrides || {}) };
+      setPermissions(perms);
+      try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(appUser));
+        localStorage.setItem(SESSION_KEY + '_perms', JSON.stringify(perms));
+      } catch { /* storage disabled */ }
+      return appUser;
+    })();
+
+    inFlightLoadRef.current = { userId, promise };
+    try {
+      return await promise;
+    } finally {
+      if (inFlightLoadRef.current?.promise === promise) inFlightLoadRef.current = null;
+    }
   }
 
   function clearLocalSession() {
@@ -163,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // Only sign out of Supabase if the user is truly disabled (not a network error)
               await supabase.auth.signOut().catch(() => {});
             }
-          } catch (err) {
+          } catch {
             // Network error -> keep their Supabase token intact so they can just refresh/retry
             if (mounted) clearLocalSession();
           }
@@ -196,12 +218,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await new Promise(r => setTimeout(r, 100));
           const loaded = await loadUser(session.user.id);
           if (!loaded && mounted) {
-            clearLocalSession();
-            await supabase.auth.signOut().catch(() => {});
+            // TOKEN_REFRESHED/USER_UPDATED fire silently in the background while
+            // someone is mid-work with an already-valid session. A transient
+            // failure to re-fetch their profile here is not proof the account
+            // is gone — only SIGNED_IN (a fresh login with no prior state to
+            // trust) should treat a failed fetch as "refuse access." Otherwise
+            // a single flaky background refresh would boot an active user
+            // straight back to the login screen mid-task.
+            if (event === 'SIGNED_IN') {
+              clearLocalSession();
+              await supabase.auth.signOut().catch(() => {});
+            }
           }
-        } catch (err) {
-          // Network error - just clear local session so UI shows login, but don't nuke their auth token.
-          if (mounted) clearLocalSession();
+        } catch {
+          // Network error - only clear session for a fresh sign-in; a background
+          // refresh failure should leave the existing session alone.
+          if (mounted && event === 'SIGNED_IN') clearLocalSession();
         }
       }
     });
@@ -291,7 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let appUser: AppUser | null = null;
       try {
         appUser = await loadUser(data.user.id);
-      } catch (err) {
+      } catch {
         return { error: 'Network error while loading profile. Please try again.' };
       }
 
@@ -312,13 +344,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    const wasEmail = user?.email;
+    // Clear local UI/localStorage state up front. Logout must never depend on
+    // a network round-trip completing — endSession()/supabase.auth.signOut()
+    // below had no timeout, so a hung request left the browser stuck in a
+    // half-signed-out state (stale `nkt_user_session` still in localStorage)
+    // that persisted across hard refreshes, since the app trusts that cache
+    // as a fast-path hint on load.
+    clearLocalSession();
     try {
-      if (user) logLogout(user.email);
+      if (wasEmail) logLogout(wasEmail);
       // Mark our device row as revoked before dropping the auth session.
-      await endSession();
-      await supabase.auth.signOut().catch(() => {});
+      await withTimeout(endSession(), AUTH_TIMEOUT_MS, 'end session').catch(() => {});
+      await withTimeout(supabase.auth.signOut(), AUTH_TIMEOUT_MS, 'sign-out').catch(() => {});
     } finally {
-      clearLocalSession();
       const path = window.location.pathname;
       const hash = window.location.hash;
       if (path === '/admin' || path === '/portal' || hash === '#admin' || hash === '#portal' || path === '/login') {
