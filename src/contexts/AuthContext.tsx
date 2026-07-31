@@ -246,38 +246,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, AUTH_TIMEOUT_MS);
 
     (async () => {
+      let session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] = null;
+      let getSessionFailed = false;
       try {
-        const { data: { session } } = await withTimeout(
+        ({ data: { session } } = await withTimeout(
           supabase.auth.getSession(),
           AUTH_TIMEOUT_MS,
           'session'
-        );
-        if (!mounted) return;
-        if (session?.user) {
+        ));
+      } catch {
+        // getSession itself failed — a timeout or network blip. On a refresh
+        // (especially on a slow phone connection) this can happen even though
+        // the stored session is perfectly valid, because getSession may kick
+        // off a token-refresh network round-trip. We CANNOT confirm the
+        // session, but we also can't disprove it — so if there's a cached
+        // user, KEEP them logged in rather than booting them to the login
+        // screen. A later onAuthStateChange event, or the next load,
+        // reconciles. This is the other half of the "logs out on refresh" fix.
+        getSessionFailed = true;
+      }
+
+      if (!mounted) { clearTimeout(safetyTimer); return; }
+
+      try {
+        if (getSessionFailed) {
+          // Do nothing — leave the cached user (set from localStorage on mount)
+          // and the stored tokens untouched.
+        } else if (session?.user) {
           try {
             const loaded = await loadUser(session.user.id);
             // loadUser returns null ONLY for a definitively disabled account —
-            // that's the one case worth signing out on during a refresh.
+            // the one case worth signing out on during a refresh.
             if (loaded === null && mounted) {
               clearLocalSession();
               await supabase.auth.signOut().catch(() => {});
             }
           } catch {
-            // Transient / ambiguous (network blip, timeout, or the profile row
-            // wasn't visible yet). This is the common case on a refresh, and it
-            // is NOT proof the account is gone. Keep the cached user (already
-            // set from localStorage on mount) and the valid Supabase session —
-            // do NOT clear anything. This is the fix for "logs out on every
-            // refresh": a momentary empty profile read no longer boots the user
-            // to the login screen.
+            // Transient / ambiguous profile read — keep the cached user + valid
+            // session. A momentary empty read no longer boots anyone to login.
           }
         } else {
-          // No live Supabase session at all — don't trust localStorage.
+          // getSession DEFINITIVELY returned no session — the tokens are gone.
+          // This is a real, legitimate logged-out state.
           clearLocalSession();
         }
-      } catch {
-        // Broken config / offline — never grant access.
-        if (mounted) clearLocalSession();
       } finally {
         if (mounted) {
           clearTimeout(safetyTimer);
