@@ -25,14 +25,18 @@ export default function SEOHead({
     updateMetaTag('description', description);
     updateMetaTag('keywords', seoConfig.keywords.join(', '));
     updateMetaTag('robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
-    updateMetaTag('og:title', title, 'property');
-    updateMetaTag('og:description', description, 'property');
+    // og:/twitter: intentionally use ogTitle/ogDescription, not title/description —
+    // those two are tuned for search-engine keywords, these are tuned to match
+    // what a visitor actually sees in the hero, since that's what a WhatsApp/
+    // Facebook/Twitter share-preview card should reflect.
+    updateMetaTag('og:title', seoConfig.ogTitle, 'property');
+    updateMetaTag('og:description', seoConfig.ogDescription, 'property');
     updateMetaTag('og:type', 'website', 'property');
     updateMetaTag('og:url', seoConfig.siteUrl, 'property');
     updateMetaTag('og:site_name', seoConfig.siteName, 'property');
     updateMetaTag('twitter:card', 'summary_large_image');
-    updateMetaTag('twitter:title', title);
-    updateMetaTag('twitter:description', description);
+    updateMetaTag('twitter:title', seoConfig.ogTitle);
+    updateMetaTag('twitter:description', seoConfig.ogDescription);
     updateMetaTag('geo.region', seoConfig.geo.region);
     updateMetaTag('geo.placename', seoConfig.geo.placename);
     updateMetaTag('geo.position', `${seoConfig.geo.latitude};${seoConfig.geo.longitude}`);

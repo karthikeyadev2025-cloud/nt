@@ -148,13 +148,25 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
     const { error: updErr } = await supabase.from('marketing_leads').update(patch).eq('id', active.id);
     if (updErr) { toast.error(`Couldn't save: ${updErr.message}`); setBusy(false); return; }
 
-    await supabase.from('lead_remarks').insert({
+    // This remark is the actual substance of the call — what was said, why
+    // this outcome was picked. It was previously fire-and-forget: if it
+    // failed, the lead's stage/assignment had already changed above, the
+    // modal closed, and a success toast showed anyway, silently losing the
+    // one thing the telecaller actually typed with no way to notice.
+    const { error: remarkErr } = await supabase.from('lead_remarks').insert({
       lead_id: active.id, user_id: user.id, call_type: 'outgoing',
       remark: `[${OUTCOMES.find(o => o.value === outcome)?.label}] ${remark}`
         + (isAppointment ? ` — appointment ${new Date(appointmentDate).toLocaleString('en-IN')}` : ''),
     });
 
     setBusy(false);
+    if (remarkErr) {
+      toast.error(`Outcome saved, but your call note failed to save: ${remarkErr.message}. Please add it again.`);
+      // Keep the modal open with the typed remark intact so nothing is lost —
+      // only the outcome/stage already committed above.
+      load();
+      return;
+    }
     toast.success(
       isAppointment ? 'Appointment booked — your manager has been notified to assign an executive'
       : isCallback ? 'Callback scheduled — stays in your queue'

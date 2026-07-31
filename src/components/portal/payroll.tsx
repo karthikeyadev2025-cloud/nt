@@ -47,8 +47,13 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
 
   async function assign() {
     if (!assigningFor || !assignStaffId) return;
-    await supabase.from('staff_shifts').update({ effective_to: istDateStr() })
+    // If closing out the old assignment silently failed, inserting the new
+    // one below would leave two rows with effective_to = null for the same
+    // staff member — ambiguous "current shift," which breaks late-tracking
+    // and payroll auto-fill (both rely on there being exactly one active row).
+    const { error: closeErr } = await supabase.from('staff_shifts').update({ effective_to: istDateStr() })
       .eq('staff_user_id', assignStaffId).is('effective_to', null);
+    if (closeErr) { toast.error(`Couldn't close previous shift assignment: ${closeErr.message}`); return; }
     const { error } = await supabase.from('staff_shifts').insert({ staff_user_id: assignStaffId, shift_id: assigningFor.id });
     if (error) { toast.error(error.message); return; }
     toast.success('Shift assigned');

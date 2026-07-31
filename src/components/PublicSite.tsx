@@ -7,7 +7,6 @@ import {
 import { supabase } from '../lib/supabase';
 import { useSegments, useSiteContent } from '../lib/useSegments';
 import type { Segment, Product } from '../lib/database.types';
-import LoadingScreen from './LoadingScreen';
 import WhatsAppButton from './WhatsAppButton';
 import SEOHead from './SEOHead';
 import Reveal from './Reveal';
@@ -337,7 +336,11 @@ function HeroicFlyingKites() {
 }
 
 // ─────────────────────────────────────────────── Hero
-function Hero({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
+function TextSkeleton({ className }: { className: string }) {
+  return <span className={`inline-block rounded-lg bg-stone-200 animate-pulse ${className}`}>&nbsp;</span>;
+}
+
+function Hero({ content, segments, loading }: { content: Record<string, Record<string, string>>; segments: Segment[]; loading: boolean }) {
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-orange-50/60 via-stone-50 to-stone-50">
       <HeroicFlyingKites />
@@ -352,13 +355,18 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           <span>Digital Marketing &amp; Custom Software Engineering</span>
         </motion.div>
 
+        {/* Real Website Content hasn't arrived yet — show a shimmer instead of
+            hardcoded placeholder copy, which would otherwise flash on screen
+            and then get replaced once the fetch resolves. A shimmer never
+            looks "wrong," so there's no need to block the rest of the page
+            (nav/footer/sections below) behind this — only this text waits. */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
           className="font-display text-5xl md:text-7xl font-semibold text-stone-900 mb-6 tracking-tight leading-tight"
         >
-          {content?.hero?.title || 'Nikki Technologies'}
+          {loading ? <TextSkeleton className="h-[1em] w-[9ch] max-w-full" /> : (content?.hero?.title || 'Nikki Technologies')}
         </motion.h1>
 
         <motion.p
@@ -367,7 +375,9 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-xl md:text-2xl bg-gradient-to-r from-orange-800 via-indigo-700 to-orange-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
-          {content?.hero?.subtitle || 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps'}
+          {loading
+            ? <TextSkeleton className="h-[1em] w-[22ch] max-w-full bg-stone-200/80" />
+            : (content?.hero?.subtitle || 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps')}
         </motion.p>
 
         <motion.p
@@ -376,7 +386,9 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.25 }}
           className="text-stone-700 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
-          {content?.hero?.description || 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.'}
+          {loading
+            ? <span className="flex flex-col gap-2 items-center"><TextSkeleton className="h-[1em] w-full" /><TextSkeleton className="h-[1em] w-[70%]" /></span>
+            : (content?.hero?.description || 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.')}
         </motion.p>
 
         <motion.div
@@ -1111,7 +1123,7 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
           <a href="/login" className="block text-stone-400 hover:text-orange-400 py-0.5">Staff Login</a>
         </div>
       </div>
-      <p className="text-center text-stone-700 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies. All rights reserved.</p>
+      <p className="text-center text-stone-700 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies, a unit of K² Adexos Global Technologies. All rights reserved.</p>
     </footer>
   );
 }
@@ -1120,33 +1132,17 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
 export default function PublicSite() {
   const { content, loading: contentLoading } = useSiteContent();
   const { segments, loading: segmentsLoading } = useSegments();
-  const [showLoading, setShowLoading] = useState(() => {
-    try { return sessionStorage.getItem('nkt_intro_shown') !== 'true'; } catch { return false; }
-  });
 
-  const handleComplete = () => {
-    try { sessionStorage.setItem('nkt_intro_shown', 'true'); } catch {}
-    setShowLoading(false);
-  };
-
-  if (showLoading) return <LoadingScreen onLoadingComplete={handleComplete} />;
-
-  // Real Website Content / segment names haven't arrived from Supabase yet —
-  // render a brief neutral loader instead of hardcoded placeholder copy that
-  // would otherwise flash on screen and then get replaced a moment later.
-  if (contentLoading || segmentsLoading) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <KiteTailLogo className="w-12 h-12 animate-pulse" />
-      </div>
-    );
-  }
-
+  // The page renders immediately, full structure, every time — no intro
+  // animation gate and no full-screen "please wait" blocking the whole site
+  // behind a spinner. Only the hero text (the one thing that can visibly
+  // differ from its fallback) shows a shimmer while real content loads;
+  // everything else — nav, images, sections below — is on screen right away.
   return (
     <div className="bg-stone-50 min-h-screen text-stone-900">
       <SEOHead />
       <Navigation content={content} />
-      <Hero content={content} segments={segments} />
+      <Hero content={content} segments={segments} loading={contentLoading || segmentsLoading} />
       <ClientLogos />
       <AnimatedStats content={content} />
       <SegmentSections segments={segments} />

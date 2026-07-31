@@ -298,24 +298,38 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
     });
     if (error || data?.error) { setMsg(data?.error || error?.message || 'Failed to create account'); setBusy(false); return; }
     const userId = data.user_id;
+    const failures: string[] = [];
 
-    const { error: updateError } = await supabase.from('app_users').update({
-      designation: form.designation,
-      employment_type: form.employment_type,
-      joining_date: form.joining_date,
-      date_of_birth: form.date_of_birth || null,
-      reporting_time: form.reporting_time,
-      blood_group: form.blood_group,
-      id_proof_number: form.id_proof_number,
-      reports_to: form.reports_to || null,
-      salary_structure: form.salary_structure,
-    }).eq('id', userId);
-    if (updateError) toast.error(`Account created, but salary/details save failed: ${updateError.message}`);
+    // The account row was just created by the edge function (service-role,
+    // bypasses RLS) a moment ago — the admin's own RLS-scoped client can hit
+    // a brief propagation delay seeing it as freshly matchable, the same
+    // class of timing issue documented in AuthContext's fetchAppUser retry.
+    // A couple of quick retries here means a transient blip doesn't silently
+    // drop the salary structure, which is the single most consequential
+    // field in this whole wizard.
+    let updateError: { message: string } | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { error: err } = await supabase.from('app_users').update({
+        designation: form.designation,
+        employment_type: form.employment_type,
+        joining_date: form.joining_date,
+        date_of_birth: form.date_of_birth || null,
+        reporting_time: form.reporting_time,
+        blood_group: form.blood_group,
+        id_proof_number: form.id_proof_number,
+        reports_to: form.reports_to || null,
+        salary_structure: form.salary_structure,
+      }).eq('id', userId);
+      updateError = err;
+      if (!err) break;
+      if (attempt < 2) await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+    }
+    if (updateError) failures.push(`Salary & employment details: ${updateError.message}`);
 
     // Assign the selected work shift so late tracking works from day one.
     if (form.shift_id) {
       const { error: shiftError } = await supabase.from('staff_shifts').insert({ staff_user_id: userId, shift_id: form.shift_id });
-      if (shiftError) toast.error(`Account created, but shift assignment failed: ${shiftError.message}`);
+      if (shiftError) failures.push(`Shift assignment: ${shiftError.message}`);
     }
 
     const vars = buildOnboardingVars({
@@ -333,10 +347,20 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
           content: renderTemplate(t.body, vars), issued_by: user?.id, requires_signature: t.requires_signature,
         }))
       );
-      if (docError) toast.error(`Account created, but documents failed to issue: ${docError.message}`);
+      if (docError) failures.push(`Document issuance: ${docError.message}`);
     }
 
-    toast.success(`${form.full_name} onboarded successfully`);
+    // The account itself always exists at this point — but don't tell the
+    // admin it succeeded cleanly if anything after account creation failed.
+    // The old code showed an unconditional "onboarded successfully" toast
+    // even when the salary/shift/document steps above had just failed,
+    // which is how staff records silently ended up missing data the admin
+    // believed they'd entered.
+    if (failures.length > 0) {
+      toast.error(`${form.full_name}'s account was created, but this failed — please fix in Access Control: ${failures.join(' • ')}`);
+    } else {
+      toast.success(`${form.full_name} onboarded successfully`);
+    }
     setBusy(false);
     onDone();
   }
@@ -602,16 +626,27 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
 
     const newDesig = editing.designation || '';
     const newCtc = editing.salary_structure?.ctc || 0;
+    let historyError: string | null = null;
     if (snapshot && (newDesig !== snapshot.designation || newCtc !== snapshot.ctc)) {
-      await supabase.from('promotions').insert({
+      const { error: histErr } = await supabase.from('promotions').insert({
         staff_user_id: editing.id,
         previous_designation: snapshot.designation, new_designation: newDesig,
         previous_ctc: snapshot.ctc, new_ctc: newCtc,
         note: 'Updated via Access Control', created_by: currentUser?.id,
       });
+      historyError = histErr?.message || null;
     }
 
-    toast.success('Access updated');
+    // The actual designation/CTC change above already succeeded — that's
+    // real and doesn't need to be undone. But if the audit-trail entry
+    // failed to save, the employee's Role & Compensation History will have
+    // a silent gap explaining why their pay changed, so that's worth
+    // surfacing distinctly rather than folding into a blanket success toast.
+    if (historyError) {
+      toast.error(`Access updated, but the compensation-history record failed to save: ${historyError}`);
+    } else {
+      toast.success('Access updated');
+    }
     setEditing(null);
     setSnapshot(null);
     load();

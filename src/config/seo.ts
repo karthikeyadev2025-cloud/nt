@@ -3,7 +3,14 @@ export const seoConfig = {
   siteUrl: 'https://nikkitechnologies.com',
   defaultTitle: 'Nikki Technologies | Digital Marketing & Software Development Company in India',
   defaultDescription:
-    'Nikki Technologies (Kite & Tail Digital) is India\'s top digital media marketing and custom software engineering company. Performance PPC ads, social media management, SEO, viral reels, custom web & mobile apps, and SaaS products — serving Hyderabad, Telangana, Andhra Pradesh & all India.',
+    'Nikki Technologies (Kite & Tail Digital), a unit of K² Adexos Global Technologies, is India\'s top digital media marketing and custom software engineering company. Performance PPC ads, social media management, SEO, viral reels, custom web & mobile apps, and SaaS products — serving Hyderabad, Telangana, Andhra Pradesh & all India.',
+  // Separate from defaultTitle/defaultDescription above (those are tuned for
+  // search-engine keyword ranking). These control only the WhatsApp/Facebook/
+  // Twitter share-preview card, so they match what a visitor actually sees on
+  // the live page's hero right now — keep these in sync if the hero copy is
+  // ever changed via Website Content, since the two aren't wired together.
+  ogTitle: 'Nikki Technologies | Digital Media Hub • Software Studio',
+  ogDescription: 'One technology partner for digital growth and software products. Trusted by businesses across India.',
 
   keywords: [
     // ── Brand & Misspellings Catch-All ──
@@ -66,7 +73,7 @@ export const seoConfig = {
   contact: {
     phone: '+91 00000 00000',
     whatsapp: '+91 00000 00000',
-    email: 'info@nikkitechnologies.com',
+    email: 'support@nikkitechnologies.com',
     address: 'Hyderabad, Telangana, India',
   },
 
@@ -94,7 +101,11 @@ export const seoConfig = {
     logo: 'https://nikkitechnologies.com/logo.png',
     image: 'https://nikkitechnologies.com/og-image.jpg',
     description:
-      'Nikki Technologies (Kite & Tail Digital) is a premier digital media marketing and custom software development company in India. Serving Hyderabad, Telangana, Andhra Pradesh and pan-India with ROI-focused Meta & Google PPC ads, social growth, SEO, custom web & mobile apps.',
+      'Nikki Technologies (Kite & Tail Digital), a unit of K² Adexos Global Technologies, is a premier digital media marketing and custom software development company in India. Serving Hyderabad, Telangana, Andhra Pradesh and pan-India with ROI-focused Meta & Google PPC ads, social growth, SEO, custom web & mobile apps.',
+    parentOrganization: {
+      '@type': 'Organization',
+      name: 'K² Adexos Global Technologies',
+    },
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Hyderabad',
