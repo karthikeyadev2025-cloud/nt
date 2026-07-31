@@ -1634,11 +1634,15 @@ export default function SuperAdminDashboard() {
     {
       label: 'My Workspace',
       items: [
-        { id: 'my_attendance', label: 'My Attendance', icon: Clock, show: true },
-        { id: 'my_documents', label: 'My Documents', icon: FileText, show: true },
-        { id: 'my_requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
-        { id: 'my_profile', label: 'My Profile', icon: CreditCard, show: true },
-        { id: 'my_swap', label: 'Shift Swap', icon: Repeat, show: true },
+        // The literal owner account isn't a managed employee (no attendance/
+        // leave/payslip of their own to self-service) — HR/managers routed
+        // into this same dashboard still need all of this, so it's gated on
+        // isSuperAdmin specifically, not on being in the admin console.
+        { id: 'my_attendance', label: 'My Attendance', icon: Clock, show: !isSuperAdmin },
+        { id: 'my_documents', label: 'My Documents', icon: FileText, show: !isSuperAdmin },
+        { id: 'my_requests', label: 'Leaves & Advances', icon: CalendarDays, show: !isSuperAdmin },
+        { id: 'my_profile', label: 'My Profile', icon: CreditCard, show: !isSuperAdmin },
+        { id: 'my_swap', label: 'Shift Swap', icon: Repeat, show: !isSuperAdmin },
         { id: 'my_sessions', label: 'My Sessions', icon: Shield, show: true },
       ],
     },

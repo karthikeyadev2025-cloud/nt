@@ -476,20 +476,15 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
 // carried over from the original Aadya ManagerPortal "Conversations" tab.
 // Without this, a manager has to open each lead individually to see any notes.)
 export function TeamActivityFeed() {
-  const toast = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [leadNames, setLeadNames] = useState<Record<string, { name: string; phone: string }>>({});
   const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState('');
   const [personFilter, setPersonFilter] = useState('');
   const [days, setDays] = useState(7);
-
-  async function viewPhoto(path: string) {
-    const { data, error } = await supabase.storage.from('lead-photos').createSignedUrl(path, 300);
-    if (error || !data) { toast.error("Couldn't load photo"); return; }
-    window.open(data.signedUrl, '_blank');
-  }
 
   async function load() {
     setLoading(true);
@@ -505,6 +500,7 @@ export function TeamActivityFeed() {
     if (data) setItems(data);
     const leadIds = [...new Set((data || []).map((r: any) => r.lead_id))];
     const userIds = [...new Set((data || []).map((r: any) => r.user_id).filter(Boolean))];
+    const photoPaths = [...new Set((data || []).map((r: any) => r.photo_url).filter(Boolean))] as string[];
     if (leadIds.length) {
       const { data: leads } = await supabase.from('marketing_leads').select('id, customer_name, phone').in('id', leadIds);
       if (leads) setLeadNames(Object.fromEntries(leads.map((l: any) => [l.id, { name: l.customer_name, phone: l.phone }])));
@@ -512,6 +508,16 @@ export function TeamActivityFeed() {
     if (userIds.length) {
       const { data: users } = await supabase.from('app_users').select('id, full_name').in('id', userIds);
       if (users) setUserNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
+    }
+    if (photoPaths.length) {
+      // lead-photos is a private bucket — resolve real signed URLs in bulk
+      // so proof photos render as thumbnails instead of a click-through link.
+      const { data: signed } = await supabase.storage.from('lead-photos').createSignedUrls(photoPaths, 3600);
+      if (signed) {
+        const map: Record<string, string> = {};
+        signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
+        setPhotoUrls(map);
+      }
     }
     setLoading(false);
   }
@@ -572,13 +578,28 @@ export function TeamActivityFeed() {
                       href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}>📍 View on map</a>
                   )}
                   {r.photo_url && (
-                    <button className="text-teal-700" onClick={() => viewPhoto(r.photo_url)}>📷 Proof photo</button>
+                    photoUrls[r.photo_url] ? (
+                      <button onClick={() => setPreviewImage(photoUrls[r.photo_url])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                        <img src={photoUrls[r.photo_url]} alt="Visit proof" className="w-full h-full object-cover" />
+                      </button>
+                    ) : (
+                      <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
+                    )
                   )}
                 </div>
               )}
             </div>
           ))}
           {items.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No activity yet.</p>}
+        </div>
+      )}
+
+      {previewImage && (
+        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+          <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+            <XCircle className="w-6 h-6" />
+          </button>
+          <img src={previewImage} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
         </div>
       )}
     </div>
@@ -862,6 +883,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [leads, setLeads] = useState<any[]>([]);
   const [active, setActive] = useState<any | null>(null);
   const [remarks, setRemarks] = useState<any[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
@@ -965,7 +988,19 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     setNextFollowup(lead.next_followup_at ? new Date(lead.next_followup_at).toISOString().slice(0,16) : '');
     setApptAt(lead.appointment_at ? new Date(lead.appointment_at).toISOString().slice(0,16) : '');
     const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', lead.id).order('created_at', { ascending: false });
-    if (data) setRemarks(data);
+    if (!data) return;
+    setRemarks(data);
+    // lead-photos is a private bucket — resolve real signed URLs in bulk so
+    // proof photos render as thumbnails instead of a click-through link.
+    const paths = Array.from(new Set(data.map((r: any) => r.photo_url).filter(Boolean))) as string[];
+    if (paths.length > 0) {
+      const { data: signed } = await supabase.storage.from('lead-photos').createSignedUrls(paths, 3600);
+      if (signed) {
+        const map: Record<string, string> = {};
+        signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
+        setPhotoUrls(map);
+      }
+    }
   }
 
   async function captureLocation() {
@@ -1049,11 +1084,6 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     load();
   }
 
-  async function viewPhoto(path: string) {
-    const { data, error } = await supabase.storage.from('lead-photos').createSignedUrl(path, 300);
-    if (error || !data) { toast.error("Couldn't load photo"); return; }
-    window.open(data.signedUrl, '_blank');
-  }
 
   return (
     <div>
@@ -1183,15 +1213,32 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                   <div key={r.id} className="text-xs">
                     <p className="text-stone-700">{new Date(r.created_at).toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''} • {r.call_type}</p>
                     <p className="text-stone-700">{r.remark}</p>
-                    <div className="flex gap-3 mt-0.5">
+                    <div className="flex items-center gap-3 mt-1">
                       {r.address && <span className="text-stone-700">📍 {r.address}</span>}
-                      {r.photo_url && <button className="text-teal-700" onClick={() => viewPhoto(r.photo_url)}>View Photo</button>}
+                      {r.photo_url && (
+                        photoUrls[r.photo_url] ? (
+                          <button onClick={() => setPreviewImage(photoUrls[r.photo_url])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                            <img src={photoUrls[r.photo_url]} alt="Visit proof" className="w-full h-full object-cover" />
+                          </button>
+                        ) : (
+                          <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
+                        )
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {previewImage && (
+        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+          <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+            <XCircle className="w-6 h-6" />
+          </button>
+          <img src={previewImage} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
         </div>
       )}
 

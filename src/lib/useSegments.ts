@@ -39,10 +39,15 @@ export function useSegments(includeRetired = false) {
   useEffect(() => {
     let mounted = true;
 
-    // Instant safety timeout: Never hang loading for more than 300ms
+    // Safety timeout only for a genuinely dead/broken connection. This used
+    // to be 300ms, which is far shorter than a real Supabase round-trip can
+    // take on a slow connection — the timer fired before the fetch resolved,
+    // so the page rendered with the empty/fallback state early, then visibly
+    // swapped to the real content whenever the slow fetch eventually landed
+    // (seconds later). 8s gives real fetches a fair chance to win the race.
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 300);
+    }, 8000);
 
     let q = supabase.from('segments').select('*');
     if (!includeRetired) q = q.eq('active', true);
@@ -86,9 +91,12 @@ export function useSiteContent() {
   useEffect(() => {
     let mounted = true;
 
+    // Same reasoning as useSegments above — 300ms was shorter than a real
+    // fetch can take, causing a visible flash-to-fallback-then-swap-to-real
+    // content several seconds later on a slow connection.
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 300);
+    }, 8000);
 
     Promise.resolve(supabase.from('site_content').select('*')).then(
       ({ data, error }) => {

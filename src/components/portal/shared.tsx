@@ -209,6 +209,8 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[] }[]>([]);
   const [openLead, setOpenLead] = useState<Lead | null>(null);
   const [remarks, setRemarks] = useState<{ id: string; remark: string; call_type: string; created_at: string; address?: string; photo_url?: string; author_name?: string; author_staff_code?: string }[]>([]);
+  const [leadPhotoUrls, setLeadPhotoUrls] = useState<Record<string, string>>({});
+  const [previewLeadPhoto, setPreviewLeadPhoto] = useState<string | null>(null);
   const [newRemark, setNewRemark] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
@@ -248,7 +250,20 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
 
   async function loadRemarks(id: string) {
     const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', id).order('occurred_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
-    if (data) setRemarks(data as any);
+    if (!data) return;
+    setRemarks(data as any);
+    // lead-photos is a private bucket — resolve real signed URLs in bulk so
+    // field-visit proof photos render as thumbnails in the history instead
+    // of needing a click to open an external link.
+    const paths = Array.from(new Set(data.map((r: any) => r.photo_url).filter(Boolean))) as string[];
+    if (paths.length > 0) {
+      const { data: signed } = await supabase.storage.from('lead-photos').createSignedUrls(paths, 3600);
+      if (signed) {
+        const map: Record<string, string> = {};
+        signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
+        setLeadPhotoUrls(map);
+      }
+    }
   }
 
   async function addRemark(asReview = false) {
@@ -265,12 +280,6 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         : 'Remark added'
     );
     loadRemarks(openLead.id);
-  }
-
-  async function viewLeadPhoto(path: string) {
-    const { data, error } = await supabase.storage.from('lead-photos').createSignedUrl(path, 300);
-    if (error || !data) { toast.error("Couldn't load photo"); return; }
-    window.open(data.signedUrl, '_blank');
   }
 
   const [dupWarning, setDupWarning] = useState<any[] | null>(null);
@@ -426,9 +435,17 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                     </span>
                     <p className={isSystem ? 'text-stone-700 text-xs italic' : 'text-stone-700'}>{r.remark}</p>
                     {(r.address || r.photo_url) && (
-                      <div className="flex gap-3 mt-0.5 text-xs">
+                      <div className="flex items-center gap-3 mt-1 text-xs">
                         {r.address && <span className="text-stone-700">📍 {r.address}</span>}
-                        {r.photo_url && <button className="text-teal-700" onClick={() => viewLeadPhoto(r.photo_url as string)}>View Photo</button>}
+                        {r.photo_url && (
+                          leadPhotoUrls[r.photo_url] ? (
+                            <button onClick={() => setPreviewLeadPhoto(leadPhotoUrls[r.photo_url as string])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                              <img src={leadPhotoUrls[r.photo_url]} alt="Visit proof" className="w-full h-full object-cover" />
+                            </button>
+                          ) : (
+                            <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
+                          )
+                        )}
                       </div>
                     )}
                   </div>
@@ -436,6 +453,15 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {previewLeadPhoto && (
+        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewLeadPhoto(null)}>
+          <button onClick={() => setPreviewLeadPhoto(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+            <X className="w-6 h-6" />
+          </button>
+          <img src={previewLeadPhoto} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
         </div>
       )}
     </div>
