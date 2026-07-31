@@ -43,7 +43,7 @@ const PERMISSION_KEYS = [
 function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
   const { user, hasPermission } = useAuth();
   const [c, setC] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const isSA = user?.role === 'super_admin';
   const canLeaves = isSA || hasPermission('approve_leaves');

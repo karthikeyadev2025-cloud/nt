@@ -25,7 +25,14 @@ import SessionDevices from '../SessionDevices';
 export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user, hasPermission } = useAuth();
   const [stats, setStats] = useState<any>({});
-  const [loading, setLoading] = useState(false);
+  // Starts true and only flips false once the effect below actually finishes —
+  // it used to start false (a bug: never set true anywhere), so this component
+  // rendered its full JSX immediately on mount, before stats had loaded. With
+  // stats still {} at that point, stats.appointments was undefined, and
+  // stats.appointments.length below threw "Cannot read properties of
+  // undefined" for every telecaller/marketing executive, since Home is their
+  // default landing tab — a crash on effectively every login for those roles.
+  const [loading, setLoading] = useState(true);
 
   const role = user?.role;
   const isCaller = role === 'telecaller';
@@ -148,8 +155,8 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
           <Tile label={isExec ? 'Visits logged today' : 'Calls logged today'} value={stats.callsToday} />
           <Tile label="Callbacks due" value={stats.callbacksDue}
             tone={stats.callbacksDue > 0 ? 'text-amber-700' : 'text-white'} onClick={() => onNavigate('leads')} />
-          <Tile label="Upcoming appointments" value={stats.appointments.length}
-            tone={stats.appointments.length > 0 ? 'text-teal-700' : 'text-white'} onClick={() => onNavigate('leads')} />
+          <Tile label="Upcoming appointments" value={(stats.appointments || []).length}
+            tone={(stats.appointments || []).length > 0 ? 'text-teal-700' : 'text-white'} onClick={() => onNavigate('leads')} />
         </div>
       )}
 
@@ -162,11 +169,11 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       )}
 
       {/* Next appointments — the thing a field executive most needs to see. */}
-      {(isCaller || isExec) && stats.appointments.length > 0 && (
+      {(isCaller || isExec) && (stats.appointments || []).length > 0 && (
         <div className={cardCls}>
           <h3 className="text-stone-900 text-sm font-semibold mb-3">Next appointments</h3>
           <div className="space-y-2">
-            {stats.appointments.map((a: any) => (
+            {(stats.appointments || []).map((a: any) => (
               <div key={a.id} className="flex items-start justify-between gap-3 border-b border-stone-900 last:border-0 pb-2 last:pb-0">
                 <div className="min-w-0">
                   <p className="text-stone-900 text-sm">{a.customer_name}</p>
