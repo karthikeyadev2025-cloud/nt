@@ -27,10 +27,8 @@ function PageLoader() {
 function AppContent() {
   const { user, loading, hasPermission } = useAuth();
   const [isLoginRoute, setIsLoginRoute] = useState(false);
-  const [forceReady, setForceReady] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setForceReady(true), 400);
     const checkRoute = () => {
       const path = window.location.pathname;
       const hash = window.location.hash;
@@ -44,13 +42,21 @@ function AppContent() {
     window.addEventListener('popstate', checkRoute);
     window.addEventListener('hashchange', checkRoute);
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('popstate', checkRoute);
       window.removeEventListener('hashchange', checkRoute);
     };
   }, []);
 
-  if (loading && !forceReady) return <PageLoader />;
+  // AuthContext's own `loading` already has a real, correct safety net (a
+  // fast localStorage-hydration path for returning sessions, and a 15s hard
+  // cap for a genuinely broken connection). This used to be overridden by a
+  // second, much more aggressive 400ms timer here that forced the app past
+  // `loading` before the real session check could realistically finish on
+  // any live network — which meant `user` was still null at that moment,
+  // so a signed-in person got shown the login screen for a moment before
+  // flipping back to their portal. Trusting AuthContext's own loading state
+  // directly removes that race entirely.
+  if (loading) return <PageLoader />;
 
   if (isLoginRoute) {
     if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
