@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X } from 'lucide-react';
+import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -610,6 +610,7 @@ export default function StaffPortal() {
 
   const [tab, setTab] = useState(tabs[0]?.id || 'home');
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const mySegNames = user?.segments.includes('all')
     ? 'All Segments'
@@ -682,32 +683,68 @@ export default function StaffPortal() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
         <header className="border-b border-stone-200 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="md:hidden">
-              <KiteTailLogo className="w-8 h-8 shrink-0" />
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setMobileNavOpen(true)} className="md:hidden p-1 -ml-1 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <div className="md:hidden shrink-0">
+              <KiteTailLogo className="w-8 h-8" />
             </div>
-            <div>
-              <h1 className="text-stone-900 font-bold text-base md:text-lg tracking-tight">
+            <div className="min-w-0">
+              <h1 className="text-stone-900 font-bold text-base md:text-lg tracking-tight truncate">
                 {tabs.find(t => t.id === tab)?.label || 'Portal'}
               </h1>
-              <p className="text-stone-700 text-xs hidden sm:block">{mySegNames}</p>
+              <p className="text-stone-700 text-xs hidden sm:block truncate">{mySegNames}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
             <button onClick={signOut} className="md:hidden text-stone-700 hover:text-red-700"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
-        {/* Mobile Horizontal Tabs */}
-        <div className="md:hidden px-4 py-2.5 flex gap-2 overflow-x-auto border-b border-stone-200 bg-white">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${tab === t.id ? 'border-orange-600 text-white bg-orange-700 shadow-sm' : 'border-stone-200 text-stone-700 bg-stone-50'}`}>
-              <t.icon className="w-3.5 h-3.5" /> {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Mobile nav drawer — a horizontal-scroll strip doesn't scale once a
+            role has more than a handful of tabs (manager/HR can see 9+), so
+            every role gets the same grouped, fully-visible drawer on mobile
+            that the admin console already uses, instead of tabs sliding off
+            the edge of a narrow screen. */}
+        {mobileNavOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            <div className="absolute inset-0 bg-stone-900/50" onClick={() => setMobileNavOpen(false)} />
+            <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
+              <div className="flex items-center justify-between mb-6 px-1">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <KiteTailLogo className="w-8 h-8 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-stone-900 font-bold text-sm tracking-tight truncate">Nikki Suite</p>
+                    <p className="text-stone-700 text-[11px] font-mono truncate">Enterprise Portal</p>
+                  </div>
+                </div>
+                <button onClick={() => setMobileNavOpen(false)} className="p-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
+              </div>
+              <nav className="flex-1 space-y-1">
+                {tabs.map(t => {
+                  const active = tab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => { setTab(t.id); setMobileNavOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                        active
+                          ? 'bg-orange-50 border border-orange-200 text-orange-800 shadow-sm font-semibold'
+                          : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100 border border-transparent'
+                      }`}
+                    >
+                      <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-orange-700' : 'text-stone-700'}`} />
+                      <span className="truncate">{t.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+              <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-stone-200 pt-3">
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </div>
+          </div>
+        )}
 
         <main className="p-4 md:p-6 max-w-6xl w-full mx-auto flex-1">
           {tab === 'attendance' && (

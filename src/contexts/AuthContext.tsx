@@ -84,17 +84,38 @@ async function fetchAppUser(userId: string): Promise<AppUser | null> {
   return null; // Not found after retries
 }
 
+// A silent failure here has an outsized, easy-to-miss impact: it doesn't
+// block login, it just quietly leaves the user with permissions = {} —
+// every hasPermission() check then returns false, so their role-specific
+// dashboard tabs (tickets/leads/team/admin console) simply don't show, with
+// no error surfaced anywhere. That looks exactly like "staff can't see
+// their role's dashboard" rather than like a failed request. Retrying
+// (matching the same pattern already used for the profile fetch) means a
+// single transient blip doesn't silently strip someone's permissions until
+// their next full login.
 async function fetchRolePermissions(role: string): Promise<Record<string, boolean>> {
-  try {
-    const { data } = await withTimeout(
-      supabase.from('role_permissions').select('permissions').eq('role_name', role).maybeSingle(),
-      AUTH_TIMEOUT_MS,
-      'permissions'
-    );
-    return (data?.permissions as Record<string, boolean>) ?? {};
-  } catch {
-    return {};
+  let retries = 3;
+  let delay = 250;
+  while (retries > 0) {
+    try {
+      const { data, error } = await withTimeout(
+        supabase.from('role_permissions').select('permissions').eq('role_name', role).maybeSingle(),
+        AUTH_TIMEOUT_MS,
+        'permissions'
+      );
+      if (error) throw error;
+      if (data) return (data.permissions as Record<string, boolean>) ?? {};
+      // No row for this role — not a transient error, retrying won't help.
+      return {};
+    } catch {
+      retries--;
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, delay));
+        delay *= 2;
+      }
+    }
   }
+  return {};
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
