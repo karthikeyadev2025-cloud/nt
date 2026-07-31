@@ -122,11 +122,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // the failing copy would sign out a login that had just succeeded. Sharing
   // one in-flight promise per user id means both callers always get the same
   // outcome instead of racing each other.
+  //
+  // That alone doesn't catch every duplicate, though: the SIGNED_IN listener
+  // waits a fixed 100ms before calling loadUser (to dodge a token-propagation
+  // race), and on any reasonably fast connection signIn()'s own call has
+  // already finished well within that 100ms — so by the time the listener's
+  // call arrives, there's no in-flight promise left to share, and it just
+  // fires a second, fully redundant fetch of the exact same profile. Caching
+  // the resolved result for a couple of seconds after completion (not just
+  // while in-flight) catches that case too, since a profile that's a couple
+  // seconds stale is still correct.
   const inFlightLoadRef = useRef<{ userId: string; promise: Promise<AppUser | null> } | null>(null);
+  const recentLoadRef = useRef<{ userId: string; result: AppUser | null; at: number } | null>(null);
+  const RECENT_LOAD_WINDOW_MS = 2000;
 
   async function loadUser(userId: string): Promise<AppUser | null> {
     const existing = inFlightLoadRef.current;
     if (existing && existing.userId === userId) return existing.promise;
+
+    const recent = recentLoadRef.current;
+    if (recent && recent.userId === userId && Date.now() - recent.at < RECENT_LOAD_WINDOW_MS) {
+      return recent.result;
+    }
 
     const promise = (async () => {
       const appUser = await fetchAppUser(userId);
@@ -146,7 +163,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     inFlightLoadRef.current = { userId, promise };
     try {
-      return await promise;
+      const result = await promise;
+      recentLoadRef.current = { userId, result, at: Date.now() };
+      return result;
     } finally {
       if (inFlightLoadRef.current?.promise === promise) inFlightLoadRef.current = null;
     }
