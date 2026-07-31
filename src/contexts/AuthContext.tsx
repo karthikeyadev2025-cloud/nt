@@ -53,35 +53,68 @@ function withTimeout<T>(p: PromiseLike<T>, ms = AUTH_TIMEOUT_MS, label = 'reques
   });
 }
 
+// Return contract — the whole "logs out on every refresh" bug lived in the old
+// ambiguity here, so it's now explicit:
+//   • returns AppUser  → active, valid profile.
+//   • returns null      → the row was read AND is_active === false, i.e. the
+//                         account is DEFINITIVELY disabled. Only this case
+//                         should ever cause a sign-out.
+//   • throws            → transient / ambiguous: a network error, a timeout, or
+//                         the row simply wasn't visible yet after retries (the
+//                         PostgREST client hadn't caught up with the auth token,
+//                         so RLS returned nothing). On a page refresh this is
+//                         almost always momentary token-propagation lag — NOT
+//                         proof the account is gone. Callers treat a throw as
+//                         "keep the current session" and never sign out on it.
 async function fetchAppUser(userId: string): Promise<AppUser | null> {
   let retries = 4;
   let delay = 250;
-  
+
   while (retries > 0) {
-    const { data, error } = await withTimeout(
-      supabase.from('app_users').select('*').eq('id', userId).maybeSingle(),
-      AUTH_TIMEOUT_MS,
-      'user profile'
-    );
-    
-    if (error) throw error; // Let network errors throw
-    
+    let data: unknown = null;
+    let error: unknown = null;
+    try {
+      ({ data, error } = await withTimeout(
+        supabase.from('app_users').select('*').eq('id', userId).maybeSingle(),
+        AUTH_TIMEOUT_MS,
+        'user profile'
+      ) as { data: unknown; error: unknown });
+    } catch (e) {
+      // Network / timeout — retry, and if we've exhausted retries, throw so the
+      // caller keeps the session rather than signing out.
+      retries--;
+      if (retries === 0) throw e;
+      await new Promise(r => setTimeout(r, delay));
+      delay *= 2;
+      continue;
+    }
+
+    if (error) {
+      retries--;
+      if (retries === 0) throw error;
+      await new Promise(r => setTimeout(r, delay));
+      delay *= 2;
+      continue;
+    }
+
     if (data) {
-      if (data.is_active === false) return null; // Disabled
+      if ((data as AppUser).is_active === false) return null; // definitively disabled → deny
       return data as AppUser;
     }
-    
-    // data is null, which often happens immediately after sign-in because the PostgREST
-    // client hasn't caught up with the Supabase Auth token yet, so RLS blocks the query.
-    // We wait and retry to avoid aggressively signing out a valid user.
+
+    // Query succeeded but returned no row — usually RLS token-propagation lag
+    // right after sign-in / refresh. Wait and retry.
     retries--;
     if (retries > 0) {
       await new Promise(r => setTimeout(r, delay));
-      delay *= 2; // exponential backoff: 250ms, 500ms, 1000ms
+      delay *= 2; // exponential backoff: 250ms, 500ms, 1000ms, 2000ms
     }
   }
-  
-  return null; // Not found after retries
+
+  // Exhausted retries without ever getting a definitive answer (row visible, or
+  // disabled). Ambiguous — treat as transient so the caller keeps the existing
+  // session instead of aggressively signing the user out on a refresh.
+  throw new Error('Profile not visible yet — keeping existing session.');
 }
 
 // A silent failure here has an outsized, easy-to-miss impact: it doesn't
@@ -185,7 +218,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     inFlightLoadRef.current = { userId, promise };
     try {
       const result = await promise;
-      recentLoadRef.current = { userId, result, at: Date.now() };
+      // Only cache a SUCCESSFUL (non-null) load. Caching a null would let a
+      // single transient/disabled read get replayed to every other caller
+      // inside the 2s window, amplifying one blip into a definite sign-out.
+      if (result) recentLoadRef.current = { userId, result, at: Date.now() };
       return result;
     } finally {
       if (inFlightLoadRef.current?.promise === promise) inFlightLoadRef.current = null;
@@ -220,17 +256,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           try {
             const loaded = await loadUser(session.user.id);
-            if (!loaded && mounted) {
+            // loadUser returns null ONLY for a definitively disabled account —
+            // that's the one case worth signing out on during a refresh.
+            if (loaded === null && mounted) {
               clearLocalSession();
-              // Only sign out of Supabase if the user is truly disabled (not a network error)
               await supabase.auth.signOut().catch(() => {});
             }
           } catch {
-            // Network error -> keep their Supabase token intact so they can just refresh/retry
-            if (mounted) clearLocalSession();
+            // Transient / ambiguous (network blip, timeout, or the profile row
+            // wasn't visible yet). This is the common case on a refresh, and it
+            // is NOT proof the account is gone. Keep the cached user (already
+            // set from localStorage on mount) and the valid Supabase session —
+            // do NOT clear anything. This is the fix for "logs out on every
+            // refresh": a momentary empty profile read no longer boots the user
+            // to the login screen.
           }
         } else {
-          // No live session — don't trust localStorage.
+          // No live Supabase session at all — don't trust localStorage.
           clearLocalSession();
         }
       } catch {
@@ -257,23 +299,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // This prevents a known race condition where the first DB query uses a missing/stale token.
           await new Promise(r => setTimeout(r, 100));
           const loaded = await loadUser(session.user.id);
-          if (!loaded && mounted) {
-            // TOKEN_REFRESHED/USER_UPDATED fire silently in the background while
-            // someone is mid-work with an already-valid session. A transient
-            // failure to re-fetch their profile here is not proof the account
-            // is gone — only SIGNED_IN (a fresh login with no prior state to
-            // trust) should treat a failed fetch as "refuse access." Otherwise
-            // a single flaky background refresh would boot an active user
-            // straight back to the login screen mid-task.
-            if (event === 'SIGNED_IN') {
-              clearLocalSession();
-              await supabase.auth.signOut().catch(() => {});
-            }
+          // loaded === null means a DEFINITIVELY disabled account. TOKEN_REFRESHED
+          // / USER_UPDATED fire silently in the background mid-work, so only a
+          // fresh SIGNED_IN should act on it. A transient failure throws instead
+          // (caught below) and never signs anyone out.
+          if (loaded === null && mounted && event === 'SIGNED_IN') {
+            clearLocalSession();
+            await supabase.auth.signOut().catch(() => {});
           }
         } catch {
-          // Network error - only clear session for a fresh sign-in; a background
-          // refresh failure should leave the existing session alone.
-          if (mounted && event === 'SIGNED_IN') clearLocalSession();
+          // Transient / ambiguous re-fetch failure — leave the existing session
+          // entirely alone, for every event including a fresh sign-in (signIn()
+          // itself already surfaces a retriable error to the user in that case).
         }
       }
     });
@@ -291,6 +328,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     let stopped = false;
     let handle: number | undefined;
+    // Require the row to come back revoked on TWO consecutive polls before
+    // actually signing out. This heartbeat is the ONLY thing that force-logs-
+    // out an actively-working user, so a single racy/transient read (right
+    // after a token refresh, a brief RLS blip, or a momentary network error
+    // that heartbeatSession swallows) must never be enough to kick someone
+    // mid-task. A genuinely revoked session still gets signed out — just one
+    // heartbeat interval later, which is fine for the "kill a stolen session"
+    // use case.
+    let consecutiveRevoked = 0;
 
     async function tick() {
       if (stopped) return;
@@ -299,11 +345,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // still shows up in the devices list.
       if (!getCurrentSessionRowId()) {
         await beginSession(user!.id);
+        consecutiveRevoked = 0;
       } else {
         const { revoked } = await heartbeatSession();
-        if (revoked && !stopped) {
-          await signOut();
-          return;
+        if (revoked) {
+          consecutiveRevoked++;
+          if (consecutiveRevoked >= 2 && !stopped) {
+            await signOut();
+            return;
+          }
+        } else {
+          consecutiveRevoked = 0;
         }
       }
       handle = window.setTimeout(tick, SESSION_HEARTBEAT_MS);
