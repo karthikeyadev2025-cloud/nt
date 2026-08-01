@@ -29,6 +29,19 @@ interface AuthContextType {
   user: AppUser | null;
   permissions: Record<string, boolean>;
   loading: boolean;
+  // True only once the REAL supabase.auth.getSession() has resolved at least
+  // once (success or failure — either way, we've heard back from the actual
+  // client). `loading` alone is NOT enough: it goes false immediately when a
+  // cached session exists (see below), specifically so a returning user sees
+  // their UI instantly instead of a loading flash. That's good for the shell
+  // — but every dashboard component fires its own data queries on mount, and
+  // if those fire before the real client has attached its session token,
+  // RLS-protected tables return an empty result (not an error) rather than
+  // throwing — which looks exactly like "logged in but no data visible",
+  // and was happening on essentially every refresh for a returning user.
+  // Consumers that fetch real data should wait for sessionReady, not just
+  // `!loading` — see App.tsx.
+  sessionReady: boolean;
   hasPermission: (perm: string) => boolean;
   canAccessSegment: (slug: string) => boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -167,6 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(() => {
     try { return !localStorage.getItem(SESSION_KEY); } catch { return true; }
   });
+  // Deliberately does NOT share the cache fast-path above — this only flips
+  // true once the real getSession() round-trip has actually completed.
+  const [sessionReady, setSessionReady] = useState(false);
 
   // signIn() and the onAuthStateChange(SIGNED_IN) listener both fire for the
   // same login and independently used to call loadUser(). Each one retries
@@ -294,6 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) {
           clearTimeout(safetyTimer);
           setLoading(false);
+          setSessionReady(true);
         }
       }
     })();
@@ -485,7 +502,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, permissions, loading, hasPermission, canAccessSegment, signIn, signOut, refreshUser }}>
+    <AuthContext.Provider value={{ user, permissions, loading, sessionReady, hasPermission, canAccessSegment, signIn, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

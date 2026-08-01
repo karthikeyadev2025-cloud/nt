@@ -584,3 +584,52 @@ check-in time, and shows a calm "You're already checked in today" instead of
 a database error.
 
 One migration: `20260801000001_fix_audit_log_race_condition.sql`
+
+## Root cause found: "logged out and no data visible, lot of times, all dashboards"
+
+**Confirmed by tracing the exact code path, not guessing.** On every page load
+where a cached session exists (i.e. almost every real return visit), `loading`
+was set to `false` **instantly** from localStorage — before the real Supabase
+client had actually confirmed and attached its session token to outgoing
+requests. `App.tsx` was already correctly waiting for `loading`, so it mounted
+the dashboard immediately. But every dashboard component fires its own data
+query on mount, and if that query goes out before the real token is attached,
+RLS-protected tables return **zero rows — not an error** (this is exactly how
+Postgres RLS behaves for an unauthenticated request: it doesn't throw, it just
+filters everything out). That is precisely "signed in, but nothing loads,"
+identically across every dashboard, because every dashboard hits the same race
+independently. When the timing was unlucky enough, the same gap could also
+tip into an actual sign-out.
+
+**Fixed at the single root cause** instead of patching 15+ individual
+components: added a `sessionReady` flag to `AuthContext` that only flips true
+once the *real* `getSession()` round-trip has completed — deliberately
+separate from the cache fast-path. `App.tsx` now holds the neutral loading
+screen for that one extra beat when a cached user exists but the real session
+hasn't confirmed yet — never the login screen, since the user is already
+known. By the time any dashboard component mounts and fires its own query,
+the real client is guaranteed to have its token attached.
+
+No migration needed — pure frontend fix.
+
+## Full audit: RPCs, edge functions, and every role's workspace
+
+- **13 frontend RPC calls, all 13 have a matching `CREATE FUNCTION` in some
+  migration** — verified by cross-reference, none missing.
+- **1 edge function is called from the frontend (`create-user`), and it exists**
+  on disk alongside `bootstrap-super-admin`. Nothing pending on either side.
+- **manifest.json, canonical tag, and og:url** all correctly point to the home
+  page (`/`), not `/login` — already fixed. One caveat worth knowing: if
+  anyone already tapped "Add to Home Screen" *before* this was fixed, their
+  icon has the old target baked in until they remove and re-add it — new
+  installs and fresh WhatsApp link shares are unaffected.
+- **Every role has a real workspace, never an empty shell** — Staff Portal
+  always shows 7 self-service tabs (attendance, documents, leaves, profile,
+  shift swap, tasks, home) regardless of role; the admin console always shows
+  at minimum Overview + Tasks to anyone who qualifies for it.
+- **One minor inconsistency found**: the `assign_tickets` permission grants
+  admin-console *access* but doesn't by itself unlock the Tickets tab it's
+  presumably meant to grant — someone with only that permission would land in
+  the console but not find the ticket-assignment screen. Low priority (that
+  permission is normally paired with `view_tickets`/`manage_tickets` in
+  practice), flagged rather than silently left.

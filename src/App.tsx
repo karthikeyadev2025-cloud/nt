@@ -25,7 +25,7 @@ function PageLoader() {
 }
 
 function AppContent() {
-  const { user, loading, hasPermission } = useAuth();
+  const { user, loading, sessionReady, hasPermission } = useAuth();
   const [isLoginRoute, setIsLoginRoute] = useState(false);
 
   useEffect(() => {
@@ -57,6 +57,17 @@ function AppContent() {
   // flipping back to their portal. Trusting AuthContext's own loading state
   // directly removes that race entirely.
   if (loading) return <PageLoader />;
+
+  // The cache fast-path above can set `user` from localStorage before the
+  // REAL Supabase client has confirmed and attached its session token — see
+  // the sessionReady comment in AuthContext. If every dashboard component
+  // were left to fire its own data queries at that instant, RLS-protected
+  // tables come back empty (not an error), which is exactly "signed in, but
+  // no data anywhere" on what looks like a random fraction of page loads.
+  // Holding the neutral loader for this one extra beat — never the login
+  // screen, since `user` is already known — closes that race at a single
+  // point instead of touching every component that fetches data.
+  if (user && !sessionReady) return <PageLoader />;
 
   if (isLoginRoute) {
     if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
