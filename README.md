@@ -722,3 +722,50 @@ zero had actually been saved.
 complete and correct on disk (155 lines total). Nothing pending.
 **RPCs:** all 13 frontend calls resolve to real database functions.
 **Migrations:** all 41 apply cleanly on a fresh database with zero errors.
+
+## Two more real auth bugs found by tracing the actual code paths
+
+The user described a specific pattern that turned out to be TWO distinct real
+bugs conspiring together:
+
+### 1. "Logout on refresh / login screen flashes / new tab works but current doesn't"
+Root cause: the `onAuthStateChange` listener's guard was
+`if (event === 'SIGNED_OUT' || !session?.user) clearLocalSession()`. The
+`!session?.user` part matched every event that fired with a null session —
+including Supabase's `INITIAL_SESSION` event, which on a slow connection can
+fire with a null session **before** local storage hydration finishes, even
+though a real session is present. That cleared the local user, and if the
+person happened to be viewing `/portal` or `/admin`, App.tsx immediately
+routed them to the login screen. A moment later `getSession()` finally
+resolved with the real session and they bounced back to the dashboard.
+
+That is exactly the "flash of login screen" and the "sometimes logs out on
+refresh" behaviour described. New tabs worked because the fresh page had
+none of the accumulated in-memory state that made the flash more likely to
+land on a null-session INITIAL_SESSION event.
+
+**Fixed:** the listener now only reacts to an explicit `SIGNED_OUT` event.
+The initial-load path (the async IIFE) remains the single authority for
+deciding whether a stored session actually exists, and it already handles
+every case correctly.
+
+### 2. "Hanging on the loading page forever"
+Root cause: `AuthContext` has a 15-second safety timer that clears the
+`loading` flag if `getSession()` hangs — but it never also cleared the
+`sessionReady` flag. On a slow mobile connection where the network stalled
+past 15s, `loading` became false but `sessionReady` stayed false forever,
+and App.tsx's gate `if (user && !sessionReady) return <PageLoader />`
+never released — leaving the app on the Nikki Technologies loader **forever**
+until the user closed the tab. Exactly matches the screenshot with the
+12.2 KB/s connection.
+
+**Fixed:** the safety timer now also sets `sessionReady = true`. If we've
+given up trying to reach Supabase after 15 seconds, we proceed with
+whatever cached state we have rather than hanging.
+
+### 3. "Selected file said upload completed but nothing happened"
+Not actually an auto-upload — the "X valid rows detected" message reads
+like a success. Clarified: it now says "detected — not imported yet" and
+explicitly points to the segment picker + Import button below.
+
+No migration needed — all three are pure frontend fixes.

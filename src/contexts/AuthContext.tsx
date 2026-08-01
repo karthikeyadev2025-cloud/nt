@@ -256,9 +256,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Absolute safety net: never let the app hang on a broken Supabase config.
+    // Absolute safety net: never let the app hang on a broken Supabase config
+    // or a stalled network. Releases BOTH loading and sessionReady — we've
+    // decided we're done trying, so the app proceeds with whatever cached
+    // state exists. Missing setSessionReady(true) here left the app stuck on
+    // PageLoader indefinitely for any user whose initial getSession() hung
+    // past this timeout (common on slow mobile connections) — a real hard
+    // hang until they closed the tab.
     const safetyTimer = setTimeout(() => {
-      if (mounted) setLoading(false);
+      if (mounted) {
+        setLoading(false);
+        setSessionReady(true);
+      }
     }, AUTH_TIMEOUT_MS);
 
     (async () => {
@@ -317,12 +326,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
-      if (event === 'SIGNED_OUT' || !session?.user) {
+      // ONLY react to an EXPLICIT sign-out event here. The old condition also
+      // triggered on `!session?.user`, which matched the INITIAL_SESSION event
+      // that Supabase fires early during page load — and on a slow connection
+      // (or when hydration from local storage hadn't finished at that instant)
+      // the session was momentarily null even though a real session existed
+      // in storage. That cleared the local user, and if the person happened
+      // to be on /portal or /admin, App.tsx immediately showed the login
+      // screen — the "flash of login page on refresh" and the "randomly
+      // logged out" symptoms.
+      //
+      // The initial-load path (the async IIFE above) is the ONE place that's
+      // authoritative for deciding whether a session actually exists; if it
+      // doesn't, it calls clearLocalSession() there. This listener now only
+      // handles user-initiated sign-out and post-sign-in profile sync.
+      if (event === 'SIGNED_OUT') {
         clearLocalSession();
         return;
       }
       // On SIGNED_IN / TOKEN_REFRESHED / USER_UPDATED — sync the profile.
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+      // (INITIAL_SESSION is intentionally ignored: the IIFE above already
+      // handled it authoritatively before this listener registered.)
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
         try {
           // Add a tiny delay to allow Supabase Auth to update the PostgREST client headers
           // This prevents a known race condition where the first DB query uses a missing/stale token.

@@ -517,7 +517,8 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
 
       {rows.length > 0 && (
         <div className="mb-3">
-          <p className="text-emerald-700 text-xs mb-2">{fileName}: {rows.length} valid rows detected</p>
+          <p className="text-emerald-700 text-xs mb-1 font-semibold">{fileName}: {rows.length} valid rows detected — not imported yet</p>
+          <p className="text-stone-700 text-xs mb-3">Pick a segment (and optionally an assignee) below, then tap <span className="font-semibold">Import</span> to save these leads.</p>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <select className={inputCls} value={segment} onChange={e => { setSegment(e.target.value); setAssignTo(''); }}>
               <option value="">Assign to Segment *</option>
