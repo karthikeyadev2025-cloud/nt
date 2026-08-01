@@ -13,6 +13,16 @@ const StaffPortal = lazy(() => import('./components/portal/StaffPortal'));
 const ForcePasswordChange = lazy(() => import('./components/ForcePasswordChange'));
 
 function PageLoader() {
+  // On slow connections a plain spinning loader with no status update looks
+  // exactly like the app has hung. Show a subtle hint after 3s that we're
+  // still trying, and a stronger hint after 8s — reassures the user that
+  // something IS happening without changing the visual layout jarringly.
+  const [waited, setWaited] = useState(0);
+  useEffect(() => {
+    const t1 = setTimeout(() => setWaited(1), 3000);
+    const t2 = setTimeout(() => setWaited(2), 8000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center select-none">
       <KiteTailLogo className="w-12 h-12 mb-3 drop-shadow-md" />
@@ -20,6 +30,11 @@ function PageLoader() {
       <div className="w-28 h-1 bg-stone-200 rounded-full mt-4 overflow-hidden">
         <div className="w-full h-full bg-orange-700 rounded-full animate-pulse" />
       </div>
+      {waited >= 1 && (
+        <p className="text-stone-600 text-xs mt-4 transition-opacity">
+          {waited >= 2 ? 'Still loading — connection looks slow.' : 'Just a moment…'}
+        </p>
+      )}
     </div>
   );
 }

@@ -769,3 +769,31 @@ like a success. Clarified: it now says "detected — not imported yet" and
 explicitly points to the segment picker + Import button below.
 
 No migration needed — all three are pure frontend fixes.
+
+## Fix: refresh takes too long on slow connections even with cached session
+User showed a screenshot on 8.90 KB/s — the Nikki Technologies loader was
+still visible for many seconds on refresh, even after the earlier
+sessionReady fix. Root cause: the previous fix released the loader when
+getSession() completed OR when the 15-second safety timer fired. On slow
+mobile connections, getSession() often takes 5-10 seconds because it can
+trigger a background token-refresh network call. There's no user-visible
+benefit to waiting on that — the Supabase client already synchronously
+loaded the auth tokens from localStorage during its own initialization,
+so any query that fires from that moment on already has a valid token
+attached.
+
+**Fixed with a two-stage release**:
+- Cached user (returning visitor): loader releases after **2 seconds** at
+  most. If we have a cached session, we trust it and proceed. Background
+  verification keeps running and reconciles quietly via the auth listener
+  if anything's actually wrong. This matches how Gmail/most modern apps
+  behave — they don't gate the UI on a network round-trip when a valid
+  local session exists.
+- Uncached first-time visit: the original 15-second cap still applies as
+  an absolute backstop, since there's genuinely nothing to fall back to.
+
+**Also improved the loader itself** so waiting NEVER feels dead: after
+3 seconds it says "Just a moment…", after 8 seconds it says "Still loading —
+connection looks slow." The user always knows the app is trying, not stuck.
+
+No migration needed — pure frontend fix.

@@ -256,13 +256,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Absolute safety net: never let the app hang on a broken Supabase config
-    // or a stalled network. Releases BOTH loading and sessionReady — we've
-    // decided we're done trying, so the app proceeds with whatever cached
-    // state exists. Missing setSessionReady(true) here left the app stuck on
-    // PageLoader indefinitely for any user whose initial getSession() hung
-    // past this timeout (common on slow mobile connections) — a real hard
-    // hang until they closed the tab.
+    // Two-stage release for the initial load:
+    //
+    // 1. If we have a cached user (returning visitor with a stored session),
+    //    the Supabase client has already synchronously hydrated the auth
+    //    tokens from localStorage during its own initialization — any query
+    //    that fires from this moment on carries a valid token. The
+    //    getSession() call happening below is doing a network verification,
+    //    NOT establishing the session. On a slow mobile connection that
+    //    verification can take many seconds while the app UI just sits on
+    //    the loader for no benefit to the user. So after a short grace
+    //    period (2s), we trust the cache and release the UI. Verification
+    //    keeps running in the background and reconciles via the auth listener.
+    //
+    // 2. If we don't have a cached user (a fresh visitor with no stored
+    //    session), we genuinely have nothing to fall back to and must wait
+    //    for a real answer — the 15s hard cap applies.
+    const hasCache = (() => {
+      try { return !!localStorage.getItem(SESSION_KEY); } catch { return false; }
+    })();
+    const cacheTrustTimer = hasCache
+      ? setTimeout(() => {
+          if (mounted) {
+            setLoading(false);
+            setSessionReady(true);
+          }
+        }, 2000)
+      : undefined;
     const safetyTimer = setTimeout(() => {
       if (mounted) {
         setLoading(false);
@@ -291,7 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getSessionFailed = true;
       }
 
-      if (!mounted) { clearTimeout(safetyTimer); return; }
+      if (!mounted) { clearTimeout(safetyTimer); if (cacheTrustTimer) clearTimeout(cacheTrustTimer); return; }
 
       try {
         if (getSessionFailed) {
@@ -318,6 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } finally {
         if (mounted) {
           clearTimeout(safetyTimer);
+          if (cacheTrustTimer) clearTimeout(cacheTrustTimer);
           setLoading(false);
           setSessionReady(true);
         }
@@ -372,6 +393,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
       clearTimeout(safetyTimer);
+      if (cacheTrustTimer) clearTimeout(cacheTrustTimer);
       subscription.unsubscribe();
     };
   }, []);
