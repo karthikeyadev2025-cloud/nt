@@ -652,3 +652,41 @@ it reverts to the original dropdown anchored to the button. Added a
 tap-outside-to-close backdrop on mobile to match.
 
 No migration needed — pure frontend fix.
+
+## Two more real bugs found from screenshots — both fixed
+
+### Bulk Upload: selecting a file did nothing, no error, no feedback
+Real cause, confirmed in code: the parser required an **exact, case-sensitive**
+header match against a fixed list ("Customer Name", "Phone", etc.). A real file
+("Verified_Real_...Businesses.xlsx") almost certainly used different headers
+("Business Name", "Contact No", etc.) — every single row silently failed the
+match, `rows` stayed empty, and the UI simply never showed anything past the
+file picker. No error, no message — it looked exactly like nothing happened.
+
+**Fixed:**
+- Header matching is now case/whitespace-tolerant ("Business Name",
+  "BUSINESS NAME", and " business  name " all resolve the same way) instead of
+  requiring one exact spelling.
+- Significantly widened the accepted column names (Business Name, Company,
+  Contact No, WhatsApp Number, and more).
+- **The upload screen now always tells you what happened** — if 0 rows
+  matched, it shows exactly which columns it actually found in your file and
+  which column names it was looking for, so you can fix your file yourself
+  instead of guessing. If some rows matched and others didn't, it says how many
+  of each.
+
+### Homepage: text sometimes invisible for several seconds, "then it comes"
+Real cause, confirmed in code: your screenshot showed a connection speed of
+**53.5 KB/s** — genuinely slow. The homepage's hero text was gated behind the
+website-content data fetch with an **8-second wait**, showing only a
+low-contrast grey skeleton in the meantime — which on a slow real-world mobile
+connection looked exactly like "the page is blank/broken" rather than "still
+loading."
+
+**Fixed:** the hero title, subtitle and description now show their fallback
+text **immediately** on every load, and quietly swap to your real CMS content
+once it arrives (if you've customized it) — never a wait, never a blank-looking
+page. A marketing homepage's first impression matters far more than avoiding a
+brief text swap.
+
+No migration needed for either fix — both are pure frontend.

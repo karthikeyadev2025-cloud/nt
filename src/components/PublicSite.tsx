@@ -336,11 +336,7 @@ function HeroicFlyingKites() {
 }
 
 // ─────────────────────────────────────────────── Hero
-function TextSkeleton({ className }: { className: string }) {
-  return <span className={`inline-block rounded-lg bg-stone-200 animate-pulse ${className}`}>&nbsp;</span>;
-}
-
-function Hero({ content, segments, loading }: { content: Record<string, Record<string, string>>; segments: Segment[]; loading: boolean }) {
+function Hero({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-orange-50/60 via-stone-50 to-stone-50">
       <HeroicFlyingKites />
@@ -355,18 +351,21 @@ function Hero({ content, segments, loading }: { content: Record<string, Record<s
           <span>Digital Marketing &amp; Custom Software Engineering</span>
         </motion.div>
 
-        {/* Real Website Content hasn't arrived yet — show a shimmer instead of
-            hardcoded placeholder copy, which would otherwise flash on screen
-            and then get replaced once the fetch resolves. A shimmer never
-            looks "wrong," so there's no need to block the rest of the page
-            (nav/footer/sections below) behind this — only this text waits. */}
+        {/* On a slow connection (real-world Indian mobile data, not a lab
+            condition) the site_content fetch this text depends on can take
+            several seconds — and this used to wait up to 8s showing only a
+            low-contrast grey skeleton before falling back to hardcoded copy,
+            which on-device looked exactly like "the homepage is blank/broken"
+            rather than "still loading". A marketing homepage's first
+            impression matters far more than avoiding a brief text swap once
+            the real CMS content arrives — show the fallback immediately. */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
           className="font-display text-5xl md:text-7xl font-semibold text-stone-900 mb-6 tracking-tight leading-tight"
         >
-          {loading ? <TextSkeleton className="h-[1em] w-[9ch] max-w-full" /> : (content?.hero?.title || 'Nikki Technologies')}
+          {content?.hero?.title || 'Nikki Technologies'}
         </motion.h1>
 
         <motion.p
@@ -375,9 +374,7 @@ function Hero({ content, segments, loading }: { content: Record<string, Record<s
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-xl md:text-2xl bg-gradient-to-r from-orange-800 via-indigo-700 to-orange-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
-          {loading
-            ? <TextSkeleton className="h-[1em] w-[22ch] max-w-full bg-stone-200/80" />
-            : (content?.hero?.subtitle || 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps')}
+          {content?.hero?.subtitle || 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps'}
         </motion.p>
 
         <motion.p
@@ -386,9 +383,7 @@ function Hero({ content, segments, loading }: { content: Record<string, Record<s
           transition={{ duration: 0.7, delay: 0.25 }}
           className="text-stone-700 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
-          {loading
-            ? <span className="flex flex-col gap-2 items-center"><TextSkeleton className="h-[1em] w-full" /><TextSkeleton className="h-[1em] w-[70%]" /></span>
-            : (content?.hero?.description || 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.')}
+          {content?.hero?.description || 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.'}
         </motion.p>
 
         <motion.div
@@ -1130,8 +1125,8 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
 
 // ─────────────────────────────────────────────── Composition
 export default function PublicSite() {
-  const { content, loading: contentLoading } = useSiteContent();
-  const { segments, loading: segmentsLoading } = useSegments();
+  const { content } = useSiteContent();
+  const { segments } = useSegments();
 
   // The page renders immediately, full structure, every time — no intro
   // animation gate and no full-screen "please wait" blocking the whole site
@@ -1142,7 +1137,7 @@ export default function PublicSite() {
     <div className="bg-stone-50 min-h-screen text-stone-900">
       <SEOHead />
       <Navigation content={content} />
-      <Hero content={content} segments={segments} loading={contentLoading || segmentsLoading} />
+      <Hero content={content} segments={segments} />
       <ClientLogos />
       <AnimatedStats content={content} />
       <SegmentSections segments={segments} />

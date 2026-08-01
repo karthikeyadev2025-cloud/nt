@@ -373,6 +373,13 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [rows, setRows] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
+  // Feedback shown immediately after parsing, even when 0 rows matched — a
+  // real production upload silently produced nothing here because the file's
+  // headers ("Business Name", "Contact No", etc.) didn't exactly match the
+  // fixed, case-sensitive list this used to check against. There was no error,
+  // no message, nothing — the UI just stayed on the file picker forever with
+  // no way to tell what went wrong.
+  const [parseInfo, setParseInfo] = useState<{ totalRows: number; matchedRows: number; headers: string[] } | null>(null);
   const [segment, setSegment] = useState('');
   const [allStaff, setAllStaff] = useState<any[]>([]);
   const [assignTo, setAssignTo] = useState('');
@@ -398,29 +405,60 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
+    setRows([]);
+    setParseInfo(null);
     const XLSX = await import('xlsx');
     const reader = new FileReader();
     reader.onload = evt => {
       const wb = XLSX.read(evt.target?.result, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const json: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      if (json.length === 0) {
+        setParseInfo({ totalRows: 0, matchedRows: 0, headers: [] });
+        return;
+      }
+
+      const actualHeaders = Object.keys(json[0]);
+      // Case/whitespace-tolerant lookup: "Business Name", "BUSINESS NAME", and
+      // " business  name " all resolve the same way, instead of requiring an
+      // exact match against one fixed spelling.
+      const normalize = (s: string) => s.toLowerCase().replace(/[\s_-]+/g, ' ').trim();
+
       const mapped = json.map(r => {
-        const getVal = (...keys: string[]) => {
-          for (const k of keys) {
-            if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== '') {
-              return String(r[k]).trim();
-            }
+        const normalizedRow: Record<string, string> = {};
+        for (const k of Object.keys(r)) {
+          if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== '') {
+            normalizedRow[normalize(k)] = String(r[k]).trim();
+          }
+        }
+        const getVal = (...aliases: string[]) => {
+          for (const alias of aliases) {
+            const v = normalizedRow[normalize(alias)];
+            if (v) return v;
           }
           return '';
         };
         return {
-          customer_name: getVal('Customer Name', 'Customer_Name', 'Full Name', 'Name', 'name', 'customer_name'),
-          phone: normalizePhone(getVal('Phone Number', 'Phone_Number', 'Phone', 'phone', 'Mobile Number', 'Mobile', 'mobile', 'Contact', 'Contact Number', 'Contact_Number')),
-          email: getVal('Email Address', 'Email_Address', 'Email', 'email'),
-          interested_in: getVal('Notes', 'notes', 'Interest', 'Interested In', 'interested_in', 'Requirement', 'Remarks', 'Remark'),
+          customer_name: getVal(
+            'Customer Name', 'Full Name', 'Name', 'Business Name', 'Company Name',
+            'Company', 'Contact Name', 'Client Name', 'Owner Name', 'Lead Name'
+          ),
+          phone: normalizePhone(getVal(
+            'Phone Number', 'Phone', 'Mobile Number', 'Mobile', 'Contact',
+            'Contact Number', 'Contact No', 'Mobile No', 'WhatsApp Number',
+            'WhatsApp', 'Tel', 'Telephone', 'Cell'
+          )),
+          email: getVal('Email Address', 'Email', 'Mail', 'Email Id'),
+          interested_in: getVal(
+            'Notes', 'Interest', 'Interested In', 'Requirement', 'Remarks',
+            'Remark', 'Category', 'Business Type', 'Industry'
+          ),
         };
-      }).filter(r => r.customer_name && r.phone);
-      setRows(mapped);
+      });
+      const validRows = mapped.filter(r => r.customer_name && r.phone);
+      setRows(validRows);
+      setParseInfo({ totalRows: json.length, matchedRows: validRows.length, headers: actualHeaders });
     };
     reader.readAsArrayBuffer(file);
   }
@@ -443,7 +481,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     setBusy(false);
     if (error) { toast.error(`Upload failed: ${error.message}`); return; }
     toast.success(`${rows.length} leads imported${assignTo ? ' and assigned' : ''}`);
-    setRows([]); setFileName('');
+    setRows([]); setFileName(''); setParseInfo(null);
     if (fileRef.current) fileRef.current.value = '';
   }
 
@@ -454,6 +492,28 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
 
       <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile}
         className="text-stone-700 text-sm w-full mb-3 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs" />
+
+      {parseInfo && parseInfo.matchedRows === 0 && (
+        <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200">
+          <p className="text-red-800 text-sm font-medium">
+            {parseInfo.totalRows === 0
+              ? "This file has no rows — check it isn't empty or on the wrong sheet."
+              : `Found ${parseInfo.totalRows} row(s), but none had both a name and a phone number we recognized.`}
+          </p>
+          {parseInfo.headers.length > 0 && (
+            <p className="text-red-700 text-xs mt-1.5">
+              Columns found in your file: <span className="font-mono">{parseInfo.headers.join(', ')}</span>.
+              We look for a name column (e.g. "Customer Name", "Business Name", "Company") and a phone column
+              (e.g. "Phone", "Mobile Number", "Contact No") — rename a column to one of these and re-upload.
+            </p>
+          )}
+        </div>
+      )}
+      {parseInfo && parseInfo.matchedRows > 0 && parseInfo.matchedRows < parseInfo.totalRows && (
+        <p className="text-amber-700 text-xs mb-2">
+          {parseInfo.matchedRows} of {parseInfo.totalRows} rows had a usable name + phone — the rest were skipped.
+        </p>
+      )}
 
       {rows.length > 0 && (
         <div className="mb-3">
