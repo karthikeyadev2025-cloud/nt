@@ -472,6 +472,13 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const [segFilter, setSegFilter] = useState('');
   const [tab, setTab] = useState<'staff' | 'attendance' | 'leaves' | 'advances'>('staff');
   const [staff, setStaff] = useState<any[]>([]);
+  // Track whether the first fetch has completed for each tab, so the UI can
+  // distinguish "still loading" from "loaded but empty" — a blank screen with
+  // no state feedback used to leave users unsure whether the app was working.
+  const [staffLoaded, setStaffLoaded] = useState(false);
+  const [attendanceLoaded, setAttendanceLoaded] = useState(false);
+  const [leavesLoaded, setLeavesLoaded] = useState(false);
+  const [advancesLoaded, setAdvancesLoaded] = useState(false);
   const [attendance, setAttendance] = useState<any[]>([]);
   const [leaves, setLeaves] = useState<any[]>([]);
   const [advances, setAdvances] = useState<any[]>([]);
@@ -483,15 +490,20 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const toast = useToast();
 
   useEffect(() => {
-    supabase.from('app_users').select('*').neq('role', 'super_admin').order('full_name').then(({ data }) => { if (data) setStaff(data); });
+    supabase.from('app_users').select('*').neq('role', 'super_admin').order('full_name').then(({ data }) => {
+      if (data) setStaff(data);
+      setStaffLoaded(true);
+    });
   }, []);
 
   useEffect(() => {
     if (tab === 'attendance') {
+      setAttendanceLoaded(false);
       supabase.from('attendance_records').select('*').eq('attendance_date', date)
         .then(async ({ data }) => {
+          if (data) setAttendance(data);
+          setAttendanceLoaded(true);
           if (!data) return;
-          setAttendance(data);
           // selfies is a private bucket — resolve real signed URLs in bulk so
           // photos render inline in the list instead of needing a click.
           const paths = Array.from(new Set(
@@ -508,12 +520,14 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
         });
     }
     if (tab === 'leaves') {
+      setLeavesLoaded(false);
       supabase.from('leave_requests').select('*').order('created_at', { ascending: false }).limit(200)
-        .then(({ data }) => { if (data) setLeaves(data); });
+        .then(({ data }) => { if (data) setLeaves(data); setLeavesLoaded(true); });
     }
     if (tab === 'advances') {
+      setAdvancesLoaded(false);
       supabase.from('salary_advance_requests').select('*').order('created_at', { ascending: false }).limit(200)
-        .then(({ data }) => { if (data) setAdvances(data); });
+        .then(({ data }) => { if (data) setAdvances(data); setAdvancesLoaded(true); });
     }
   }, [tab, date]);
 
@@ -578,7 +592,15 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
 
       {tab === 'staff' && (
         <div className="space-y-2">
-          {staff.filter(inSeg).map(s => (
+          {!staffLoaded ? (
+            <div className="text-center py-10 text-stone-500 text-sm">Loading staff…</div>
+          ) : staff.filter(inSeg).length === 0 ? (
+            <div className="text-center py-10 text-stone-500 text-sm">
+              {staff.length === 0
+                ? 'No staff onboarded yet. Use "+ Onboard Employee" above to add your first team member.'
+                : 'No staff match the current segment filter.'}
+            </div>
+          ) : staff.filter(inSeg).map(s => (
             <div key={s.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
               <div>
                 <p className="text-stone-900 font-medium">{s.full_name} <span className="text-stone-700 text-xs">({s.role})</span></p>
@@ -601,7 +623,15 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
           </div>
 
           <div className="space-y-3">
-            {staff.filter(inSeg).map(s => {
+            {!staffLoaded || !attendanceLoaded ? (
+              <div className="text-center py-10 text-stone-500 text-sm">Loading attendance…</div>
+            ) : staff.filter(inSeg).length === 0 ? (
+              <div className="text-center py-10 text-stone-500 text-sm">
+                {staff.length === 0
+                  ? 'No staff onboarded yet — no attendance to show.'
+                  : 'No staff match the current segment filter.'}
+              </div>
+            ) : staff.filter(inSeg).map(s => {
               const rec = attendance.find(a => a.staff_user_id === s.id);
               return (
                 <div key={s.id} className={cardCls + ' space-y-3'}>
@@ -724,7 +754,13 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
 
       {tab === 'leaves' && (
         <div className="space-y-2">
-          {leaves.filter(l => inSeg(staffById[l.staff_user_id])).map(l => (
+          {!leavesLoaded ? (
+            <div className="text-center py-10 text-stone-500 text-sm">Loading leave requests…</div>
+          ) : leaves.filter(l => inSeg(staffById[l.staff_user_id])).length === 0 ? (
+            <div className="text-center py-10 text-stone-500 text-sm">
+              {leaves.length === 0 ? 'No leave requests yet.' : 'No leave requests match the current filter.'}
+            </div>
+          ) : leaves.filter(l => inSeg(staffById[l.staff_user_id])).map(l => (
             <div key={l.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -756,7 +792,13 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
 
       {tab === 'advances' && (
         <div className="space-y-2">
-          {advances.filter(a => inSeg(staffById[a.staff_user_id])).map(a => (
+          {!advancesLoaded ? (
+            <div className="text-center py-10 text-stone-500 text-sm">Loading salary advances…</div>
+          ) : advances.filter(a => inSeg(staffById[a.staff_user_id])).length === 0 ? (
+            <div className="text-center py-10 text-stone-500 text-sm">
+              {advances.length === 0 ? 'No salary advance requests yet.' : 'No advances match the current filter.'}
+            </div>
+          ) : advances.filter(a => inSeg(staffById[a.staff_user_id])).map(a => (
             <div key={a.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>

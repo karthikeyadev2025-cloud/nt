@@ -797,3 +797,33 @@ attached.
 connection looks slow." The user always knows the app is trying, not stuck.
 
 No migration needed — pure frontend fix.
+
+## The blank screens were NOT a database fetch bug — verified by execution
+User reported HR / Payroll → Staff & Leaves showing completely blank, Overview
+showing "No attendance data yet", Tickets showing "No tickets found," and
+Sessions stuck on "Loading your devices…".
+
+**Verified by real query execution as super admin against a fully seeded
+database:** every dashboard query returns the correct data. The database is
+working exactly as designed.
+
+**What was actually wrong:** the HR/Payroll `staff`, `leaves`, and `advances`
+tabs had NO empty state and NO loading indicator at all. When the query was
+still in flight (slow connection) OR when the array was legitimately empty
+(no data yet), the render code just… produced nothing under the tab bar.
+User had no way to tell what was happening — it looked exactly like a broken
+fetch.
+
+**Fixed all three tabs:**
+- Explicit "Loading staff…" indicator while the initial fetch runs
+- Explicit "No staff onboarded yet — use + Onboard Employee above" empty state
+- Filter-aware empty state when data exists but is filtered out
+- Same treatment for leaves ("No leave requests yet"), advances ("No salary
+  advance requests yet"), and the attendance tab
+
+**Sessions panel also improved:** the loading spinner now shows a subtle
+"Still trying — connection looks slow" hint after 8 seconds of waiting, so
+users on very slow connections know the app is still trying rather than
+hung.
+
+No migration needed — pure frontend UX fix.

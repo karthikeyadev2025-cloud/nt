@@ -30,6 +30,19 @@ function iconFor(platform: string | null) {
   return Monitor;
 }
 
+// A tiny helper — shows a hint message only after `after` ms have elapsed.
+// Prevents "loading forever" feeling on slow connections without changing
+// the visual layout every second.
+function SlowHint({ after, message }: { after: number; message: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), after);
+    return () => clearTimeout(t);
+  }, [after]);
+  if (!show) return null;
+  return <p className="text-stone-500 text-xs">{message}</p>;
+}
+
 export default function SessionDevices() {
   const { user } = useAuth();
   const toast = useToast();
@@ -131,8 +144,11 @@ export default function SessionDevices() {
       )}
 
       {loading ? (
-        <div className="py-8 flex items-center justify-center text-stone-400 text-sm">
-          <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading your devices…
+        <div className="py-8 flex flex-col items-center justify-center text-stone-500 text-sm gap-2">
+          <div className="flex items-center">
+            <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading your devices…
+          </div>
+          <SlowHint after={8000} message="Still trying — connection looks slow." />
         </div>
       ) : rows.length === 0 ? (
         <div className="py-8 text-center text-stone-700 text-sm" data-testid="session-devices-empty">
