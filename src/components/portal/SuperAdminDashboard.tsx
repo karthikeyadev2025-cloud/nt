@@ -193,9 +193,9 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
     <div className="space-y-5">
       <ActionCentre onGo={onGo} />
       {canOnboard && (
-        <div className="flex items-center justify-between px-5 py-4 rounded-2xl bg-orange-50 border border-orange-200 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-5 py-4 rounded-2xl bg-orange-50 border border-orange-200 shadow-sm">
           <p className="text-orange-950 font-bold text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
-          <button onClick={onAddStaff} className="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold shadow-md shadow-orange-700/20 whitespace-nowrap">+ Onboard Employee</button>
+          <button onClick={onAddStaff} className="self-start sm:self-auto shrink-0 px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold shadow-md shadow-orange-700/20 whitespace-nowrap">+ Onboard Employee</button>
         </div>
       )}
       <SetupChecklist segments={segments} />

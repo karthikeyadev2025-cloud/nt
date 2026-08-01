@@ -690,3 +690,35 @@ page. A marketing homepage's first impression matters far more than avoiding a
 brief text swap.
 
 No migration needed for either fix — both are pure frontend.
+
+## Fixed: onboarding banner button overlapping text on mobile
+Screenshot showed the "+ Onboard Employee" button visually chopping into the
+banner text ("account, salary and documents") on a phone screen. Root cause:
+the banner used `flex items-center justify-between` with a
+`whitespace-nowrap` fixed-width button — on narrow screens the text has no
+room to breathe and the two elements visibly collide.
+Fixed: banner now stacks vertically on mobile and only sits side-by-side once
+there's actually room for both.
+
+## Deep leads-fetch audit — no bug in the database or edge functions
+User was concerned the database was failing to fetch leads. Verified end to
+end by executing real queries as each role against a database matching
+production shape (2 segments live: digital_media + software):
+
+| Test | Result |
+|---|---|
+| Super admin inserts 3 bulk-upload leads | ✅ all 3 succeed |
+| Super admin reads leads | ✅ sees all 4 |
+| DM Manager (segments=digital_media) reads leads | ✅ sees only her 2 DM leads |
+| SW Employee (no view_leads permission) reads leads | ✅ correctly sees 0 |
+
+The database and RLS are working exactly as designed. What was ACTUALLY
+causing "no leads visible" was the Bulk Upload silent-failure bug I fixed
+earlier (case-sensitive header matching meant real Excel files matched
+zero rows and inserted nothing) — the DB was correctly showing zero because
+zero had actually been saved.
+
+**Edge functions:** both `create-user` and `bootstrap-super-admin` are
+complete and correct on disk (155 lines total). Nothing pending.
+**RPCs:** all 13 frontend calls resolve to real database functions.
+**Migrations:** all 41 apply cleanly on a fresh database with zero errors.
