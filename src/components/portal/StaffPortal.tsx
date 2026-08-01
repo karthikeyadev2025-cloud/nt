@@ -255,14 +255,30 @@ export function MyAttendance() {
     // Late detection is computed server-side by a BEFORE INSERT trigger against
     // the assigned shift, so a tampered device clock can't defeat it. We just
     // record the check-in and read back the authoritative is_late result.
-    const { data: inserted, error } = await supabase.from('attendance_records').insert({
-      staff_user_id: user.id, attendance_date: dateStr,
-      check_in_at: new Date().toISOString(), check_in_lat: lat, check_in_lng: lng,
-      check_in_selfie_url: selfiePath, status: 'present', work_mode: workMode,
-    }).select('is_late, minutes_late').maybeSingle();
+    //
+    // Uses upsert + ignoreDuplicates instead of insert: a double-tap, a slow
+    // network retry, or two tabs both racing to check in used to throw a raw
+    // "duplicate key value violates unique constraint" error straight at the
+    // user. Now a repeat attempt is a safe no-op — it never overwrites the
+    // real first check-in time — and we show a calm "already checked in"
+    // message instead of a database error.
+    const { data: inserted, error } = await supabase.from('attendance_records')
+      .upsert({
+        staff_user_id: user.id, attendance_date: dateStr,
+        check_in_at: new Date().toISOString(), check_in_lat: lat, check_in_lng: lng,
+        check_in_selfie_url: selfiePath, status: 'present', work_mode: workMode,
+      }, { onConflict: 'staff_user_id,attendance_date', ignoreDuplicates: true })
+      .select('is_late, minutes_late').maybeSingle();
     setBusy(false);
     if (error) { toast.error(`Check-in failed: ${error.message}`); return; }
-    toast.success(inserted?.is_late ? `Checked in — ${inserted.minutes_late} min late` : 'Checked in');
+    if (!inserted) {
+      // ignoreDuplicates means the row already existed — no new row was
+      // returned. That's not a failure; someone just already checked in today.
+      toast.info("You're already checked in today.");
+      load();
+      return;
+    }
+    toast.success(inserted.is_late ? `Checked in — ${inserted.minutes_late} min late` : 'Checked in');
     load();
   }
 

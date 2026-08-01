@@ -548,3 +548,39 @@ while old CCTV leads are preserved as history rather than silently destroyed.
 **If you want those old CCTV leads/tickets permanently deleted too** (not just
 hidden), that's a real, irreversible decision — tell me and I'll build it as its
 own explicit migration after confirming exactly how many rows are involved.
+
+## Yes — those production logs were a real, ongoing bug. Both fixed.
+
+### `42501` on security_audit_logs (21 occurrences over 3 days)
+**Root cause, confirmed by isolated execution:** a login-hardening migration
+split audit-log permission so `anon` could only log `login_failed`, while
+`login_success`/`logout` required the `authenticated` role — reasoning that
+before sign-in you're anon, after it you're authenticated. In practice,
+`AuthContext` calls the login-success log immediately after
+`signInWithPassword()` resolves, but the client's session isn't always fully
+attached to the *very next* request by that exact instant. The log request
+still carries `anon`, hits the restrictive policy, and errors — while the
+actual sign-in had already succeeded. **Every one of those 21 errors was a
+real successful login whose own audit record silently failed to save.**
+
+Verified separately: an *old, never-dropped* policy already let `authenticated`
+insert `login_success` freely — so the added restriction was only ever
+blocking the anon-role race case, while adding no real security value (this
+table is write-only-log, read-only-to-super-admin; a spoofed `anon`
+`login_success` row can't grant access to anything).
+
+**Fixed:** `anon` may now log all three event types, same as the original
+design. Verified: valid events succeed, an invalid event type is still
+correctly rejected, and only super_admin can read the logs — unchanged.
+
+### `23505` duplicate key on attendance_records (recurring)
+**Root cause:** check-in used a plain `INSERT`. A double-tap, a slow-network
+retry, or two tabs racing to check in on the same day threw a raw
+`"duplicate key value violates unique constraint"` straight at the user.
+
+**Fixed:** check-in now uses `upsert(..., { ignoreDuplicates: true })` — a
+repeat submission is a safe no-op that never overwrites the real first
+check-in time, and shows a calm "You're already checked in today" instead of
+a database error.
+
+One migration: `20260801000001_fix_audit_log_race_condition.sql`
