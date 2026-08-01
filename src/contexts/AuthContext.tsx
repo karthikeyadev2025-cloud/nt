@@ -513,13 +513,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     const wasEmail = user?.email;
-    // Clear local UI/localStorage state up front. Logout must never depend on
-    // a network round-trip completing — endSession()/supabase.auth.signOut()
-    // below had no timeout, so a hung request left the browser stuck in a
-    // half-signed-out state (stale `nkt_user_session` still in localStorage)
-    // that persisted across hard refreshes, since the app trusts that cache
-    // as a fast-path hint on load.
+    // Clear ALL possible local auth state up-front. Logout must never depend
+    // on a network round-trip completing.
+    //
+    // We deliberately do more than clearLocalSession():
+    //   • Our own nkt_* keys (session, perms, session row id) — via clearLocalSession()
+    //   • Supabase's own `sb-*-auth-token` in localStorage
+    //     (supabase.auth.signOut() below normally does this, but on a slow
+    //     connection the call can time out and leave the token in place —
+    //     causing the next refresh to auto-restore an inconsistent session
+    //     the app already thinks has been signed out from. This was a real
+    //     cause of "tab dies after login/logout cycle" reports.)
+    //   • Anything else Supabase may have written to sessionStorage
     clearLocalSession();
+    try {
+      const purgeAuthStorage = (storage: Storage) => {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < storage.length; i++) {
+          const k = storage.key(i);
+          if (k && (k.startsWith('sb-') || k === 'nkt_session_row_id')) keysToRemove.push(k);
+        }
+        keysToRemove.forEach(k => { try { storage.removeItem(k); } catch { /* ignore */ } });
+      };
+      purgeAuthStorage(localStorage);
+      purgeAuthStorage(sessionStorage);
+    } catch { /* storage disabled */ }
     try {
       if (wasEmail) logLogout(wasEmail);
       // Mark our device row as revoked before dropping the auth session.

@@ -827,3 +827,43 @@ users on very slow connections know the app is still trying rather than
 hung.
 
 No migration needed — pure frontend UX fix.
+
+## Root cause of "tab dead after login/logout, new browser works" — found and fixed
+Video showed a very specific pattern: clean load after clearing browsing
+history, but refresh in same tab hangs; opens fine in a different browser;
+tab is dead permanently after a login/sign-out cycle. That pattern is
+unmistakably **cached stale content served from a service worker + poisoned
+localStorage state**, not a database or auth-code issue.
+
+**Root causes, all three fixed:**
+
+1. **Stale service worker file** (`public/sw.js`) was shipped in an earlier
+   build. Once a browser installed it (Chrome auto-installs SWs for sites
+   with a manifest, and browsers keep them registered until explicitly
+   unregistered), its fetch handler cached every same-origin GET — including
+   old JS bundles. After a login/logout cycle in that tab, the app would
+   start serving stale cached bundles that conflicted with the current auth
+   flow, giving the exact "frozen tab" symptom described. Fresh browsers
+   (no SW installed) worked fine because they never had that cache.
+   → **`public/sw.js` deleted from the repo**.
+
+2. **Unregister-only wasn't enough.** `main.tsx` was calling
+   `registration.unregister()` on load, but that only stops the SW from
+   controlling **future** navigations — the browser's Cache Storage
+   contents (old bundles the SW had already saved) stay put and continue
+   to serve stale content. → `main.tsx` now also deletes every cache in
+   the Cache Storage API, so a returning user is guaranteed a clean load.
+
+3. **`supabase.auth.signOut()` can silently time out** on slow connections
+   (the code has `.catch(() => {})`), which leaves Supabase's own
+   `sb-<project>-auth-token` sitting in localStorage in a half-signed-out
+   state. On the next refresh, `getSession()` reads that stale token and
+   returns a session the app already thought was gone — a real, reproducible
+   cause of the "tab dead after logout" symptom. → `signOut()` now
+   proactively purges every `sb-*` key from BOTH localStorage AND
+   sessionStorage before the network call runs, so a network timeout can
+   never leave the browser in a half-signed-out state.
+
+No migration needed — pure frontend fix. Existing users who already have
+the stale SW cached should get a clean state on their next visit as the
+new code purges everything on load.
