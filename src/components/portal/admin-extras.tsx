@@ -194,22 +194,26 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
         {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-stone-700 hover:text-stone-700"><X className="w-3.5 h-3.5" /></button>}
       </div>
       {open && results.length > 0 && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-stone-200 rounded-2xl shadow-xl z-50 p-2 space-y-1">
-          {results.map(r => (
-            <button
-              key={r.id}
-              onClick={() => {
-                onNavigate(r.tab, { kind: r.kind, id: r.id });
-                setOpen(false);
-                setQuery('');
-              }}
-              className="w-full text-left p-2.5 rounded-xl hover:bg-stone-100 transition-colors"
-            >
-              <p className="text-stone-900 font-bold text-xs truncate">{r.title}</p>
-              <p className="text-stone-700 text-[11px] font-medium truncate">{r.subtitle}</p>
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setOpen(false)} />
+          <div className="fixed left-3 right-3 top-16 z-50 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:inset-x-auto sm:mt-2 sm:w-80
+                          max-h-[70vh] sm:max-h-96 overflow-y-auto bg-white border border-stone-200 rounded-2xl shadow-xl p-2 space-y-1">
+            {results.map(r => (
+              <button
+                key={r.id}
+                onClick={() => {
+                  onNavigate(r.tab, { kind: r.kind, id: r.id });
+                  setOpen(false);
+                  setQuery('');
+                }}
+                className="w-full text-left p-2.5 rounded-xl hover:bg-stone-100 transition-colors"
+              >
+                <p className="text-stone-900 font-bold text-xs truncate">{r.title}</p>
+                <p className="text-stone-700 text-[11px] font-medium truncate">{r.subtitle}</p>
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

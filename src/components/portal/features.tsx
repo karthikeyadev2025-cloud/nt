@@ -55,21 +55,30 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
         {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-stone-200 rounded-xl shadow-xl z-50">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-800">
-            <p className="text-stone-900 text-sm font-semibold">Notifications</p>
-            {unreadCount > 0 && <button onClick={markAllRead} className="text-teal-700 text-xs">Mark all read</button>}
-          </div>
-          {items.length === 0 && <p className="text-stone-700 text-sm text-center py-8">No notifications yet.</p>}
-          {items.map(n => (
-            <div key={n.id} onClick={() => handleClick(n)}
-              className={`px-4 py-3 border-b border-stone-900 cursor-pointer hover:bg-stone-50 ${!n.read_at ? 'bg-teal-500/5' : ''}`}>
-              <p className="text-stone-900 text-sm">{n.title}</p>
-              {n.body && <p className="text-stone-700 text-xs mt-0.5">{n.body}</p>}
-              <p className="text-stone-700 text-[10px] mt-1">{new Date(n.created_at).toLocaleString()}</p>
+        <>
+          {/* Tap-outside-to-close backdrop, mobile only (matches the fixed panel below) */}
+          <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setOpen(false)} />
+          {/* Mobile: a fixed panel inset from both screen edges, so its width is always
+              exactly viewport-width-minus-margins — it can never overflow off either
+              side, regardless of where the bell icon sits in the header.
+              sm and up: reverts to the original dropdown anchored to the button. */}
+          <div className="fixed left-3 right-3 top-16 z-50 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:inset-x-auto sm:mt-2 sm:w-80
+                          max-h-[70vh] sm:max-h-96 overflow-y-auto bg-white border border-stone-200 rounded-xl shadow-xl">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-800">
+              <p className="text-stone-900 text-sm font-semibold">Notifications</p>
+              {unreadCount > 0 && <button onClick={markAllRead} className="text-teal-700 text-xs">Mark all read</button>}
             </div>
-          ))}
-        </div>
+            {items.length === 0 && <p className="text-stone-700 text-sm text-center py-8">No notifications yet.</p>}
+            {items.map(n => (
+              <div key={n.id} onClick={() => handleClick(n)}
+                className={`px-4 py-3 border-b border-stone-900 cursor-pointer hover:bg-stone-50 ${!n.read_at ? 'bg-teal-500/5' : ''}`}>
+                <p className="text-stone-900 text-sm">{n.title}</p>
+                {n.body && <p className="text-stone-700 text-xs mt-0.5">{n.body}</p>}
+                <p className="text-stone-700 text-[10px] mt-1">{new Date(n.created_at).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

@@ -633,3 +633,22 @@ No migration needed — pure frontend fix.
   the console but not find the ticket-assignment screen. Low priority (that
   permission is normally paired with `view_tickets`/`manage_tickets` in
   practice), flagged rather than silently left.
+
+## Fixed: notification and search dropdowns overflowing off-screen on mobile
+Confirmed from a real screenshot — the notification panel opened with its text
+clipped off the left edge of the phone screen ("ions" instead of "Notifications",
+every line sliced off). Root cause: both the notification bell and the header
+search results used a fixed 320px-wide dropdown (`w-80`) anchored to the right
+of a button sitting near the right edge of the header. On a ~360-400px phone
+screen there simply isn't 320px of room to the left of that anchor point, so
+the panel got clipped by the viewport edge.
+
+**Fixed both** (same bug, same fix, in `NotificationBell` and the header
+`QuickSearch`): on mobile, the panel is now `fixed` and inset from both the
+left and right screen edges, so its width is always exactly
+viewport-width-minus-margins — it can never overflow off either side,
+regardless of where the trigger button sits. On tablet/desktop (`sm:` and up)
+it reverts to the original dropdown anchored to the button. Added a
+tap-outside-to-close backdrop on mobile to match.
+
+No migration needed — pure frontend fix.
