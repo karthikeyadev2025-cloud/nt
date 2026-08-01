@@ -514,3 +514,37 @@ One migration: `20260726000004_hr_document_suite.sql`
   among employees, which read as if the owner were their own staff member. It now
   appears in its own "Owner account · full access" row, clearly marked *not a managed
   employee*, with the staff list below it.
+
+## Reviewed 32 new commits from concurrent work — real bug found and fixed
+Fetched the latest repo (113 commits total, 32 new since last review — significant
+work fixing login loops, auth race conditions, double-fetching dashboards, and text
+contrast). Full re-verification: 40 migrations, typecheck clean, build clean.
+
+### Real bug found: two CCTV "hard delete" migrations were both silently incomplete
+Tested by executing both `20260730000001_delete_cctv_completely.sql` and
+`20260730000002_purge_cctv_hard.sql` against a database shaped like production
+(real CCTV leads/staff already present, not an empty fresh database):
+
+- **`purge_cctv_hard.sql` referenced a column that doesn't exist** (`category`
+  instead of `doc_type` on `document_templates`) — fails immediately with
+  "column does not exist".
+- **Both scripts attempt `DELETE FROM segments WHERE slug='cctv'`**, which fails
+  with a foreign-key violation on any database where CCTV leads or tickets still
+  exist — confirmed by execution. This is the constraint working as designed:
+  hard-deleting a segment with real customer/financial history attached would
+  either fail like this, or (if forced) silently destroy that history.
+- **Verified real-world consequence**: services, ticket types and staff tags DID
+  get cleaned up (nothing blocks those), but the `segments` row for `cctv` was
+  left sitting in the table, undeleted, on any database where this was run with
+  real data — most likely including production.
+
+**Fixed** with `20260730000003_finish_cctv_cleanup_safely.sql` — re-runs every
+non-destructive step idempotently and ensures the segment is fully **retired**
+(`active = false`), which is what actually makes it disappear from the public
+site, staff portals and every dropdown. Verified by execution: public-site query
+now returns 0 rows for `cctv`, 0 staff tagged, 0 services/ticket types remain —
+while old CCTV leads are preserved as history rather than silently destroyed.
+
+**If you want those old CCTV leads/tickets permanently deleted too** (not just
+hidden), that's a real, irreversible decision — tell me and I'll build it as its
+own explicit migration after confirming exactly how many rows are involved.
