@@ -109,7 +109,7 @@ function ClientLogos() {
 }
 
 // ─────────────────────────────────────────────── Navigation
-function Navigation({ content }: { content: Record<string, Record<string, string>> }) {
+function Navigation() {
   const [open, setOpen] = useState(false);
   const links = [
     { href: '#services', label: 'Services' },
@@ -125,7 +125,7 @@ function Navigation({ content }: { content: Record<string, Record<string, string
         <a href="#" className="flex items-center gap-2.5">
           <KiteTailLogo className="w-8 h-8" />
           <div className="flex flex-col text-left">
-            <span className="text-stone-900 font-extrabold text-lg tracking-tight leading-tight">{content?.hero?.title || 'Nikki Technologies'}</span>
+            <span className="text-stone-900 font-extrabold text-lg tracking-tight leading-tight">Nikki Technologies</span>
           </div>
         </a>
         <div className="hidden md:flex items-center gap-6">
@@ -604,7 +604,7 @@ function GallerySection() {
   return (
     <section className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <h2 className="font-display text-4xl font-bold text-center text-white mb-12">Our Work</h2>
+        <h2 className="font-display text-4xl md:text-5xl font-extrabold text-center text-stone-900 mb-12 tracking-tight">Our Work</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {items.map(g => (
             <div key={g.id} className="rounded-xl overflow-hidden aspect-square bg-stone-900">
@@ -1136,7 +1136,7 @@ export default function PublicSite() {
   return (
     <div className="bg-stone-50 min-h-screen text-stone-900">
       <SEOHead />
-      <Navigation content={content} />
+      <Navigation />
       <Hero content={content} segments={segments} />
       <ClientLogos />
       <AnimatedStats content={content} />
