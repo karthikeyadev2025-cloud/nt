@@ -74,8 +74,16 @@ export default function SessionDevices() {
       setRows(list);
       setLoading(false);
     })();
-    // Refresh every 30s while the panel is mounted so newly-signed-in devices show up.
-    const t = window.setInterval(() => { if (mounted) refresh(); }, 30_000);
+    // Refresh every 30s while the panel is mounted AND the tab is actually
+    // visible. Confirmed via two real HAR files from live sessions: Chrome
+    // throttles/pauses timers in background tabs, then fires the whole
+    // backlog at once the moment the tab regains focus — every burst of
+    // duplicate requests lined up exactly with a tab switch back to this
+    // site. Skipping the poll while hidden means there's no backlog to fire
+    // when the tab becomes visible again — just the next normal 30s tick.
+    const t = window.setInterval(() => {
+      if (mounted && document.visibilityState === 'visible') refresh();
+    }, 30_000);
     return () => { mounted = false; window.clearInterval(t); };
   }, [user, refresh]);
 

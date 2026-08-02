@@ -1489,3 +1489,39 @@ full session, and that panel is intentionally built to refresh every 30
 seconds while mounted — working as designed, not a bug.
 
 Verified: 39 migrations clean, typecheck clean, build clean.
+
+## Deeper finding from a second HAR file: tab-backgrounding, not the previous fix's target
+
+User's second HAR (captured against the already-deployed TOKEN_REFRESHED
+fix) still showed the repeating pattern — confirmed the fix was genuinely
+live (its code was present, `TOKEN_REFRESHED` was genuinely absent from the
+listener) but the bug persisted, proving that wasn't the only cause.
+
+Found something new in this HAR: a **23-second gap** between all JS/CSS
+finishing (loaded instantly from cache, 0ms each — the earlier caching fix
+is working correctly) and the first data query firing. All static assets
+were ready instantly; something else held back the actual data fetching
+for 23 seconds. This, combined with every burst in both HAR files lining
+up with what looks like a return to this tab after time away, points to a
+well-known browser behavior: Chrome throttles and can fully pause
+`setTimeout`/`setInterval` timers in background tabs, then fires the
+backlog when the tab becomes visible again.
+
+**Fixed two real, confirmed sources of this**:
+- `SessionDevices`' 30-second polling interval now checks
+  `document.visibilityState === 'visible'` before firing — no backlog can
+  build up while the tab is hidden, so there's nothing to fire in a burst
+  on refocus.
+- The auth heartbeat's recursive timer does the same check.
+
+**Honest status**: this fixes the session/heartbeat-related portion of the
+pattern with real evidence behind it. The larger burst (the full dashboard
+reload — ActionCentre, TodayAtAGlance, get_dashboard_counts, segments, etc.
+all firing together) is very likely caused by the same
+tab-backgrounding mechanism but through a path not yet fully traced — those
+components' effects only run on mount, so for them to re-fire together,
+something is causing that part of the component tree to remount, and I
+have not yet found what. Flagging this honestly rather than claiming full
+resolution.
+
+Verified: 39 migrations clean, typecheck clean, build clean.

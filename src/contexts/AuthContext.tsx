@@ -328,6 +328,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function tick() {
       if (stopped) return;
+      // Skip the actual work while the tab is hidden — no point keeping a
+      // background tab's device row "active" from the user's perspective,
+      // and it avoids wasted requests while nobody's looking at this tab.
+      if (document.visibilityState !== 'visible') {
+        handle = window.setTimeout(tick, SESSION_HEARTBEAT_MS);
+        return;
+      }
       if (!getCurrentSessionRowId()) {
         await beginSession(user!.id);
         consecutiveRevoked = 0;
