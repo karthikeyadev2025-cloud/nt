@@ -63,11 +63,11 @@ function AnimatedNumber({ value }: { value: string }) {
   return <span ref={ref}>{display}</span>;
 }
 
-function AnimatedStats({ content }: { content: Record<string, Record<string, string>> }) {
+function AnimatedStats() {
   const stats = [
-    { label: 'Years in Business', value: content?.stats?.years_in_business || '2+' },
-    { label: 'Happy Clients', value: content?.stats?.clients_served || '50+' },
-    { label: 'Projects Completed', value: content?.stats?.projects_completed || '100+' },
+    { label: 'Years in Business', value: '2+' },
+    { label: 'Happy Clients', value: '50+' },
+    { label: 'Projects Completed', value: '100+' },
     { label: 'Divisions', value: '2' },
   ];
   return (
@@ -365,7 +365,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.1 }}
           className="font-display text-5xl md:text-7xl font-semibold text-stone-900 mb-6 tracking-tight leading-tight"
         >
-          {content?.hero?.title && !/cctv/i.test(content.hero.title) ? content.hero.title : 'Nikki Technologies'}
+          Nikki Technologies
         </motion.h1>
 
         <motion.p
@@ -374,7 +374,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-xl md:text-2xl bg-gradient-to-r from-orange-800 via-indigo-700 to-orange-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
-          {content?.hero?.subtitle && !/cctv/i.test(content.hero.subtitle) ? content.hero.subtitle : 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps'}
+          Kite &amp; Tail Digital Marketing • Custom Software &amp; Mobile Apps
         </motion.p>
 
         <motion.p
@@ -383,7 +383,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.25 }}
           className="text-stone-700 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
-          {content?.hero?.description && !/cctv/i.test(content.hero.description) ? content.hero.description : 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.'}
+          Empowering businesses with data-driven performance advertising, Meta &amp; Google PPC funnels, social media management, and custom software development.
         </motion.p>
 
         <motion.div
@@ -1211,7 +1211,7 @@ export default function PublicSite() {
       <Navigation />
       <Hero content={content} segments={segments} />
       <ClientLogos />
-      <AnimatedStats content={content} />
+      <AnimatedStats />
       <SegmentSections segments={segments} />
       <Products />
       <Careers segments={segments} />
