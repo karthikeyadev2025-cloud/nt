@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Search, X, Shield, Download, CheckCircle2, Circle, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cachedRpc } from '../../lib/cachedRpc';
+import { cachedQuery } from '../../lib/cachedQuery';
 import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { useAuth } from '../../contexts/AuthContext';
@@ -66,44 +67,27 @@ export function TodayAtAGlance() {
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
-      // Was 8 separate parallel count queries — now the same consolidated
-      // RPC used by ActionCentre, routed through a shared cache so both
-      // components (and repeated calls across open tabs) share one real
-      // network call. Falls back to the original queries if the RPC isn't
-      // available (e.g. its migration hasn't been applied yet) so this
-      // widget never silently breaks.
-      const { data: counts, error: rpcError } = await cachedRpc(
-        `get_dashboard_counts:${user.id}`,
-        () => supabase.rpc('get_dashboard_counts', { p_user_id: user.id })
-      );
-
-      if (rpcError || !counts) {
-        if (rpcError) console.error('get_dashboard_counts RPC failed, falling back to individual queries:', rpcError.message);
-        const today = istDateStr();
-        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-        const [{ count: checkedIn }, { count: newLeads }, { count: openTickets }, { count: leaveReq }, { count: advReq }, { count: bankReq }, { count: photoReq }, { count: transferReq }] = await Promise.all([
-          supabase.from('attendance_records').select('id', { count: 'exact', head: true }).eq('attendance_date', today).not('check_in_at', 'is', null),
-          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
-          supabase.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', ['open', 'in_progress']),
-          supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('salary_advance_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('bank_change_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('photo_change_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_status', 'pending'),
-        ]);
-        setStats({
-          checkedIn: checkedIn || 0, newLeads: newLeads || 0, openTickets: openTickets || 0,
-          pendingApprovals: (leaveReq || 0) + (advReq || 0) + (bankReq || 0) + (photoReq || 0) + (transferReq || 0),
-        });
-        return;
+      let counts: any = null;
+      try {
+        const res = await cachedRpc(
+          `get_dashboard_counts:${user.id}`,
+          () => supabase.rpc('get_dashboard_counts', { p_user_id: user.id })
+        );
+        counts = (res as any)?.data || res;
+      } catch {
+        counts = null;
       }
 
-      setStats({
-        checkedIn: counts.checkedInToday || 0,
-        newLeads: counts.newLeadsToday || 0,
-        openTickets: counts.openTickets || 0,
-        pendingApprovals: (counts.leaves || 0) + (counts.advances || 0) + (counts.bankChangeReq || 0) + (counts.photoChangeReq || 0) + (counts.transfers || 0),
-      });
+      if (counts && typeof counts === 'object') {
+        setStats({
+          checkedIn: counts.checkedInToday || 0,
+          newLeads: counts.newLeadsToday || 0,
+          openTickets: counts.openTickets || 0,
+          pendingApprovals: (counts.leaves || 0) + (counts.advances || 0) + (counts.bankChangeReq || 0) + (counts.photoChangeReq || 0) + (counts.transfers || 0),
+        });
+      } else {
+        setStats({ checkedIn: 0, newLeads: 0, openTickets: 0, pendingApprovals: 0 });
+      }
     })();
   }, [user?.id]);
 
@@ -135,7 +119,7 @@ export function SetupChecklist({ segments }: { segments: Segment[] }) {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    (async () => {
+    cachedQuery('setup_checklist_counts', async () => {
       const [{ count: staff }, { count: products }, { count: jobs }, { count: testimonials }, { count: shifts }, { count: templates }] = await Promise.all([
         supabase.from('app_users').select('id', { count: 'exact', head: true }).neq('role', 'super_admin'),
         supabase.from('products').select('id', { count: 'exact', head: true }),
@@ -144,16 +128,20 @@ export function SetupChecklist({ segments }: { segments: Segment[] }) {
         supabase.from('shifts').select('id', { count: 'exact', head: true }),
         supabase.from('document_templates').select('id', { count: 'exact', head: true }),
       ]);
-      setChecks([
-        { label: 'Onboard your first employee', done: (staff || 0) > 0, hint: 'Access Control → Onboard Employee' },
-        { label: 'Add software products to the catalog', done: (products || 0) > 3, hint: 'Products tab' },
-        { label: 'Post a job opening', done: (jobs || 0) > 0, hint: 'Careers / Hiring tab' },
-        { label: 'Add a client testimonial', done: (testimonials || 0) > 0, hint: 'Gallery / Team / Reviews tab' },
-        { label: 'Define a work shift', done: (shifts || 0) > 0, hint: 'HR / Payroll → Shifts' },
-        { label: 'Review onboarding document templates', done: (templates || 0) >= 3, hint: 'Documents & Onboarding tab' },
-      ]);
-    })();
-  }, [segments]);
+      return { staff: staff || 0, products: products || 0, jobs: jobs || 0, testimonials: testimonials || 0, shifts: shifts || 0, templates: templates || 0 };
+    }).then(counts => {
+      if (counts) {
+        setChecks([
+          { label: 'Onboard your first employee', done: counts.staff > 0, hint: 'Access Control → Onboard Employee' },
+          { label: 'Add software products to the catalog', done: counts.products > 3, hint: 'Products tab' },
+          { label: 'Post a job opening', done: counts.jobs > 0, hint: 'Careers / Hiring tab' },
+          { label: 'Add customer testimonials', done: counts.testimonials > 0, hint: 'Gallery / Team / Reviews tab' },
+          { label: 'Configure employee shifts', done: counts.shifts > 0, hint: 'HR / Payroll → Shifts' },
+          { label: 'Upload document templates', done: counts.templates >= 3, hint: 'Documents & Onboarding tab' },
+        ]);
+      }
+    }).catch(() => {});
+  }, []);
 
   if (!checks || dismissed) return null;
   const remaining = checks.filter(c => !c.done);

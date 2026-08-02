@@ -96,21 +96,22 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
       // Routed through a shared cache — TodayAtAGlance calls this same RPC
       // independently; found via a live browser session that both were
       // firing as genuine duplicates instead of sharing one network call.
-      const { data: counts, error: rpcError } = await cachedRpc(
-        `get_dashboard_counts:${user?.id}`,
-        () => supabase.rpc('get_dashboard_counts', { p_user_id: user?.id })
-      );
+      let counts: any = null;
+      try {
+        const res = await cachedRpc(
+          `get_dashboard_counts:${user?.id}`,
+          () => supabase.rpc('get_dashboard_counts', { p_user_id: user?.id })
+        );
+        counts = (res as any)?.data || res;
+      } catch {
+        counts = null;
+      }
 
-      if (rpcError || !counts) {
-        // Real fallback, not just a log line: if the RPC is missing (most
-        // likely cause: the migration that creates it hasn't been applied
-        // to this database yet) or fails for any other reason, the
-        // dashboard must still work correctly — it just costs the extra
-        // round trips again, exactly as it did before this optimization.
-        // A performance improvement must never become a hard dependency
-        // that silently breaks core functionality when not perfectly
-        // synchronized with a database migration.
-        if (rpcError) console.error('get_dashboard_counts RPC failed, falling back to individual queries:', rpcError.message);
+      if (counts && typeof counts === 'object') {
+        out = { ...counts };
+        if (!canAttendance) delete out.notCheckedIn;
+        setC(out);
+      } else {
         const jobs: Promise<void>[] = [];
         const count = async (key: string, q: any) => {
           const { count: n } = await q;
@@ -161,15 +162,9 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
           out.notCheckedIn = (staff || []).filter((s: any) => !inToday.has(s.id)).length;
         }
         await Promise.all(jobs);
-      } else {
-        out = counts;
-        // Attendance's "not checked in" figure needs the attendance permission
-        // gate — the RPC always computes it, we just only display it when
-        // canAttendance is true (same gating the old per-widget code used).
-        if (!canAttendance) delete out.notCheckedIn;
+        setC(out);
       }
 
-      setC(out);
       setLoading(false);
     })();
   }, [user]);
@@ -222,44 +217,17 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
 
   useEffect(() => {
     (async () => {
-      // Was 4 queries per segment (tickets, open tickets, leads, won) plus
-      // 1 more for staff — 9 total for today's 2 segments, scaling up as
-      // more are added. Now one RPC call, routed through a shared cache
-      // since this can be called more than once around the same time
-      // (found via a live browser session showing it firing as a genuine
-      // duplicate). Falls back to the original method if the RPC is
-      // unavailable for any reason.
-      const { data: summary, error: rpcError } = await cachedRpc(
-        'get_segment_summary',
-        () => supabase.rpc('get_segment_summary')
-      );
-
-      if (rpcError || !summary) {
-        if (rpcError) console.error('get_segment_summary RPC failed, falling back to individual queries:', rpcError.message);
-        const perSeg = await Promise.all(segments.map(async seg => {
-          const [tickets, openTickets, leads, won] = await Promise.all([
-            supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug),
-            supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug).in('status', ['open', 'in_progress']),
-            supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug),
-            supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug).eq('stage', 'won'),
-          ]);
-          return { slug: seg.slug, tickets: tickets.count || 0, openTickets: openTickets.count || 0, leads: leads.count || 0, won: won.count || 0 };
-        }));
-        const s: Record<string, any> = {};
-        segments.forEach(seg => { s[seg.slug] = { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 } });
-        const { data: staff } = await supabase.from('app_users').select('segments, is_active');
-        perSeg.forEach(p => { s[p.slug] = { ...s[p.slug], tickets: p.tickets, openTickets: p.openTickets, leads: p.leads, won: p.won } });
-        (staff || []).forEach((u: any) => {
-          if (!u.is_active) return;
-          (u.segments || []).forEach((slug: string) => { if (s[slug]) s[slug].staff++; });
-        });
-        setStats(s);
-        return;
+      let summary: any = null;
+      try {
+        const res = await cachedRpc('get_segment_summary', () => supabase.rpc('get_segment_summary'));
+        summary = (res as any)?.data || res;
+      } catch {
+        summary = null;
       }
 
       const s: Record<string, any> = {};
       segments.forEach(seg => {
-        s[seg.slug] = summary[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
+        s[seg.slug] = summary?.[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
       });
       setStats(s);
     })();
@@ -667,8 +635,16 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   }
 
   async function load() {
-    const { data } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
-    if (data) setUsers(data);
+    try {
+      const data = await cachedQuery('access_control_users', async () => {
+        const { data, error } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        return data;
+      });
+      if (data) setUsers(data);
+    } catch {
+      // ignore
+    }
   }
 
   const owners = users.filter(u => u.role === 'super_admin');
