@@ -1119,3 +1119,35 @@ the raw numbers (not underlying record details — those stay fully RLS
 protected) in the Network tab response even for sections they can't open.
 Low risk (a bare count, not any record content), but worth stating plainly
 rather than leaving unmentioned.
+
+## Real regression caught before it caused more damage: RPC with no fallback
+
+Verified directly against the live site: the frontend deploy from the
+previous fix WAS live (confirmed by inspecting the actual deployed JS bundle
+— it contains `get_dashboard_counts`). But that code had no error handling.
+
+**The likely actual cause of "same as old, nothing loading":** migrations
+don't auto-apply to Supabase — they have to be run manually against the
+live database. If `20260802000001_consolidate_dashboard_counts.sql` (which
+creates the `get_dashboard_counts` function) hadn't been run yet on the live
+database when the new frontend code shipped, every single call to that RPC
+would fail — and the code didn't check for that error. A failed RPC call
+returned `undefined`, which got treated as "all counts are zero," which
+made the entire "Needs Your Attention" section and Today at a Glance widget
+render as if there were nothing there. Exactly the reported symptom.
+
+**Real fix, not just better logging:** both `ActionCentre` and
+`TodayAtAGlance` now check for an RPC error and, if the RPC is unavailable
+for ANY reason (migration not yet applied, temporary Supabase issue,
+anything), **fall back to the original per-query method** — the same ~14
+and ~8 separate queries that worked reliably before this optimization. A
+performance improvement must never become a hard dependency that silently
+breaks core functionality when it isn't perfectly synchronized with a
+database migration. The dashboard now works correctly whether or not that
+specific migration has been applied yet — it's just faster once it has.
+
+**Action needed on the database side:** please confirm
+`20260802000001_consolidate_dashboard_counts.sql` has actually been run
+against the live Supabase project (Studio → SQL Editor → paste and run, if
+not already done). Until it has, the dashboard will keep working via the
+fallback path — just without the performance improvement.
