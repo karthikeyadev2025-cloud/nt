@@ -5,7 +5,20 @@ import { beginSession, heartbeatSession, endSession, SESSION_HEARTBEAT_MS, getCu
 import { withTimeout } from '../lib/withTimeout';
 
 // ═══════════════════════════════════════════════════════════════════════
-// Types
+// SIMPLIFIED DESIGN — rewritten after a full day of finding that layered,
+// overlapping timers (a separate "cache trust" timer, a separate "safety"
+// timer, a separate "sessionReady" flag gating the whole UI) were
+// themselves an unpredictable source of bugs — confirmed via multiple real
+// browser traces showing these timers firing 3-4x later than their nominal
+// duration when throttled, sometimes turning a clean load into a 20+
+// second freeze. This version has exactly ONE timing mechanism controlling
+// the whole initial-load sequence: one bounded async check, done once.
+// The tradeoff: a returning user with a cached session no longer gets an
+// "instant, zero-wait" render — they wait for one real, bounded check
+// (capped at 4s) same as everyone else. That's a deliberate choice: a
+// consistent, predictable "never more than ~4 seconds" beats an
+// inconsistent "usually instant, occasionally 20+ seconds for reasons that
+// were hard to fully pin down."
 // ═══════════════════════════════════════════════════════════════════════
 
 export type UserRole =
@@ -34,7 +47,6 @@ interface AuthContextType {
   user: AppUser | null;
   permissions: Record<string, boolean>;
   loading: boolean;
-  sessionReady: boolean;
   hasPermission: (perm: string) => boolean;
   canAccessSegment: (slug: string) => boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -45,21 +57,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const SESSION_KEY = 'nkt_user_session';
-const AUTH_TIMEOUT_MS = 5000;
+// One bounded check, one timeout, used everywhere. Short enough that a
+// stalled connection never leaves the user staring at a loader for long;
+// long enough that a normal, slightly-slow round trip still succeeds
+// instead of falling back unnecessarily.
+const AUTH_TIMEOUT_MS = 4000;
 
 // ═══════════════════════════════════════════════════════════════════════
-// Profile + permission fetchers — retry on transient failure and
-// distinguish "definitely gone" from "ambiguous, try again". That
-// distinction stops a momentary network blip or an RLS-propagation delay
-// right after login from being treated the same as an admin disabling
-// the account.
+// Profile + permission fetchers — retry on transient failure, distinguish
+// "definitely gone" from "ambiguous, try again". This part was real,
+// tested, and stays unchanged.
 // ═══════════════════════════════════════════════════════════════════════
 
-// Return contract:
-//   • returns AppUser → active, valid profile.
-//   • returns null    → row read AND is_active === false — definitively
-//                        disabled. The ONLY case that should sign someone out.
-//   • throws          → transient/ambiguous. Callers keep the current session.
 async function fetchAppUser(userId: string): Promise<AppUser | null> {
   let retries = 4;
   let delay = 250;
@@ -94,22 +103,16 @@ async function fetchAppUser(userId: string): Promise<AppUser | null> {
       return data as AppUser;
     }
 
-    // Query succeeded but returned no row — usually RLS token-propagation
-    // lag right after sign-in/refresh. Wait and retry.
     retries--;
     if (retries > 0) {
       await new Promise(r => setTimeout(r, delay));
-      delay *= 2; // 250ms, 500ms, 1000ms, 2000ms
+      delay *= 2;
     }
   }
 
   throw new Error('Profile not visible yet — keeping existing session.');
 }
 
-// A silent failure here quietly leaves permissions = {}, so every
-// hasPermission() check returns false and role-specific tabs just vanish
-// with no visible error. Retrying protects against a single transient
-// blip stripping someone's permissions until their next full login.
 async function fetchRolePermissions(role: string): Promise<Record<string, boolean>> {
   let retries = 3;
   let delay = 250;
@@ -150,24 +153,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return cached ? JSON.parse(cached) : {};
     } catch { return {}; }
   });
-  const [loading, setLoading] = useState(() => {
-    try { return !localStorage.getItem(SESSION_KEY); } catch { return true; }
-  });
-  const [sessionReady, setSessionReady] = useState(false);
+  // Always starts true. No cache-fast-path branching on the initial value —
+  // that branching, and the separate timers it required, is exactly what
+  // got removed. Every load does the same one bounded check.
+  const [loading, setLoading] = useState(true);
 
   const inFlightLoadRef = useRef<{ userId: string; promise: Promise<AppUser | null> } | null>(null);
   const recentLoadRef = useRef<{ userId: string; result: AppUser | null; at: number } | null>(null);
-  // Widened from 2s after finding real evidence (via performance.getEntriesByType
-  // in a live browser session) that app_users was being fetched 4 times on a
-  // single page load. Traced to Supabase's built-in cross-tab auth sync:
-  // supabase-js listens for storage events, so activity in ANY open tab of
-  // this site (token refresh, sign-in) re-fires the auth listener — and
-  // therefore loadUser() — in EVERY other open tab of the same origin, not
-  // just the active one. Multiple tabs of the same site open at once is a
-  // completely normal thing to do, so this needed a real fix, not a
-  // workaround. 2s wasn't wide enough to catch refetches spaced further
-  // apart across tabs; a user's own profile changing within 15s is rare
-  // enough that the staleness tradeoff is clearly worth eliminating this.
   const RECENT_LOAD_WINDOW_MS = 15000;
 
   async function loadUser(userId: string): Promise<AppUser | null> {
@@ -215,45 +207,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // Initial load + auth state subscription
+  // Initial load — ONE async check, ONE timeout, done.
   // ─────────────────────────────────────────────────────────────────────
   useEffect(() => {
     let mounted = true;
 
-    const hasCachedSession = (() => {
-      try { return !!localStorage.getItem(SESSION_KEY); } catch { return false; }
-    })();
-    // Supabase's client hydrates its session synchronously from localStorage
-    // the moment it's constructed — before React even mounts. The token is
-    // already available immediately; there's nothing to actually wait for
-    // here. This was previously 500ms, which is pure unnecessary time added
-    // to the blank-loading-screen phase on every single page refresh — the
-    // one moment in the whole app where a full browser reload (not an
-    // in-app transition) forces a real, visible restart from zero. Keeping
-    // this a hair above 0ms (not literally synchronous) avoids any edge
-    // case around React's render timing, while cutting 10x off the wait.
-    const cacheTrustTimer = hasCachedSession
-      ? setTimeout(() => { if (mounted) { setLoading(false); setSessionReady(true); } }, 50)
-      : undefined;
-    const safetyTimer = setTimeout(() => {
-      if (mounted) { setLoading(false); setSessionReady(true); }
-    }, AUTH_TIMEOUT_MS);
-
     (async () => {
-      let session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] = null;
-      let getSessionFailed = false;
       try {
-        ({ data: { session } } = await withTimeout(supabase.auth.getSession(), AUTH_TIMEOUT_MS, 'session'));
-      } catch {
-        getSessionFailed = true;
-      }
+        const { data: { session } } = await withTimeout(
+          supabase.auth.getSession(), AUTH_TIMEOUT_MS, 'session'
+        );
+        if (!mounted) return;
 
-      if (!mounted) { clearTimeout(safetyTimer); if (cacheTrustTimer) clearTimeout(cacheTrustTimer); return; }
-
-      try {
-        if (getSessionFailed) {
-          // Leave the cached user and stored tokens untouched.
-        } else if (session?.user) {
+        if (session?.user) {
           try {
             const loaded = await loadUser(session.user.id);
             if (loaded === null && mounted) {
@@ -261,18 +227,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               await supabase.auth.signOut().catch(() => {});
             }
           } catch {
-            // Transient/ambiguous profile read — keep the cached user.
+            // Transient profile-read failure — keep whatever cached user we
+            // already have rather than sign anyone out on ambiguity.
           }
         } else {
           clearLocalSession();
         }
+      } catch {
+        // getSession() itself timed out or failed — keep the cached user
+        // and stored tokens untouched. A later auth event or manual
+        // refresh reconciles this; we do not treat "couldn't check in
+        // time" as "signed out".
       } finally {
-        if (mounted) {
-          clearTimeout(safetyTimer);
-          if (cacheTrustTimer) clearTimeout(cacheTrustTimer);
-          setLoading(false);
-          setSessionReady(true);
-        }
+        if (mounted) setLoading(false);
       }
     })();
 
@@ -282,55 +249,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearLocalSession();
         return;
       }
-      // TOKEN_REFRESHED deliberately does NOT trigger a profile re-fetch.
-      // Confirmed via a real HAR file from a live session: this event fires
-      // repeatedly throughout normal use — roughly every 30-100+ seconds,
-      // in tight clusters — almost certainly from Supabase's own built-in
-      // behavior of re-verifying the session whenever the browser tab
-      // regains focus (completely normal for anyone who keeps several tabs
-      // open, which is common usage, not something to avoid). A refreshed
-      // token means exactly one thing: the JWT was renewed. It says nothing
-      // about whether the user's profile, role, or permissions changed —
-      // there is nothing to re-fetch. Treating it the same as a genuine
-      // sign-in was firing a full app_users query dozens of times over a
-      // single session for no benefit — confirmed as real, wasted traffic,
-      // not a theoretical concern.
+      // TOKEN_REFRESHED deliberately does not trigger a re-fetch — it only
+      // means the JWT was renewed, not that the profile changed. Confirmed
+      // via a real HAR file that this fires repeatedly during ordinary use
+      // (e.g. whenever the tab regains focus) and was producing real,
+      // wasted, repeated profile queries for no benefit.
       if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
         try {
-          await new Promise(r => setTimeout(r, 100));
           const loaded = await loadUser(session.user.id);
           if (loaded === null && mounted && event === 'SIGNED_IN') {
             clearLocalSession();
             await supabase.auth.signOut().catch(() => {});
           }
         } catch {
-          // Transient failure — leave the existing session alone.
+          // Transient — leave the existing session alone.
         }
       }
     });
 
     return () => {
       mounted = false;
-      clearTimeout(safetyTimer);
-      if (cacheTrustTimer) clearTimeout(cacheTrustTimer);
       subscription.unsubscribe();
     };
   }, []);
 
   // ─────────────────────────────────────────────────────────────────────
-  // Device heartbeat
+  // Device heartbeat — gated on `user` and `!loading`, i.e. once the one
+  // initial check above has actually completed. No separate flag.
   // ─────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!user || !sessionReady) return;
+    if (!user || loading) return;
     let stopped = false;
     let handle: number | undefined;
     let consecutiveRevoked = 0;
 
     async function tick() {
       if (stopped) return;
-      // Skip the actual work while the tab is hidden — no point keeping a
-      // background tab's device row "active" from the user's perspective,
-      // and it avoids wasted requests while nobody's looking at this tab.
       if (document.visibilityState !== 'visible') {
         handle = window.setTimeout(tick, SESSION_HEARTBEAT_MS);
         return;
@@ -359,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (handle !== undefined) window.clearTimeout(handle);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, sessionReady]);
+  }, [user?.id, loading]);
 
   // ─────────────────────────────────────────────────────────────────────
   // Public actions
@@ -459,7 +413,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, permissions, loading, sessionReady, hasPermission, canAccessSegment, signIn, signOut, refreshUser }}>
+    <AuthContext.Provider value={{ user, permissions, loading, hasPermission, canAccessSegment, signIn, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

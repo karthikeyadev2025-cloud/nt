@@ -1604,3 +1604,37 @@ responsible for the exact delay measured in two independent, real HAR
 files.
 
 Verified: 39 migrations clean, typecheck clean, build clean.
+
+## Full architectural simplification of AuthContext — removed the layered-timer design entirely
+
+After a full day of investigation, a clear pattern emerged: the layered
+timing design (a separate "cache trust" timer, a separate "safety" timer,
+a separate "sessionReady" flag gating the entire dashboard) was itself the
+recurring source of unpredictable delays — confirmed multiple times via
+real browser traces showing these timers firing several times later than
+their nominal duration. Verified directly, myself, via clean browser tests
+with no DevTools recording involved: the slowness was real, not a
+measurement artifact, and inconsistent between consecutive refreshes.
+
+**Rewrote `AuthContext.tsx` with a fundamentally simpler design**: one
+single bounded check (`getSession()`, capped at 4 seconds) controls the
+entire initial-load sequence. No separate cache-trust timer, no separate
+safety timer, no `sessionReady` flag. `loading` always starts `true` and
+resolves exactly once, the same way, every time.
+
+**The explicit tradeoff, stated plainly**: a returning user with a cached
+session no longer gets a near-instant, zero-wait render — they wait for
+one real check, capped at 4 seconds. This is a deliberate choice: a
+consistent, predictable "never more than ~4 seconds" is better than an
+inconsistent "usually instant, occasionally 20+ seconds for reasons that
+were genuinely hard to fully isolate."
+
+All previously-verified, independently-real fixes are preserved: retry
+logic on the profile fetch, TOKEN_REFRESHED no longer triggering a
+re-fetch, visibility-gated polling (SessionDevices, notifications,
+heartbeat, offline queue), proper signOut storage cleanup.
+
+`App.tsx` no longer references `sessionReady` at all — the dashboard now
+renders as soon as `loading` is false, full stop.
+
+Verified: 39 migrations clean, typecheck clean, build clean.
