@@ -212,8 +212,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const hasCachedSession = (() => {
       try { return !!localStorage.getItem(SESSION_KEY); } catch { return false; }
     })();
+    // Supabase's client hydrates its session synchronously from localStorage
+    // the moment it's constructed — before React even mounts. The token is
+    // already available immediately; there's nothing to actually wait for
+    // here. This was previously 500ms, which is pure unnecessary time added
+    // to the blank-loading-screen phase on every single page refresh — the
+    // one moment in the whole app where a full browser reload (not an
+    // in-app transition) forces a real, visible restart from zero. Keeping
+    // this a hair above 0ms (not literally synchronous) avoids any edge
+    // case around React's render timing, while cutting 10x off the wait.
     const cacheTrustTimer = hasCachedSession
-      ? setTimeout(() => { if (mounted) { setLoading(false); setSessionReady(true); } }, 500)
+      ? setTimeout(() => { if (mounted) { setLoading(false); setSessionReady(true); } }, 50)
       : undefined;
     const safetyTimer = setTimeout(() => {
       if (mounted) { setLoading(false); setSessionReady(true); }

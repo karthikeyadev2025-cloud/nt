@@ -1378,3 +1378,22 @@ from the URL on first render, not deferred to an effect. The incorrect
 first render — and the wasted download it triggered — no longer happens.
 
 No migration needed — pure frontend fix in `src/App.tsx`.
+
+## Cut the unnecessary blank-screen delay on every refresh
+
+Realized something important: "first login perfect, refresh slow" isn't
+necessarily a bug — a login is an in-app state change (instant), while a
+refresh is a full browser reload starting completely from zero. Those are
+fundamentally different, and some of that gap is real and unavoidable.
+
+But part of it wasn't necessary. The cache-trust timer that decides when to
+stop showing the loading screen and render the real app was set to 500ms —
+but Supabase's client actually hydrates its session synchronously from
+localStorage the instant it's constructed, before React even mounts. There
+was nothing being waited for in that 500ms; it was pure unnecessary delay
+added to the one moment every refresh forces a real, visible restart.
+
+Reduced to 50ms — keeps a hair of buffer for React's render timing without
+carrying 450ms of dead weight on every single refresh.
+
+Verified: 39 migrations clean, typecheck clean, build clean.
