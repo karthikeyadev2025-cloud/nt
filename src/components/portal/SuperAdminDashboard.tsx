@@ -1736,6 +1736,30 @@ export default function SuperAdminDashboard() {
 
   const tabs = tabGroups.flatMap(g => g.items);
 
+  function prefetchTab(targetTab: Tab) {
+    if (targetTab === 'access') {
+      cachedQuery('access_control_users', async () => {
+        const { data } = await supabase.from('app_users').select('id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at').order('created_at', { ascending: false });
+        return data || [];
+      }).catch(() => {});
+    } else if (targetTab === 'crm') {
+      cachedQuery('leads::', async () => {
+        const { data } = await supabase.from('marketing_leads').select('*').order('created_at', { ascending: false }).limit(400);
+        return data || [];
+      }).catch(() => {});
+    } else if (targetTab === 'hr') {
+      cachedQuery('hr_staff_users', async () => {
+        const { data } = await supabase.from('app_users').select('id, full_name, role, segments, phone, is_active, email').eq('is_active', true).neq('role', 'super_admin').order('full_name');
+        return data || [];
+      }).catch(() => {});
+    } else if (targetTab === 'tickets') {
+      cachedQuery('tickets::', async () => {
+        const { data } = await supabase.from('support_tickets').select('*').order('created_at', { ascending: false }).limit(300);
+        return data || [];
+      }).catch(() => {});
+    }
+  }
+
   function goTo(t: Tab) {
     setTab(t);
     setMobileNavOpen(false);
@@ -1748,7 +1772,7 @@ export default function SuperAdminDashboard() {
           <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-stone-700 uppercase">{g.label}</p>
           <div className="space-y-1">
             {g.items.map(t => (
-              <button key={t.id} onClick={() => goTo(t.id)}
+              <button key={t.id} onClick={() => goTo(t.id)} onMouseEnter={() => prefetchTab(t.id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-orange-50 border border-orange-200 text-orange-800 shadow-sm' : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100 border border-transparent'}`}>
                 <t.icon className={`w-4 h-4 shrink-0 ${tab === t.id ? 'text-orange-700' : 'text-stone-700'}`} /> {t.label}
               </button>
