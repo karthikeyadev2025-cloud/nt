@@ -70,3 +70,8 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION get_segment_summary() TO authenticated;
+
+-- Same reasoning as the previous migration — force an immediate schema
+-- cache reload so this RPC works the instant this migration is applied,
+-- rather than waiting for PostgREST's periodic auto-reload.
+NOTIFY pgrst, 'reload schema';

@@ -1200,3 +1200,29 @@ consolidation, applied to the one major widget that hadn't been touched yet:
 Combined with the previous consolidation, the Overview page's own query
 count is now roughly a third of where it started, with identical, verified
 data correctness and access control.
+
+## Confirmed exact cause of the RPC fallback firing: PostgREST schema cache lag
+
+User's console showed the exact predicted error:
+`Could not find the function public.get_segment_summary without parameters
+in the schema cache` — this is PostgREST's specific error (PGRST202) for
+"the function exists in Postgres, but I haven't refreshed my schema cache
+to know about it yet." This is a well-known Supabase gotcha: creating a
+function via raw SQL (SQL Editor or a manually-run migration) doesn't
+always immediately notify PostgREST — it can lag behind by minutes.
+
+**Confirms two things at once:**
+1. The defensive fallback built into both consolidated widgets is working
+   exactly as designed — the page kept working correctly instead of
+   breaking, exactly the point of building it that way.
+2. The functions themselves ARE present in the database (this error only
+   fires when the function exists but isn't in PostgREST's cache yet — a
+   genuinely missing function gives a different error).
+
+**Immediate fix**: run `NOTIFY pgrst, 'reload schema';` once in the SQL
+Editor — forces PostgREST to pick up both new functions right away.
+
+**Permanent fix**: added `NOTIFY pgrst, 'reload schema';` to the end of
+both RPC-creating migrations, so this can never happen again for any future
+migration that creates a new function — the schema cache reload is now
+automatic and immediate as part of applying the migration itself.

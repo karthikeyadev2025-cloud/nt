@@ -59,3 +59,9 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION get_dashboard_counts(uuid) TO authenticated;
+
+-- Force PostgREST to immediately recognize this new function — without
+-- this, PostgREST's schema cache can lag behind the database by minutes,
+-- during which every call to this RPC fails with PGRST202 ('Could not
+-- find the function... in the schema cache').
+NOTIFY pgrst, 'reload schema';
