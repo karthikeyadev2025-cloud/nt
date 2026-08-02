@@ -1638,3 +1638,22 @@ heartbeat, offline queue), proper signOut storage cleanup.
 renders as soon as `loading` is false, full stop.
 
 Verified: 39 migrations clean, typecheck clean, build clean.
+
+## Automatic stale-version detection — no more manual cache clearing, ever
+
+Built a mechanism so the app fixes stale-cache problems itself, without
+requiring anyone to manually clear browser data after a deploy. Every
+build now gets a unique ID, embedded in the JS bundle and also written to
+a small `build-version.json` file. Every 60 seconds while a tab is
+visible (and immediately whenever it regains focus), the app quietly
+checks that file — if the deployed version has changed since the tab
+loaded, it automatically purges every cache and service worker, then
+reloads itself.
+
+This directly closes the gap that's caused repeated confusion today: a
+real code fix goes live on the server, but a browser that already has the
+app open keeps running the old version until it's told to check. Now it
+checks itself, automatically, within a minute of any new deploy — or
+instantly on the next tab switch.
+
+Verified: 39 migrations clean, typecheck clean, build clean, build-version.json confirmed generated correctly.

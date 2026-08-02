@@ -35,6 +35,45 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Automatic stale-version detection. Every 60 seconds while this tab is
+// visible, check whether a newer build has been deployed since this page
+// loaded — if so, purge everything and reload automatically. This exists
+// specifically so nobody ever has to manually clear their browser's cache
+// after a deploy again: the app detects it's stale and fixes itself.
+(function watchForNewDeploy() {
+  const CHECK_INTERVAL_MS = 60_000;
+  let reloading = false;
+
+  async function checkForNewVersion() {
+    if (reloading || document.visibilityState !== 'visible') return;
+    try {
+      const res = await fetch(`/build-version.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const { buildId } = await res.json();
+      if (buildId && buildId !== __BUILD_ID__) {
+        reloading = true;
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations().catch(() => []);
+          await Promise.all(regs.map(r => r.unregister().catch(() => {})));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys().catch(() => [] as string[]);
+          await Promise.all(keys.map(k => caches.delete(k).catch(() => {})));
+        }
+        window.location.reload();
+      }
+    } catch {
+      // Network hiccup checking for updates — not worth acting on, try
+      // again on the next interval.
+    }
+  }
+
+  setInterval(checkForNewVersion, CHECK_INTERVAL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') checkForNewVersion();
+  });
+})();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
