@@ -3,6 +3,11 @@
   Run this script in your Supabase SQL Editor to enable server-side RPC functions for instant dashboard counts and summary aggregations.
 */
 
+-- Drop old functions first to allow return type signature updates
+DROP FUNCTION IF EXISTS get_dashboard_counts(uuid);
+DROP FUNCTION IF EXISTS get_segment_summary();
+DROP FUNCTION IF EXISTS staff_attendance_summary(text, integer);
+
 -- 1. Dashboard counts RPC
 CREATE OR REPLACE FUNCTION get_dashboard_counts(p_user_id uuid)
 RETURNS jsonb
