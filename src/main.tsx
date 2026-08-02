@@ -49,8 +49,10 @@ if ('serviceWorker' in navigator) {
     try {
       const res = await fetch(`/build-version.json?t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) return;
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('json')) return;
       const { buildId } = await res.json();
-      if (buildId && buildId !== __BUILD_ID__) {
+      if (buildId && typeof __BUILD_ID__ !== 'undefined' && buildId !== __BUILD_ID__) {
         reloading = true;
         if ('serviceWorker' in navigator) {
           const regs = await navigator.serviceWorker.getRegistrations().catch(() => []);
@@ -63,8 +65,7 @@ if ('serviceWorker' in navigator) {
         window.location.reload();
       }
     } catch {
-      // Network hiccup checking for updates — not worth acting on, try
-      // again on the next interval.
+      // Network hiccup checking for updates — try again on next interval.
     }
   }
 

@@ -779,7 +779,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
                   <p className="text-stone-900 text-sm font-medium truncate">{l.customer_name}
                     {seg && <span className="text-xs px-2 py-0.5 rounded ml-2" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
                   </p>
-                  <p className="text-stone-700 text-xs mt-0.5">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at).toLocaleDateString()}</p>
+                  <p className="text-stone-700 text-xs">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at).toLocaleDateString()}</p>
                 </div>
               </label>
               <button className="text-teal-700 text-xs font-medium shrink-0" disabled={busy} onClick={() => user && assign(user.id, [l.id])}>
@@ -794,9 +794,6 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
   );
 }
 
-// ─────────────────────────── Appointments (manager / super admin)
-// Leads where a telecaller booked a dated appointment. The manager's job here
-// is to put a named field executive against each one before the date arrives.
 export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
   const toast = useToast();
   const [leads, setLeads] = useState<any[]>([]);
@@ -806,31 +803,38 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
   const [busy, setBusy] = useState('');
 
   async function load() {
-    let q = supabase.from('marketing_leads').select('*')
-      .not('appointment_at', 'is', null)
-      .not('stage', 'in', '(won,lost)')
-      .order('appointment_at', { ascending: true }).limit(300);
-    if (segFilter) q = q.eq('segment_slug', segFilter);
-    if (scope === 'upcoming') q = q.gte('appointment_at', new Date().toISOString());
-    if (scope === 'past') q = q.lt('appointment_at', new Date().toISOString());
-    const { data, error } = await q;
-    if (error) { toast.error(`Couldn't load appointments: ${error.message}`); return; }
-    let rows = data || [];
-    // "Needs an executive" = still sitting with whoever booked it, or nobody.
-    if (scope === 'unassigned') {
-      const execIds = new Set(execs.map(e => e.id));
-      rows = rows.filter(l => !l.assigned_to || !execIds.has(l.assigned_to));
+    const cacheKey = `appointments:${segFilter}:${scope}`;
+    try {
+      const data = await cachedQuery(cacheKey, async () => {
+        let q = supabase.from('marketing_leads').select('*')
+          .not('appointment_at', 'is', null)
+          .not('stage', 'in', '(won,lost)')
+          .order('appointment_at', { ascending: true }).limit(300);
+        if (segFilter) q = q.eq('segment_slug', segFilter);
+        if (scope === 'upcoming') q = q.gte('appointment_at', new Date().toISOString());
+        if (scope === 'past') q = q.lt('appointment_at', new Date().toISOString());
+        const { data, error } = await q;
+        if (error) throw error;
+        return data || [];
+      });
+      let rows = data || [];
+      if (scope === 'unassigned') {
+        const execIds = new Set(execs.map(e => e.id));
+        rows = rows.filter((l: any) => !l.assigned_to || !execIds.has(l.assigned_to));
+      }
+      setLeads(rows);
+    } catch (err: any) {
+      toast.error(`Couldn't load appointments: ${err.message}`);
     }
-    setLeads(rows);
   }
 
   useEffect(() => {
-    supabase.from('app_users').select('id, full_name, role, segments')
-      .eq('is_active', true).eq('role', 'marketing_executive').order('full_name')
-      .then(({ data }) => { if (data) setExecs(data); });
-    // Fallback for projects without pg_cron: sweeping here means reminders
-    // still go out whenever a manager opens this board. The function is
-    // idempotent, so calling it repeatedly is harmless.
+    cachedQuery('marketing_execs_summary', async () => {
+      const { data, error } = await supabase.from('app_users').select('id, full_name, role, segments')
+        .eq('is_active', true).eq('role', 'marketing_executive').order('full_name');
+      if (error) throw error;
+      return data || [];
+    }).then(data => { if (data) setExecs(data); }).catch(() => {});
     supabase.rpc('remind_unassigned_appointments');
   }, []);
   useEffect(() => { load(); }, [segFilter, scope, execs.length]);
