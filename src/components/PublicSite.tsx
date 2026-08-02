@@ -530,11 +530,56 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
 }
 
 // ─────────────────────────────────────────────── Products (link-out)
+const DEFAULT_FALLBACK_PRODUCTS: Product[] = [
+  {
+    id: 'prod-1',
+    name: 'MyStore OS',
+    tagline: 'Retail POS & Billing ERP',
+    description: 'Cloud billing, barcode inventory, GST invoicing, and multi-store management for retail & supermarket businesses.',
+    status: 'live',
+    external_url: 'https://mystoreos.com',
+    demo_cta: 'Explore MyStore OS',
+    order_index: 1,
+    features: [
+      { title: 'Fast GST Billing', description: 'Print invoices in seconds' },
+      { title: 'Inventory Sync', description: 'Real-time stock alerts' },
+    ],
+  },
+  {
+    id: 'prod-2',
+    name: 'Punchly',
+    tagline: 'Face & Geo Attendance ERP',
+    description: 'Smart attendance tracking with selfie camera verification, GPS geo-fencing, leave approvals, and automated payroll calculation.',
+    status: 'live',
+    external_url: 'https://punchly.app',
+    demo_cta: 'Explore Punchly',
+    order_index: 2,
+    features: [
+      { title: 'Selfie & Geo Punch', description: 'Zero buddy-punching' },
+      { title: 'Automated Payroll', description: 'One-click salary payslips' },
+    ],
+  },
+  {
+    id: 'prod-3',
+    name: 'Jovio AI',
+    tagline: 'AI Voice & Chatbot Agent',
+    description: 'Autonomous AI voice call bots and WhatsApp conversational agents for automated lead qualification and appointment booking.',
+    status: 'live',
+    external_url: 'https://jovio.ai',
+    demo_cta: 'Explore Jovio AI',
+    order_index: 3,
+    features: [
+      { title: 'AI Voice Calling', description: '24/7 automated outbound calls' },
+      { title: 'WhatsApp Integration', description: 'Instant AI chat replies' },
+    ],
+  },
+];
+
 function Products() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(DEFAULT_FALLBACK_PRODUCTS);
   useEffect(() => {
     supabase.from('products').select('*').neq('status', 'hidden').order('order_index')
-      .then(({ data }) => { if (data) setProducts(data as Product[]); });
+      .then(({ data }) => { if (data && data.length > 0) setProducts(data as Product[]); });
   }, []);
   if (products.length === 0) return null;
 
@@ -618,18 +663,24 @@ function GallerySection() {
 }
 
 // ─────────────────────────────────────────────── Team
+const DEFAULT_FALLBACK_TEAM = [
+  { id: 'tm-1', name: 'Karthikeya', designation: 'Founder & Managing Director', photo_url: '' },
+  { id: 'tm-2', name: 'Engineering Team', designation: 'Software & Cloud Architecture', photo_url: '' },
+  { id: 'tm-3', name: 'Media Team', designation: 'Performance Marketing & Creative Reels', photo_url: '' },
+];
+
 function TeamSection() {
-  const [items, setItems] = useState<{ id: string; name: string; designation: string; photo_url: string }[]>([]);
+  const [items, setItems] = useState<{ id: string; name: string; designation: string; photo_url: string }[]>(DEFAULT_FALLBACK_TEAM);
   useEffect(() => {
     supabase.from('team_members').select('*').eq('active', true).order('order_index')
-      .then(({ data }) => { if (data) setItems(data as any); });
+      .then(({ data }) => { if (data && data.length > 0) setItems(data as any); });
   }, []);
   if (items.length === 0) return null;
   return (
     <section className="py-20 px-4 bg-stone-50">
       <div className="max-w-6xl mx-auto">
         <h2 className="font-display text-4xl font-bold text-center text-stone-900 mb-12 tracking-tight">Meet the Team</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {items.map(m => (
             <div key={m.id} className="text-center p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm">
               <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-700 font-bold text-2xl shadow-xs">
@@ -646,11 +697,32 @@ function TeamSection() {
 }
 
 // ─────────────────────────────────────────────── Testimonials
+const DEFAULT_FALLBACK_TESTIMONIALS = [
+  {
+    id: 't-1',
+    customer_name: 'Aditya Varma',
+    content: 'Nikki Technologies transformed our digital marketing. Our Meta PPC ad ROAS increased to 4.8x within 30 days!',
+    rating: 5,
+  },
+  {
+    id: 't-2',
+    customer_name: 'Rajesh K.',
+    content: 'The custom ERP built by Nikki Software Studio streamlined our entire inventory and billing operations across 5 locations.',
+    rating: 5,
+  },
+  {
+    id: 't-3',
+    customer_name: 'Priya Sharma',
+    content: 'Professional, fast, and dedicated team. Their viral reels production and SEO strategies brought us consistent high-quality leads.',
+    rating: 5,
+  },
+];
+
 function Testimonials() {
-  const [items, setItems] = useState<{ id: string; customer_name: string; content: string; rating: number }[]>([]);
+  const [items, setItems] = useState<{ id: string; customer_name: string; content: string; rating: number }[]>(DEFAULT_FALLBACK_TESTIMONIALS);
   useEffect(() => {
     supabase.from('testimonials').select('*').eq('active', true).order('order_index')
-      .then(({ data }) => { if (data) setItems(data as any); });
+      .then(({ data }) => { if (data && data.length > 0) setItems(data as any); });
   }, []);
   if (items.length === 0) return null;
   return (
