@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { withTimeout } from '../lib/withTimeout';
 import { Lock, Mail, AlertCircle, Users, Phone, Briefcase, HeartHandshake, Clock, CheckCircle2 } from 'lucide-react';
 import { KiteTailLogo } from './KiteTailLogo';
 
@@ -33,10 +34,19 @@ export default function UnifiedLogin() {
     if (newPassword.length < 6) { setError('Password must be at least 6 characters'); return; }
     if (newPassword !== newPasswordConfirm) { setError('Passwords do not match'); return; }
     setSettingPassword(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setSettingPassword(false);
-    if (error) { setError(error.message); return; }
-    setPasswordSetDone(true);
+    try {
+      const { error } = await withTimeout(
+        supabase.auth.updateUser({ password: newPassword }),
+        8000,
+        'set password'
+      );
+      if (error) { setError(error.message); return; }
+      setPasswordSetDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setSettingPassword(false);
+    }
   }
 
   const [now, setNow] = useState(new Date());

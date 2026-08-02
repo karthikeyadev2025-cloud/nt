@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin } from 'lucide-react';
 import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
+import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs } from './shared';
@@ -561,38 +562,48 @@ export function TeamActivityFeed() {
 
   async function load() {
     setLoading(true);
-    // Order by when the work actually happened, so a visit logged offline on
-    // Monday and synced Wednesday sits on Monday, not at the top.
-    let q = supabase.from('lead_remarks').select('*')
-      .order('occurred_at', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false }).limit(300);
-    if (typeFilter) q = q.eq('call_type', typeFilter);
-    if (personFilter) q = q.eq('user_id', personFilter);
-    if (days) q = q.gte('created_at', new Date(Date.now() - days * 86400000).toISOString());
-    const { data } = await q;
-    if (data) setItems(data);
-    const leadIds = [...new Set((data || []).map((r: any) => r.lead_id))];
-    const userIds = [...new Set((data || []).map((r: any) => r.user_id).filter(Boolean))];
-    const photoPaths = [...new Set((data || []).map((r: any) => r.photo_url).filter(Boolean))] as string[];
-    if (leadIds.length) {
-      const { data: leads } = await supabase.from('marketing_leads').select('id, customer_name, phone').in('id', leadIds);
-      if (leads) setLeadNames(Object.fromEntries(leads.map((l: any) => [l.id, { name: l.customer_name, phone: l.phone }])));
+    try {
+      await withTimeout((async () => {
+        // Order by when the work actually happened, so a visit logged offline on
+        // Monday and synced Wednesday sits on Monday, not at the top.
+        let q = supabase.from('lead_remarks').select('*')
+          .order('occurred_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false }).limit(300);
+        if (typeFilter) q = q.eq('call_type', typeFilter);
+        if (personFilter) q = q.eq('user_id', personFilter);
+        if (days) q = q.gte('created_at', new Date(Date.now() - days * 86400000).toISOString());
+        const { data } = await q;
+        if (data) setItems(data);
+        const leadIds = [...new Set((data || []).map((r: any) => r.lead_id))];
+        const userIds = [...new Set((data || []).map((r: any) => r.user_id).filter(Boolean))];
+        const photoPaths = [...new Set((data || []).map((r: any) => r.photo_url).filter(Boolean))] as string[];
+        if (leadIds.length) {
+          const { data: leads } = await supabase.from('marketing_leads').select('id, customer_name, phone').in('id', leadIds);
+          if (leads) setLeadNames(Object.fromEntries(leads.map((l: any) => [l.id, { name: l.customer_name, phone: l.phone }])));
+        }
+        if (userIds.length) {
+          const { data: users } = await supabase.from('app_users').select('id, full_name').in('id', userIds);
+          if (users) setUserNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
+        }
+        if (photoPaths.length) {
+          // lead-photos is a private bucket — resolve real signed URLs in bulk
+          // so proof photos render as thumbnails instead of a click-through link.
+          const { data: signed } = await supabase.storage.from('lead-photos').createSignedUrls(photoPaths, 3600);
+          if (signed) {
+            const map: Record<string, string> = {};
+            signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
+            setPhotoUrls(map);
+          }
+        }
+      })(), 12000, 'load activity feed');
+    } catch {
+      // A stalled/mismatched connection must never leave this spinning
+      // forever — fall through to the finally below, which always clears
+      // loading. Whatever partial data arrived (via the setX calls above,
+      // which run as each individual query completes) stays on screen.
+    } finally {
+      setLoading(false);
     }
-    if (userIds.length) {
-      const { data: users } = await supabase.from('app_users').select('id, full_name').in('id', userIds);
-      if (users) setUserNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
-    }
-    if (photoPaths.length) {
-      // lead-photos is a private bucket — resolve real signed URLs in bulk
-      // so proof photos render as thumbnails instead of a click-through link.
-      const { data: signed } = await supabase.storage.from('lead-photos').createSignedUrls(photoPaths, 3600);
-      if (signed) {
-        const map: Record<string, string> = {};
-        signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
-        setPhotoUrls(map);
-      }
-    }
-    setLoading(false);
   }
   useEffect(() => { load(); }, [typeFilter, personFilter, days]);
 

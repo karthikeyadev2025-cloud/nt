@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { withTimeout } from './withTimeout';
 
 // ─────────────────────────────────────────────────────────────
 // Session Devices — tracks each browser/device the user signs in
@@ -171,12 +172,16 @@ export interface SessionRow {
 
 export async function listActiveSessions(userId: string): Promise<SessionRow[]> {
   try {
-    const { data, error } = await supabase
-      .from('user_sessions')
-      .select('id, device_label, user_agent, platform_hint, created_at, last_seen_at, revoked_at')
-      .eq('user_id', userId)
-      .is('revoked_at', null)
-      .order('last_seen_at', { ascending: false });
+    const { data, error } = await withTimeout(
+      supabase
+        .from('user_sessions')
+        .select('id, device_label, user_agent, platform_hint, created_at, last_seen_at, revoked_at')
+        .eq('user_id', userId)
+        .is('revoked_at', null)
+        .order('last_seen_at', { ascending: false }),
+      8000,
+      'list sessions'
+    );
     if (error || !data) return [];
     return data as SessionRow[];
   } catch {

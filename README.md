@@ -1294,3 +1294,37 @@ This does not affect the existing live database in any way — cctv was
 already fully retired there through the now-removed migrations, and those
 changes are permanent facts in that database regardless of whether the
 migration files that made them still exist in the repo.
+
+## Real bug found and reproduced live: stuck-forever loading with a stale cross-project session
+
+Traced the user's "same problem" report to a real, reproducible bug — found
+by actually clearing browser storage and testing the exact failure state
+myself. A browser holding a session token from a DIFFERENT Supabase project
+(e.g. one that existed before switching to a new database) can have a token
+that's syntactically valid but doesn't correspond to anything real on the
+current backend. Some requests made with a token like that don't fail
+cleanly — they just never resolve. Any `await supabase...` with no timeout
+that gates a `loading` state then hangs forever, with no way out short of
+manually clearing browser storage.
+
+Audited the codebase for this exact class of gap — any Supabase call
+gating a loading state with no timeout protection — and fixed every real
+instance found:
+
+1. **`listActiveSessions`** (Session Devices panel) — the exact function
+   that was reproduced hanging. Now wrapped with an 8s timeout.
+2. **Password reset "set new password" flow** — had zero timeout
+   protection; a stall here would leave the user stuck on "Setting
+   password…" forever with no error and no way forward. Now wrapped, with
+   a proper error message shown if it times out.
+3. **CRM/Leads "Team Activity" feed** — chains up to 4 sequential queries
+   (remarks, lead names, staff names, signed photo URLs) with no overall
+   bound. Now wrapped as one unit with a 12s timeout — always reaches
+   `setLoading(false)` via `finally`, regardless of which step stalls.
+
+Extracted the timeout wrapper (previously private to `AuthContext`) into a
+shared `src/lib/withTimeout.ts` utility so it's reusable everywhere this
+pattern is needed, instead of every file reinventing it or — as found here
+— several genuinely not having it at all.
+
+Verified: 39 migrations run clean, typecheck clean, build clean.
