@@ -604,13 +604,14 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   async function load() {
     try {
       const data = await cachedQuery('access_control_users', async () => {
-        const { data, error } = await supabase.from('app_users').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('app_users').select('id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at').order('created_at', { ascending: false });
         if (error) throw error;
         return data;
       });
       if (data) setUsers(data);
     } catch {
-      // ignore
+      const { data } = await supabase.from('app_users').select('id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at').order('created_at', { ascending: false });
+      if (data) setUsers(data);
     }
   }
 
