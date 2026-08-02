@@ -27,7 +27,16 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
     const { data } = await supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
     if (data) setItems(data);
   }
-  useEffect(() => { load(); const t = setInterval(load, 60000); return () => clearInterval(t); }, [user]);
+  useEffect(() => {
+    load();
+    // Only poll while the tab is actually visible — same reasoning as the
+    // SessionDevices and auth-heartbeat fixes: an unguarded interval in a
+    // background tab either gets throttled and fires late, or queues up and
+    // fires as a burst the moment the tab regains focus. Checking visibility
+    // before each tick means there's never a backlog to release.
+    const t = setInterval(() => { if (document.visibilityState === 'visible') load(); }, 60000);
+    return () => clearInterval(t);
+  }, [user]);
 
   async function markRead(id: string) {
     await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id);

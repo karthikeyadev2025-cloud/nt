@@ -1525,3 +1525,42 @@ have not yet found what. Flagging this honestly rather than claiming full
 resolution.
 
 Verified: 39 migrations clean, typecheck clean, build clean.
+
+## Definitive finding via HAR "pages" data: no browser reload, then found and fixed a 3rd + 4th unguarded poller
+
+Checked the HAR file's `pages` array specifically — HAR files record each
+distinct browser navigation as a separate page entry. Result: **1 page
+entry, 1 pageref, for all 73 requests across the full session.** This
+definitively rules out a full browser reload or tab-discard/restore as the
+cause — everything happened inside one continuous React session, so the
+repeating pattern is genuinely something in the app's own JavaScript.
+
+Cross-checked every `onAuthStateChange` subscription in the codebase (2
+total) — neither explains the pattern; one is scoped to the login page and
+only reacts to password-recovery, unrelated to this.
+
+**Re-examined the actual burst contents closely**: the *full* dashboard
+burst (get_dashboard_counts, get_segment_summary, attendance, HEAD requests
+for products/testimonials/etc. — all Overview-tab-specific data) occurred
+only twice in the whole session, roughly 2 minutes 13 seconds apart. That
+interval, and the fact this data is exclusively tied to the Overview tab's
+own mount effects, is consistent with genuinely switching to the Overview
+tab, away to another tab, then back — correct, intended behavior (you want
+fresh data when you revisit a tab), not a bug.
+
+The *smaller*, more frequent bursts (`app_users` + `user_sessions` +
+`notifications`, no dashboard-specific data) recurred roughly every 40-50
+seconds throughout — and `notifications` pointed to a component I hadn't
+checked yet.
+
+**Found and fixed a third instance of the exact same unguarded-interval
+bug**: `NotificationBell` polls every 60s with no visibility check — same
+class of bug already fixed in `SessionDevices` and the auth heartbeat.
+Fixed identically.
+
+**Found and fixed a fourth**: `offlineQueue.ts`'s auto-flush interval had a
+`visibilitychange` listener to flush once on refocus, but the interval
+itself kept firing every 60s while hidden regardless. Gated it too, for
+consistency with the other three.
+
+Verified: 39 migrations clean, typecheck clean, build clean.

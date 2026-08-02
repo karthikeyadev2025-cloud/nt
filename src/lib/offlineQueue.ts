@@ -197,7 +197,12 @@ export function startAutoFlush(supabase: any, onChange?: (r: FlushResult) => voi
 
   window.addEventListener('online', onOnline);
   document.addEventListener('visibilitychange', onVisible);
-  const timer = window.setInterval(run, 60_000);
+  // Only tick while visible — consistent with the same fix applied to
+  // SessionDevices, the auth heartbeat, and NotificationBell. The
+  // visibilitychange listener above already covers "flush once when the
+  // tab regains focus"; this interval no longer needs to keep firing while
+  // hidden too.
+  const timer = window.setInterval(() => { if (document.visibilityState === 'visible') run(); }, 60_000);
   run();
 
   return () => {
