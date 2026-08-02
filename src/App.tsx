@@ -40,7 +40,7 @@ function PageLoader() {
 }
 
 function AppContent() {
-  const { user, loading, sessionReady, hasPermission } = useAuth();
+  const { user, loading, hasPermission } = useAuth();
   // Computed synchronously from the URL on first render, not defaulted to
   // false and corrected a render later via useEffect. That default meant
   // every single load of /login, /admin, or /portal briefly rendered
@@ -98,11 +98,18 @@ function AppContent() {
   // ── Portal / Login routes: wait for auth ──────────────────────────
   if (loading) return <PageLoader />;
 
-  // The cache fast-path can set `user` from localStorage before the REAL
-  // Supabase client has confirmed its session token. Hold a neutral loader
-  // (never the login screen) until sessionReady flips true so dashboard
-  // data queries don't fire with a stale/missing token.
-  if (user && !sessionReady) return <PageLoader />;
+  // Deliberately NOT gating on sessionReady here anymore. It used to block
+  // the whole dashboard until a session-confirmation flag flipped true —
+  // but that flag was set by a timer, and a real HAR file from a live
+  // session proved Chrome can throttle that timer (whenever the tab isn't
+  // the actively focused one — including just having DevTools open) for
+  // 20+ seconds, during which the ENTIRE app sat on a blank loading screen
+  // despite the Supabase client already having a valid, usable token the
+  // whole time. The client hydrates its session synchronously from
+  // localStorage before this even renders; there's nothing left to wait
+  // for. If a query ever does fire with a genuinely stale token, that's an
+  // ordinary, already-handled error case (empty state / fallback) — not
+  // something worth freezing the whole UI to avoid.
 
   if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
 

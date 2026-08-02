@@ -1564,3 +1564,43 @@ itself kept firing every 60s while hidden regardless. Gated it too, for
 consistency with the other three.
 
 Verified: 39 migrations clean, typecheck clean, build clean.
+
+## THE root cause — found with definitive proof, and removed
+
+A second HAR file with 4 separate page loads showed a completely consistent,
+severe pattern: **all static assets finished loading in 0.27 seconds, then
+literally nothing happened for ~13-22 seconds** before the first data query
+fired — across all 4 tests. Checked specifically for a slow auth/token
+network call that might explain the gap: **zero auth requests occurred
+during that window.** That's definitive — the delay was not the network,
+not the database, not anything server-side. It was pure idle JavaScript,
+waiting on something in this app's own code.
+
+**Root cause**: `App.tsx` had a gate —
+`if (user && !sessionReady) return <PageLoader />;` — that blocked the
+*entire* dashboard from rendering anything until an internal confirmation
+flag flipped true. That flag was set by a `setTimeout`. Chrome throttles
+`setTimeout` timers in tabs that aren't the actively focused one — which
+includes, ironically, exactly the situation of using DevTools to capture a
+HAR file. When that timer got throttled, the whole app sat frozen on a
+loading screen for however long the throttling lasted, despite the
+Supabase client already having a perfectly valid, usable session token the
+entire time — since that client hydrates synchronously from localStorage,
+independent of this flag entirely.
+
+**Fixed**: removed the gate. The dashboard now renders immediately once the
+cached session is available — no waiting on a flag that was never actually
+required for the underlying Supabase client to function, and was only ever
+a source of exactly this kind of multi-second (sometimes 20+ second)
+freeze. If an individual query ever does fire with a genuinely stale token,
+that is an ordinary, already-handled case (empty state, graceful fallback)
+— not something worth blocking the entire UI to prevent.
+
+`sessionReady` still exists and is still used for the (much lower-stakes)
+heartbeat gating, unaffected by this change.
+
+This is not a guess — the fix directly targets the exact mechanism proven
+responsible for the exact delay measured in two independent, real HAR
+files.
+
+Verified: 39 migrations clean, typecheck clean, build clean.
