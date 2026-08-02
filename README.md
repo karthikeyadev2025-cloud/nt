@@ -944,3 +944,38 @@ rendering correctly on top of the wrong URL — a pure routing bug, not a
 data-fetch, RLS, or session bug.
 
 No migration needed — pure frontend fix in `src/components/UnifiedLogin.tsx`.
+
+## Real bug found from an actual browser console error — fixed
+
+User reported this exact error from their browser console:
+```
+ohprabgcstqwswbcthjs.supabase.co/rest/v1/user_sessions?select=id
+Failed to load resource: the server responded with a status of 401 ()
+```
+
+A 401 (not 403) at this layer means PostgREST rejected the request's JWT
+itself — invalid, missing, or expired — before RLS was ever evaluated.
+
+**Root cause, found by tracing the exact request:** `user_sessions?select=id`
+matches `beginSession()`'s insert-and-return-id call in `sessionTracker.ts`.
+That function is invoked from a heartbeat effect in `AuthContext.tsx` that
+fires 3 seconds after `user` becomes truthy — but `user` is set from the
+**cached** localStorage session immediately on page load, while the *real*
+Supabase client token isn't confirmed/refreshed until `sessionReady` becomes
+true (which, on a slow connection or when the cached token had genuinely
+expired, can take longer than 3 seconds — see the earlier
+`canTrustCacheImmediately` fix).
+
+The heartbeat effect was gated only on `user`, not on `sessionReady` — every
+other data-fetching path in the app already received that protection, but
+this one was missed. On a slow connection, the first heartbeat tick could
+fire its INSERT before the real token was attached, and PostgREST correctly
+rejected it with 401.
+
+**Fixed:** the heartbeat effect now also waits for `sessionReady`, matching
+the same protection every other data fetch in the app already has. Added
+`sessionReady` to the effect's dependency list so it re-evaluates and starts
+the heartbeat as soon as the real session is confirmed, instead of being
+permanently skipped if `user` was already set when the check first ran.
+
+No migration needed — pure frontend fix in `src/contexts/AuthContext.tsx`.

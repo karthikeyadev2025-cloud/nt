@@ -434,8 +434,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Heartbeat: while a user is signed in, keep our `user_sessions` row alive
   // and force sign-out if it was revoked from another device.
+  //
+  // Gated on sessionReady, not just user. `user` is set from the cached
+  // localStorage session immediately on load — but the REAL Supabase client
+  // token isn't confirmed/refreshed until sessionReady flips true (which can
+  // take longer than the 3s heartbeat delay on a slow connection or when the
+  // cached token had actually expired). Previously this effect only checked
+  // `user`, so on a slow connection the first heartbeat tick could fire
+  // beginSession()'s INSERT before the real token was attached — PostgREST
+  // correctly rejected that request with 401 (invalid/stale JWT), which
+  // showed up in the browser console as a real, reproducible error even
+  // though the person's session was actually fine a moment later.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !sessionReady) return;
     let stopped = false;
     let handle: number | undefined;
     // Require the row to come back revoked on TWO consecutive polls before
@@ -480,7 +491,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Intentionally omit signOut — it's stable and referencing it here would
     // re-arm the timer on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, sessionReady]);
 
   const hasPermission = (perm: string) =>
     !!user && (user.role === 'super_admin' || permissions[perm] === true || permissions['all'] === true);
