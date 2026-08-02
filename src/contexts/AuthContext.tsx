@@ -52,7 +52,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const SESSION_KEY = 'nkt_user_session';
-const AUTH_TIMEOUT_MS = 15000; // 15s hard cap on any supabase call in the auth flow
+const AUTH_TIMEOUT_MS = 5000; // 5s hard cap — 15s was way too long; users saw 1-2 min hangs
 
 // Wrap any thenable (Supabase's builder is thenable but not a real Promise) with a
 // timeout so a broken/slow Supabase call never hangs the UI forever.
@@ -282,29 +282,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     //    session), or the cached token is stale, we wait for the real
     //    getSession() to actually complete. The 15s hard cap applies as a
     //    last-resort backstop.
+    // Trust the cache if we have a stored user session. Even if the access
+    // token is near-expiry or already expired, Supabase's client will
+    // transparently refresh it via the stored refresh_token in the
+    // background. There is NO reason to block the entire UI on that
+    // refresh — the cached user/permissions are correct for rendering the
+    // shell, and actual data queries are gated on sessionReady anyway.
+    // The old 60-second-margin check rejected perfectly valid sessions
+    // whose access_token happened to be within its normal refresh window,
+    // which meant EVERY returning user whose token had been idle for
+    // >59 minutes (i.e., most of them) fell through to the 15-second
+    // safety net — that was the 1-2 minute hang on refresh.
     const canTrustCacheImmediately = (() => {
       try {
-        if (!localStorage.getItem(SESSION_KEY)) return false;
-        // Find Supabase's own stored session. The key is
-        // sb-<project-ref>-auth-token. We don't want to hard-code the ref, so
-        // scan for any matching key.
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) {
-            const raw = localStorage.getItem(k);
-            if (!raw) return false;
-            const parsed = JSON.parse(raw);
-            // Supabase persists { access_token, refresh_token, expires_at, ... }.
-            // expires_at is a UNIX timestamp in seconds.
-            const expiresAt = parsed?.expires_at;
-            if (typeof expiresAt !== 'number') return false;
-            const nowSec = Math.floor(Date.now() / 1000);
-            // 60-second safety margin — a token expiring in 30s will hit
-            // refresh-in-flight territory the moment a dashboard query runs.
-            return expiresAt - nowSec > 60;
-          }
-        }
-        return false;
+        return !!localStorage.getItem(SESSION_KEY);
       } catch {
         return false;
       }
@@ -315,7 +306,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false);
             setSessionReady(true);
           }
-        }, 2000)
+        }, 500)
       : undefined;
     const safetyTimer = setTimeout(() => {
       if (mounted) {
