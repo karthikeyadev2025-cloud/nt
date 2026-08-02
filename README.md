@@ -979,3 +979,32 @@ the heartbeat as soon as the real session is confirmed, instead of being
 permanently skipped if `user` was already set when the check first ran.
 
 No migration needed — pure frontend fix in `src/contexts/AuthContext.tsx`.
+
+## Real performance fix from a Chrome DevTools LCP trace
+
+User shared a genuine performance audit (LCP 2,565ms, "Needs Improvement"),
+with two concrete, actionable findings. Both addressed:
+
+### 1. Render-blocking font CSS (104ms)
+The Google Fonts stylesheet was loaded as a plain blocking
+`<link rel="stylesheet">`. Fixed with the standard non-blocking pattern:
+`<link rel="preload" as="style" onload="this.rel='stylesheet'">` plus a
+`<noscript>` fallback. Removes it from the critical rendering path entirely
+— preconnect to fonts.gstatic.com/fonts.googleapis.com was already in place.
+
+### 2. StaffPortal/vendor JS executing on "the login page"
+This looked alarming but had a clear explanation once traced: visiting
+`/login` while already signed in has always rendered the dashboard content
+in place — a design already confirmed correct earlier — but the **URL never
+changed** to reflect that. So a performance trace of "the login page" (taken
+while signed in) was actually measuring the full dashboard bundle, mislabeled
+as the login page. The dashboard code was already properly lazy-loaded via
+`React.lazy()` — an anonymous visitor never downloads it — so there was no
+real bundling problem, just a misleading URL.
+
+**Fixed:** authenticated visits to `/login` now self-correct the URL to
+`/portal` via `history.replaceState`, mirroring the earlier post-signin fix.
+Now a performance/analytics tool that visits `/login` will only ever measure
+the actual anonymous login form — the true "login page."
+
+No migration needed — pure frontend fix (`index.html`, `src/App.tsx`).

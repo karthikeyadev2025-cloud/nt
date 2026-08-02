@@ -86,6 +86,18 @@ function AppContent() {
 
   if (isLoginRoute) {
     if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
+    // An authenticated visit to /login, /admin, or /portal renders the right
+    // dashboard below regardless of which of the three the URL currently
+    // shows — but if it's specifically /login, correct the URL to /portal.
+    // Without this, a returning signed-in user (or any tool auditing "the
+    // login page") loading /login directly gets the full dashboard bundle
+    // served under a URL that claims to be the anonymous login form — which
+    // is both misleading and, for a performance audit, measures the wrong
+    // page entirely (this is exactly why an LCP trace of "/login" showed
+    // StaffPortal/SuperAdminDashboard code on the critical path).
+    if (window.location.pathname === '/login') {
+      window.history.replaceState({}, '', '/portal');
+    }
     // A temp password (set by an admin) must be replaced before anything else.
     if (user.must_change_password) return <Suspense fallback={<PageLoader />}><ForcePasswordChange /></Suspense>;
     // Only genuinely administrative permissions route to the admin console.

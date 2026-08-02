@@ -8,7 +8,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Non-blocking font load: fetch the CSS with low priority via preload,
+         then swap it to a real stylesheet once it arrives. Chrome DevTools'
+         LCP trace flagged this as a 104ms render-blocking resource when
+         loaded as a plain <link rel="stylesheet">; this pattern removes it
+         from the critical rendering path entirely while still applying the
+         real font as soon as it's ready (no FOUT beyond the normal
+         font-display: swap behavior already requested via &display=swap). -->
+    <link rel="preload" as="style"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap"
+          onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    </noscript>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
     <meta name="supported-color-schemes" content="light" />
