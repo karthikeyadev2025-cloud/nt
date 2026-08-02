@@ -157,7 +157,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const inFlightLoadRef = useRef<{ userId: string; promise: Promise<AppUser | null> } | null>(null);
   const recentLoadRef = useRef<{ userId: string; result: AppUser | null; at: number } | null>(null);
-  const RECENT_LOAD_WINDOW_MS = 2000;
+  // Widened from 2s after finding real evidence (via performance.getEntriesByType
+  // in a live browser session) that app_users was being fetched 4 times on a
+  // single page load. Traced to Supabase's built-in cross-tab auth sync:
+  // supabase-js listens for storage events, so activity in ANY open tab of
+  // this site (token refresh, sign-in) re-fires the auth listener — and
+  // therefore loadUser() — in EVERY other open tab of the same origin, not
+  // just the active one. Multiple tabs of the same site open at once is a
+  // completely normal thing to do, so this needed a real fix, not a
+  // workaround. 2s wasn't wide enough to catch refetches spaced further
+  // apart across tabs; a user's own profile changing within 15s is rare
+  // enough that the staleness tradeoff is clearly worth eliminating this.
+  const RECENT_LOAD_WINDOW_MS = 15000;
 
   async function loadUser(userId: string): Promise<AppUser | null> {
     const existing = inFlightLoadRef.current;

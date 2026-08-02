@@ -6,6 +6,7 @@ import {
   Clock, CalendarDays, CreditCard, Repeat, Menu, X,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { cachedRpc } from '../../lib/cachedRpc';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
@@ -92,7 +93,13 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
       // one RPC call returns everything in a single round trip. RLS still
       // applies exactly as before (verified: the RPC is NOT SECURITY DEFINER,
       // so a segment-scoped manager still only sees their segment's counts).
-      const { data: counts, error: rpcError } = await supabase.rpc('get_dashboard_counts', { p_user_id: user?.id });
+      // Routed through a shared cache — TodayAtAGlance calls this same RPC
+      // independently; found via a live browser session that both were
+      // firing as genuine duplicates instead of sharing one network call.
+      const { data: counts, error: rpcError } = await cachedRpc(
+        `get_dashboard_counts:${user?.id}`,
+        () => supabase.rpc('get_dashboard_counts', { p_user_id: user?.id })
+      );
 
       if (rpcError || !counts) {
         // Real fallback, not just a log line: if the RPC is missing (most
@@ -217,9 +224,15 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
     (async () => {
       // Was 4 queries per segment (tickets, open tickets, leads, won) plus
       // 1 more for staff — 9 total for today's 2 segments, scaling up as
-      // more are added. Now one RPC call. Falls back to the original method
-      // if the RPC is unavailable for any reason.
-      const { data: summary, error: rpcError } = await supabase.rpc('get_segment_summary');
+      // more are added. Now one RPC call, routed through a shared cache
+      // since this can be called more than once around the same time
+      // (found via a live browser session showing it firing as a genuine
+      // duplicate). Falls back to the original method if the RPC is
+      // unavailable for any reason.
+      const { data: summary, error: rpcError } = await cachedRpc(
+        'get_segment_summary',
+        () => supabase.rpc('get_segment_summary')
+      );
 
       if (rpcError || !summary) {
         if (rpcError) console.error('get_segment_summary RPC failed, falling back to individual queries:', rpcError.message);

@@ -1416,3 +1416,38 @@ typed. Fixed: name/slug/tagline are now trimmed before saving. Also
 corrected the one existing record that had this in production.
 
 Verified: 39 migrations clean, typecheck clean, build clean.
+
+## Real duplicate-fetch bug found and fixed with hard, measured evidence
+
+User provided real DevTools screenshots showing 101-131 total network
+requests and multi-minute "Finish" times. Verified this wasn't just
+"Preserve log" accumulating a whole testing session by directly measuring
+a single clean page load using `performance.getEntriesByType('resource')`
+in a live browser session — found real, genuine duplicates:
+
+- `app_users` (the user's own profile, fetched by ID) — **4 times** on one
+  page load, when only 1-2 should ever fire.
+- `get_dashboard_counts` and `get_segment_summary` — 2 times each, matching
+  a tradeoff already disclosed earlier but not yet fixed.
+
+**Root cause of the 4x app_users fetch**: traced to Supabase's built-in
+cross-tab auth sync. supabase-js listens for `storage` events, so any auth
+activity (token refresh, sign-in) in ONE open tab of the site re-fires the
+auth state listener — and therefore a fresh profile fetch — in EVERY other
+open tab of the same origin. The user's own screenshot showed several
+"Nikki Technologies" tabs open simultaneously, which is completely normal
+browsing behavior, not something to avoid — the app needed to handle it
+gracefully instead. The existing 2-second dedup window wasn't wide enough
+to catch refetches triggered this way. Widened to 15 seconds.
+
+**Root cause of the dashboard-count duplicates**: `ActionCentre` and
+`TodayAtAGlance` independently call the same RPC with no coordination.
+Built a small shared single-flight + short-term cache
+(`src/lib/cachedRpc.ts`) — any component calling the same RPC with the same
+key within 5 seconds shares one real network call instead of each firing
+its own. Applied to all three call sites (`get_dashboard_counts` x2,
+`get_segment_summary` x1).
+
+Verified: 39 migrations clean, typecheck clean (including fixing a real
+type issue — Supabase's RPC builder is thenable but not a real Promise, so
+the cache helper needed `PromiseLike<T>`, not `Promise<T>`), build clean.

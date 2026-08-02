@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, X, Shield, Download, CheckCircle2, Circle, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { cachedRpc } from '../../lib/cachedRpc';
 import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { useAuth } from '../../contexts/AuthContext';
@@ -66,10 +67,15 @@ export function TodayAtAGlance() {
     if (!user?.id) return;
     (async () => {
       // Was 8 separate parallel count queries — now the same consolidated
-      // RPC used by ActionCentre. Falls back to the original queries if the
-      // RPC isn't available yet (e.g. its migration hasn't been applied to
-      // this database) so this widget never silently breaks.
-      const { data: counts, error: rpcError } = await supabase.rpc('get_dashboard_counts', { p_user_id: user.id });
+      // RPC used by ActionCentre, routed through a shared cache so both
+      // components (and repeated calls across open tabs) share one real
+      // network call. Falls back to the original queries if the RPC isn't
+      // available (e.g. its migration hasn't been applied yet) so this
+      // widget never silently breaks.
+      const { data: counts, error: rpcError } = await cachedRpc(
+        `get_dashboard_counts:${user.id}`,
+        () => supabase.rpc('get_dashboard_counts', { p_user_id: user.id })
+      );
 
       if (rpcError || !counts) {
         if (rpcError) console.error('get_dashboard_counts RPC failed, falling back to individual queries:', rpcError.message);
