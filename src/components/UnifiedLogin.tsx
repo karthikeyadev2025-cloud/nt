@@ -63,11 +63,24 @@ export default function UnifiedLogin() {
         return;
       }
       // AuthContext has updated `user` synchronously via setUser; App.tsx will
-      // route to the right dashboard based on the actual role + permissions
-      // as soon as the hash flips to a login route. Prefer #portal — the app
-      // itself upgrades to #admin if the role warrants it.
-      if (!window.location.hash || window.location.hash === '#login') {
-        window.location.hash = '#portal';
+      // route to the right dashboard based on the actual role + permissions.
+      //
+      // IMPORTANT: change the URL pathname, not just the hash. The earlier
+      // implementation only set window.location.hash = '#portal', which left
+      // the pathname as '/login'. That meant:
+      //   - The URL bar showed nikkitechnologies.com/login#portal after a
+      //     successful login (confusing to users)
+      //   - On refresh, the browser reloaded /login — the login page URL —
+      //     and any transient session-check hiccup routed the user back to
+      //     the login screen instead of their dashboard. That was the
+      //     "login loop" symptom.
+      // Using history.replaceState avoids a full navigation reload and swaps
+      // the URL in place; we then fire a popstate so App.tsx's route
+      // listeners recompute.
+      const currentPath = window.location.pathname;
+      if (currentPath === '/login' || currentPath === '/') {
+        window.history.replaceState({}, '', '/portal');
+        window.dispatchEvent(new PopStateEvent('popstate'));
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed. Please try again.';

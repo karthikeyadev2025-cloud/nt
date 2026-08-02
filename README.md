@@ -912,3 +912,35 @@ refresh fails" pattern goes away — because refresh completes before the UI
 starts querying.
 
 No migration needed. Pure frontend fix in `src/contexts/AuthContext.tsx`.
+
+## The actual root cause of the login loop — found from a URL bar
+
+User's DevTools screenshots showed the URL as `nikkitechnologies.com/login#portal`
+after a successful login. The dashboard was rendering, but the browser's
+address bar still said `/login`. That's the whole problem: on every refresh,
+the browser reloaded the login route by URL — and if anything caused the
+session to be re-verified (which happens on every refresh), the app was one
+transient hiccup away from showing the login screen.
+
+**Root cause:** the post-signin code in `UnifiedLogin.tsx` only changed the
+URL hash to `#portal` — never the pathname. So the URL stayed on `/login`
+after login. On refresh, the browser hit `/login` again, App.tsx's route
+matcher saw a login path, and if the session check took a moment (which it
+often does after refresh), the login screen showed for that moment. That's
+the "login loop" pattern.
+
+**Fix:** use `history.replaceState({}, '', '/portal')` to actually change
+the pathname after successful login. The URL now correctly reads
+`/portal` after login, refresh reloads `/portal` (not `/login`), and the
+routing stays consistent through session re-verification.
+
+`popstate` event is dispatched immediately after so `App.tsx`'s route
+listener recomputes without a full page reload.
+
+The two DevTools screenshots also confirmed: everything else is working.
+Every asset returned `304` (browser cache, fast), no failed API calls, no
+red errors that would indicate a broken query. The dashboards were
+rendering correctly on top of the wrong URL — a pure routing bug, not a
+data-fetch, RLS, or session bug.
+
+No migration needed — pure frontend fix in `src/components/UnifiedLogin.tsx`.
