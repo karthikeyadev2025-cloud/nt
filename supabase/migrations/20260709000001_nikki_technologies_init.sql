@@ -32,9 +32,8 @@ CREATE TABLE IF NOT EXISTS segments (
 );
 
 INSERT INTO segments (slug, name, tagline, description, icon, color, ticket_prefix, order_index) VALUES
-  ('cctv', 'CCTV Installation', 'Complete Security Surveillance', 'Professional CCTV camera installation, AMC and repair services for homes, offices and industries.', 'Camera', '#f59e0b', 'CC', 1),
-  ('digital_media', 'Digital Media', 'Grow Your Brand Online', 'Digital marketing, social media management, branding, video production and performance ads.', 'Megaphone', '#ec4899', 'DM', 2),
-  ('software', 'Software Solutions', 'SaaS Products & Custom Software', 'Our own SaaS products and custom software development for businesses.', 'Code2', '#0ea5e9', 'SW', 3)
+  ('digital_media', 'Digital Media', 'Grow Your Brand Online', 'Digital marketing, social media management, branding, video production and performance ads.', 'Megaphone', '#ec4899', 'DM', 1),
+  ('software', 'Software Solutions', 'SaaS Products & Custom Software', 'Our own SaaS products and custom software development for businesses.', 'Code2', '#0ea5e9', 'SW', 2)
 ON CONFLICT (slug) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════
@@ -194,9 +193,6 @@ CREATE POLICY "cms manage services" ON services FOR ALL TO authenticated
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));
 
 INSERT INTO services (segment_slug, title, description, icon, order_index) VALUES
-  ('cctv','CCTV Installation','HD & IP camera installation for homes, shops, offices and industries with mobile viewing.','Camera',1),
-  ('cctv','AMC & Maintenance','Annual maintenance contracts, repairs and DVR/NVR upgrades.','Wrench',2),
-  ('cctv','Biometric & Access Control','Attendance systems, video door phones and access control.','Shield',3),
   ('digital_media','Social Media Marketing','Instagram, Facebook, YouTube growth with content calendars and ads.','Megaphone',1),
   ('digital_media','Branding & Design','Logos, brand kits, posters, reels and video production.','Palette',2),
   ('digital_media','Performance Ads','Google & Meta ads with tracked ROI and lead funnels.','TrendingUp',3),
@@ -255,7 +251,6 @@ CREATE POLICY "manage ticket types" ON ticket_types FOR ALL TO authenticated
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));
 
 INSERT INTO ticket_types (segment_slug, name, order_index) VALUES
-  ('cctv','New Installation',1),('cctv','Camera Not Working',2),('cctv','DVR/NVR Issue',3),('cctv','AMC Request',4),('cctv','Other',5),
   ('digital_media','Campaign Issue',1),('digital_media','Design Request',2),('digital_media','Account/Billing',3),('digital_media','Other',4),
   ('software','Bug Report',1),('software','Feature Request',2),('software','Account/Billing',3),('software','Demo Request',4),('software','Other',5);
 

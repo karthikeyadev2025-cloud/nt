@@ -1267,3 +1267,30 @@ have already painted.
 This is very likely the single most impactful fix in this entire
 debugging session — it directly targets the actual dominant bottleneck by
 byte count, not a database query or a caching issue.
+
+## Removed CCTV entirely from the schema — not just retired, gone
+
+Migrating to a fresh database (new region: Mumbai, replacing Seoul) hit a
+real error: the old `purge_cctv_hard` migration referenced a column that
+doesn't exist. Rather than patch around a migration that only existed to
+clean up historical cctv data, removed the root cause: cctv was being
+created in the very first migration and then five later migrations spent
+effort removing it again.
+
+**Fixed properly**: cctv is no longer seeded at all —
+removed its segment row, its service rows, its ticket-type rows, and its
+three HR document templates (offer letter, welcome letter, roles &
+responsibilities) directly from the migrations that created them. Also
+removed the 4 migrations whose only purpose was cleaning up cctv data that,
+with this fix, never exists in the first place:
+`retire_cctv_segment`, `delete_cctv_completely`, `purge_cctv_hard`,
+`finish_cctv_cleanup_safely`.
+
+**Verified end-to-end on a fresh database**: 39 migrations (down from 43),
+0 errors, 40 tables, 56 functions, confirmed zero cctv references anywhere
+— only `digital_media` and `software` segments exist.
+
+This does not affect the existing live database in any way — cctv was
+already fully retired there through the now-removed migrations, and those
+changes are permanent facts in that database regardless of whether the
+migration files that made them still exist in the repo.
