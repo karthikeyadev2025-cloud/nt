@@ -365,7 +365,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.1 }}
           className="font-display text-5xl md:text-7xl font-semibold text-stone-900 mb-6 tracking-tight leading-tight"
         >
-          {content?.hero?.title || 'Nikki Technologies'}
+          {content?.hero?.title && !/cctv/i.test(content.hero.title) ? content.hero.title : 'Nikki Technologies'}
         </motion.h1>
 
         <motion.p
@@ -374,7 +374,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.2 }}
           className="text-xl md:text-2xl bg-gradient-to-r from-orange-800 via-indigo-700 to-orange-900 bg-clip-text text-transparent font-extrabold mb-6"
         >
-          {content?.hero?.subtitle || 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps'}
+          {content?.hero?.subtitle && !/cctv/i.test(content.hero.subtitle) ? content.hero.subtitle : 'Kite & Tail Digital Marketing • Custom Software & Mobile Apps'}
         </motion.p>
 
         <motion.p
@@ -383,7 +383,7 @@ function Hero({ content, segments }: { content: Record<string, Record<string, st
           transition={{ duration: 0.7, delay: 0.25 }}
           className="text-stone-700 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
         >
-          {content?.hero?.description || 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.'}
+          {content?.hero?.description && !/cctv/i.test(content.hero.description) ? content.hero.description : 'Empowering businesses with data-driven performance advertising, Meta & Google PPC funnels, social media management, and custom software development.'}
         </motion.p>
 
         <motion.div
@@ -1105,7 +1105,7 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
       <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8 text-sm">
         <div>
           <p className="text-white font-bold text-lg mb-2">Nikki Technologies</p>
-          <p className="text-stone-400">{content?.footer?.about || 'Digital marketing and software solutions under one roof.'}</p>
+          <p className="text-stone-400">{content?.footer?.about && !/cctv/i.test(content.footer.about) ? content.footer.about : 'Nikki Technologies — Digital Marketing and Custom Software Engineering under one roof.'}</p>
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Divisions</p>

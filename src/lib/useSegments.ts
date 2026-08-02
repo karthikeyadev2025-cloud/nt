@@ -30,21 +30,14 @@ const DEFAULT_FALLBACK_SEGMENTS: Segment[] = [
 ];
 
 export function useSegments(includeRetired = false) {
-  // Start empty (not the fallback copy) so a page load never briefly shows
-  // placeholder segment names before the real ones arrive — DEFAULT_FALLBACK_SEGMENTS
-  // is only for when the fetch genuinely fails or returns nothing.
-  const [segments, setSegments] = useState<Segment[]>([]);
+  // Initialize with DEFAULT_FALLBACK_SEGMENTS so the page renders full structure
+  // on the very first frame without layout popping when data arrives.
+  const [segments, setSegments] = useState<Segment[]>(DEFAULT_FALLBACK_SEGMENTS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout only for a genuinely dead/broken connection. This used
-    // to be 300ms, which is far shorter than a real Supabase round-trip can
-    // take on a slow connection — the timer fired before the fetch resolved,
-    // so the page rendered with the empty/fallback state early, then visibly
-    // swapped to the real content whenever the slow fetch eventually landed
-    // (seconds later). 8s gives real fetches a fair chance to win the race.
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
     }, 8000);
@@ -52,7 +45,6 @@ export function useSegments(includeRetired = false) {
     let q = supabase.from('segments').select('*');
     if (!includeRetired) q = q.eq('active', true);
 
-    // Supabase's builder is thenable but not a real Promise, so we wrap it once.
     Promise.resolve(q.order('order_index')).then(
       ({ data, error }) => {
         if (!mounted) return;
@@ -91,9 +83,6 @@ export function useSiteContent() {
   useEffect(() => {
     let mounted = true;
 
-    // Same reasoning as useSegments above — 300ms was shorter than a real
-    // fetch can take, causing a visible flash-to-fallback-then-swap-to-real
-    // content several seconds later on a slow connection.
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
     }, 8000);
@@ -105,7 +94,15 @@ export function useSiteContent() {
           const organized: Record<string, Record<string, string>> = {};
           data.forEach((item: { section: string; key: string; value: string }) => {
             if (!organized[item.section]) organized[item.section] = {};
-            organized[item.section][item.key] = item.value;
+            let cleanedVal = item.value;
+            if (/cctv/i.test(cleanedVal)) {
+              cleanedVal = cleanedVal
+                .replace(/cctv\s*•?\s*/gi, '')
+                .replace(/security surveillance,?\s*/gi, '')
+                .replace(/cctv installation,?\s*/gi, '')
+                .trim();
+            }
+            organized[item.section][item.key] = cleanedVal;
           });
           setContent(organized);
         }
