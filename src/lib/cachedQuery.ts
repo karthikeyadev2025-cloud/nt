@@ -2,7 +2,7 @@ import { withTimeout } from './withTimeout';
 
 const queryCache = new Map<string, { result: any; at: number }>();
 const inFlightQueries = new Map<string, Promise<any>>();
-const DEFAULT_TTL_MS = 5000;
+const DEFAULT_TTL_MS = 60_000;
 
 export async function cachedQuery<T>(
   key: string,

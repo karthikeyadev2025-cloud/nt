@@ -2,7 +2,7 @@ import { withTimeout } from './withTimeout';
 
 const inFlight = new Map<string, Promise<unknown>>();
 const recent = new Map<string, { result: unknown; at: number }>();
-const RECENT_WINDOW_MS = 5000;
+const RECENT_WINDOW_MS = 60_000;
 
 export async function cachedRpc<T>(
   key: string,

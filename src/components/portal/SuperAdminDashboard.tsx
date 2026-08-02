@@ -171,6 +171,12 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
   const { user, hasPermission } = useAuth();
   const canOnboard = user?.role === 'super_admin' || hasPermission('manage_staff');
   const [stats, setStats] = useState<Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }>>({});
+  const [showSecondary, setShowSecondary] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowSecondary(true), 600);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -199,17 +205,7 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
           <button onClick={onAddStaff} className="self-start sm:self-auto shrink-0 px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold shadow-md shadow-orange-700/20 whitespace-nowrap">+ Onboard Employee</button>
         </div>
       )}
-      <SetupChecklist segments={segments} />
       <TodayAtAGlance />
-      <div className="grid md:grid-cols-2 gap-5">
-        <BirthdaysWidget />
-        <PunctualityLeaderboard segments={segments} />
-      </div>
-      <div className="grid md:grid-cols-2 gap-5">
-        <Suspense fallback={<ChartPlaceholder />}><AttendanceTrendChart /></Suspense>
-        <Suspense fallback={<ChartPlaceholder />}><TicketStatusChart /></Suspense>
-      </div>
-      <Suspense fallback={<ChartPlaceholder />}><LeadsFunnelChart segments={segments} /></Suspense>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {segments.map(seg => {
         const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
@@ -229,6 +225,20 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
         );
       })}
       </div>
+      {showSecondary && (
+        <>
+          <SetupChecklist segments={segments} />
+          <div className="grid md:grid-cols-2 gap-5">
+            <BirthdaysWidget />
+            <PunctualityLeaderboard segments={segments} />
+          </div>
+          <div className="grid md:grid-cols-2 gap-5">
+            <Suspense fallback={<ChartPlaceholder />}><AttendanceTrendChart /></Suspense>
+            <Suspense fallback={<ChartPlaceholder />}><TicketStatusChart /></Suspense>
+          </div>
+          <Suspense fallback={<ChartPlaceholder />}><LeadsFunnelChart segments={segments} /></Suspense>
+        </>
+      )}
     </div>
   );
 }
