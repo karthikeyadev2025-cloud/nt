@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { cachedQuery } from '../../lib/cachedQuery';
 import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import type { Segment } from '../../lib/database.types';
@@ -22,23 +23,26 @@ export function MyPerformanceChart() {
   useEffect(() => {
     if (!user) return;
     const from = new Date(); from.setDate(from.getDate() - 13);
-    supabase.from('attendance_records').select('*').eq('staff_user_id', user.id)
-      .gte('attendance_date', istDateStr(from)).order('attendance_date')
-      .then(({ data: recs }) => {
-        const byDate = new Map((recs || []).map((r: any) => [r.attendance_date, r]));
-        const days: { day: string; hours: number }[] = [];
-        for (let i = 13; i >= 0; i--) {
-          const d = new Date(); d.setDate(d.getDate() - i);
-          const key = istDateStr(d);
-          const rec = byDate.get(key);
-          let hours = 0;
-          if (rec?.check_in_at && rec?.check_out_at) {
-            hours = Math.round(((new Date(rec.check_out_at).getTime() - new Date(rec.check_in_at).getTime()) / 3600000) * 10) / 10;
-          }
-          days.push({ day: dayLabel(d), hours });
+    cachedQuery(`my_perf_chart:${user.id}`, async () => {
+      const { data: recs, error } = await supabase.from('attendance_records').select('*').eq('staff_user_id', user.id)
+        .gte('attendance_date', istDateStr(from)).order('attendance_date');
+      if (error) throw error;
+      return recs || [];
+    }).then(recs => {
+      const byDate = new Map((recs || []).map((r: any) => [r.attendance_date, r]));
+      const days: { day: string; hours: number }[] = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const key = istDateStr(d);
+        const rec = byDate.get(key);
+        let hours = 0;
+        if (rec?.check_in_at && rec?.check_out_at) {
+          hours = Math.round(((new Date(rec.check_out_at).getTime() - new Date(rec.check_in_at).getTime()) / 3600000) * 10) / 10;
         }
-        setData(days);
-      });
+        days.push({ day: dayLabel(d), hours });
+      }
+      setData(days);
+    }).catch(() => {});
   }, [user]);
 
   if (data.length === 0) return null;
@@ -66,20 +70,23 @@ export function MyCallsChart() {
   useEffect(() => {
     if (!user) return;
     const from = new Date(); from.setDate(from.getDate() - 6); from.setHours(0, 0, 0, 0);
-    supabase.from('lead_remarks').select('created_at').eq('user_id', user.id).gte('created_at', from.toISOString())
-      .then(({ data: recs }) => {
-        const counts = new Map<string, number>();
-        (recs || []).forEach((r: any) => {
-          const key = r.created_at.slice(0, 10);
-          counts.set(key, (counts.get(key) || 0) + 1);
-        });
-        const days: { day: string; calls: number }[] = [];
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(); d.setDate(d.getDate() - i);
-          days.push({ day: dayLabel(d), calls: counts.get(istDateStr(d)) || 0 });
-        }
-        setData(days);
+    cachedQuery(`my_calls_chart:${user.id}`, async () => {
+      const { data: recs, error } = await supabase.from('lead_remarks').select('created_at').eq('user_id', user.id).gte('created_at', from.toISOString());
+      if (error) throw error;
+      return recs || [];
+    }).then(recs => {
+      const counts = new Map<string, number>();
+      (recs || []).forEach((r: any) => {
+        const key = r.created_at.slice(0, 10);
+        counts.set(key, (counts.get(key) || 0) + 1);
       });
+      const days: { day: string; calls: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        days.push({ day: dayLabel(d), calls: counts.get(istDateStr(d)) || 0 });
+      }
+      setData(days);
+    }).catch(() => {});
   }, [user]);
 
   if (data.length === 0) return null;
@@ -105,17 +112,20 @@ export function AttendanceTrendChart() {
 
   useEffect(() => {
     const from = new Date(); from.setDate(from.getDate() - 13);
-    supabase.from('attendance_records').select('attendance_date').gte('attendance_date', istDateStr(from))
-      .then(({ data: recs }) => {
-        const counts = new Map<string, number>();
-        (recs || []).forEach((r: any) => counts.set(r.attendance_date, (counts.get(r.attendance_date) || 0) + 1));
-        const days: { day: string; present: number }[] = [];
-        for (let i = 13; i >= 0; i--) {
-          const d = new Date(); d.setDate(d.getDate() - i);
-          days.push({ day: dayLabel(d), present: counts.get(istDateStr(d)) || 0 });
-        }
-        setData(days);
-      });
+    cachedQuery('attendance_trend_chart_14d', async () => {
+      const { data: recs, error } = await supabase.from('attendance_records').select('attendance_date').gte('attendance_date', istDateStr(from));
+      if (error) throw error;
+      return recs || [];
+    }).then(recs => {
+      const counts = new Map<string, number>();
+      (recs || []).forEach((r: any) => counts.set(r.attendance_date, (counts.get(r.attendance_date) || 0) + 1));
+      const days: { day: string; present: number }[] = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        days.push({ day: dayLabel(d), present: counts.get(istDateStr(d)) || 0 });
+      }
+      setData(days);
+    }).catch(() => {});
   }, []);
 
   if (data.length === 0) return null;
@@ -140,7 +150,11 @@ export function LeadsFunnelChart({ segments }: { segments: Segment[] }) {
   const [data, setData] = useState<{ segment: string; new: number; contacted: number; won: number; color: string }[]>([]);
 
   useEffect(() => {
-    supabase.from('marketing_leads').select('segment_slug, stage').then(({ data: leads }) => {
+    cachedQuery('leads_funnel_chart_data', async () => {
+      const { data: leads, error } = await supabase.from('marketing_leads').select('segment_slug, stage');
+      if (error) throw error;
+      return leads || [];
+    }).then(leads => {
       if (!leads) return;
       const rows = segments.map(seg => {
         const mine = leads.filter((l: any) => l.segment_slug === seg.slug);
@@ -153,7 +167,7 @@ export function LeadsFunnelChart({ segments }: { segments: Segment[] }) {
         };
       });
       setData(rows);
-    });
+    }).catch(() => {});
   }, [segments]);
 
   if (data.length === 0) return null;
@@ -181,12 +195,16 @@ export function TicketStatusChart() {
   const colors: Record<string, string> = { open: '#0ea5e9', in_progress: '#f59e0b', waiting_customer: '#a855f7', resolved: '#10b981', closed: '#64748b' };
 
   useEffect(() => {
-    supabase.from('support_tickets').select('status').then(({ data: tickets }) => {
+    cachedQuery('ticket_status_chart_data', async () => {
+      const { data: tickets, error } = await supabase.from('support_tickets').select('status');
+      if (error) throw error;
+      return tickets || [];
+    }).then(tickets => {
       if (!tickets) return;
       const counts = new Map<string, number>();
       tickets.forEach((t: any) => counts.set(t.status, (counts.get(t.status) || 0) + 1));
       setData(Array.from(counts.entries()).map(([name, value]) => ({ name: name.replace('_', ' '), value })));
-    });
+    }).catch(() => {});
   }, []);
 
   if (data.length === 0) return null;

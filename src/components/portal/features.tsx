@@ -3,6 +3,7 @@ import { Bell, Megaphone, Repeat, Landmark, Printer, TrendingUp, Flame, Cake, Do
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
+import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr, istDateStrDaysAgo } from '../../lib/dates';
 import type { Segment } from '../../lib/database.types';
@@ -24,16 +25,19 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
 
   async function load() {
     if (!user) return;
-    const { data } = await supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
-    if (data) setItems(data);
+    try {
+      const data = await cachedQuery(`notifications:${user.id}`, async () => {
+        const { data, error } = await supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
+        if (error) throw error;
+        return data || [];
+      });
+      setItems(data);
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => {
     load();
-    // Only poll while the tab is actually visible — same reasoning as the
-    // SessionDevices and auth-heartbeat fixes: an unguarded interval in a
-    // background tab either gets throttled and fires late, or queues up and
-    // fires as a burst the moment the tab regains focus. Checking visibility
-    // before each tick means there's never a backlog to release.
     const t = setInterval(() => { if (document.visibilityState === 'visible') load(); }, 60000);
     return () => clearInterval(t);
   }, [user]);
@@ -65,12 +69,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
       </button>
       {open && (
         <>
-          {/* Tap-outside-to-close backdrop, mobile only (matches the fixed panel below) */}
           <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setOpen(false)} />
-          {/* Mobile: a fixed panel inset from both screen edges, so its width is always
-              exactly viewport-width-minus-margins — it can never overflow off either
-              side, regardless of where the bell icon sits in the header.
-              sm and up: reverts to the original dropdown anchored to the button. */}
           <div className="fixed left-3 right-3 top-16 z-50 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:inset-x-auto sm:mt-2 sm:w-80
                           max-h-[70vh] sm:max-h-96 overflow-y-auto bg-white border border-stone-200 rounded-xl shadow-xl">
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-800">
@@ -97,8 +96,13 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
 export function AnnouncementsFeed() {
   const [items, setItems] = useState<any[]>([]);
   useEffect(() => {
-    supabase.from('announcements').select('*').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(20)
-      .then(({ data }) => { if (data) setItems(data.filter((a: any) => !a.expires_at || new Date(a.expires_at) > new Date())); });
+    cachedQuery('announcements_feed', async () => {
+      const { data, error } = await supabase.from('announcements').select('*').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(20);
+      if (error) throw error;
+      return data || [];
+    }).then(data => {
+      if (data) setItems(data.filter((a: any) => !a.expires_at || new Date(a.expires_at) > new Date()));
+    }).catch(() => {});
   }, []);
   if (items.length === 0) return null;
   return (
@@ -455,30 +459,31 @@ export function MyStatsCard() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('attendance_records').select('*').eq('staff_user_id', user.id)
-      .gte('attendance_date', istDateStrDaysAgo(30)).order('attendance_date', { ascending: false })
-      .then(({ data }) => {
-        if (!data) return;
-        const present = data.filter((r: any) => r.status === 'present' || r.status === 'half_day');
-        let streak = 0;
-        const today = istDateStr();
-        const byDate = new Set(present.map((r: any) => r.attendance_date));
-        const d = new Date();
-        while (byDate.has(istDateStr(d)) || istDateStr(d) === today) {
-          if (byDate.has(istDateStr(d))) streak++;
-          else if (istDateStr(d) !== today) break;
-          d.setDate(d.getDate() - 1);
-        }
-        // Punctuality now uses the server-computed is_late flag (respects each
-        // person's shift + grace), not a hardcoded 10 AM cutoff.
-        const onTime = present.filter((r: any) => r.check_in_at && !r.is_late).length;
-        setStats({
-          streak,
-          presentDays: present.length,
-          totalDays: data.length,
-          punctuality: present.length ? Math.round((onTime / present.length) * 100) : 0,
-        });
+    cachedQuery(`my_stats:${user.id}`, async () => {
+      const { data, error } = await supabase.from('attendance_records').select('*').eq('staff_user_id', user.id)
+        .gte('attendance_date', istDateStrDaysAgo(30)).order('attendance_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }).then(data => {
+      if (!data) return;
+      const present = data.filter((r: any) => r.status === 'present' || r.status === 'half_day');
+      let streak = 0;
+      const today = istDateStr();
+      const byDate = new Set(present.map((r: any) => r.attendance_date));
+      const d = new Date();
+      while (byDate.has(istDateStr(d)) || istDateStr(d) === today) {
+        if (byDate.has(istDateStr(d))) streak++;
+        else if (istDateStr(d) !== today) break;
+        d.setDate(d.getDate() - 1);
+      }
+      const onTime = present.filter((r: any) => r.check_in_at && !r.is_late).length;
+      setStats({
+        streak,
+        presentDays: present.length,
+        totalDays: data.length,
+        punctuality: present.length ? Math.round((onTime / present.length) * 100) : 0,
       });
+    }).catch(() => {});
   }, [user]);
 
   if (!stats) return null;
@@ -498,19 +503,20 @@ export function MyStatsCard() {
 export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
   const [rows, setRows] = useState<{ name: string; punctuality: number; presentDays: number }[]>([]);
   useEffect(() => {
-    (async () => {
+    cachedQuery('punctuality_leaderboard_30d', async () => {
       const [{ data: staff }, { data: records }] = await Promise.all([
         supabase.from('app_users').select('id, full_name').eq('is_active', true).neq('role', 'super_admin'),
         supabase.from('attendance_records').select('*').gte('attendance_date', istDateStrDaysAgo(30)),
       ]);
-      if (!staff || !records) return;
-      const computed = staff.map((s: any) => {
+      if (!staff || !records) return [];
+      return staff.map((s: any) => {
         const mine = records.filter((r: any) => r.staff_user_id === s.id && (r.status === 'present' || r.status === 'half_day'));
         const onTime = mine.filter((r: any) => r.check_in_at && !r.is_late).length;
         return { name: s.full_name, presentDays: mine.length, punctuality: mine.length ? Math.round((onTime / mine.length) * 100) : 0 };
       }).filter((r: any) => r.presentDays > 0).sort((a: any, b: any) => b.punctuality - a.punctuality).slice(0, 10);
-      setRows(computed);
-    })();
+    }).then(computed => {
+      if (computed) setRows(computed);
+    }).catch(() => {});
   }, [segments]);
 
   return (
@@ -532,7 +538,11 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
 export function BirthdaysWidget() {
   const [items, setItems] = useState<any[]>([]);
   useEffect(() => {
-    supabase.from('app_users').select('full_name, date_of_birth, joining_date').eq('is_active', true).neq('role', 'super_admin').then(({ data }) => {
+    cachedQuery('today_birthdays_celebrations', async () => {
+      const { data, error } = await supabase.from('app_users').select('full_name, date_of_birth, joining_date').eq('is_active', true).neq('role', 'super_admin');
+      if (error) throw error;
+      return data || [];
+    }).then(data => {
       if (!data) return;
       const today = new Date();
       const isToday = (d?: string) => {
@@ -541,7 +551,7 @@ export function BirthdaysWidget() {
         return dt.getMonth() === today.getMonth() && dt.getDate() === today.getDate();
       };
       setItems(data.filter((u: any) => isToday(u.date_of_birth) || isToday(u.joining_date)));
-    });
+    }).catch(() => {});
   }, []);
   if (items.length === 0) return null;
   return (

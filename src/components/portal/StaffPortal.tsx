@@ -17,6 +17,7 @@ import CameraCapture from '../CameraCapture';
 import { KiteTailLogo } from '../KiteTailLogo';
 import SessionDevices from '../SessionDevices';
 import { cachedQuery } from '../../lib/cachedQuery';
+import { cachedRpc } from '../../lib/cachedRpc';
 
 // ─────────────────────────── Self-service: attendance
 // ─────────────────────────── Role-aware Home
@@ -207,12 +208,18 @@ export function MyAttendance() {
 
   async function load() {
     if (!user) return;
-    const [{ data: t }, { data: h }] = await Promise.all([
-      supabase.from('attendance_records').select('*').eq('staff_user_id', user.id).eq('attendance_date', dateStr).maybeSingle(),
-      supabase.from('attendance_records').select('*').eq('staff_user_id', user.id).order('attendance_date', { ascending: false }).limit(14),
-    ]);
-    setToday(t);
-    if (h) setHistory(h);
+    try {
+      const res = await cachedQuery(`my_attendance:${user.id}:${dateStr}`, async () => {
+        const [{ data: t }, { data: h }] = await Promise.all([
+          supabase.from('attendance_records').select('*').eq('staff_user_id', user.id).eq('attendance_date', dateStr).maybeSingle(),
+          supabase.from('attendance_records').select('*').eq('staff_user_id', user.id).order('attendance_date', { ascending: false }).limit(14),
+        ]);
+        return { today: t || null, history: h || [] };
+      });
+      if (res) { setToday(res.today); setHistory(res.history); }
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => { load(); }, [user]);
 
@@ -454,19 +461,30 @@ export function MyRequests() {
 
   async function loadBalances() {
     if (!user) return;
-    const { data } = await supabase.rpc('get_leave_balances', { _staff_user_id: user.id });
-    if (data) setBalances(data);
+    try {
+      const data = await cachedRpc(`get_leave_balances:${user.id}`, () => supabase.rpc('get_leave_balances', { _staff_user_id: user.id }));
+      const list = (data as any)?.data || data;
+      if (Array.isArray(list)) setBalances(list);
+    } catch {
+      // ignore
+    }
   }
 
   async function load() {
     if (!user) return;
-    const [{ data: l }, { data: a }] = await Promise.all([
-      supabase.from('leave_requests').select('*').eq('staff_user_id', user.id).order('created_at', { ascending: false }).limit(20),
-      supabase.from('salary_advance_requests').select('*').eq('staff_user_id', user.id).order('created_at', { ascending: false }).limit(20),
-    ]);
-    if (l) setLeaves(l);
-    if (a) setAdvances(a);
-    loadBalances();
+    try {
+      const res = await cachedQuery(`my_requests:${user.id}`, async () => {
+        const [{ data: l }, { data: a }] = await Promise.all([
+          supabase.from('leave_requests').select('*').eq('staff_user_id', user.id).order('created_at', { ascending: false }).limit(20),
+          supabase.from('salary_advance_requests').select('*').eq('staff_user_id', user.id).order('created_at', { ascending: false }).limit(20),
+        ]);
+        return { leaves: l || [], advances: a || [] };
+      });
+      if (res) { setLeaves(res.leaves); setAdvances(res.advances); }
+      loadBalances();
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => { load(); }, [user]);
 

@@ -3,6 +3,8 @@ import { CalendarCheck, CalendarX, UserMinus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
+import { cachedQuery } from '../../lib/cachedQuery';
+import { cachedRpc } from '../../lib/cachedRpc';
 import { inputCls, btnCls, cardCls } from './shared';
 import type { Segment } from '../../lib/database.types';
 
@@ -16,9 +18,17 @@ export function MyRegularizations() {
 
   async function load() {
     if (!user) return;
-    const { data } = await supabase.from('attendance_regularizations').select('*')
-      .eq('staff_user_id', user.id).order('created_at', { ascending: false }).limit(20);
-    if (data) setItems(data);
+    try {
+      const data = await cachedQuery(`regularizations:${user.id}`, async () => {
+        const { data, error } = await supabase.from('attendance_regularizations').select('*')
+          .eq('staff_user_id', user.id).order('created_at', { ascending: false }).limit(20);
+        if (error) throw error;
+        return data || [];
+      });
+      setItems(data);
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => { load(); }, [user]);
 
@@ -87,11 +97,18 @@ export function RegularizationApprovals() {
   const [names, setNames] = useState<Record<string, string>>({});
 
   async function load() {
-    const { data } = await supabase.from('attendance_regularizations').select('*')
-      .order('created_at', { ascending: false }).limit(100);
-    if (data) setItems(data);
-    const { data: users } = await supabase.from('app_users').select('id, full_name');
-    if (users) setNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
+    try {
+      const res = await cachedQuery('regularization_approvals_data', async () => {
+        const [{ data: reg }, { data: users }] = await Promise.all([
+          supabase.from('attendance_regularizations').select('*').order('created_at', { ascending: false }).limit(100),
+          supabase.from('app_users').select('id, full_name'),
+        ]);
+        return { items: reg || [], names: Object.fromEntries((users || []).map((u: any) => [u.id, u.full_name])) };
+      });
+      if (res) { setItems(res.items); setNames(res.names); }
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => { load(); }, []);
 
@@ -134,8 +151,16 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
   const [form, setForm] = useState({ holiday_date: '', name: '', segment_slug: '', is_optional: false });
 
   async function load() {
-    const { data } = await supabase.from('holidays').select('*').order('holiday_date');
-    if (data) setItems(data);
+    try {
+      const data = await cachedQuery('holidays_list', async () => {
+        const { data, error } = await supabase.from('holidays').select('*').order('holiday_date');
+        if (error) throw error;
+        return data || [];
+      });
+      setItems(data);
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => { load(); }, []);
 
@@ -282,9 +307,13 @@ export function DanglingCheckins() {
   const [busy, setBusy] = useState('');
 
   async function load() {
-    const { data, error } = await supabase.rpc('list_dangling_checkins');
-    if (error) { toast.error(`Couldn't load: ${error.message}`); return; }
-    setItems(data || []);
+    try {
+      const data = await cachedRpc('list_dangling_checkins', () => supabase.rpc('list_dangling_checkins'));
+      const list = (data as any)?.data || data;
+      if (Array.isArray(list)) setItems(list);
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => { load(); }, []);
 
@@ -341,8 +370,11 @@ export function OverdueTickets({ segments }: { segments: Segment[] }) {
   const [segment, setSegment] = useState('');
 
   useEffect(() => {
-    supabase.rpc('list_overdue_tickets', { _segment_slug: segment || null })
-      .then(({ data }) => setItems(data || []));
+    cachedRpc(`list_overdue_tickets:${segment}`, () => supabase.rpc('list_overdue_tickets', { _segment_slug: segment || null }))
+      .then(res => {
+        const data = (res as any)?.data || res;
+        if (Array.isArray(data)) setItems(data);
+      }).catch(() => {});
   }, [segment]);
 
   return (
