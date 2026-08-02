@@ -1397,3 +1397,22 @@ Reduced to 50ms — keeps a hair of buffer for React's render timing without
 carrying 450ms of dead weight on every single refresh.
 
 Verified: 39 migrations clean, typecheck clean, build clean.
+
+## Verified an external analysis against real data, corrected it
+
+A third-party analysis of a recorded session claimed the Products save
+caused "data loss" after refresh, and suggested React Query cache
+invalidation as a fix. Checked directly against the live database instead
+of assuming either way: the product from the recording was present and
+correct, timestamped exactly when it was saved. The core claim was false —
+the save function already correctly awaits the database write and only
+closes the form on success, with proper error/success toasts already in
+place. React Query isn't part of this app's architecture, so that
+suggestion didn't apply either.
+
+One part of that analysis WAS real and worth fixing: the Name field wasn't
+trimmed, so "Hey Nikki " (trailing space) saved and persisted exactly as
+typed. Fixed: name/slug/tagline are now trimmed before saving. Also
+corrected the one existing record that had this in production.
+
+Verified: 39 migrations clean, typecheck clean, build clean.

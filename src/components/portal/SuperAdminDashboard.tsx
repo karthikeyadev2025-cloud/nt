@@ -1117,8 +1117,10 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
   useEffect(() => { load(); }, []);
 
   async function save() {
-    if (!editing?.name || !editing?.slug) { toast.error('Name and slug are required'); return; }
-    const payload = { ...editing, features: editing.features || [] };
+    const name = (editing?.name || '').trim();
+    const slug = (editing?.slug || '').trim();
+    if (!name || !slug) { toast.error('Name and slug are required'); return; }
+    const payload = { ...editing, name, slug, tagline: (editing?.tagline || '').trim(), features: editing.features || [] };
     let error;
     if (editing.id) {
       const { id, ...patch } = payload;
