@@ -1226,3 +1226,44 @@ Editor — forces PostgREST to pick up both new functions right away.
 both RPC-creating migrations, so this can never happen again for any future
 migration that creates a new function — the schema cache reload is now
 automatic and immediate as part of applying the migration itself.
+
+## Found the real, dominant cause of "40 seconds / 2 minutes to load"
+
+User pushed back correctly — other data-heavy sites load fast, so 40 seconds
+needed a real explanation, not "connections are just slow." Investigated as
+a database engineer would:
+
+- **RLS permission functions** (`is_super_admin`, `has_permission`,
+  `can_access_segment`): checked — already correctly marked `STABLE`, not
+  the bottleneck.
+- **Missing indexes** on filtered columns (`segment_slug`, `status`,
+  `stage`, `assigned_to`): checked — already properly indexed, and
+  irrelevant anyway at the current tiny data volume (single-digit rows).
+- **Raw network latency** to the Supabase project: measured directly —
+  fast (sub-1.2s even under a concurrent burst of 15 requests).
+
+**None of those explained it. The real cause: a single 382KB JavaScript
+chunk (recharts, the charting library) was a hard, blocking dependency of
+the dashboard's initial render**, because it was statically imported at the
+top of `SuperAdminDashboard.tsx`. That forced the browser to download and
+parse all 382KB before ANY part of the dashboard — including the numbers
+and lists that actually matter most — could render at all.
+
+At the connection speeds documented throughout this whole session (1-38
+KB/s from the user's own screenshots), downloading 382KB by itself takes
+anywhere from **10 seconds to 6 minutes** depending on which reading was
+current — this maps almost exactly onto every "wait 40 seconds / wait 2
+minutes" report in this entire conversation.
+
+**Fixed**: the three chart components (`AttendanceTrendChart`,
+`TicketStatusChart`, `LeadsFunnelChart`) are now genuinely lazy-loaded via
+`React.lazy()` + `Suspense`, each with a lightweight "Loading chart…"
+placeholder. Verified in the built output that the 382KB chunk is no longer
+bundled with or eagerly preloaded alongside the dashboard's own code — it
+now only starts downloading once React actually attempts to render one of
+these components, well after the numbers, task lists, and everything else
+have already painted.
+
+This is very likely the single most impactful fix in this entire
+debugging session — it directly targets the actual dominant bottleneck by
+byte count, not a database query or a caching issue.

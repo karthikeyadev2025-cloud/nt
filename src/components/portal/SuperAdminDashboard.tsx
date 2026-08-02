@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
@@ -15,7 +15,20 @@ import { ImageUpload } from './ImageUpload';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals, ShiftSwapBoard } from './features';
 import { TasksBoard } from './tasks';
 import { LeadsWorkspace } from './leads-workflow';
-import { AttendanceTrendChart, LeadsFunnelChart, TicketStatusChart } from './performance';
+// Charts pull in recharts, which alone accounts for ~380KB of JavaScript —
+// by far the single heaviest chunk in the whole app. A direct static import
+// here forced that entire library to download and parse before ANY part of
+// the dashboard (including the numbers, task lists, and everything that
+// actually matters most) could render. On the slow mobile connections this
+// business genuinely uses, 380KB alone can take anywhere from 10 seconds to
+// several minutes — this was very likely the dominant cause of "the
+// dashboard takes forever to load," far more than any individual database
+// query. Lazy-loading these means the critical content renders immediately,
+// and the charts fill in a moment later once that heavy chunk finishes
+// downloading in the background.
+const AttendanceTrendChart = lazy(() => import('./performance').then(m => ({ default: m.AttendanceTrendChart })));
+const TicketStatusChart = lazy(() => import('./performance').then(m => ({ default: m.TicketStatusChart })));
+const LeadsFunnelChart = lazy(() => import('./performance').then(m => ({ default: m.LeadsFunnelChart })));
 import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll';
 import { RegularizationApprovals, HolidayManager, OffboardStaff, DanglingCheckins, OverdueTickets } from './lifecycle';
 import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
@@ -40,6 +53,16 @@ const PERMISSION_KEYS = [
 // The segment stat cards below tell you how the business is doing; this tells
 // you what is waiting on YOU. Every item is gated on the permission that lets
 // the person actually act on it, so nobody is shown a queue they can't clear.
+// Shown while the ~380KB recharts chunk downloads in the background — the
+// rest of the dashboard is already fully interactive at this point.
+function ChartPlaceholder() {
+  return (
+    <div className={cardCls + ' h-64 flex items-center justify-center'}>
+      <p className="text-stone-500 text-sm">Loading chart…</p>
+    </div>
+  );
+}
+
 function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
   const { user, hasPermission } = useAuth();
   const [c, setC] = useState<Record<string, number>>({});
@@ -245,10 +268,10 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
         <PunctualityLeaderboard segments={segments} />
       </div>
       <div className="grid md:grid-cols-2 gap-5">
-        <AttendanceTrendChart />
-        <TicketStatusChart />
+        <Suspense fallback={<ChartPlaceholder />}><AttendanceTrendChart /></Suspense>
+        <Suspense fallback={<ChartPlaceholder />}><TicketStatusChart /></Suspense>
       </div>
-      <LeadsFunnelChart segments={segments} />
+      <Suspense fallback={<ChartPlaceholder />}><LeadsFunnelChart segments={segments} /></Suspense>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {segments.map(seg => {
         const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
