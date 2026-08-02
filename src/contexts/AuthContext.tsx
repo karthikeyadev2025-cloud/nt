@@ -61,6 +61,10 @@ const AUTH_TIMEOUT_MS = 5000;
 //                        disabled. The ONLY case that should sign someone out.
 //   • throws          → transient/ambiguous. Callers keep the current session.
 async function fetchAppUser(userId: string): Promise<AppUser | null> {
+  // TEMPORARY DIAGNOSTIC — remove once root cause of the duplicate-fetch
+  // bug is confirmed. Logs which code path triggered this call.
+  // eslint-disable-next-line no-console
+  console.trace(`[DIAG] fetchAppUser called, userId=${userId.slice(0, 8)}...`);
   let retries = 4;
   let delay = 250;
 
