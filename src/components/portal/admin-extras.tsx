@@ -3,6 +3,7 @@ import { Search, X, Shield, Download, CheckCircle2, Circle, Sparkles } from 'luc
 import { supabase } from '../../lib/supabase';
 import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Segment } from '../../lib/database.types';
 
 // ─────────────────────────── Security Audit Log viewer (super_admin only)
@@ -58,28 +59,27 @@ export function SecurityLogsViewer() {
 
 // ─────────────────────────── Today at a Glance (Overview widget)
 export function TodayAtAGlance() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<{ checkedIn: number; newLeads: number; openTickets: number; pendingApprovals: number } | null>(null);
 
   useEffect(() => {
+    if (!user?.id) return;
     (async () => {
-      const today = istDateStr();
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-      const [{ count: checkedIn }, { count: newLeads }, { count: openTickets }, { count: leaveReq }, { count: advReq }, { count: bankReq }, { count: photoReq }, { count: transferReq }] = await Promise.all([
-        supabase.from('attendance_records').select('id', { count: 'exact', head: true }).eq('attendance_date', today).not('check_in_at', 'is', null),
-        supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
-        supabase.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', ['open', 'in_progress']),
-        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('salary_advance_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('bank_change_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('photo_change_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_status', 'pending'),
-      ]);
+      // Was 8 separate parallel count queries — now the same consolidated
+      // RPC used by ActionCentre. Two components calling it independently
+      // still means 2 requests instead of 1, but that's down from 22
+      // combined, which is what actually mattered for the connection
+      // contention seen in the real performance trace.
+      const { data: counts } = await supabase.rpc('get_dashboard_counts', { p_user_id: user.id });
+      if (!counts) return;
       setStats({
-        checkedIn: checkedIn || 0, newLeads: newLeads || 0, openTickets: openTickets || 0,
-        pendingApprovals: (leaveReq || 0) + (advReq || 0) + (bankReq || 0) + (photoReq || 0) + (transferReq || 0),
+        checkedIn: counts.checkedInToday || 0,
+        newLeads: counts.newLeadsToday || 0,
+        openTickets: counts.openTickets || 0,
+        pendingApprovals: (counts.leaves || 0) + (counts.advances || 0) + (counts.bankChangeReq || 0) + (counts.photoChangeReq || 0) + (counts.transfers || 0),
       });
     })();
-  }, []);
+  }, [user?.id]);
 
   if (!stats) return null;
   const cards = [

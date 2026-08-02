@@ -336,7 +336,7 @@ function HeroicFlyingKites() {
 }
 
 // ─────────────────────────────────────────────── Hero
-function Hero({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
+function Hero({ segments }: { segments: Segment[] }) {
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-orange-50/60 via-stone-50 to-stone-50">
       <HeroicFlyingKites />
@@ -533,44 +533,56 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
 const DEFAULT_FALLBACK_PRODUCTS: Product[] = [
   {
     id: 'prod-1',
+    segment_slug: 'software',
+    slug: 'mystore-os',
     name: 'MyStore OS',
     tagline: 'Retail POS & Billing ERP',
     description: 'Cloud billing, barcode inventory, GST invoicing, and multi-store management for retail & supermarket businesses.',
-    status: 'live',
+    logo_url: null,
+    screenshots: [],
+    status: 'active',
     external_url: 'https://mystoreos.com',
     demo_cta: 'Explore MyStore OS',
     order_index: 1,
     features: [
-      { title: 'Fast GST Billing', description: 'Print invoices in seconds' },
-      { title: 'Inventory Sync', description: 'Real-time stock alerts' },
+      { title: 'Fast GST Billing', description: 'Print invoices in seconds', icon: 'TrendingUp' },
+      { title: 'Inventory Sync', description: 'Real-time stock alerts', icon: 'Boxes' },
     ],
   },
   {
     id: 'prod-2',
+    segment_slug: 'software',
+    slug: 'punchly',
     name: 'Punchly',
     tagline: 'Face & Geo Attendance ERP',
     description: 'Smart attendance tracking with selfie camera verification, GPS geo-fencing, leave approvals, and automated payroll calculation.',
-    status: 'live',
+    logo_url: null,
+    screenshots: [],
+    status: 'active',
     external_url: 'https://punchly.app',
     demo_cta: 'Explore Punchly',
     order_index: 2,
     features: [
-      { title: 'Selfie & Geo Punch', description: 'Zero buddy-punching' },
-      { title: 'Automated Payroll', description: 'One-click salary payslips' },
+      { title: 'Selfie & Geo Punch', description: 'Zero buddy-punching', icon: 'Camera' },
+      { title: 'Automated Payroll', description: 'One-click salary payslips', icon: 'Settings' },
     ],
   },
   {
     id: 'prod-3',
+    segment_slug: 'software',
+    slug: 'jovio-ai',
     name: 'Jovio AI',
     tagline: 'AI Voice & Chatbot Agent',
     description: 'Autonomous AI voice call bots and WhatsApp conversational agents for automated lead qualification and appointment booking.',
-    status: 'live',
+    logo_url: null,
+    screenshots: [],
+    status: 'active',
     external_url: 'https://jovio.ai',
     demo_cta: 'Explore Jovio AI',
     order_index: 3,
     features: [
-      { title: 'AI Voice Calling', description: '24/7 automated outbound calls' },
-      { title: 'WhatsApp Integration', description: 'Instant AI chat replies' },
+      { title: 'AI Voice Calling', description: '24/7 automated outbound calls', icon: 'Bot' },
+      { title: 'WhatsApp Integration', description: 'Instant AI chat replies', icon: 'Megaphone' },
     ],
   },
 ];
@@ -1209,7 +1221,7 @@ export default function PublicSite() {
     <div className="bg-stone-50 min-h-screen text-stone-900">
       <SEOHead />
       <Navigation />
-      <Hero content={content} segments={segments} />
+      <Hero segments={segments} />
       <ClientLogos />
       <AnimatedStats />
       <SegmentSections segments={segments} />

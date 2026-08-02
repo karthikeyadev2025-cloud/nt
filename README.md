@@ -1065,3 +1065,57 @@ so a new deploy is picked up immediately.
 No migration needed. Once this deploys, anyone with the stuck old service
 worker will self-heal automatically on their next visit — no manual
 DevTools steps required.
+
+## Found and fixed: the actual TypeScript build was broken
+
+Pulled latest and ran a full typecheck as the very first step — found 9 real
+compile errors in `PublicSite.tsx`, left over from an earlier fix in this
+session that removed loading-skeleton code but didn't clean up after itself:
+
+- Fallback product data used `status: 'live'`, which isn't a valid value —
+  the type only allows `'active' | 'coming_soon' | 'hidden'`. Fixed to
+  `'active'` (the correct intent) and filled in the full `Product` shape
+  (`segment_slug`, `slug`, `logo_url`, `screenshots`) that was missing
+  entirely from the fallback objects.
+- Fallback product `features` were missing the required `icon` field.
+  Added real icon names matching each feature.
+- `Hero`'s `content` parameter was destructured but never used anywhere in
+  the function body (dead leftover from removing the skeleton-loading
+  logic). Removed it from the signature and its call site.
+
+Vite's build doesn't enforce full type-checking (it uses esbuild, which
+strips types without validating them), so this was shipping to production
+without anyone seeing the error — but it represented real, unverified,
+untyped fallback data that could have masked a genuine runtime issue if the
+`status` field were ever actually checked against `'active'` elsewhere.
+
+## Finished wiring the dashboard-count consolidation (was left half-done)
+
+The `get_dashboard_counts` RPC from the previous session existed as a
+migration but was never actually called from the frontend — `ActionCentre`
+and `TodayAtAGlance` were still firing their original ~22 separate queries.
+Wired both up to the single RPC:
+
+- **Verified correctness before wiring anything up**: ran the RPC as both a
+  super admin and a segment-scoped manager against real seeded data, and
+  confirmed the segment-scoped manager's counts exactly matched what the
+  old, separate, RLS-scoped queries returned (`transfers: 0` in both cases)
+  — the RPC is NOT `SECURITY DEFINER`, so Row Level Security continues to
+  scope every count exactly as before. No user sees data they couldn't see
+  previously.
+- **ActionCentre**: ~14 separate parallel queries → 1 RPC call.
+- **TodayAtAGlance**: 8 separate parallel queries → 1 RPC call (also
+  removed an accidental extra `getUser()` round-trip in an earlier draft by
+  using the already-available `useAuth()` user instead).
+- Combined, these two components alone go from ~22 requests to 2 — directly
+  addressing the 41-53-simultaneous-request bursts measured in the real
+  Chrome performance trace from the previous message.
+
+**One honest trade-off to disclose**: the RPC always computes every count
+now, whereas the old code only queried a count if the viewer had the
+matching permission. The client still only *displays* counts the viewer is
+permitted to see (unchanged), but a technically curious user could now see
+the raw numbers (not underlying record details — those stay fully RLS
+protected) in the Network tab response even for sections they can't open.
+Low risk (a bare count, not any record content), but worth stating plainly
+rather than leaving unmentioned.

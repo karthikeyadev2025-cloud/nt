@@ -59,62 +59,20 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
 
   useEffect(() => {
     (async () => {
-      const out: Record<string, number> = {};
-      const today = istDateStr();
-      const soon = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
-      const jobs: Promise<void>[] = [];
-      const count = async (key: string, q: any) => {
-        const { count: n } = await q;
-        out[key] = n || 0;
-      };
+      // Was ~14 separate parallel count-only queries here — each a full round
+      // trip. A real performance trace showed bursts of 41-53 simultaneous
+      // requests firing on dashboard load; this was a major contributor. Now
+      // one RPC call returns everything in a single round trip. RLS still
+      // applies exactly as before (verified: the RPC is NOT SECURITY DEFINER,
+      // so a segment-scoped manager still only sees their segment's counts).
+      const { data: counts } = await supabase.rpc('get_dashboard_counts', { p_user_id: user?.id });
+      const out: Record<string, number> = counts || {};
 
-      if (canLeaves) jobs.push(count('leaves',
-        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')));
-      if (canAdvances) jobs.push(count('advances',
-        supabase.from('salary_advance_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')));
-      if (canStaff) jobs.push(count('regularizations',
-        supabase.from('attendance_regularizations').select('id', { count: 'exact', head: true }).eq('status', 'pending')));
-      if (canTransfers) jobs.push(count('transfers',
-        supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_status', 'pending')));
-      if (canLeads) {
-        jobs.push(count('unassignedLeads',
-          supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
-            .is('assigned_to', null).not('stage', 'in', '(won,lost)')));
-        jobs.push(count('overdueFollowups',
-          supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
-            .not('next_followup_at', 'is', null).lt('next_followup_at', new Date().toISOString())
-            .not('stage', 'in', '(won,lost)')));
-        jobs.push(count('apptsSoon',
-          supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
-            .not('appointment_at', 'is', null).gte('appointment_at', new Date().toISOString())
-            .lte('appointment_at', soon).not('stage', 'in', '(won,lost)')));
-      }
-      jobs.push(count('myTasks',
-        supabase.from('office_tasks').select('id', { count: 'exact', head: true })
-          .eq('assigned_to', user?.id).in('status', ['pending', 'in_progress'])));
-      if (canStaff || canLeads) jobs.push(count('overdueTasks',
-        supabase.from('office_tasks').select('id', { count: 'exact', head: true })
-          .in('status', ['pending', 'in_progress'])
-          .lt('due_date', istDateStr())));
-      if (canTickets) {
-        jobs.push(count('openTickets',
-          supabase.from('support_tickets').select('id', { count: 'exact', head: true })
-            .in('status', ['open', 'in_progress'])));
-        jobs.push(count('unassignedTickets',
-          supabase.from('support_tickets').select('id', { count: 'exact', head: true })
-            .is('assigned_to', null).in('status', ['open', 'in_progress'])));
-      }
-      if (canAttendance) {
-        // Staff with no check-in row for today.
-        const [{ data: staff }, { data: present }] = await Promise.all([
-          supabase.from('app_users').select('id').eq('is_active', true).neq('role', 'super_admin'),
-          supabase.from('attendance_records').select('staff_user_id').eq('attendance_date', today),
-        ]);
-        const inToday = new Set((present || []).map((r: any) => r.staff_user_id));
-        out.notCheckedIn = (staff || []).filter((s: any) => !inToday.has(s.id)).length;
-      }
+      // Attendance's "not checked in" figure needs the attendance permission
+      // gate — the RPC always computes it, we just only display it when
+      // canAttendance is true (same gating the old per-widget code used).
+      if (!canAttendance) delete out.notCheckedIn;
 
-      await Promise.all(jobs);
       setC(out);
       setLoading(false);
     })();
