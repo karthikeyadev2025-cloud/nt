@@ -1328,3 +1328,29 @@ pattern is needed, instead of every file reinventing it or — as found here
 — several genuinely not having it at all.
 
 Verified: 39 migrations run clean, typecheck clean, build clean.
+
+## Clean rewrite of AuthContext.tsx
+
+Rewrote the file that had been patched the most times throughout this
+whole debugging session (616 lines → 432 lines). This is NOT a behavior
+change — every fix found and verified in this conversation is preserved
+exactly:
+
+- Retry-with-backoff on profile/permission fetches, distinguishing
+  "definitively disabled" from "transient/ambiguous" (never sign out on
+  the latter)
+- Cache-trust fast path for instant UI on a returning visit, with a
+  separate `sessionReady` flag that only real session confirmation sets
+- Auth listener reacts only to explicit `SIGNED_OUT`, not the ambiguous
+  `INITIAL_SESSION` null that caused login-screen flashing
+- Heartbeat gated on `sessionReady`, not just `user`, so it never fires
+  with an unconfirmed token
+- `signOut` proactively purges all `sb-*` storage keys so a network
+  timeout can never leave a half-signed-out state
+
+What changed: removed the duplicate private `withTimeout` (now uses the
+shared `src/lib/withTimeout.ts`), reorganized into clearly labeled
+sections, tightened comments to explain *why* each piece exists without
+narrating the same reasoning three different ways.
+
+Verified: 39 migrations clean, typecheck clean, build clean.
