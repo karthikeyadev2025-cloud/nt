@@ -282,7 +282,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearLocalSession();
         return;
       }
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
+      // TOKEN_REFRESHED deliberately does NOT trigger a profile re-fetch.
+      // Confirmed via a real HAR file from a live session: this event fires
+      // repeatedly throughout normal use — roughly every 30-100+ seconds,
+      // in tight clusters — almost certainly from Supabase's own built-in
+      // behavior of re-verifying the session whenever the browser tab
+      // regains focus (completely normal for anyone who keeps several tabs
+      // open, which is common usage, not something to avoid). A refreshed
+      // token means exactly one thing: the JWT was renewed. It says nothing
+      // about whether the user's profile, role, or permissions changed —
+      // there is nothing to re-fetch. Treating it the same as a genuine
+      // sign-in was firing a full app_users query dozens of times over a
+      // single session for no benefit — confirmed as real, wasted traffic,
+      // not a theoretical concern.
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
         try {
           await new Promise(r => setTimeout(r, 100));
           const loaded = await loadUser(session.user.id);

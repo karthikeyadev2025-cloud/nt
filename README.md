@@ -1451,3 +1451,41 @@ its own. Applied to all three call sites (`get_dashboard_counts` x2,
 Verified: 39 migrations clean, typecheck clean (including fixing a real
 type issue — Supabase's RPC builder is thenable but not a real Promise, so
 the cache helper needed `PromiseLike<T>`, not `Promise<T>`), build clean.
+
+## THE actual root cause of the repeating duplicate-fetch pattern — found from a real HAR file
+
+User provided a full HAR (HTTP Archive) export of a 40-minute real session.
+Analyzed all 744 requests programmatically. This was the breakthrough the
+in-browser diagnostics couldn't provide:
+
+**The pattern wasn't 4 duplicate calls on one page load — it was the same
+small group of calls repeating over and over, roughly every 30-100+
+seconds, for the ENTIRE 40-minute session** (18:02:58 to 18:43:24, 109
+occurrences of the exact same query). Every single one of the 109 calls
+showed `user_sessions` firing at nearly the identical millisecond as
+`app_users` — proving they shared one common trigger, not two separate bugs.
+
+**Root cause**: `onAuthStateChange`'s listener treated `TOKEN_REFRESHED`
+exactly the same as a genuine sign-in — both triggered a full profile
+re-fetch. But Supabase's client automatically re-verifies the session
+whenever the browser tab regains focus (completely normal behavior for
+anyone who keeps multiple tabs open, which is common, ordinary use — not
+something to avoid). Every single tab-focus event was firing a
+`TOKEN_REFRESHED`-shaped event, and every one of those was triggering an
+unnecessary full `app_users` query. A refreshed token means exactly one
+thing — the JWT was renewed — it says nothing about whether the user's
+profile, role, or permissions actually changed. There was nothing to
+re-fetch.
+
+**Fixed**: `TOKEN_REFRESHED` no longer triggers `loadUser()` at all. Only
+`SIGNED_IN` (a genuine new login) and `USER_UPDATED` (an explicit profile
+change) still do. This eliminates the entire repeating pattern at its root,
+regardless of how many sub-events fired together in each cluster — since
+none of them call the profile fetch anymore.
+
+The correlated `user_sessions` traffic in the same HAR file was determined
+to be mostly expected: the user had the "My Sessions" page open for the
+full session, and that panel is intentionally built to refresh every 30
+seconds while mounted — working as designed, not a bug.
+
+Verified: 39 migrations clean, typecheck clean, build clean.
