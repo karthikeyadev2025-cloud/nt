@@ -1008,3 +1008,60 @@ Now a performance/analytics tool that visits `/login` will only ever measure
 the actual anonymous login form — the true "login page."
 
 No migration needed — pure frontend fix (`index.html`, `src/App.tsx`).
+
+## THE actual root cause of "works in private tab, refresh never fixes it" — found and fixed
+
+Verified directly against the live server, not guessed:
+
+```
+$ curl -sI https://www.nikkitechnologies.com/sw.js
+HTTP/2 200
+content-disposition: inline; filename="index.html"
+content-type: text/html; charset=utf-8
+```
+
+**`/sw.js` was returning `index.html`'s content, not a 404.** Deleting
+`public/sw.js` in an earlier fix removed the file, but this app's
+`vercel.json` rewrites every unmatched path to `index.html` — so a request
+for the now-missing `/sw.js` fell through that rewrite and got HTML back
+with a 200 status instead of a real 404.
+
+**Why that's catastrophic specifically for a service worker:** any browser
+that still had the OLD service worker installed periodically re-fetches
+`/sw.js` to check for updates. Getting HTML back (not valid JavaScript)
+means that update check fails to parse — so the browser can **never
+successfully replace the broken old service worker**. It stays permanently
+installed, permanently intercepting every fetch, permanently serving
+whatever it had cached from before — regardless of how many times the page
+is refreshed, because the fix that was supposed to unregister it (the purge
+code added to `main.tsx`) can only run if the browser actually downloads
+the NEW `main.tsx` — which the stuck old service worker was itself
+preventing by intercepting that very request.
+
+This is the exact, complete explanation for "works in a new private tab
+(no service worker ever registered there), same tab keeps failing no matter
+how many times I refresh (the old service worker can never die)."
+
+**Fixed with the standard pattern for this exact situation:** `public/sw.js`
+now contains a real, valid, minimal service worker whose only job is to
+take over from whatever came before, then immediately self-destruct —
+delete every cache, unregister itself, and force every open tab of the app
+to reload. Any browser with the old broken service worker will now
+successfully fetch a valid replacement, install it, and that replacement
+immediately cleans house and hands control back to a normal, un-intercepted
+page load.
+
+**Also fixed while investigating:** hashed JS/CSS bundles under `/assets/`
+(Vite's build output — filename changes whenever content changes) were
+being served with `Cache-Control: max-age=0, must-revalidate`, the same
+policy correctly used for `index.html`. That forced a mandatory network
+round-trip for every single JS/CSS file on every page load, even though
+these files can never go stale under their hashed filename. Added an
+explicit `headers` rule in `vercel.json` so `/assets/*` is cached
+`immutable` for a year — `index.html` and other root files (manifest.json,
+favicon, and now `sw.js`) correctly remain on the always-revalidate policy
+so a new deploy is picked up immediately.
+
+No migration needed. Once this deploys, anyone with the stuck old service
+worker will self-heal automatically on their next visit — no manual
+DevTools steps required.
