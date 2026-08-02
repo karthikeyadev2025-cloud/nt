@@ -3,6 +3,7 @@ import { CheckCircle2, Circle, Clock3, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
+import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import type { Segment } from '../../lib/database.types';
 
@@ -51,27 +52,36 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
   });
 
   async function load() {
-    let q = supabase.from('office_tasks').select('*')
-      .order('due_date', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: false }).limit(200);
-    if (scope === 'done') q = q.in('status', ['completed', 'cancelled']);
-    else q = q.in('status', ['pending', 'in_progress']);
-    if (scope === 'mine' && user) q = q.eq('assigned_to', user.id);
-    if (segFilter) q = q.eq('segment_slug', segFilter);
-    const { data, error } = await q;
-    if (error) { toast.error(`Couldn't load tasks: ${error.message}`); return; }
-    setTasks(data || []);
+    const cacheKey = `office_tasks:${scope}:${segFilter}:${user?.id}`;
+    try {
+      const data = await cachedQuery(cacheKey, async () => {
+        let q = supabase.from('office_tasks').select('*')
+          .order('due_date', { ascending: true, nullsFirst: false })
+          .order('created_at', { ascending: false }).limit(200);
+        if (scope === 'done') q = q.in('status', ['completed', 'cancelled']);
+        else q = q.in('status', ['pending', 'in_progress']);
+        if (scope === 'mine' && user) q = q.eq('assigned_to', user.id);
+        if (segFilter) q = q.eq('segment_slug', segFilter);
+        const { data, error } = await q;
+        if (error) throw error;
+        return data || [];
+      });
+      setTasks(data);
+    } catch (err: any) {
+      toast.error(`Couldn't load tasks: ${err.message}`);
+    }
   }
 
   useEffect(() => { load(); }, [scope, segFilter, user]);
 
   useEffect(() => {
     if (!canAssign) return;
-    supabase.from('app_users').select('id, full_name, role, segments')
-      .eq('is_active', true).order('full_name')
-      .then(({ data }) => { if (data) setStaff(data); });
-    // pg_cron fallback: sweeping here means overdue tasks still chase when a
-    // manager opens the board. Idempotent server-side.
+    cachedQuery('active_staff_users_full', async () => {
+      const { data, error } = await supabase.from('app_users').select('id, full_name, role, segments')
+        .eq('is_active', true).order('full_name');
+      if (error) throw error;
+      return data || [];
+    }).then(data => { if (data) setStaff(data); }).catch(() => {});
     supabase.rpc('remind_overdue_tasks');
   }, [canAssign]);
 

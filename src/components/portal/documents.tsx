@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FileText, CheckCircle2, Printer, PenLine, RotateCcw, ShieldCheck, X, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../lib/toast';
+import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls } from './shared';
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
@@ -243,10 +244,18 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
   const toast = useToast();
 
   async function load() {
-    const { data, error } = await supabase.from('employee_documents').select('*').eq('staff_user_id', staffUserId).order('issued_at', { ascending: false });
-    if (error) { toast.error(`Couldn't load documents: ${error.message}`); setLoaded(true); return; }
-    if (data) setDocs(data);
-    setLoaded(true);
+    try {
+      const data = await cachedQuery(`emp_docs:${staffUserId}`, async () => {
+        const { data, error } = await supabase.from('employee_documents').select('*').eq('staff_user_id', staffUserId).order('issued_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+      });
+      setDocs(data);
+      setLoaded(true);
+    } catch (err: any) {
+      toast.error(`Couldn't load documents: ${err.message}`);
+      setLoaded(true);
+    }
   }
   useEffect(() => { load(); }, [staffUserId]);
 
@@ -362,14 +371,14 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
   const [viewDoc, setViewDoc] = useState<any | null>(null);
 
   useEffect(() => {
-    supabase.from('employee_documents')
-      .select('*')
-      .eq('staff_user_id', staffUserId)
-      .order('issued_at', { ascending: false })
-      .then(({ data }) => {
-        if (data) setDocs(data);
-        setLoading(false);
-      });
+    cachedQuery(`emp_docs:${staffUserId}`, async () => {
+      const { data, error } = await supabase.from('employee_documents').select('*').eq('staff_user_id', staffUserId).order('issued_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }).then(data => {
+      if (data) setDocs(data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [staffUserId]);
 
   return (

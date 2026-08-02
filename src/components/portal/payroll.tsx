@@ -6,6 +6,8 @@ import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { ExportPayslipsButton } from './admin-extras';
+import { cachedQuery } from '../../lib/cachedQuery';
+import { cachedRpc } from '../../lib/cachedRpc';
 
 const DAYS = [{ v: 1, l: 'Mon' }, { v: 2, l: 'Tue' }, { v: 3, l: 'Wed' }, { v: 4, l: 'Thu' }, { v: 5, l: 'Fri' }, { v: 6, l: 'Sat' }, { v: 7, l: 'Sun' }];
 
@@ -20,14 +22,19 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
   const [assignStaffId, setAssignStaffId] = useState('');
 
   async function load() {
-    const [{ data: s }, { data: st }, { data: a }] = await Promise.all([
-      supabase.from('shifts').select('*').order('created_at'),
-      supabase.from('app_users').select('id, full_name').eq('is_active', true).neq('role', 'super_admin').order('full_name'),
-      supabase.from('staff_shifts').select('*').is('effective_to', null),
-    ]);
-    if (s) setShifts(s);
-    if (st) setStaff(st);
-    if (a) setAssignments(a);
+    try {
+      const res = await cachedQuery('shifts_manager_data', async () => {
+        const [{ data: s }, { data: st }, { data: a }] = await Promise.all([
+          supabase.from('shifts').select('*').order('created_at'),
+          supabase.from('app_users').select('id, full_name').eq('is_active', true).neq('role', 'super_admin').order('full_name'),
+          supabase.from('staff_shifts').select('*').is('effective_to', null),
+        ]);
+        return { shifts: s || [], staff: st || [], assignments: a || [] };
+      });
+      if (res) { setShifts(res.shifts); setStaff(res.staff); setAssignments(res.assignments); }
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => { load(); }, []);
 
@@ -167,12 +174,18 @@ export function PayslipManager() {
   const [payments, setPayments] = useState<any[]>([]);
 
   async function load() {
-    const [{ data: s }, { data: p }] = await Promise.all([
-      supabase.from('app_users').select('id, full_name, salary_structure').eq('is_active', true).neq('role', 'super_admin').order('full_name'),
-      supabase.from('payslips').select('*').order('period_year', { ascending: false }).order('period_month', { ascending: false }).limit(200),
-    ]);
-    if (s) setStaff(s);
-    if (p) setPayslips(p);
+    try {
+      const res = await cachedQuery('payslip_manager_data', async () => {
+        const [{ data: s }, { data: p }] = await Promise.all([
+          supabase.from('app_users').select('id, full_name, salary_structure').eq('is_active', true).neq('role', 'super_admin').order('full_name'),
+          supabase.from('payslips').select('*').order('period_year', { ascending: false }).order('period_month', { ascending: false }).limit(200),
+        ]);
+        return { staff: s || [], payslips: p || [] };
+      });
+      if (res) { setStaff(res.staff); setPayslips(res.payslips); }
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => { load(); }, []);
 
@@ -562,8 +575,12 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
   const [selectedStaff, setSelectedStaff] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
-    supabase.rpc('staff_attendance_summary', { _segment_slug: segment || null, _days: days })
-      .then(({ data, error }) => { if (!error && data) setRows(data); });
+    cachedRpc(`staff_attendance_summary:${segment}:${days}`, () =>
+      supabase.rpc('staff_attendance_summary', { _segment_slug: segment || null, _days: days })
+    ).then(res => {
+      const data = (res as any)?.data || res;
+      if (Array.isArray(data)) setRows(data);
+    }).catch(() => {});
   }, [segment, days]);
 
   return (
