@@ -60,14 +60,7 @@ const AUTH_TIMEOUT_MS = 5000;
 //   • returns null    → row read AND is_active === false — definitively
 //                        disabled. The ONLY case that should sign someone out.
 //   • throws          → transient/ambiguous. Callers keep the current session.
-let __diagCallCount = 0;
 async function fetchAppUser(userId: string): Promise<AppUser | null> {
-  // TEMPORARY DIAGNOSTIC — remove once root cause of the duplicate-fetch
-  // bug is confirmed. Counter in the message prevents Chrome from
-  // collapsing repeated identical console messages into one entry.
-  __diagCallCount++;
-  // eslint-disable-next-line no-console
-  console.trace(`[DIAG #${__diagCallCount}] fetchAppUser called at t=${Math.round(performance.now())}ms`);
   let retries = 4;
   let delay = 250;
 
@@ -178,8 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const RECENT_LOAD_WINDOW_MS = 15000;
 
   async function loadUser(userId: string): Promise<AppUser | null> {
-    // eslint-disable-next-line no-console
-    console.trace(`[DIAG loadUser] entry at t=${Math.round(performance.now())}ms`);
     const existing = inFlightLoadRef.current;
     if (existing && existing.userId === userId) return existing.promise;
 
