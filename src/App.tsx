@@ -62,64 +62,47 @@ function AppContent() {
     };
   }, []);
 
-  // AuthContext's own `loading` already has a real, correct safety net (a
-  // fast localStorage-hydration path for returning sessions, and a 15s hard
-  // cap for a genuinely broken connection). This used to be overridden by a
-  // second, much more aggressive 400ms timer here that forced the app past
-  // `loading` before the real session check could realistically finish on
-  // any live network — which meant `user` was still null at that moment,
-  // so a signed-in person got shown the login screen for a moment before
-  // flipping back to their portal. Trusting AuthContext's own loading state
-  // directly removes that race entirely.
-  if (loading) return <PageLoader />;
-
-  // The cache fast-path above can set `user` from localStorage before the
-  // REAL Supabase client has confirmed and attached its session token — see
-  // the sessionReady comment in AuthContext. If every dashboard component
-  // were left to fire its own data queries at that instant, RLS-protected
-  // tables come back empty (not an error), which is exactly "signed in, but
-  // no data anywhere" on what looks like a random fraction of page loads.
-  // Holding the neutral loader for this one extra beat — never the login
-  // screen, since `user` is already known — closes that race at a single
-  // point instead of touching every component that fetches data.
-  if (user && !sessionReady) return <PageLoader />;
-
-  if (isLoginRoute) {
-    if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
-    // An authenticated visit to /login, /admin, or /portal renders the right
-    // dashboard below regardless of which of the three the URL currently
-    // shows — but if it's specifically /login, correct the URL to /portal.
-    // Without this, a returning signed-in user (or any tool auditing "the
-    // login page") loading /login directly gets the full dashboard bundle
-    // served under a URL that claims to be the anonymous login form — which
-    // is both misleading and, for a performance audit, measures the wrong
-    // page entirely (this is exactly why an LCP trace of "/login" showed
-    // StaffPortal/SuperAdminDashboard code on the critical path).
-    if (window.location.pathname === '/login') {
-      window.history.replaceState({}, '', '/portal');
-    }
-    // A temp password (set by an admin) must be replaced before anything else.
-    if (user.must_change_password) return <Suspense fallback={<PageLoader />}><ForcePasswordChange /></Suspense>;
-    // Only genuinely administrative permissions route to the admin console.
-    // manage_leads / manage_tickets are deliberately NOT here: telecallers,
-    // field executives and support agents hold them, and their real workflows
-    // (call queue, field visits, ticket queue) live in the staff portal. Sending
-    // them to the console would hide the very screens built for their job.
-    const hasAdminAccess = user.role === 'super_admin' || [
-      'manage_staff', 'manage_content', 'manage_payroll', 'manage_careers',
-      'view_reports', 'assign_tickets',
-      'bulk_assign_leads', 'approve_transfers', 'approve_advances',
-    ].some(p => hasPermission(p));
-    if (hasAdminAccess) return <Suspense fallback={<PageLoader />}><SuperAdminDashboard /></Suspense>;
-    return <Suspense fallback={<PageLoader />}><StaffPortal /></Suspense>;
+  // ── Public site: render IMMEDIATELY, zero auth delay ──────────────
+  // The public landing page does not need authentication. Previously it was
+  // blocked behind `if (loading) return <PageLoader />` which meant every
+  // visitor — including anonymous first-time visitors — saw a splash screen
+  // for 1-5 seconds while getSession() completed. That was the "shows one
+  // page first then real website loaded" symptom. Now the public site
+  // renders instantly; only /login, /admin, /portal routes wait for auth.
+  if (!isLoginRoute) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <PublicSite />
+        <PWAInstallBanner />
+      </Suspense>
+    );
   }
 
-  return (
-    <Suspense fallback={<PageLoader />}>
-      <PublicSite />
-      <PWAInstallBanner />
-    </Suspense>
-  );
+  // ── Portal / Login routes: wait for auth ──────────────────────────
+  if (loading) return <PageLoader />;
+
+  // The cache fast-path can set `user` from localStorage before the REAL
+  // Supabase client has confirmed its session token. Hold a neutral loader
+  // (never the login screen) until sessionReady flips true so dashboard
+  // data queries don't fire with a stale/missing token.
+  if (user && !sessionReady) return <PageLoader />;
+
+  if (!user) return <Suspense fallback={<PageLoader />}><UnifiedLogin /></Suspense>;
+
+  // An authenticated visit to /login — correct the URL to /portal.
+  if (window.location.pathname === '/login') {
+    window.history.replaceState({}, '', '/portal');
+  }
+  // A temp password (set by an admin) must be replaced before anything else.
+  if (user.must_change_password) return <Suspense fallback={<PageLoader />}><ForcePasswordChange /></Suspense>;
+  // Only genuinely administrative permissions route to the admin console.
+  const hasAdminAccess = user.role === 'super_admin' || [
+    'manage_staff', 'manage_content', 'manage_payroll', 'manage_careers',
+    'view_reports', 'assign_tickets',
+    'bulk_assign_leads', 'approve_transfers', 'approve_advances',
+  ].some(p => hasPermission(p));
+  if (hasAdminAccess) return <Suspense fallback={<PageLoader />}><SuperAdminDashboard /></Suspense>;
+  return <Suspense fallback={<PageLoader />}><StaffPortal /></Suspense>;
 }
 
 export default function App() {
