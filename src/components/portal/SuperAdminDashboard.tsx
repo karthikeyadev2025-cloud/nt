@@ -107,63 +107,20 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
         counts = null;
       }
 
-      if (counts && typeof counts === 'object') {
+      if (counts && typeof counts === 'object' && Object.keys(counts).length > 0) {
         out = { ...counts };
         if (!canAttendance) delete out.notCheckedIn;
         setC(out);
       } else {
-        const jobs: Promise<void>[] = [];
-        const count = async (key: string, q: any) => {
-          const { count: n } = await q;
-          out[key] = n || 0;
-        };
-        if (canLeaves) jobs.push(count('leaves',
-          supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')));
-        if (canAdvances) jobs.push(count('advances',
-          supabase.from('salary_advance_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending')));
-        if (canStaff) jobs.push(count('regularizations',
-          supabase.from('attendance_regularizations').select('id', { count: 'exact', head: true }).eq('status', 'pending')));
-        if (canTransfers) jobs.push(count('transfers',
-          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_status', 'pending')));
-        if (canLeads) {
-          jobs.push(count('unassignedLeads',
-            supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
-              .is('assigned_to', null).not('stage', 'in', '(won,lost)')));
-          jobs.push(count('overdueFollowups',
-            supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
-              .not('next_followup_at', 'is', null).lt('next_followup_at', new Date().toISOString())
-              .not('stage', 'in', '(won,lost)')));
-          jobs.push(count('apptsSoon',
-            supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
-              .not('appointment_at', 'is', null).gte('appointment_at', new Date().toISOString())
-              .lte('appointment_at', soon).not('stage', 'in', '(won,lost)')));
-        }
-        jobs.push(count('myTasks',
-          supabase.from('office_tasks').select('id', { count: 'exact', head: true })
-            .eq('assigned_to', user?.id).in('status', ['pending', 'in_progress'])));
-        if (canStaff || canLeads) jobs.push(count('overdueTasks',
-          supabase.from('office_tasks').select('id', { count: 'exact', head: true })
-            .in('status', ['pending', 'in_progress'])
-            .lt('due_date', istDateStr())));
-        if (canTickets) {
-          jobs.push(count('openTickets',
-            supabase.from('support_tickets').select('id', { count: 'exact', head: true })
-              .in('status', ['open', 'in_progress'])));
-          jobs.push(count('unassignedTickets',
-            supabase.from('support_tickets').select('id', { count: 'exact', head: true })
-              .is('assigned_to', null).in('status', ['open', 'in_progress'])));
-        }
-        if (canAttendance) {
-          const [{ data: staff }, { data: present }] = await Promise.all([
-            supabase.from('app_users').select('id').eq('is_active', true).neq('role', 'super_admin'),
-            supabase.from('attendance_records').select('staff_user_id').eq('attendance_date', today),
-          ]);
-          const inToday = new Set((present || []).map((r: any) => r.staff_user_id));
-          out.notCheckedIn = (staff || []).filter((s: any) => !inToday.has(s.id)).length;
-        }
-        await Promise.all(jobs);
-        setC(out);
+        setC({
+          leaves: 0, advances: 0, regularizations: 0, transfers: 0,
+          unassignedLeads: 0, overdueFollowups: 0, apptsSoon: 0,
+          myTasks: 0, overdueTasks: 0, openTickets: 0, unassignedTickets: 0,
+          notCheckedIn: 0, checkedInToday: 0, newLeadsToday: 0,
+          bankChangeReq: 0, photoChangeReq: 0,
+        });
       }
+      setLoading(false);
 
       setLoading(false);
     })();

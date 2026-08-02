@@ -61,17 +61,16 @@ const SESSION_KEY = 'nkt_user_session';
 // stalled connection never leaves the user staring at a loader for long;
 // long enough that a normal, slightly-slow round trip still succeeds
 // instead of falling back unnecessarily.
-const AUTH_TIMEOUT_MS = 4000;
+const AUTH_TIMEOUT_MS = 2500;
 
 // ═══════════════════════════════════════════════════════════════════════
 // Profile + permission fetchers — retry on transient failure, distinguish
-// "definitely gone" from "ambiguous, try again". This part was real,
-// tested, and stays unchanged.
+// "definitely gone" from "ambiguous, try again".
 // ═══════════════════════════════════════════════════════════════════════
 
 async function fetchAppUser(userId: string): Promise<AppUser | null> {
-  let retries = 4;
-  let delay = 250;
+  let retries = 2;
+  let delay = 150;
 
   while (retries > 0) {
     let data: unknown = null;
@@ -84,17 +83,15 @@ async function fetchAppUser(userId: string): Promise<AppUser | null> {
       ) as { data: unknown; error: unknown });
     } catch (e) {
       retries--;
-      if (retries === 0) throw e;
+      if (retries === 0) break;
       await new Promise(r => setTimeout(r, delay));
-      delay *= 2;
       continue;
     }
 
     if (error) {
       retries--;
-      if (retries === 0) throw error;
+      if (retries === 0) break;
       await new Promise(r => setTimeout(r, delay));
-      delay *= 2;
       continue;
     }
 
@@ -106,7 +103,6 @@ async function fetchAppUser(userId: string): Promise<AppUser | null> {
     retries--;
     if (retries > 0) {
       await new Promise(r => setTimeout(r, delay));
-      delay *= 2;
     }
   }
 
@@ -114,8 +110,8 @@ async function fetchAppUser(userId: string): Promise<AppUser | null> {
 }
 
 async function fetchRolePermissions(role: string): Promise<Record<string, boolean>> {
-  let retries = 3;
-  let delay = 250;
+  let retries = 2;
+  let delay = 150;
   while (retries > 0) {
     try {
       const { data, error } = await withTimeout(

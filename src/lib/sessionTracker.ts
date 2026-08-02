@@ -86,22 +86,28 @@ export async function heartbeatSession(): Promise<{ revoked: boolean }> {
   const id = getCurrentSessionRowId();
   if (!id) return { revoked: false };
   try {
-    const { data, error } = await supabase
-      .from('user_sessions')
-      .update({ last_seen_at: new Date().toISOString() })
-      .eq('id', id)
-      .is('revoked_at', null) // no-op if already revoked
-      .select('id, revoked_at')
-      .maybeSingle();
-    if (error) return { revoked: false };
-    // If the update matched nothing, the row was revoked (or deleted).
-    if (!data) {
-      // Confirm by fetching the row directly.
-      const { data: check } = await supabase
+    const { data, error } = await withTimeout(
+      supabase
         .from('user_sessions')
-        .select('revoked_at')
+        .update({ last_seen_at: new Date().toISOString() })
         .eq('id', id)
-        .maybeSingle();
+        .is('revoked_at', null)
+        .select('id, revoked_at')
+        .maybeSingle(),
+      4000,
+      'heartbeat'
+    );
+    if (error) return { revoked: false };
+    if (!data) {
+      const { data: check } = await withTimeout(
+        supabase
+          .from('user_sessions')
+          .select('revoked_at')
+          .eq('id', id)
+          .maybeSingle(),
+        3000,
+        'check revocation'
+      ).catch(() => ({ data: null }));
       if (check && check.revoked_at) return { revoked: true };
     }
     return { revoked: false };

@@ -41,7 +41,6 @@ if ('serviceWorker' in navigator) {
 // specifically so nobody ever has to manually clear their browser's cache
 // after a deploy again: the app detects it's stale and fixes itself.
 (function watchForNewDeploy() {
-  const CHECK_INTERVAL_MS = 5_000;
   let reloading = false;
 
   async function checkForNewVersion() {
@@ -65,12 +64,11 @@ if ('serviceWorker' in navigator) {
         window.location.reload();
       }
     } catch {
-      // Network hiccup checking for updates — try again on next interval.
+      // Network hiccup checking for updates.
     }
   }
 
   checkForNewVersion();
-  setInterval(checkForNewVersion, CHECK_INTERVAL_MS);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') checkForNewVersion();
   });
