@@ -192,22 +192,38 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
 
   useEffect(() => {
     (async () => {
-      const perSeg = await Promise.all(segments.map(async seg => {
-        const [tickets, openTickets, leads, won] = await Promise.all([
-          supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug),
-          supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug).in('status', ['open', 'in_progress']),
-          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug),
-          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug).eq('stage', 'won'),
-        ]);
-        return { slug: seg.slug, tickets: tickets.count || 0, openTickets: openTickets.count || 0, leads: leads.count || 0, won: won.count || 0 };
-      }));
+      // Was 4 queries per segment (tickets, open tickets, leads, won) plus
+      // 1 more for staff — 9 total for today's 2 segments, scaling up as
+      // more are added. Now one RPC call. Falls back to the original method
+      // if the RPC is unavailable for any reason.
+      const { data: summary, error: rpcError } = await supabase.rpc('get_segment_summary');
+
+      if (rpcError || !summary) {
+        if (rpcError) console.error('get_segment_summary RPC failed, falling back to individual queries:', rpcError.message);
+        const perSeg = await Promise.all(segments.map(async seg => {
+          const [tickets, openTickets, leads, won] = await Promise.all([
+            supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug),
+            supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug).in('status', ['open', 'in_progress']),
+            supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug),
+            supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('segment_slug', seg.slug).eq('stage', 'won'),
+          ]);
+          return { slug: seg.slug, tickets: tickets.count || 0, openTickets: openTickets.count || 0, leads: leads.count || 0, won: won.count || 0 };
+        }));
+        const s: Record<string, any> = {};
+        segments.forEach(seg => { s[seg.slug] = { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 } });
+        const { data: staff } = await supabase.from('app_users').select('segments, is_active');
+        perSeg.forEach(p => { s[p.slug] = { ...s[p.slug], tickets: p.tickets, openTickets: p.openTickets, leads: p.leads, won: p.won } });
+        (staff || []).forEach((u: any) => {
+          if (!u.is_active) return;
+          (u.segments || []).forEach((slug: string) => { if (s[slug]) s[slug].staff++; });
+        });
+        setStats(s);
+        return;
+      }
+
       const s: Record<string, any> = {};
-      segments.forEach(seg => { s[seg.slug] = { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 } });
-      const { data: staff } = await supabase.from('app_users').select('segments, is_active');
-      perSeg.forEach(p => { s[p.slug] = { ...s[p.slug], tickets: p.tickets, openTickets: p.openTickets, leads: p.leads, won: p.won } });
-      (staff || []).forEach((u: any) => {
-        if (!u.is_active) return;
-        (u.segments || []).forEach((slug: string) => { if (s[slug]) s[slug].staff++; });
+      segments.forEach(seg => {
+        s[seg.slug] = summary[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
       });
       setStats(s);
     })();

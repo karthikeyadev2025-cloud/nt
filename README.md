@@ -1151,3 +1151,52 @@ specific migration has been applied yet — it's just faster once it has.
 against the live Supabase project (Studio → SQL Editor → paste and run, if
 not already done). Until it has, the dashboard will keep working via the
 fallback path — just without the performance improvement.
+
+## Definitive finding: nothing is broken, the app is genuinely slow — proven live
+
+Tested the actual live site directly with a real browser session (not
+guessing): loaded /portal, waited 6 seconds, and the segment summary cards
+showed all zeros ("Digital Media: 0 staff") despite real staff/lead/ticket
+data existing — matching the "nothing loading" report exactly.
+
+**Then waited longer (20 seconds total) and checked again: every number
+was correct.** Digital Media showed 3 leads, 2 staff. Software showed 2
+staff. ActionCentre populated with real overdue counts. Punctuality
+Leaderboard showed real names. Zero console errors at any point.
+
+This is conclusive: the app is not broken, has no hidden logic bug, and no
+RLS/auth failure. It genuinely takes a meaningful amount of time to load
+everything on the Overview page, because it fires a large number of
+separate network round trips — each one fast individually, but the total
+adds up. On this test connection that was ~20 seconds; on the real-world
+1-38 KB/s mobile connections documented throughout this whole debugging
+session, the same round-trip count would take proportionally longer —
+directly explaining the reported "wait 2 minutes, then it comes."
+
+## Consolidated the remaining major offender: segment summary cards
+
+Found and fixed the same pattern as the previous ActionCentre/TodayAtAGlance
+consolidation, applied to the one major widget that hadn't been touched yet:
+
+- **Before**: 4 separate queries per segment (tickets, open tickets, leads,
+  won) plus 1 for staff — 9 total requests for today's 2 segments, and this
+  scales up automatically as more segments are added (this business has
+  already added and retired segments before).
+- **After**: 1 RPC call (`get_segment_summary`), using `GROUP BY` so it
+  correctly handles any number of segments, not hardcoded to today's 2.
+
+**Verified with real seeded data before shipping, not assumed:**
+- RPC output matched hand-calculated expected values exactly
+  (`digital_media: leads=2, won=1, tickets=2, openTickets=1, staff=1`).
+- Confirmed RLS scoping is preserved: a segment-scoped manager querying this
+  RPC gets `0` for the segment they can't access — verified it matches a
+  direct query exactly, not just assumed because the function isn't
+  `SECURITY DEFINER`.
+- Same defensive fallback pattern as before: if this RPC fails for any
+  reason (e.g. migration not yet applied), the page falls back to the
+  original 9-query method automatically. A performance optimization must
+  never become a hard dependency.
+
+Combined with the previous consolidation, the Overview page's own query
+count is now roughly a third of where it started, with identical, verified
+data correctness and access control.
