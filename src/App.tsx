@@ -41,7 +41,24 @@ function PageLoader() {
 
 function AppContent() {
   const { user, loading, sessionReady, hasPermission } = useAuth();
-  const [isLoginRoute, setIsLoginRoute] = useState(false);
+  // Computed synchronously from the URL on first render, not defaulted to
+  // false and corrected a render later via useEffect. That default meant
+  // every single load of /login, /admin, or /portal briefly rendered
+  // PublicSite first — and since PublicSite is lazy-loaded, React kicked
+  // off its ~187KB download immediately, even though the correct content
+  // replaced it a moment later once the effect ran. A real, wasted download
+  // on every page load, confirmed by inspecting actual network requests
+  // during a hard refresh of /portal.
+  const [isLoginRoute, setIsLoginRoute] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    return (
+      path === '/login' || hash === '#login' ||
+      path === '/admin' || hash === '#admin' ||
+      path === '/portal' || hash === '#portal'
+    );
+  });
 
   useEffect(() => {
     const checkRoute = () => {

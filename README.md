@@ -1354,3 +1354,27 @@ sections, tightened comments to explain *why* each piece exists without
 narrating the same reasoning three different ways.
 
 Verified: 39 migrations clean, typecheck clean, build clean.
+
+## Real bug found from a recorded browser session with hard refreshes
+
+User provided a Chrome DevTools Recorder session with explicit hard reloads
+(Ctrl+Shift+R — bypasses cache entirely). Replayed it directly and inspected
+actual network requests: **`PublicSite.js` (187KB) was downloading on every
+single load of `/portal`**, even though the user was never shown the public
+site — landing directly on their authenticated dashboard.
+
+**Root cause**: `isLoginRoute` defaulted to `false` and only corrected
+itself a render later via `useEffect`. Since the very first render always
+saw `isLoginRoute === false`, `App.tsx` briefly rendered `<PublicSite />`
+first on every load of `/login`, `/admin`, and `/portal` — and because
+`PublicSite` is lazy-loaded, React immediately kicked off its download the
+instant that first (incorrect) render happened, even though the correct
+content replaced it a moment later once the effect ran. A real, wasted
+~187KB download on every single page load, most costly precisely on the
+slow connections this app is used on.
+
+**Fixed**: `isLoginRoute`'s initial value is now computed synchronously
+from the URL on first render, not deferred to an effect. The incorrect
+first render — and the wasted download it triggered — no longer happens.
+
+No migration needed — pure frontend fix in `src/App.tsx`.
