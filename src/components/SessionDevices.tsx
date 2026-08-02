@@ -67,7 +67,17 @@ export default function SessionDevices() {
     (async () => {
       if (!user) return;
       setLoading(true);
-      const list = await listActiveSessions(user.id);
+      let list = await listActiveSessions(user.id);
+      // Closes a real, observed race: on a fresh page load, this query can
+      // run before beginSession() has finished creating THIS device's own
+      // row, showing "no active devices found" even though one is about to
+      // exist. One short retry catches that without a real "empty" state
+      // ever waiting longer than necessary.
+      if (mounted && list.length === 0) {
+        await new Promise(r => setTimeout(r, 1500));
+        if (!mounted) return;
+        list = await listActiveSessions(user.id);
+      }
       if (!mounted) return;
       // If the migration hasn't been run yet the query returns [] and we still
       // want to inform the user (not silently hide the panel).
