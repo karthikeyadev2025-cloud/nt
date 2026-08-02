@@ -19,27 +19,34 @@ export function TelecallerStatsDashboard() {
 
   async function load() {
     if (!user) return;
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+    try {
+      const data = await cachedQuery(`telecaller_stats:${user.id}`, async () => {
+        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+        const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
 
-    const [{ count: assigned }, { count: calledToday }, { count: callbacks }, { count: transfersPending }] = await Promise.all([
-      supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('assigned_to', user.id),
-      supabase.from('lead_remarks').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', todayStart.toISOString()),
-      supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('assigned_to', user.id).not('callback_at', 'is', null),
-      supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_requested_by', user.id).eq('transfer_status', 'pending'),
-    ]);
+        const [{ count: assigned }, { count: calledToday }, { count: callbacks }, { count: transfersPending }] = await Promise.all([
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('assigned_to', user.id),
+          supabase.from('lead_remarks').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', todayStart.toISOString()),
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('assigned_to', user.id).not('callback_at', 'is', null),
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_requested_by', user.id).eq('transfer_status', 'pending'),
+        ]);
 
-    const { data: convRemarks } = await supabase.from('lead_remarks')
-      .select('lead_id')
-      .eq('user_id', user.id)
-      .ilike('remark', '[Converted / Closed]%')
-      .gte('created_at', monthStart.toISOString());
-    const convertedMonth = new Set((convRemarks || []).map((r: any) => r.lead_id)).size;
+        const { data: convRemarks } = await supabase.from('lead_remarks')
+          .select('lead_id')
+          .eq('user_id', user.id)
+          .ilike('remark', '[Converted / Closed]%')
+          .gte('created_at', monthStart.toISOString());
+        const convertedMonth = new Set((convRemarks || []).map((r: any) => r.lead_id)).size;
 
-    setStats({
-      assigned: assigned || 0, calledToday: calledToday || 0, callbacks: callbacks || 0,
-      convertedMonth, transfersPending: transfersPending || 0,
-    });
+        return {
+          assigned: assigned || 0, calledToday: calledToday || 0, callbacks: callbacks || 0,
+          convertedMonth, transfersPending: transfersPending || 0,
+        };
+      });
+      if (data) setStats(data);
+    } catch {
+      // ignore
+    }
   }
   useEffect(() => { load(); }, [user]);
 
