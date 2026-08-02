@@ -10,21 +10,9 @@
       ]
     },
     {
-      "source": "/(.*).html",
+      "source": "/((?!assets/).*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate, s-maxage=0" }
-      ]
-    },
-    {
-      "source": "/",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate, s-maxage=0" }
-      ]
-    },
-    {
-      "source": "/sw.js",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate, s-maxage=0" }
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate, s-maxage=0, no-cache" }
       ]
     }
   ]
