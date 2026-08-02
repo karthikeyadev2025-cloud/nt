@@ -867,3 +867,48 @@ localStorage state**, not a database or auth-code issue.
 No migration needed — pure frontend fix. Existing users who already have
 the stale SW cached should get a clean state on their next visit as the
 new code purges everything on load.
+
+## Root cause of login-loop + empty-data-after-refresh — actual fix
+
+User described this pattern exactly: "first login works, refresh shows blank
+data, then bounces back to login screen." That is a specific race condition
+that traced back to a fix I had made earlier — this session found and fixed
+the real cause.
+
+**The bug I had introduced in the previous cache-trust-timer patch:** The
+2-second cache-trust timer would flip `sessionReady=true` and unblock the
+dashboards **regardless of whether the stored auth token was still valid**.
+When the token had expired (which happens after any period of inactivity),
+the sequence was:
+
+1. Page loads with cached user in localStorage → dashboards mount at t=2s.
+2. Every dashboard's data-fetch fires immediately with the **expired** token.
+3. RLS silently returns 0 rows for an unauthenticated request (it doesn't
+   throw — it just filters everything out) → "No data yet" everywhere.
+4. In the background, `getSession()` tries to refresh the token; on the slow
+   mobile connection this can take 5–10 seconds.
+5. If refresh fails, my code clears the session → user becomes null → App
+   routes to `/login` → **login loop.**
+
+First login worked because the token was fresh. Every subsequent refresh
+made the failure more likely because the token was older.
+
+**Fix (`AuthContext.tsx` `canTrustCacheImmediately`):** Only trust the
+cached session for the 2-second fast path when the stored token is
+**verifiably not expired**. The code now:
+
+1. Scans localStorage for Supabase's `sb-<project>-auth-token`.
+2. Parses it, reads `expires_at`.
+3. Only enables the 2s cache-trust timer if `expires_at` is more than 60
+   seconds in the future (60-second safety margin so a token about to
+   expire doesn't sneak through).
+4. Otherwise, falls back to the 15-second safety net — which gives the real
+   `getSession()` call time to complete the token refresh before dashboards
+   mount and start firing queries.
+
+Result: dashboards no longer mount with a stale token, so RLS never
+returns silent-empty results, and the "eventual bounce to login when
+refresh fails" pattern goes away — because refresh completes before the UI
+starts querying.
+
+No migration needed. Pure frontend fix in `src/contexts/AuthContext.tsx`.

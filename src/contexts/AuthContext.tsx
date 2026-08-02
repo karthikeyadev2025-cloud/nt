@@ -258,24 +258,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Two-stage release for the initial load:
     //
-    // 1. If we have a cached user (returning visitor with a stored session),
-    //    the Supabase client has already synchronously hydrated the auth
-    //    tokens from localStorage during its own initialization — any query
-    //    that fires from this moment on carries a valid token. The
-    //    getSession() call happening below is doing a network verification,
-    //    NOT establishing the session. On a slow mobile connection that
-    //    verification can take many seconds while the app UI just sits on
-    //    the loader for no benefit to the user. So after a short grace
-    //    period (2s), we trust the cache and release the UI. Verification
-    //    keeps running in the background and reconciles via the auth listener.
+    // 1. If we have a cached user AND the stored Supabase token is verifiably
+    //    NOT expired, the Supabase client has already synchronously hydrated
+    //    valid auth tokens from localStorage — any query that fires from this
+    //    moment on carries a valid token. On a slow connection, network
+    //    verification via getSession() can take many seconds; there's no
+    //    user-visible benefit to waiting on it. After a short grace period
+    //    (2s), we trust the cache and release the UI. Verification keeps
+    //    running in the background and reconciles quietly via the auth listener.
+    //
+    //    IMPORTANT: this ONLY applies when we can confirm the stored token
+    //    isn't already expired. If the token is expired (or expiring within
+    //    60 seconds), the Supabase client needs to refresh it before ANY
+    //    query will succeed. Releasing the UI early in that case caused
+    //    dashboards to mount and fire queries with a stale token — which
+    //    RLS silently treats as anonymous and returns ZERO rows for. That
+    //    manifested as "first login works, refresh shows empty data" plus
+    //    "eventually kicks back to the login screen when the refresh
+    //    finally fails" — the login-loop pattern. So we FALL BACK to the
+    //    15s safety net whenever the stored token is stale.
     //
     // 2. If we don't have a cached user (a fresh visitor with no stored
-    //    session), we genuinely have nothing to fall back to and must wait
-    //    for a real answer — the 15s hard cap applies.
-    const hasCache = (() => {
-      try { return !!localStorage.getItem(SESSION_KEY); } catch { return false; }
+    //    session), or the cached token is stale, we wait for the real
+    //    getSession() to actually complete. The 15s hard cap applies as a
+    //    last-resort backstop.
+    const canTrustCacheImmediately = (() => {
+      try {
+        if (!localStorage.getItem(SESSION_KEY)) return false;
+        // Find Supabase's own stored session. The key is
+        // sb-<project-ref>-auth-token. We don't want to hard-code the ref, so
+        // scan for any matching key.
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) {
+            const raw = localStorage.getItem(k);
+            if (!raw) return false;
+            const parsed = JSON.parse(raw);
+            // Supabase persists { access_token, refresh_token, expires_at, ... }.
+            // expires_at is a UNIX timestamp in seconds.
+            const expiresAt = parsed?.expires_at;
+            if (typeof expiresAt !== 'number') return false;
+            const nowSec = Math.floor(Date.now() / 1000);
+            // 60-second safety margin — a token expiring in 30s will hit
+            // refresh-in-flight territory the moment a dashboard query runs.
+            return expiresAt - nowSec > 60;
+          }
+        }
+        return false;
+      } catch {
+        return false;
+      }
     })();
-    const cacheTrustTimer = hasCache
+    const cacheTrustTimer = canTrustCacheImmediately
       ? setTimeout(() => {
           if (mounted) {
             setLoading(false);
