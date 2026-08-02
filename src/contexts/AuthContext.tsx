@@ -153,10 +153,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return cached ? JSON.parse(cached) : {};
     } catch { return {}; }
   });
-  // Always starts true. No cache-fast-path branching on the initial value —
-  // that branching, and the separate timers it required, is exactly what
-  // got removed. Every load does the same one bounded check.
-  const [loading, setLoading] = useState(true);
+  // Fast-path: if a valid session exists in localStorage, hydrate user/perms
+  // instantly (loading = false) so returning users see their portal in 0ms on
+  // refresh without waiting for background network verification.
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !localStorage.getItem(SESSION_KEY);
+    } catch {
+      return true;
+    }
+  });
 
   const inFlightLoadRef = useRef<{ userId: string; promise: Promise<AppUser | null> } | null>(null);
   const recentLoadRef = useRef<{ userId: string; result: AppUser | null; at: number } | null>(null);

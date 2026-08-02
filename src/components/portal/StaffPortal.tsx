@@ -16,22 +16,13 @@ import { MyPayslips } from './payroll';
 import CameraCapture from '../CameraCapture';
 import { KiteTailLogo } from '../KiteTailLogo';
 import SessionDevices from '../SessionDevices';
+import { cachedQuery } from '../../lib/cachedQuery';
 
 // ─────────────────────────── Self-service: attendance
 // ─────────────────────────── Role-aware Home
-// Every role lands here. The cards shown are chosen by what that person's job
-// actually is, so a telecaller sees today's calls and a field executive sees
-// today's appointments — instead of everyone getting the same attendance page.
 export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user, hasPermission } = useAuth();
   const [stats, setStats] = useState<any>({});
-  // Starts true and only flips false once the effect below actually finishes —
-  // it used to start false (a bug: never set true anywhere), so this component
-  // rendered its full JSX immediately on mount, before stats had loaded. With
-  // stats still {} at that point, stats.appointments was undefined, and
-  // stats.appointments.length below threw "Cannot read properties of
-  // undefined" for every telecaller/marketing executive, since Home is their
-  // default landing tab — a crash on effectively every login for those roles.
   const [loading, setLoading] = useState(true);
 
   const role = user?.role;
@@ -41,12 +32,12 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
+    const cacheKey = `staff_home:${user.id}`;
+    cachedQuery(cacheKey, async () => {
       const todayStr = istDateStr();
       const startOfDay = `${todayStr}T00:00:00`;
       const s: any = {};
 
-      // Everyone: today's attendance + pending requests.
       const [{ data: att }, { count: pendingLeaves }] = await Promise.all([
         supabase.from('attendance_records').select('*')
           .eq('staff_user_id', user.id).eq('attendance_date', todayStr).maybeSingle(),
@@ -89,9 +80,11 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
         s.myTickets = mineT || 0;
       }
 
-      setStats(s);
+      return s;
+    }).then(s => {
+      if (s) setStats(s);
       setLoading(false);
-    })();
+    }).catch(() => setLoading(false));
   }, [user]);
 
   if (loading) return <p className="text-stone-700 text-sm py-8 text-center">Loading…</p>;

@@ -7,6 +7,7 @@ import type { Segment, SupportTicket, Lead } from '../../lib/database.types';
 import { istDateStr } from '../../lib/dates';
 import { normalizePhone } from '../../lib/phone';
 import { AttendanceDetailsModal } from './payroll';
+import { cachedQuery, invalidateQueryCache } from '../../lib/cachedQuery';
 
 export const inputCls =
   'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-600 focus:ring-2 focus:ring-orange-600/20 focus:outline-none transition-all placeholder-stone-500';
@@ -60,12 +61,20 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
   const toast = useToast();
 
   async function load() {
-    let q = supabase.from('support_tickets').select('*').order('created_at', { ascending: false }).limit(300);
-    if (segFilter) q = q.eq('segment_slug', segFilter);
-    if (statusFilter) q = q.eq('status', statusFilter);
-    const { data, error } = await q;
-    if (error) { toast.error(`Couldn't load tickets: ${error.message}`); return; }
-    if (data) setTickets(data as SupportTicket[]);
+    const cacheKey = `tickets:${segFilter}:${statusFilter}`;
+    try {
+      const data = await cachedQuery(cacheKey, async () => {
+        let q = supabase.from('support_tickets').select('*').order('created_at', { ascending: false }).limit(300);
+        if (segFilter) q = q.eq('segment_slug', segFilter);
+        if (statusFilter) q = q.eq('status', statusFilter);
+        const { data, error } = await q;
+        if (error) throw error;
+        return data as SupportTicket[];
+      });
+      if (data) setTickets(data);
+    } catch (err: any) {
+      toast.error(`Couldn't load tickets: ${err.message}`);
+    }
   }
 
   useEffect(() => { load(); }, [segFilter, statusFilter]);
@@ -74,14 +83,16 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
     const t = tickets.find(x => x.id === focusId);
     if (t) { setOpenTicket(t); loadReplies(t.id); }
     else {
-      // Ticket may be outside the current filter — fetch it directly.
       supabase.from('support_tickets').select('*').eq('id', focusId).maybeSingle()
         .then(({ data }) => { if (data) { setOpenTicket(data as SupportTicket); loadReplies(data.id); } });
     }
   }, [focusId, tickets]);
   useEffect(() => {
-    supabase.from('app_users').select('id, full_name, segments').eq('is_active', true).neq('role', 'super_admin')
-      .then(({ data }) => { if (data) setStaff(data as any); });
+    cachedQuery('staff_users_summary', async () => {
+      const { data, error } = await supabase.from('app_users').select('id, full_name, segments').eq('is_active', true).neq('role', 'super_admin');
+      if (error) throw error;
+      return data;
+    }).then(data => { if (data) setStaff(data as any); }).catch(() => {});
   }, []);
 
   async function loadReplies(id: string) {
@@ -218,12 +229,20 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const toast = useToast();
 
   async function load() {
-    let q = supabase.from('marketing_leads').select('*').order('created_at', { ascending: false }).limit(400);
-    if (segFilter) q = q.eq('segment_slug', segFilter);
-    if (stageFilter) q = q.eq('stage', stageFilter);
-    const { data, error } = await q;
-    if (error) { toast.error(`Couldn't load leads: ${error.message}`); return; }
-    if (data) setLeads(data as Lead[]);
+    const cacheKey = `leads:${segFilter}:${stageFilter}`;
+    try {
+      const data = await cachedQuery(cacheKey, async () => {
+        let q = supabase.from('marketing_leads').select('*').order('created_at', { ascending: false }).limit(400);
+        if (segFilter) q = q.eq('segment_slug', segFilter);
+        if (stageFilter) q = q.eq('stage', stageFilter);
+        const { data, error } = await q;
+        if (error) throw error;
+        return data as Lead[];
+      });
+      if (data) setLeads(data);
+    } catch (err: any) {
+      toast.error(`Couldn't load leads: ${err.message}`);
+    }
   }
   useEffect(() => { load(); }, [segFilter, stageFilter]);
   useEffect(() => {
@@ -236,8 +255,11 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     }
   }, [focusLeadId, leads]);
   useEffect(() => {
-    supabase.from('app_users').select('id, full_name, segments').eq('is_active', true).neq('role', 'super_admin')
-      .then(({ data }) => { if (data) setStaff(data as any); });
+    cachedQuery('staff_users_summary', async () => {
+      const { data, error } = await supabase.from('app_users').select('id, full_name, segments').eq('is_active', true).neq('role', 'super_admin');
+      if (error) throw error;
+      return data;
+    }).then(data => { if (data) setStaff(data as any); }).catch(() => {});
   }, []);
 
   async function update(id: string, patch: Partial<Lead>) {
@@ -490,44 +512,56 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const toast = useToast();
 
   useEffect(() => {
-    supabase.from('app_users').select('*').neq('role', 'super_admin').order('full_name').then(({ data }) => {
+    setStaffLoaded(false);
+    cachedQuery('hr_app_users', async () => {
+      const { data, error } = await supabase.from('app_users').select('*').neq('role', 'super_admin').order('full_name');
+      if (error) throw error;
+      return data;
+    }).then(data => {
       if (data) setStaff(data);
       setStaffLoaded(true);
-    });
+    }).catch(() => setStaffLoaded(true));
   }, []);
 
   useEffect(() => {
     if (tab === 'attendance') {
       setAttendanceLoaded(false);
-      supabase.from('attendance_records').select('*').eq('attendance_date', date)
-        .then(async ({ data }) => {
-          if (data) setAttendance(data);
-          setAttendanceLoaded(true);
-          if (!data) return;
-          // selfies is a private bucket — resolve real signed URLs in bulk so
-          // photos render inline in the list instead of needing a click.
-          const paths = Array.from(new Set(
-            data.flatMap(r => [r.check_in_selfie_url, r.check_out_selfie_url]).filter(Boolean)
-          )) as string[];
-          if (paths.length > 0) {
-            const { data: signed } = await supabase.storage.from('selfies').createSignedUrls(paths, 3600);
-            if (signed) {
-              const map: Record<string, string> = {};
-              signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
-              setPhotoUrls(map);
-            }
+      cachedQuery(`attendance:${date}`, async () => {
+        const { data, error } = await supabase.from('attendance_records').select('*').eq('attendance_date', date);
+        if (error) throw error;
+        return data;
+      }).then(async (data) => {
+        if (data) setAttendance(data);
+        setAttendanceLoaded(true);
+        if (!data) return;
+        const paths = Array.from(new Set(
+          data.flatMap(r => [r.check_in_selfie_url, r.check_out_selfie_url]).filter(Boolean)
+        )) as string[];
+        if (paths.length > 0) {
+          const { data: signed } = await supabase.storage.from('selfies').createSignedUrls(paths, 3600);
+          if (signed) {
+            const map: Record<string, string> = {};
+            signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
+            setPhotoUrls(map);
           }
-        });
+        }
+      }).catch(() => setAttendanceLoaded(true));
     }
     if (tab === 'leaves') {
       setLeavesLoaded(false);
-      supabase.from('leave_requests').select('*').order('created_at', { ascending: false }).limit(200)
-        .then(({ data }) => { if (data) setLeaves(data); setLeavesLoaded(true); });
+      cachedQuery('leave_requests', async () => {
+        const { data, error } = await supabase.from('leave_requests').select('*').order('created_at', { ascending: false }).limit(200);
+        if (error) throw error;
+        return data;
+      }).then(data => { if (data) setLeaves(data); setLeavesLoaded(true); }).catch(() => setLeavesLoaded(true));
     }
     if (tab === 'advances') {
       setAdvancesLoaded(false);
-      supabase.from('salary_advance_requests').select('*').order('created_at', { ascending: false }).limit(200)
-        .then(({ data }) => { if (data) setAdvances(data); setAdvancesLoaded(true); });
+      cachedQuery('salary_advance_requests', async () => {
+        const { data, error } = await supabase.from('salary_advance_requests').select('*').order('created_at', { ascending: false }).limit(200);
+        if (error) throw error;
+        return data;
+      }).then(data => { if (data) setAdvances(data); setAdvancesLoaded(true); }).catch(() => setAdvancesLoaded(true));
     }
   }, [tab, date]);
 

@@ -9,6 +9,7 @@ import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs } from './shared';
 import { normalizePhone } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { MyCallsChart } from './performance';
+import { cachedQuery } from '../../lib/cachedQuery';
 import type { Segment } from '../../lib/database.types';
 
 // ─────────────────────────── Telecaller: counts-only dashboard
@@ -28,9 +29,6 @@ export function TelecallerStatsDashboard() {
       supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_requested_by', user.id).eq('transfer_status', 'pending'),
     ]);
 
-    // Converted this month = leads this caller marked "Converted / Closed" this
-    // month (a remark tagged [Converted / Closed]), which counts BOTH direct
-    // closes and won-then-handed-off deals — not just handoffs.
     const { data: convRemarks } = await supabase.from('lead_remarks')
       .select('lead_id')
       .eq('user_id', user.id)
@@ -93,19 +91,29 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
 
   async function load() {
     if (!user) return;
-    const { data, error } = await supabase.from('marketing_leads').select('*')
-      .eq('assigned_to', user.id).eq('transfer_status', 'none')
-      .order('priority', { ascending: true })
-      .order('callback_at', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: true });
-    if (error) { toast.error(`Couldn't load queue: ${error.message}`); return; }
-    if (data) setLeads(data);
+    try {
+      const data = await cachedQuery(`telecaller_queue:${user.id}`, async () => {
+        const { data, error } = await supabase.from('marketing_leads').select('*')
+          .eq('assigned_to', user.id).eq('transfer_status', 'none')
+          .order('priority', { ascending: true })
+          .order('callback_at', { ascending: true, nullsFirst: false })
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        return data;
+      });
+      if (data) setLeads(data);
+    } catch (err: any) {
+      toast.error(`Couldn't load queue: ${err.message}`);
+    }
   }
   useEffect(() => { load(); }, [user]);
   useEffect(() => {
     if (!user) return;
-    supabase.from('app_users').select('id, full_name, role, segments').eq('role', 'marketing_executive').eq('is_active', true)
-      .then(({ data }) => { if (data) setExecutives(data); });
+    cachedQuery('marketing_executives', async () => {
+      const { data, error } = await supabase.from('app_users').select('id, full_name, role, segments').eq('role', 'marketing_executive').eq('is_active', true);
+      if (error) throw error;
+      return data;
+    }).then(data => { if (data) setExecutives(data); }).catch(() => {});
   }, [user]);
 
   async function openLead(lead: any) {
