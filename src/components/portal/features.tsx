@@ -6,7 +6,14 @@ import { useToast } from '../../lib/toast';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr, istDateStrDaysAgo } from '../../lib/dates';
-import type { Segment } from '../../lib/database.types';
+import type { Segment, Database } from '../../lib/database.types';
+
+type Notification    = Database['public']['Tables']['notifications']['Row'];
+type Announcement    = Database['public']['Tables']['announcements']['Row'];
+type ShiftSwapReq    = Database['public']['Tables']['shift_swap_requests']['Row'];
+type BankChangeReq   = Database['public']['Tables']['bank_change_requests']['Row'];
+type PhotoChangeReq  = Database['public']['Tables']['photo_change_requests']['Row'];
+type AttendanceRow   = Database['public']['Tables']['attendance_records']['Row'];
 
 // ─────────────────────────── Notification Bell (header, both portals)
 // kind → admin tab mapping so a click jumps to the relevant screen.
@@ -20,7 +27,7 @@ const NOTIF_TAB: Record<string, string> = {
 
 export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { user } = useAuth();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -43,11 +50,11 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
   }, [load]);
 
   async function markRead(id: string) {
-    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id);
+    await supabase.from('notifications').update({ read_at: new Date().toISOString() } as never).eq('id', id);
     setItems(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
   }
 
-  function handleClick(n: any) {
+  function handleClick(n: Notification) {
     markRead(n.id);
     const tab = NOTIF_TAB[n.kind];
     if (tab && onNavigate) { onNavigate(tab); setOpen(false); }
@@ -55,7 +62,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
   async function markAllRead() {
     const unread = items.filter(n => !n.read_at).map(n => n.id);
     if (!unread.length) return;
-    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', unread);
+    await supabase.from('notifications').update({ read_at: new Date().toISOString() } as never).in('id', unread);
     load();
   }
 
@@ -82,7 +89,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
                 className={`px-4 py-3 border-b border-stone-900 cursor-pointer hover:bg-stone-50 ${!n.read_at ? 'bg-teal-500/5' : ''}`}>
                 <p className="text-stone-900 text-sm">{n.title}</p>
                 {n.body && <p className="text-stone-700 text-xs mt-0.5">{n.body}</p>}
-                <p className="text-stone-700 text-[10px] mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                <p className="text-stone-700 text-[10px] mt-1">{new Date(n.created_at ?? '').toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -101,7 +108,7 @@ export function AnnouncementsFeed() {
       if (error) throw error;
       return data || [];
     }).then(data => {
-      if (data) setItems(data.filter((a: any) => !a.expires_at || new Date(a.expires_at) > new Date()));
+      if (data) setItems(data.filter((a: Announcement) => !a.expires_at || new Date(a.expires_at ?? '') > new Date()));
     }).catch(() => {});
   }, []);
   if (items.length === 0) return null;
@@ -115,7 +122,7 @@ export function AnnouncementsFeed() {
             {a.is_pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700">Pinned</span>}
           </div>
           <p className="text-stone-700 text-sm mt-1.5">{a.body}</p>
-          <p className="text-stone-700 text-xs mt-1.5">{new Date(a.created_at).toLocaleDateString()}</p>
+          <p className="text-stone-700 text-xs mt-1.5">{new Date(a.created_at ?? '').toLocaleDateString()}</p>
         </div>
       ))}
     </div>
@@ -126,7 +133,7 @@ export function AnnouncementsFeed() {
 export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Announcement[]>([]);
   const [form, setForm] = useState({ segment_slug: '', title: '', body: '', is_pinned: false });
 
   const load = useCallback(async () => {
@@ -137,7 +144,7 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
 
   async function post() {
     if (!form.title || !form.body || !user) { toast.error('Title and message are required'); return; }
-    const { error } = await supabase.from('announcements').insert({ ...form, segment_slug: form.segment_slug || null, created_by: user.id });
+    const { error } = await supabase.from('announcements').insert({ ...form, segment_slug: form.segment_slug || null, created_by: user.id } as never);
     if (error) { toast.error(`Couldn't post: ${error.message}`); return; }
     toast.success('Announcement posted and staff notified');
     setForm({ segment_slug: '', title: '', body: '', is_pinned: false });
@@ -172,7 +179,7 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
             <div>
               <p className="text-stone-900 text-sm font-medium">{a.title} {a.is_pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 ml-1">Pinned</span>}</p>
               <p className="text-stone-700 text-xs mt-1">{a.body}</p>
-              <p className="text-stone-700 text-[10px] mt-1">{segments.find(s => s.slug === a.segment_slug)?.name || 'All staff'} • {new Date(a.created_at).toLocaleDateString()}</p>
+              <p className="text-stone-700 text-[10px] mt-1">{segments.find(s => s.slug === a.segment_slug)?.name || 'All staff'} • {new Date(a.created_at ?? '').toLocaleDateString()}</p>
             </div>
             <button className="text-red-700 text-xs" onClick={() => remove(a.id)}>Delete</button>
           </div>
@@ -186,9 +193,9 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
 export function ShiftSwapBoard() {
   const { user, hasPermission } = useAuth();
   const toast = useToast();
-  const [mine, setMine] = useState<any[]>([]);
-  const [pending, setPending] = useState<any[]>([]);
-  const [colleagues, setColleagues] = useState<any[]>([]);
+  const [mine, setMine] = useState<ShiftSwapReq[]>([]);
+  const [pending, setPending] = useState<ShiftSwapReq[]>([]);
+  const [colleagues, setColleagues] = useState<{ id: string; full_name: string }[]>([]);
   const [form, setForm] = useState({ target_id: '', shift_date: '', reason: '' });
 
   const load = useCallback(async () => {
@@ -208,14 +215,14 @@ export function ShiftSwapBoard() {
 
   async function submit() {
     if (!form.shift_date || !user) { toast.error('Please pick a date'); return; }
-    const { error } = await supabase.from('shift_swap_requests').insert({ requester_id: user.id, target_id: form.target_id || null, shift_date: form.shift_date, reason: form.reason });
+    const { error } = await supabase.from('shift_swap_requests').insert({ requester_id: user.id, target_id: form.target_id || null, shift_date: form.shift_date, reason: form.reason } as never);
     if (error) { toast.error(`Couldn't submit request: ${error.message}`); return; }
     toast.success('Shift swap request submitted');
     setForm({ target_id: '', shift_date: '', reason: '' });
     load();
   }
   async function review(id: string, status: string) {
-    const { error } = await supabase.from('shift_swap_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from('shift_swap_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() } as never).eq('id', id);
     if (error) { toast.error(`Couldn't update request: ${error.message}`); return; }
     toast.success(`Request ${status}`);
     load();
@@ -277,15 +284,15 @@ export function ShiftSwapBoard() {
 export function MyBankDetails() {
   const { user } = useAuth();
   const toast = useToast();
-  const [current, setCurrent] = useState<any>({});
-  const [pendingReq, setPendingReq] = useState<any | null>(null);
+  const [current, setCurrent] = useState<Record<string, string>>({});
+  const [pendingReq, setPendingReq] = useState<BankChangeReq | null>(null);
   const [form, setForm] = useState({ account_holder: '', account_number: '', ifsc: '', bank_name: '', upi_id: '' });
   const [editing, setEditing] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
     const { data: u } = await supabase.from('app_users').select('bank_details').eq('id', user.id).maybeSingle();
-    if (u?.bank_details) { setCurrent(u.bank_details); setForm((f) => ({ ...f, ...(u.bank_details as Record<string, unknown> ?? {}) })); }
+    if (u?.bank_details) { setCurrent((u.bank_details as Record<string, string>) ?? {}); setForm((f) => ({ ...f, ...(u.bank_details as Record<string, unknown> ?? {}) })); }
     const { data: p } = await supabase.from('bank_change_requests').select('*').eq('staff_user_id', user.id).eq('status', 'pending').maybeSingle();
     setPendingReq(p || null);
   }, [user]);
@@ -294,7 +301,7 @@ export function MyBankDetails() {
   async function submit() {
     if (!user) return;
     if (!form.account_holder || !form.account_number || !form.ifsc || !form.bank_name) { toast.error('Account holder, number, IFSC and bank name are required'); return; }
-    const { error } = await supabase.from('bank_change_requests').insert({ staff_user_id: user.id, requested_details: form, previous_details: current });
+    const { error } = await supabase.from('bank_change_requests').insert({ staff_user_id: user.id, requested_details: form, previous_details: current } as never);
     if (error) { toast.error(`Couldn't submit: ${error.message}`); return; }
     toast.success('Change submitted for HR approval');
     setEditing(false);
@@ -340,19 +347,19 @@ export function MyBankDetails() {
 export function BankChangeApprovals() {
   const { user } = useAuth();
   const toast = useToast();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<BankChangeReq[]>([]);
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('bank_change_requests').select('*').order('created_at', { ascending: false }).limit(100);
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
-    if (users) setStaffNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
+    if (users) setStaffNames(Object.fromEntries(users.map((u: { id: string; full_name: string }) => [u.id, u.full_name])));
   }, []);
   useEffect(() => { load(); }, [load]);
 
   async function review(id: string, status: string) {
-    const { error } = await supabase.from('bank_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from('bank_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() } as never).eq('id', id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(`Bank change ${status}`);
     load();
@@ -367,10 +374,10 @@ export function BankChangeApprovals() {
             <span className={`text-xs ${r.status === 'pending' ? 'text-amber-700' : r.status === 'approved' ? 'text-emerald-700' : 'text-red-700'}`}>{r.status}</span>
           </div>
           <div className="grid grid-cols-2 gap-x-4 text-xs text-stone-700">
-            <p>Holder: {r.requested_details.account_holder}</p>
-            <p>A/C: {r.requested_details.account_number}</p>
-            <p>IFSC: {r.requested_details.ifsc}</p>
-            <p>Bank: {r.requested_details.bank_name}</p>
+            <p>Holder: {((r.requested_details as Record<string, string> | null) ?? {}).account_holder}</p>
+            <p>A/C: {((r.requested_details as Record<string, string> | null) ?? {}).account_number}</p>
+            <p>IFSC: {((r.requested_details as Record<string, string> | null) ?? {}).ifsc}</p>
+            <p>Bank: {((r.requested_details as Record<string, string> | null) ?? {}).bank_name}</p>
           </div>
           {r.status === 'pending' && (
             <div className="flex gap-2 mt-3">
@@ -393,7 +400,7 @@ export function IDCard() {
   useEffect(() => {
     if (!user) return;
     supabase.from('segments').select('*').then(({ data }) => {
-      const s = (data || []).find((x: any) => (user.segments || []).includes(x.slug));
+      const s = (data || []).find((x: Segment) => (user.segments || []).includes(x.slug));
       setSeg(s || null);
     });
   }, [user]);
@@ -415,9 +422,9 @@ export function IDCard() {
         <div class="body">
           <h2 style="margin:8px 0 2px">${user.full_name}</h2>
           <p style="color:#64748b;font-size:13px;margin:0">${user.designation || user.role}</p>
-          <div class="row"><span>ID</span><span>${(user as any).staff_code || '—'}</span></div>
+          <div class="row"><span>ID</span><span>${user.staff_code || '—'}</span></div>
           <div class="row"><span>Phone</span><span>${user.phone || '—'}</span></div>
-          ${(user as any).blood_group ? `<div class="row"><span>Blood Group</span><span>${(user as any).blood_group}</span></div>` : ''}
+          ${user.blood_group ? `<div class="row"><span>Blood Group</span><span>${user.blood_group}</span></div>` : ''}
           <div class="row"><span>Email</span><span>${user.email}</span></div>
         </div>
       </div></body></html>
@@ -441,9 +448,9 @@ export function IDCard() {
           <p className="text-stone-900 font-semibold">{user.full_name}</p>
           <p className="text-stone-700 text-xs mb-3">{user.designation || user.role}</p>
           <div className="text-left text-xs text-stone-700 space-y-1 border-t border-stone-200 pt-2">
-            <p>ID: {(user as any).staff_code || '—'}</p>
+            <p>ID: {user.staff_code || '—'}</p>
             <p>Phone: {user.phone || '—'}</p>
-            {(user as any).blood_group && <p>Blood Group: {(user as any).blood_group}</p>}
+            {user.blood_group && <p>Blood Group: {user.blood_group}</p>}
           </div>
         </div>
       </div>
@@ -466,17 +473,17 @@ export function MyStatsCard() {
       return data || [];
     }).then(data => {
       if (!data) return;
-      const present = data.filter((r: any) => r.status === 'present' || r.status === 'half_day');
+      const present = data.filter((r: AttendanceRow) => r.status === 'present' || r.status === 'half_day');
       let streak = 0;
       const today = istDateStr();
-      const byDate = new Set(present.map((r: any) => r.attendance_date));
+      const byDate = new Set(present.map((r: AttendanceRow) => r.attendance_date));
       const d = new Date();
       while (byDate.has(istDateStr(d)) || istDateStr(d) === today) {
         if (byDate.has(istDateStr(d))) streak++;
         else if (istDateStr(d) !== today) break;
         d.setDate(d.getDate() - 1);
       }
-      const onTime = present.filter((r: any) => r.check_in_at && !r.is_late).length;
+      const onTime = present.filter((r: AttendanceRow) => r.check_in_at && !r.is_late).length;
       setStats({
         streak,
         presentDays: present.length,
@@ -599,9 +606,9 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
     let error;
     if (editingJob.id) {
       const { id, ...patch } = payload;
-      ({ error } = await supabase.from('job_postings').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id));
+      ({ error } = await supabase.from('job_postings').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id));
     } else {
-      ({ error } = await supabase.from('job_postings').insert({ ...payload, created_by: user?.id }));
+      ({ error } = await supabase.from('job_postings').insert({ ...payload, created_by: user?.id } as never));
     }
     if (error) { toast.error(`Couldn't save job: ${error.message}`); return; }
     toast.success(editingJob.id ? 'Job posting updated' : 'Job posted');
@@ -610,14 +617,14 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
 
   async function toggleJobStatus(job: any) {
     const status = job.status === 'open' ? 'closed' : 'open';
-    const { error } = await supabase.from('job_postings').update({ status }).eq('id', job.id);
+    const { error } = await supabase.from('job_postings').update({ status } as never).eq('id', job.id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(`Job ${status === 'open' ? 'reopened' : 'closed'}`);
     load();
   }
 
   async function updateAppStatus(id: string, status: string) {
-    const { error } = await supabase.from('career_applications').update({ status, reviewed_by: user?.id }).eq('id', id);
+    const { error } = await supabase.from('career_applications').update({ status, reviewed_by: user?.id } as never).eq('id', id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(`Marked as ${status}`);
     load();
@@ -690,7 +697,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
               <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => viewFiles(a)}>
                 <div>
                   <p className="text-stone-900 text-sm font-medium">{a.name} <span className="text-stone-700 text-xs">— {a.position || jobTitle(a.job_posting_id)}</span></p>
-                  <p className="text-stone-700 text-xs mt-0.5">{a.phone} • {a.experience || 'exp not specified'} • {new Date(a.created_at).toLocaleDateString()}</p>
+                  <p className="text-stone-700 text-xs mt-0.5">{a.phone} • {a.experience || 'exp not specified'} • {new Date(a.created_at ?? '').toLocaleDateString()}</p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded capitalize ${APP_STATUS_COLORS[a.status]}`}>{a.status}</span>
               </div>
@@ -786,7 +793,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
 export function MyPhotoRequest() {
   const { user } = useAuth();
   const toast = useToast();
-  const [pendingReq, setPendingReq] = useState<any | null>(null);
+  const [pendingReq, setPendingReq] = useState<PhotoChangeReq | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -805,7 +812,7 @@ export function MyPhotoRequest() {
     const { error: upErr } = await supabase.storage.from('site-photos').upload(path, file);
     if (upErr) { toast.error(`Upload failed: ${upErr.message}`); setUploading(false); return; }
     const { data: pub } = supabase.storage.from('site-photos').getPublicUrl(path);
-    const { error } = await supabase.from('photo_change_requests').insert({ staff_user_id: user.id, requested_photo_url: pub.publicUrl });
+    const { error } = await supabase.from('photo_change_requests').insert({ staff_user_id: user.id, requested_photo_url: pub.publicUrl } as never);
     setUploading(false);
     if (error) { toast.error(`Couldn't submit: ${error.message}`); return; }
     toast.success('Photo submitted for approval');
@@ -852,7 +859,7 @@ export function PhotoChangeApprovals() {
   useEffect(() => { load(); }, [load]);
 
   async function review(id: string, status: string) {
-    const { error } = await supabase.from('photo_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from('photo_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() } as never).eq('id', id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(`Photo ${status}`);
     load();
@@ -895,7 +902,7 @@ export function MyPromotionHistory() {
       <div className="space-y-2">
         {items.map(p => (
           <div key={p.id} className="text-xs border-l-2 border-teal-600 pl-3">
-            <p className="text-stone-700">{new Date(p.effective_date).toLocaleDateString()}</p>
+            <p className="text-stone-700">{new Date(p.effective_date ?? '').toLocaleDateString()}</p>
             {p.new_designation && p.new_designation !== p.previous_designation && (
               <p className="text-stone-900">{p.previous_designation || '—'} → {p.new_designation}</p>
             )}

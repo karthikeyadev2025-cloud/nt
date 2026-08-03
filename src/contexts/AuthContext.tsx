@@ -41,6 +41,12 @@ export interface AppUser {
   joining_date?: string | null;
   employment_type?: string;
   reporting_time?: string;
+  // Fields the IDCard/Directory features read. Kept optional because they
+  // may be null in the DB and are surfaced to the UI as "—" fallbacks.
+  staff_code?: string | null;
+  blood_group?: string | null;
+  bank_details?: { account_holder?: string; account_number?: string; ifsc?: string; bank_name?: string } | null;
+  address?: string | null;
 }
 
 interface AuthContextType {

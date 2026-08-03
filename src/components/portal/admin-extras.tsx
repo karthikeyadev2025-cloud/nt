@@ -6,11 +6,14 @@ import { cachedQuery } from '../../lib/cachedQuery';
 import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Segment } from '../../lib/database.types';
+import type { Segment, Database } from '../../lib/database.types';
+
+type SecurityAuditLog = Database['public']['Tables']['security_audit_logs']['Row'];
+type Payslip = Database['public']['Tables']['payslips']['Row'];
 
 // ─────────────────────────── Security Audit Log viewer (super_admin only)
 export function SecurityLogsViewer() {
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<SecurityAuditLog[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -47,7 +50,7 @@ export function SecurityLogsViewer() {
             <div key={l.id} className={cardCls + ' flex items-center justify-between py-3'}>
               <div>
                 <p className="text-stone-900 text-sm font-bold">{l.user_email || 'Unknown'}</p>
-                <p className="text-stone-700 text-xs font-medium">{new Date(l.created_at).toLocaleString()}</p>
+                <p className="text-stone-700 text-xs font-medium">{new Date(l.created_at ?? '').toLocaleString()}</p>
               </div>
               <span className={`text-xs capitalize ${eventColor[l.event_type] || 'text-stone-700'}`}>{l.event_type.replace(/_/g, ' ')}</span>
             </div>
@@ -67,13 +70,13 @@ export function TodayAtAGlance() {
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
-      let counts: any = null;
+      let counts: Record<string, number> | null = null;
       try {
         const res = await cachedRpc(
           `get_dashboard_counts:${user.id}`,
           () => supabase.rpc('get_dashboard_counts', { p_user_id: user.id })
         );
-        counts = (res as any)?.data || res;
+        counts = ((res as unknown as { data?: Record<string, number> })?.data) || (res as unknown as Record<string, number>);
       } catch {
         counts = null;
       }
@@ -252,12 +255,12 @@ export function ExportPayslipsButton() {
       supabase.from('app_users').select('id, full_name'),
     ]);
     if (!data || data.length === 0) return;
-    const names = Object.fromEntries((staff || []).map((s: any) => [s.id, s.full_name]));
+    const names = Object.fromEntries((staff || []).map((s: { id: string; full_name: string }) => [s.id, s.full_name]));
     const headers = ['id', 'staff_name', 'period_month', 'period_year', 'base_salary', 'net_pay', 'payment_status', 'amount_paid'];
     const csvRows = [headers.join(',')];
-    data.forEach((p: any) => {
+    data.forEach((p: Payslip) => {
       const row = { ...p, staff_name: names[p.staff_user_id] || '' };
-      csvRows.push(headers.map(h => JSON.stringify(row[h] ?? '')).join(','));
+      csvRows.push(headers.map(h => JSON.stringify((row as Record<string, unknown>)[h] ?? '')).join(','));
     });
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

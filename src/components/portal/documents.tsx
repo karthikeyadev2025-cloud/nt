@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FileText, CheckCircle2, Printer, PenLine, RotateCcw, ShieldCheck, X, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import type { Database } from '../../lib/database.types';
+
+type EmployeeDoc = Database['public']['Tables']['employee_documents']['Row'];
 import { useToast } from '../../lib/toast';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls } from './shared';
@@ -44,14 +47,14 @@ export function buildOnboardingVars(user: {
     designation: user.designation || user.role,
     role: user.role,
     segment: user.segmentName,
-    joining_date: user.joining_date ? new Date(user.joining_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—',
+    joining_date: user.joining_date ? new Date(user.joining_date ?? '').toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—',
     ctc: user.salary_structure?.ctc ? Number(user.salary_structure.ctc).toLocaleString('en-IN') : '—',
     employment_type: (user.employment_type || 'full_time').replace('_', ' '),
     reporting_time: user.reporting_time || '9:30 AM – 6:30 PM, Monday to Saturday',
     staff_code: user.staff_code || '—',
     // Exit-document templates (experience, relieving, internship certificate)
     exit_date: user.exit_date
-      ? new Date(user.exit_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+      ? new Date(user.exit_date ?? '').toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
       : '—',
     // Issue date, used as the letterhead date on every document
     today: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -238,8 +241,8 @@ export function DocumentViewer({
 
 // ─────────────────────────── Employee-facing document list (StaffPortal)
 export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: string; employeeName?: string }) {
-  const [docs, setDocs] = useState<any[]>([]);
-  const [open, setOpen] = useState<any | null>(null);
+  const [docs, setDocs] = useState<EmployeeDoc[]>([]);
+  const [open, setOpen] = useState<EmployeeDoc | null>(null);
   const [loaded, setLoaded] = useState(false);
   const toast = useToast();
 
@@ -269,7 +272,7 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
     if (error) { toast.error(`Couldn't save signature: ${error.message}`); return; }
     toast.success('Document signed');
     await load();
-    setOpen((prev: any) => prev ? { ...prev, ...patch } : prev);
+    setOpen((prev) => prev ? { ...prev, ...patch } : prev);
   }
 
   async function acknowledge(id: string) {
@@ -278,7 +281,7 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
     if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
     toast.success('Acknowledged');
     await load();
-    setOpen((prev: any) => prev ? { ...prev, ...patch } : prev);
+    setOpen((prev) => prev ? { ...prev, ...patch } : prev);
   }
 
   if (!loaded) return null;
@@ -298,7 +301,7 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
             <FileText className="w-5 h-5 text-teal-700" />
             <div>
               <p className="text-stone-900 text-sm font-medium">{d.title}</p>
-              <p className="text-stone-700 text-xs">{DOC_TYPE_LABELS[d.doc_type]} • issued {new Date(d.issued_at).toLocaleDateString()}</p>
+              <p className="text-stone-700 text-xs">{DOC_TYPE_LABELS[d.doc_type]} • issued {new Date(d.issued_at ?? '').toLocaleDateString()}</p>
             </div>
           </div>
           {d.acknowledged_at
@@ -310,7 +313,7 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
         <DocumentViewer
           title={open.title}
           content={open.content}
-          meta={`Issued ${new Date(open.issued_at).toLocaleDateString()}`}
+          meta={`Issued ${new Date(open.issued_at ?? '').toLocaleDateString()}`}
           onClose={() => setOpen(null)}
           requiresSignature={open.requires_signature}
           signed={!!open.acknowledged_at}
@@ -352,7 +355,7 @@ export function OnboardingStatusBadge({ staffUserId }: { staffUserId: string }) 
   useEffect(() => {
     supabase.from('employee_documents').select('acknowledged_at').eq('staff_user_id', staffUserId)
       .then(({ data }) => {
-        if (data) setStatus({ total: data.length, done: data.filter((d: any) => d.acknowledged_at).length });
+        if (data) setStatus({ total: data.length, done: data.filter((d: { acknowledged_at: string | null }) => d.acknowledged_at).length });
       });
   }, [staffUserId]);
   if (!status || status.total === 0) return <span className="text-xs text-stone-700">No documents</span>;
@@ -366,9 +369,9 @@ export function OnboardingStatusBadge({ staffUserId }: { staffUserId: string }) 
 
 
 export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { staffUserId: string; staffName: string; onClose: () => void }) {
-  const [docs, setDocs] = useState<any[]>([]);
+  const [docs, setDocs] = useState<EmployeeDoc[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewDoc, setViewDoc] = useState<any | null>(null);
+  const [viewDoc, setViewDoc] = useState<EmployeeDoc | null>(null);
 
   useEffect(() => {
     cachedQuery(`emp_docs:${staffUserId}`, async () => {
@@ -413,7 +416,7 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
                       </span>
                       <span className="text-xs bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium">{DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}</span>
                     </div>
-                    <p className="text-sm text-stone-500 mb-4">Issued on {new Date(doc.issued_at).toLocaleDateString()}</p>
+                    <p className="text-sm text-stone-500 mb-4">Issued on {new Date(doc.issued_at ?? '').toLocaleDateString()}</p>
                     
                     {doc.acknowledged_at ? (
                       <div className="bg-stone-50 p-4 rounded-lg border border-stone-100 mb-4">
@@ -428,7 +431,7 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
                           </div>
                           <div>
                             <p className="text-xs text-stone-500 font-medium uppercase tracking-wider mb-1">Timestamp</p>
-                            <p className="text-sm text-stone-900 font-medium">{new Date(doc.acknowledged_at).toLocaleString()}</p>
+                            <p className="text-sm text-stone-900 font-medium">{new Date(doc.acknowledged_at ?? '').toLocaleString()}</p>
                           </div>
                         </div>
                         {doc.signature_data_url && (
@@ -464,7 +467,7 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
         <DocumentViewer
           title={viewDoc.title}
           content={viewDoc.content}
-          meta={`${DOC_TYPE_LABELS[viewDoc.doc_type] || viewDoc.doc_type} • Issued ${new Date(viewDoc.issued_at).toLocaleDateString()}`}
+          meta={`${DOC_TYPE_LABELS[viewDoc.doc_type] || viewDoc.doc_type} • Issued ${new Date(viewDoc.issued_at ?? '').toLocaleDateString()}`}
           onClose={() => setViewDoc(null)}
         />
       )}
