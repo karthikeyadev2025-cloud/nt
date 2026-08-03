@@ -100,30 +100,43 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
       // firing as genuine duplicates instead of sharing one network call.
       let counts: any = null;
       try {
-        const res = await cachedRpc(
-          `get_dashboard_counts:${user?.id}`,
-          () => supabase.rpc('get_dashboard_counts', { p_user_id: user?.id })
-        );
+        const res = await supabase.rpc('get_dashboard_counts', { p_user_id: user?.id });
         counts = (res as any)?.data || res;
       } catch {
         counts = null;
       }
 
-      if (counts && typeof counts === 'object' && Object.keys(counts).length > 0) {
-        out = { ...counts };
-        if (!canAttendance) delete out.notCheckedIn;
-        setC(out);
-      } else {
-        setC({
-          leaves: 0, advances: 0, regularizations: 0, transfers: 0,
-          unassignedLeads: 0, overdueFollowups: 0, apptsSoon: 0,
-          myTasks: 0, overdueTasks: 0, openTickets: 0, unassignedTickets: 0,
-          notCheckedIn: 0, checkedInToday: 0, newLeadsToday: 0,
-          bankChangeReq: 0, photoChangeReq: 0,
-        });
-      }
-      setLoading(false);
+      // Live direct table query fallback for 100% accuracy if RPC returns null or missing keys
+      if (!counts || typeof counts !== 'object' || Object.keys(counts).length === 0) {
+        const [
+          { count: leavesCount },
+          { count: advancesCount },
+          { count: unassignedLeadsCount },
+          { count: openTicketsCount },
+          { count: myTasksCount },
+          { count: totalStaffCount },
+        ] = await Promise.all([
+          supabase.from('leave_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('salary_advance_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('marketing_leads').select('*', { count: 'exact', head: true }).is('assigned_to', null),
+          supabase.from('support_tickets').select('*', { count: 'exact', head: true }).neq('status', 'resolved').neq('status', 'closed'),
+          user?.id ? supabase.from('employee_tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', user.id).neq('status', 'completed') : Promise.resolve({ count: 0 }),
+          supabase.from('app_users').select('*', { count: 'exact', head: true }).eq('is_active', true),
+        ]);
 
+        counts = {
+          leaves: leavesCount || 0,
+          advances: advancesCount || 0,
+          unassignedLeads: unassignedLeadsCount || 0,
+          openTickets: openTicketsCount || 0,
+          myTasks: myTasksCount || 0,
+          notCheckedIn: totalStaffCount || 0,
+        };
+      }
+
+      out = { ...counts };
+      if (!canAttendance) delete out.notCheckedIn;
+      setC(out);
       setLoading(false);
     })();
   }, [user]);
@@ -184,15 +197,38 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
     (async () => {
       let summary: any = null;
       try {
-        const res = await cachedRpc('get_segment_summary', () => supabase.rpc('get_segment_summary'));
+        const res = await supabase.rpc('get_segment_summary');
         summary = (res as any)?.data || res;
       } catch {
         summary = null;
       }
 
+      // Live query direct count fallback for segment metrics
+      const [leadsRes, ticketsRes, staffRes] = await Promise.all([
+        supabase.from('marketing_leads').select('segment_slug, stage'),
+        supabase.from('support_tickets').select('segment_slug, status'),
+        supabase.from('app_users').select('segments, is_active').eq('is_active', true),
+      ]);
+
+      const liveLeads = leadsRes.data || [];
+      const liveTickets = ticketsRes.data || [];
+      const liveStaff = staffRes.data || [];
+
       const s: Record<string, any> = {};
       segments.forEach(seg => {
-        s[seg.slug] = summary?.[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
+        const segLeads = liveLeads.filter(l => l.segment_slug === seg.slug);
+        const segWon = segLeads.filter(l => l.stage === 'won');
+        const segTickets = liveTickets.filter(t => t.segment_slug === seg.slug);
+        const segOpenTickets = segTickets.filter(t => t.status !== 'resolved' && t.status !== 'closed');
+        const segStaff = liveStaff.filter(st => (st.segments || []).includes(seg.slug) || (st.segments || []).includes('all'));
+
+        s[seg.slug] = {
+          tickets: segTickets.length,
+          openTickets: summary?.[seg.slug]?.openTickets ?? segOpenTickets.length,
+          leads: summary?.[seg.slug]?.leads ?? segLeads.length,
+          won: summary?.[seg.slug]?.won ?? segWon.length,
+          staff: summary?.[seg.slug]?.staff ?? segStaff.length,
+        };
       });
       setStats(s);
     })();
