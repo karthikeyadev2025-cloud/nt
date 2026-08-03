@@ -1115,6 +1115,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const [syncing, setSyncing] = useState(false);
   const [newLead, setNewLead] = useState({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
+  const [collectedPhone, setCollectedPhone] = useState('');
 
   async function load() {
     if (!user) return;
@@ -1197,6 +1198,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     setLocation(null);
     setDealValue(lead.invoice_amount || lead.estimated_value || '');
     setVisitRequirement(lead.interested_in || '');
+    setCollectedPhone(lead.phone === 'Pending Collection' ? '' : (lead.phone || ''));
     setNextFollowup(lead.next_followup_at ? new Date(lead.next_followup_at).toISOString().slice(0,16) : '');
     setApptAt(lead.appointment_at ? new Date(lead.appointment_at).toISOString().slice(0,16) : '');
     const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', lead.id).order('created_at', { ascending: false });
@@ -1244,6 +1246,10 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     // Details learned on-site: the executive is the only person who knows the
     // real requirement and the deal value, so they capture it here.
     if (visitRequirement.trim()) patch.interested_in = visitRequirement.trim();
+    if (collectedPhone.trim()) {
+      const cleaned = normalizePhone(collectedPhone);
+      if (cleaned.length >= 10) patch.phone = cleaned;
+    }
     if (dealValue) {
       if (outcome === 'won') patch.invoice_amount = Number(dealValue);
       else patch.estimated_value = Number(dealValue);
@@ -1369,6 +1375,13 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
           <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-stone-900 font-semibold">{active.customer_name}</h3>
             <p className="text-stone-700 text-xs">{active.phone} {active.email && `• ${active.email}`}</p>
+
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-1 my-2">
+              <label className="block text-[11px] font-bold text-amber-900">
+                📍 {active.phone === 'Pending Collection' || !active.phone ? 'Collect Phone Number on Visit (Action Needed)' : 'Update Collected Phone Number'}
+              </label>
+              <input className={inputCls} placeholder="Enter 10-digit phone number collected from owner" value={collectedPhone} onChange={e => setCollectedPhone(e.target.value)} />
+            </div>
 
             <div className="border-t border-stone-800 pt-3">
               <p className="text-stone-700 text-sm font-medium mb-2">Log a Visit</p>
