@@ -388,27 +388,24 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [rows, setRows] = useState<any[]>([]);
+  const [rawJson, setRawJson] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
-  // Feedback shown immediately after parsing, even when 0 rows matched — a
-  // real production upload silently produced nothing here because the file's
-  // headers ("Business Name", "Contact No", etc.) didn't exactly match the
-  // fixed, case-sensitive list this used to check against. There was no error,
-  // no message, nothing — the UI just stayed on the file picker forever with
-  // no way to tell what went wrong.
   const [parseInfo, setParseInfo] = useState<{ totalRows: number; matchedRows: number; headers: string[] } | null>(null);
   const [segment, setSegment] = useState('');
   const [allStaff, setAllStaff] = useState<any[]>([]);
   const [assignTo, setAssignTo] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Column mapping selectors for custom Excel layouts
+  const [nameCol, setNameCol] = useState('');
+  const [phoneCol, setPhoneCol] = useState('');
+  const [notesCol, setNotesCol] = useState('');
+
   useEffect(() => {
     supabase.from('app_users').select('id, full_name, role, segments').eq('is_active', true).neq('role', 'super_admin').order('full_name')
       .then(({ data }) => { if (data) setAllStaff(data); });
   }, []);
 
-  // Anyone can be assigned bulk contacts to follow up — not just telecallers.
-  // Staff already in the chosen segment are listed first for convenience,
-  // but assigning across segments is allowed (assignment grants access regardless of segment).
   const sortedAssignees = [...allStaff].sort((a, b) => {
     const aMatch = segment && ((a.segments || []).includes(segment) || (a.segments || []).includes('all'));
     const bMatch = segment && ((b.segments || []).includes(segment) || (b.segments || []).includes('all'));
@@ -417,66 +414,133 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     return a.full_name.localeCompare(b.full_name);
   });
 
+  function processParsedData(json: any[], customNameCol?: string, customPhoneCol?: string, customNotesCol?: string) {
+    if (!json || json.length === 0) {
+      setParseInfo({ totalRows: 0, matchedRows: 0, headers: [] });
+      setRows([]);
+      return;
+    }
+    const headers = Object.keys(json[0]);
+
+    const mapped = json.map(r => {
+      let customerName = '';
+      let phone = '';
+      let email = '';
+      const notesParts: string[] = [];
+
+      // 1. Name extraction
+      if (customNameCol && r[customNameCol]) {
+        customerName = String(r[customNameCol]).trim();
+      } else {
+        for (const h of headers) {
+          const normH = h.toLowerCase().replace(/[\s_-]+/g, ' ').trim();
+          if (/name|business|sme|company|client|firm|customer|title|vendor|shop|store|lead|organization/i.test(normH)) {
+            const val = String(r[h] || '').trim();
+            if (val) { customerName = val; break; }
+          }
+        }
+        if (!customerName) {
+          for (const h of headers) {
+            const val = String(r[h] || '').trim();
+            if (val && val.length > 1 && !/\d{7,}/.test(val)) {
+              customerName = val;
+              break;
+            }
+          }
+        }
+      }
+
+      // 2. Phone extraction
+      if (customPhoneCol && r[customPhoneCol]) {
+        phone = normalizePhone(String(r[customPhoneCol]).trim());
+      } else {
+        for (const h of headers) {
+          const normH = h.toLowerCase().replace(/[\s_-]+/g, ' ').trim();
+          if (/phone|mobile|contact|cell|number|whatsapp|tel|pattern|call|digit|no\b/i.test(normH)) {
+            const val = String(r[h] || '').trim();
+            const cleaned = normalizePhone(val);
+            if (cleaned && cleaned.length >= 10) { phone = cleaned; break; }
+          }
+        }
+        if (!phone) {
+          for (const k of Object.keys(r)) {
+            const str = String(r[k] || '');
+            const match = str.match(/(?:(?:\+|0{0,2})91[\s-]?)?([6-9]\d{9})/);
+            if (match && match[1]) {
+              phone = match[1];
+              break;
+            }
+          }
+        }
+      }
+
+      // 3. Email & Extra Fields (Location, Category, Pitch)
+      for (const h of headers) {
+        const normH = h.toLowerCase().replace(/[\s_-]+/g, ' ').trim();
+        const val = String(r[h] || '').trim();
+        if (!val) continue;
+
+        if (!email && (normH.includes('email') || val.includes('@'))) {
+          email = val;
+          continue;
+        }
+
+        if (val === customerName || (phone && val.includes(phone))) continue;
+
+        if (customNotesCol && h === customNotesCol) {
+          notesParts.push(val);
+        } else if (/location|address|city|area|place|guntur|district|town|pincode|state/i.test(normH)) {
+          notesParts.push(`Location: ${val}`);
+        } else if (/category|industry|type|pitch|requirement|interest|notes|remark|offer/i.test(normH)) {
+          notesParts.push(`${h}: ${val}`);
+        } else if (!customNotesCol && val.length > 0 && !val.includes('@')) {
+          notesParts.push(`${h}: ${val}`);
+        }
+      }
+
+      return {
+        customer_name: customerName,
+        phone,
+        email,
+        interested_in: notesParts.join(' | '),
+      };
+    });
+
+    const validRows = mapped.filter(r => r.customer_name && r.phone);
+    setRows(validRows);
+    setParseInfo({ totalRows: json.length, matchedRows: validRows.length, headers });
+  }
+
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
     setRows([]);
+    setRawJson([]);
     setParseInfo(null);
+    setNameCol(''); setPhoneCol(''); setNotesCol('');
     const XLSX = await import('xlsx');
     const reader = new FileReader();
     reader.onload = evt => {
       const wb = XLSX.read(evt.target?.result, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const json: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-      if (json.length === 0) {
-        setParseInfo({ totalRows: 0, matchedRows: 0, headers: [] });
-        return;
-      }
-
-      const actualHeaders = Object.keys(json[0]);
-      // Case/whitespace-tolerant lookup: "Business Name", "BUSINESS NAME", and
-      // " business  name " all resolve the same way, instead of requiring an
-      // exact match against one fixed spelling.
-      const normalize = (s: string) => s.toLowerCase().replace(/[\s_-]+/g, ' ').trim();
-
-      const mapped = json.map(r => {
-        const normalizedRow: Record<string, string> = {};
-        for (const k of Object.keys(r)) {
-          if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== '') {
-            normalizedRow[normalize(k)] = String(r[k]).trim();
-          }
-        }
-        const getVal = (...aliases: string[]) => {
-          for (const alias of aliases) {
-            const v = normalizedRow[normalize(alias)];
-            if (v) return v;
-          }
-          return '';
-        };
-        return {
-          customer_name: getVal(
-            'Customer Name', 'Full Name', 'Name', 'Business Name', 'Company Name',
-            'Company', 'Contact Name', 'Client Name', 'Owner Name', 'Lead Name'
-          ),
-          phone: normalizePhone(getVal(
-            'Phone Number', 'Phone', 'Mobile Number', 'Mobile', 'Contact',
-            'Contact Number', 'Contact No', 'Mobile No', 'WhatsApp Number',
-            'WhatsApp', 'Tel', 'Telephone', 'Cell'
-          )),
-          email: getVal('Email Address', 'Email', 'Mail', 'Email Id'),
-          interested_in: getVal(
-            'Notes', 'Interest', 'Interested In', 'Requirement', 'Remarks',
-            'Remark', 'Category', 'Business Type', 'Industry'
-          ),
-        };
-      });
-      const validRows = mapped.filter(r => r.customer_name && r.phone);
-      setRows(validRows);
-      setParseInfo({ totalRows: json.length, matchedRows: validRows.length, headers: actualHeaders });
+      setRawJson(json);
+      processParsedData(json);
     };
     reader.readAsArrayBuffer(file);
+  }
+
+  function handleCustomMapChange(name?: string, ph?: string, nt?: string) {
+    const n = name !== undefined ? name : nameCol;
+    const p = ph !== undefined ? ph : phoneCol;
+    const o = nt !== undefined ? nt : notesCol;
+    if (name !== undefined) setNameCol(name);
+    if (ph !== undefined) setPhoneCol(ph);
+    if (nt !== undefined) setNotesCol(nt);
+    if (rawJson.length > 0) {
+      processParsedData(rawJson, n || undefined, p || undefined, o || undefined);
+    }
   }
 
   async function upload() {
@@ -491,66 +555,109 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     if (!error && assignTo) {
       await supabase.from('notifications').insert({
         user_id: assignTo, kind: 'lead_assigned', title: 'New leads assigned to you',
-        body: `${rows.length} new leads were just uploaded and assigned to you.`, link: '/portal',
+        body: `${rows.length} new leads were uploaded and assigned to you.`, link: '/portal',
       });
     }
     setBusy(false);
     if (error) { toast.error(`Upload failed: ${error.message}`); return; }
-    toast.success(`${rows.length} leads imported${assignTo ? ' and assigned' : ''}`);
-    setRows([]); setFileName(''); setParseInfo(null);
+    toast.success(`${rows.length} leads imported successfully${assignTo ? ' and assigned' : ''}`);
+    invalidateQueryCache('leads:');
+    setRows([]); setFileName(''); setParseInfo(null); setRawJson([]);
     if (fileRef.current) fileRef.current.value = '';
   }
 
   return (
-    <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-1 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4 text-teal-700" /> Bulk Upload Leads (Excel/CSV)</h3>
-      <p className="text-stone-700 text-xs mb-4">Columns expected: Name, Phone, Email (optional), Notes (optional).</p>
+    <div className={cardCls + ' space-y-4'}>
+      <div>
+        <h3 className="text-stone-900 font-extrabold text-base flex items-center gap-2">
+          <FileSpreadsheet className="w-5 h-5 text-teal-700" /> Universal Lead Import (Excel / CSV)
+        </h3>
+        <p className="text-stone-700 text-xs mt-0.5">
+          Auto-detects business name, phone, address, and category from any Excel sheet. Assign immediately to Telecallers or Field Executives.
+        </p>
+      </div>
 
       <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile}
-        className="text-stone-700 text-sm w-full mb-3 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs" />
+        className="text-stone-700 text-sm w-full file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:bg-orange-50 file:text-orange-900 file:font-bold file:text-xs hover:file:bg-orange-100 cursor-pointer" />
 
-      {parseInfo && parseInfo.matchedRows === 0 && (
-        <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200">
-          <p className="text-red-800 text-sm font-medium">
-            {parseInfo.totalRows === 0
-              ? "This file has no rows — check it isn't empty or on the wrong sheet."
-              : `Found ${parseInfo.totalRows} row(s), but none had both a name and a phone number we recognized.`}
-          </p>
-          {parseInfo.headers.length > 0 && (
-            <p className="text-red-700 text-xs mt-1.5">
-              Columns found in your file: <span className="font-mono">{parseInfo.headers.join(', ')}</span>.
-              We look for a name column (e.g. "Customer Name", "Business Name", "Company") and a phone column
-              (e.g. "Phone", "Mobile Number", "Contact No") — rename a column to one of these and re-upload.
+      {parseInfo && parseInfo.headers.length > 0 && (
+        <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 space-y-3">
+          <div className="flex justify-between items-center flex-wrap gap-2">
+            <p className="text-stone-900 text-xs font-bold">
+              Detected <span className="text-emerald-700">{rows.length}</span> valid lead(s) out of {parseInfo.totalRows} total row(s)
             </p>
-          )}
+            <p className="text-stone-700 text-xs">File columns: <span className="font-mono text-stone-900">{parseInfo.headers.join(', ')}</span></p>
+          </div>
+
+          {/* Interactive Custom Column Mapping Dropdowns */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-stone-200">
+            <div>
+              <label className="block text-[11px] font-bold text-stone-700 mb-1">Customer / Business Name Column</label>
+              <select className={inputCls} value={nameCol} onChange={e => handleCustomMapChange(e.target.value, undefined, undefined)}>
+                <option value="">Auto-detected Column</option>
+                {parseInfo.headers.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-stone-700 mb-1">Phone / Mobile Column</label>
+              <select className={inputCls} value={phoneCol} onChange={e => handleCustomMapChange(undefined, e.target.value, undefined)}>
+                <option value="">Auto-scanned (Numbers & Headers)</option>
+                {parseInfo.headers.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-stone-700 mb-1">Location / Notes Column</label>
+              <select className={inputCls} value={notesCol} onChange={e => handleCustomMapChange(undefined, undefined, e.target.value)}>
+                <option value="">Auto-merged All Info</option>
+                {parseInfo.headers.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </div>
+          </div>
         </div>
-      )}
-      {parseInfo && parseInfo.matchedRows > 0 && parseInfo.matchedRows < parseInfo.totalRows && (
-        <p className="text-amber-700 text-xs mb-2">
-          {parseInfo.matchedRows} of {parseInfo.totalRows} rows had a usable name + phone — the rest were skipped.
-        </p>
       )}
 
       {rows.length > 0 && (
-        <div className="mb-3">
-          <p className="text-emerald-700 text-xs mb-1 font-semibold">{fileName}: {rows.length} valid rows detected — not imported yet</p>
-          <p className="text-stone-700 text-xs mb-3">Pick a segment (and optionally an assignee) below, then tap <span className="font-semibold">Import</span> to save these leads.</p>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <select className={inputCls} value={segment} onChange={e => { setSegment(e.target.value); setAssignTo(''); }}>
-              <option value="">Assign to Segment *</option>
-              {segments
-                .filter(s => isSuperAdmin || (user?.segments || []).includes('all') || (user?.segments || []).includes(s.slug))
-                .map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
-            </select>
-            <select className={inputCls} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
-              <option value="">Leave unassigned</option>
-              {sortedAssignees
-                .filter(s => !segment || (s.segments || []).includes(segment) || (s.segments || []).includes('all'))
-                .map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
-            </select>
+        <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200 space-y-3">
+          <p className="text-orange-950 text-xs font-bold">Step 2: Choose Segment & Assignee for {rows.length} Leads</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">Target Segment *</label>
+              <select className={inputCls} value={segment} onChange={e => { setSegment(e.target.value); setAssignTo(''); }}>
+                <option value="">Select Segment *</option>
+                {segments
+                  .filter(s => isSuperAdmin || (user?.segments || []).includes('all') || (user?.segments || []).includes(s.slug))
+                  .map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">Assign To (Telecaller / Executive)</label>
+              <select className={inputCls} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
+                <option value="">Leave Unassigned (Pool)</option>
+                {sortedAssignees
+                  .filter(s => !segment || (s.segments || []).includes(segment) || (s.segments || []).includes('all'))
+                  .map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+              </select>
+            </div>
           </div>
-          <button className={btnCls} disabled={busy} onClick={upload}>
-            <Upload className="w-4 h-4 inline mr-1.5" /> {busy ? 'Importing…' : `Import ${rows.length} Leads`}
+
+          {/* Sample Preview Table */}
+          <div className="pt-2">
+            <p className="text-stone-700 text-[11px] font-bold mb-1.5">First 3 Preview Rows:</p>
+            <div className="space-y-1.5">
+              {rows.slice(0, 3).map((r, i) => (
+                <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-stone-200">
+                  <div>
+                    <span className="font-bold text-stone-900">{r.customer_name}</span>
+                    <span className="text-stone-700 ml-2">📞 {r.phone}</span>
+                  </div>
+                  {r.interested_in && <span className="text-stone-700 text-[11px] truncate max-w-[200px]">{r.interested_in}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button className={btnCls + ' w-full py-3 text-sm'} disabled={busy || !segment} onClick={upload}>
+            <Upload className="w-4 h-4 inline mr-1.5" /> {busy ? 'Importing & Assigning...' : `Import & Assign ${rows.length} Leads`}
           </button>
         </div>
       )}
