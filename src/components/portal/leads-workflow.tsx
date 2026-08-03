@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin } from 'lucide-react';
 import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
@@ -18,7 +18,7 @@ export function TelecallerStatsDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<{ assigned: number; calledToday: number; callbacks: number; convertedMonth: number; transfersPending: number } | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     try {
       const data = await cachedQuery(`telecaller_stats:${user.id}`, async () => {
@@ -48,8 +48,8 @@ export function TelecallerStatsDashboard() {
     } catch {
       // ignore
     }
-  }
-  useEffect(() => { load(); }, [user]);
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
 
   if (!stats) return null;
   const cards = [
@@ -97,7 +97,7 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
   const [busy, setBusy] = useState(false);
   const [showPool, setShowPool] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     try {
       const data = await cachedQuery(`telecaller_queue:${user.id}`, async () => {
@@ -113,8 +113,8 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
     } catch (err: any) {
       toast.error(`Couldn't load queue: ${err.message}`);
     }
-  }
-  useEffect(() => { load(); }, [user]);
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (!user) return;
     cachedQuery('marketing_executives', async () => {
@@ -321,13 +321,13 @@ export function TransferApprovals() {
   const [items, setItems] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
 
-  async function load() {
+  const load = useCallback(async () => {
     const { data } = await supabase.from('marketing_leads').select('*').eq('transfer_status', 'pending').order('updated_at', { ascending: false });
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
     if (users) setNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
-  }
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function resolve(id: string, approve: boolean, targetExec: string) {
     // Two sequential updates, deliberately not one:
@@ -685,7 +685,7 @@ export function TeamActivityFeed() {
   const [personFilter, setPersonFilter] = useState('');
   const [days, setDays] = useState(7);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       await withTimeout((async () => {
@@ -729,8 +729,8 @@ export function TeamActivityFeed() {
     } finally {
       setLoading(false);
     }
-  }
-  useEffect(() => { load(); }, [typeFilter, personFilter, days]);
+  }, [typeFilter, personFilter, days]);
+  useEffect(() => { load(); }, [load]);
 
   const typeColor: Record<string, string> = {
     outgoing: 'text-teal-700', incoming: 'text-emerald-700', visit: 'text-amber-700',
@@ -829,7 +829,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
   const [assignTo, setAssignTo] = useState('');
   const [busy, setBusy] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     let q = supabase.from('marketing_leads').select('*')
       .is('assigned_to', null).not('stage', 'in', '(won,lost)')
       .order('created_at', { ascending: false }).limit(400);
@@ -838,8 +838,8 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
     if (error) { toast.error(`Couldn't load pool: ${error.message}`); return; }
     setLeads(data || []);
     setSelected(new Set());
-  }
-  useEffect(() => { load(); }, [segFilter]);
+  }, [segFilter]);
+  useEffect(() => { load(); }, [load]);
   useEffect(() => {
     supabase.from('app_users').select('id, full_name, role, segments').eq('is_active', true).neq('role', 'super_admin').order('full_name')
       .then(({ data }) => { if (data) setStaff(data); });
@@ -919,7 +919,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
   const [scope, setScope] = useState<'upcoming' | 'unassigned' | 'past'>('upcoming');
   const [busy, setBusy] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     const cacheKey = `appointments:${segFilter}:${scope}`;
     try {
       const data = await cachedQuery(cacheKey, async () => {
@@ -943,7 +943,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
     } catch (err: any) {
       toast.error(`Couldn't load appointments: ${err.message}`);
     }
-  }
+  }, [segFilter, scope, execs.length]);
 
   useEffect(() => {
     cachedQuery('marketing_execs_summary', async () => {
@@ -954,7 +954,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
     }).then(data => { if (data) setExecs(data); }).catch(() => {});
     supabase.rpc('remind_unassigned_appointments');
   }, []);
-  useEffect(() => { load(); }, [segFilter, scope, execs.length]);
+  useEffect(() => { load(); }, [load]);
 
   async function assignExec(leadId: string, execId: string, customerName: string, apptAt: string) {
     if (!execId) return;
@@ -1118,7 +1118,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [newLead, setNewLead] = useState({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
   const [collectedPhone, setCollectedPhone] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     // Soonest commitment first: appointments and follow-ups you've promised
     // outrank leads you haven't scheduled anything on.
@@ -1129,8 +1129,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       .order('updated_at', { ascending: true });
     if (error) { toast.error(`Couldn't load your leads: ${error.message}`); return; }
     if (data) setLeads(data);
-  }
-  useEffect(() => { load(); }, [user]);
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
   // Fallback when pg_cron isn't enabled: sweeping here means due follow-ups
   // still notify whenever field staff open their queue. Idempotent.
   useEffect(() => { supabase.rpc('remind_due_followups'); }, []);

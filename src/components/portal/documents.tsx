@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FileText, CheckCircle2, Printer, PenLine, RotateCcw, ShieldCheck, X, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../lib/toast';
@@ -243,7 +243,7 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
   const [loaded, setLoaded] = useState(false);
   const toast = useToast();
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const data = await cachedQuery(`emp_docs:${staffUserId}`, async () => {
         const { data, error } = await supabase.from('employee_documents').select('*').eq('staff_user_id', staffUserId).order('issued_at', { ascending: false });
@@ -256,8 +256,8 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
       toast.error(`Couldn't load documents: ${err.message}`);
       setLoaded(true);
     }
-  }
-  useEffect(() => { load(); }, [staffUserId]);
+  }, [staffUserId]);
+  useEffect(() => { load(); }, [load]);
 
   async function sign(id: string, dataUrl: string, typedName: string) {
     const patch = {

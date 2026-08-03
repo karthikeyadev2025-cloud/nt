@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapPin, Eye, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -60,7 +60,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
   const { user, hasPermission } = useAuth();
   const toast = useToast();
 
-  async function load() {
+  const load = useCallback(async () => {
     const cacheKey = `tickets:${segFilter}:${statusFilter}`;
     try {
       const data = await cachedQuery(cacheKey, async () => {
@@ -75,9 +75,9 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
     } catch (err: any) {
       toast.error(`Couldn't load tickets: ${err.message}`);
     }
-  }
+  }, [segFilter, statusFilter]);
 
-  useEffect(() => { load(); }, [segFilter, statusFilter]);
+  useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (!focusId) return;
     const t = tickets.find(x => x.id === focusId);
@@ -352,7 +352,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     load();
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     const cacheKey = `leads:${segFilter}:${stageFilter}`;
     try {
       const data = await cachedQuery(cacheKey, async () => {
@@ -367,8 +367,8 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     } catch (err: any) {
       toast.error(`Couldn't load leads: ${err.message}`);
     }
-  }
-  useEffect(() => { load(); }, [segFilter, stageFilter]);
+  }, [segFilter, stageFilter]);
+  useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (!focusLeadId) return;
     const l = leads.find(x => x.id === focusLeadId);

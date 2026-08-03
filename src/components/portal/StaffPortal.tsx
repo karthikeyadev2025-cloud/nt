@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu, Key } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -246,7 +246,7 @@ export function MyAttendance() {
   const [pickingMode, setPickingMode] = useState(false);
   const dateStr = istDateStr();
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     try {
       const res = await cachedQuery(`my_attendance:${user.id}:${dateStr}`, async () => {
@@ -260,8 +260,8 @@ export function MyAttendance() {
     } catch {
       // ignore
     }
-  }
-  useEffect(() => { load(); }, [user]);
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
 
   function getPosition(): Promise<{ lat: number | null; lng: number | null }> {
     return new Promise(resolve => {
@@ -510,7 +510,7 @@ export function MyRequests() {
     }
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     try {
       const res = await cachedQuery(`my_requests:${user.id}`, async () => {
@@ -525,8 +525,8 @@ export function MyRequests() {
     } catch {
       // ignore
     }
-  }
-  useEffect(() => { load(); }, [user]);
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
 
   async function requestLeave() {
     if (!user) return;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, Megaphone, Repeat, Landmark, Printer, TrendingUp, Flame, Cake, Download, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,7 +23,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
   const [items, setItems] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     try {
       const data = await cachedQuery(`notifications:${user.id}`, async () => {
@@ -35,12 +35,12 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
     } catch {
       // ignore
     }
-  }
+  }, [user]);
   useEffect(() => {
     load();
     const t = setInterval(() => { if (document.visibilityState === 'visible') load(); }, 60000);
     return () => clearInterval(t);
-  }, [user]);
+  }, [load]);
 
   async function markRead(id: string) {
     await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id);
@@ -129,11 +129,11 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
   const [items, setItems] = useState<any[]>([]);
   const [form, setForm] = useState({ segment_slug: '', title: '', body: '', is_pinned: false });
 
-  async function load() {
+  const load = useCallback(async () => {
     const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
     if (data) setItems(data);
-  }
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function post() {
     if (!form.title || !form.body || !user) { toast.error('Title and message are required'); return; }
@@ -191,7 +191,7 @@ export function ShiftSwapBoard() {
   const [colleagues, setColleagues] = useState<any[]>([]);
   const [form, setForm] = useState({ target_id: '', shift_date: '', reason: '' });
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     const [{ data: m }, { data: c }] = await Promise.all([
       supabase.from('shift_swap_requests').select('*').or(`requester_id.eq.${user.id},target_id.eq.${user.id}`).order('created_at', { ascending: false }),
@@ -203,8 +203,8 @@ export function ShiftSwapBoard() {
       const { data: p } = await supabase.from('shift_swap_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
       if (p) setPending(p);
     }
-  }
-  useEffect(() => { load(); }, [user]);
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
 
   async function submit() {
     if (!form.shift_date || !user) { toast.error('Please pick a date'); return; }
@@ -282,14 +282,14 @@ export function MyBankDetails() {
   const [form, setForm] = useState({ account_holder: '', account_number: '', ifsc: '', bank_name: '', upi_id: '' });
   const [editing, setEditing] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     const { data: u } = await supabase.from('app_users').select('bank_details').eq('id', user.id).maybeSingle();
     if (u?.bank_details) { setCurrent(u.bank_details); setForm((f) => ({ ...f, ...u.bank_details })); }
     const { data: p } = await supabase.from('bank_change_requests').select('*').eq('staff_user_id', user.id).eq('status', 'pending').maybeSingle();
     setPendingReq(p || null);
-  }
-  useEffect(() => { load(); }, [user]);
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
 
   async function submit() {
     if (!user) return;
@@ -343,13 +343,13 @@ export function BankChangeApprovals() {
   const [items, setItems] = useState<any[]>([]);
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
 
-  async function load() {
+  const load = useCallback(async () => {
     const { data } = await supabase.from('bank_change_requests').select('*').order('created_at', { ascending: false }).limit(100);
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
     if (users) setStaffNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
-  }
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function review(id: string, status: string) {
     const { error } = await supabase.from('bank_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
@@ -583,15 +583,15 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [fileUrls, setFileUrls] = useState<{ resume?: string; photo?: string }>({});
 
-  async function load() {
+  const load = useCallback(async () => {
     const [{ data: j }, { data: a }] = await Promise.all([
       supabase.from('job_postings').select('*').order('created_at', { ascending: false }),
       supabase.from('career_applications').select('*').order('created_at', { ascending: false }).limit(200),
     ]);
     if (j) setJobs(j);
     if (a) setApps(a);
-  }
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function saveJob() {
     if (!editingJob?.title) { toast.error('Job title is required'); return; }
@@ -790,12 +790,12 @@ export function MyPhotoRequest() {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase.from('photo_change_requests').select('*').eq('staff_user_id', user.id).eq('status', 'pending').maybeSingle();
     setPendingReq(data || null);
-  }
-  useEffect(() => { load(); }, [user]);
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -843,13 +843,13 @@ export function PhotoChangeApprovals() {
   const [items, setItems] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
 
-  async function load() {
+  const load = useCallback(async () => {
     const { data } = await supabase.from('photo_change_requests').select('*').order('created_at', { ascending: false }).limit(100);
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
     if (users) setNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
-  }
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function review(id: string, status: string) {
     const { error } = await supabase.from('photo_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);

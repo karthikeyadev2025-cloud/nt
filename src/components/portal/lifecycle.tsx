@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CalendarCheck, CalendarX, UserMinus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,7 +16,7 @@ export function MyRegularizations() {
   const [form, setForm] = useState({ attendance_date: '', requested_check_in: '', requested_check_out: '', reason: '' });
   const [busy, setBusy] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!user) return;
     try {
       const data = await cachedQuery(`regularizations:${user.id}`, async () => {
@@ -29,8 +29,8 @@ export function MyRegularizations() {
     } catch {
       // ignore
     }
-  }
-  useEffect(() => { load(); }, [user]);
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
 
   async function submit() {
     if (!user) return;
@@ -96,7 +96,7 @@ export function RegularizationApprovals() {
   const [items, setItems] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const res = await cachedQuery('regularization_approvals_data', async () => {
         const [{ data: reg }, { data: users }] = await Promise.all([
@@ -109,8 +109,8 @@ export function RegularizationApprovals() {
     } catch {
       // ignore
     }
-  }
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function review(id: string, status: string) {
     const { error } = await supabase.from('attendance_regularizations')
@@ -150,7 +150,7 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
   const [items, setItems] = useState<any[]>([]);
   const [form, setForm] = useState({ holiday_date: '', name: '', segment_slug: '', is_optional: false });
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const data = await cachedQuery('holidays_list', async () => {
         const { data, error } = await supabase.from('holidays').select('*').order('holiday_date');
@@ -161,8 +161,8 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
     } catch {
       // ignore
     }
-  }
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function add() {
     if (!form.holiday_date || !form.name) { toast.error('Date and name are required'); return; }
@@ -306,7 +306,7 @@ export function DanglingCheckins() {
   const [customTime, setCustomTime] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState('');
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const data = await cachedRpc('list_dangling_checkins', () => supabase.rpc('list_dangling_checkins'));
       const list = (data as any)?.data || data;
@@ -314,8 +314,8 @@ export function DanglingCheckins() {
     } catch {
       // ignore
     }
-  }
-  useEffect(() => { load(); }, []);
+  }, []);
+  useEffect(() => { load(); }, [load]);
 
   async function close(rec: any) {
     setBusy(rec.id);
