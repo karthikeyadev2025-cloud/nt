@@ -1,3 +1,4 @@
-Contact: mailto:contact@yourdomain.com
+Contact: mailto:security@nikkitechnologies.com
 Preferred-Languages: en, te, hi
-Canonical: https://yourdomain.com/.well-known/security.txt
+Canonical: https://nikkitechnologies.com/.well-known/security.txt
+Expires: 2027-08-03T00:00:00.000Z

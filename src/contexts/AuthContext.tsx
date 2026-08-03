@@ -81,10 +81,11 @@ async function fetchAppUser(userId: string): Promise<AppUser | null> {
         AUTH_TIMEOUT_MS,
         'user profile'
       ) as { data: unknown; error: unknown });
-    } catch (e) {
+    } catch {
       retries--;
       if (retries === 0) break;
       await new Promise(r => setTimeout(r, delay));
+      delay *= 2;
       continue;
     }
 
@@ -92,6 +93,7 @@ async function fetchAppUser(userId: string): Promise<AppUser | null> {
       retries--;
       if (retries === 0) break;
       await new Promise(r => setTimeout(r, delay));
+      delay *= 2;
       continue;
     }
 
@@ -103,6 +105,7 @@ async function fetchAppUser(userId: string): Promise<AppUser | null> {
     retries--;
     if (retries > 0) {
       await new Promise(r => setTimeout(r, delay));
+      delay *= 2;
     }
   }
 

@@ -1019,6 +1019,47 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
   const [done, setDone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  // Cloudflare Turnstile — the widget renders inside the ref and calls
+  // the setter as `window.turnstile` invokes our callback. We keep the
+  // widget id so we can reset it on failed submits (a token is single-
+  // use and expires on server verification).
+  const turnstileRef = useRef<HTMLDivElement | null>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+
+  const resetTurnstile = () => {
+    setTurnstileToken(null);
+    const w = (window as unknown as { turnstile?: { reset: (id: string) => void } }).turnstile;
+    if (w && turnstileWidgetId.current) w.reset(turnstileWidgetId.current);
+  };
+
+  useEffect(() => {
+    // Skip entirely if site key isn't configured (e.g. dev). In that case
+    // the widget doesn't render and submit() short-circuits with a clear
+    // error, which is the correct fail-closed behaviour.
+    if (!turnstileSiteKey || mode !== 'raise' || done) return;
+    const SCRIPT_ID = 'cf-turnstile-script';
+    const render = () => {
+      const w = (window as unknown as { turnstile?: { render: (el: HTMLElement, opts: object) => string } }).turnstile;
+      if (!w || !turnstileRef.current || turnstileWidgetId.current) return;
+      turnstileWidgetId.current = w.render(turnstileRef.current, {
+        sitekey: turnstileSiteKey,
+        callback: (token: string) => setTurnstileToken(token),
+        'error-callback': () => setTurnstileToken(null),
+        'expired-callback': () => setTurnstileToken(null),
+        theme: 'light',
+      });
+    };
+    if (document.getElementById(SCRIPT_ID)) { render(); return; }
+    const script = document.createElement('script');
+    script.id = SCRIPT_ID;
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    script.onload = render;
+    document.head.appendChild(script);
+  }, [turnstileSiteKey, mode, done]);
 
   useEffect(() => {
     supabase.from('ticket_types').select('*').eq('active', true).order('order_index')
@@ -1030,18 +1071,34 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
       setErr('Please fill in department, subject, name and phone.');
       return;
     }
-    setErr('');
-    setBusy(true);
-    const { data, error } = await supabase.from('support_tickets')
-      .insert({ ...form, ticket_type: form.ticket_type || 'General Support' })
-      .select('ticket_no').single();
-    setBusy(false);
-    if (error || !data) {
-      setErr("Sorry, we couldn't submit your ticket. Please try again or call us.");
+    // Turnstile is a hard gate: no token = no submit. This is the whole
+    // point of the widget — an accidental soft-fail here would defeat the
+    // rate-limit. See supabase/functions/raise-ticket for the server side.
+    if (!turnstileToken) {
+      setErr('Please complete the bot check just above the submit button.');
       return;
     }
-    setDone(data.ticket_no);
-    setForm({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
+    setErr('');
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('raise-ticket', {
+        body: { ...form, ticket_type: form.ticket_type || 'General Support', turnstile_token: turnstileToken },
+      });
+      if (error || !data?.ticket_no) {
+        setErr((data as { error?: string })?.error || "Sorry, we couldn't submit your ticket. Please try again or call us.");
+        // A used Turnstile token can't be replayed — reset the widget so
+        // the customer can retry without a page refresh.
+        resetTurnstile();
+        return;
+      }
+      setDone(data.ticket_no);
+      setForm({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
+    } catch {
+      setErr("Sorry, we couldn't submit your ticket. Please try again or call us.");
+      resetTurnstile();
+    } finally {
+      setBusy(false);
+    }
   }
 
   const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm placeholder-stone-500 font-medium';
@@ -1103,8 +1160,13 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
               <input className={inputCls} placeholder="Email" value={form.customer_email} onChange={e => setForm({ ...form, customer_email: e.target.value })} />
             </div>
             {err && <p className="text-red-700 text-sm font-medium">{err}</p>}
-            <button onClick={submit} disabled={busy}
-              className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-orange-700/20">
+            {turnstileSiteKey && (
+              <div className="flex justify-center">
+                <div ref={turnstileRef} />
+              </div>
+            )}
+            <button onClick={submit} disabled={busy || (!!turnstileSiteKey && !turnstileToken)}
+              className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-orange-700/20">
               <Send className="w-4 h-4" /> {busy ? 'Submitting…' : 'Submit Ticket'}
             </button>
           </div>

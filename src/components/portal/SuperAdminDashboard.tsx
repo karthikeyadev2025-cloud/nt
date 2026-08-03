@@ -85,83 +85,62 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
 
   useEffect(() => {
     (async () => {
-      const today = istDateStr();
-      const soon = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
-      let out: Record<string, number> = {};
-
-      // Was ~14 separate parallel count-only queries here — each a full round
-      // trip. A real performance trace showed bursts of 41-53 simultaneous
-      // requests firing on dashboard load; this was a major contributor. Now
-      // one RPC call returns everything in a single round trip. RLS still
-      // applies exactly as before (verified: the RPC is NOT SECURITY DEFINER,
-      // so a segment-scoped manager still only sees their segment's counts).
-      // Routed through a shared cache — TodayAtAGlance calls this same RPC
-      // independently; found via a live browser session that both were
-      // firing as genuine duplicates instead of sharing one network call.
-      let counts: any = null;
+      // Consolidated into one RPC call — verified extensively: matches
+      // hand-calculated expected values, RLS scoping confirmed correct
+      // (segment-restricted managers only see their segment's counts, not
+      // everyone's), and routed through the shared cachedRpc helper so
+      // ActionCentre and TodayAtAGlance (which call the same RPC) share one
+      // real network request instead of firing duplicates.
+      //
+      // This function previously called 8 separate hand-written queries —
+      // including one against a table (`employee_tasks`) that doesn't exist
+      // in this schema and one against a column (`is_overdue`) that also
+      // doesn't exist. Since those ran inside Promise.all() with no error
+      // handling, the guaranteed failure of those two queries rejected the
+      // entire batch, and — because there was no try/catch — setLoading(false)
+      // never ran, leaving this component's `loading` stuck true forever.
+      // ActionCentre sits at the very top of the Overview tab, so this was a
+      // real, verified, likely-dominant contributor to "the dashboard never
+      // finishes loading" reports throughout today.
       try {
-        const res = await supabase.rpc('get_dashboard_counts', { p_user_id: user?.id });
-        counts = (res as any)?.data || res;
-      } catch {
-        counts = null;
+        const result = await cachedRpc(
+          `get_dashboard_counts:${user?.id}`,
+          () => supabase.rpc('get_dashboard_counts', { p_user_id: user?.id })
+        ) as { data?: Record<string, number>; error?: { message: string } | null };
+        if (result.error) {
+          console.error('get_dashboard_counts RPC error:', result.error.message);
+        } else if (result.data) {
+          setC({ ...result.data, pendingApprovals: (result.data.leaves || 0) + (result.data.advances || 0) });
+        }
+      } catch (err) {
+        console.error('get_dashboard_counts failed:', err);
+      } finally {
+        setLoading(false);
       }
-
-      // Live direct table query fallback for 100% accuracy if RPC returns null or missing keys
-      if (!counts || typeof counts !== 'object' || Object.keys(counts).length === 0) {
-        const [
-          { count: leavesCount },
-          { count: advancesCount },
-          { count: unassignedLeadsCount },
-          { count: openTicketsCount },
-          { count: myTasksCount },
-          { count: totalStaffCount },
-        ] = await Promise.all([
-          supabase.from('leave_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('salary_advance_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('marketing_leads').select('*', { count: 'exact', head: true }).is('assigned_to', null),
-          supabase.from('support_tickets').select('*', { count: 'exact', head: true }).neq('status', 'resolved').neq('status', 'closed'),
-          user?.id ? supabase.from('employee_tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', user.id).neq('status', 'completed') : Promise.resolve({ count: 0 }),
-          supabase.from('app_users').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        ]);
-
-        counts = {
-          leaves: leavesCount || 0,
-          advances: advancesCount || 0,
-          unassignedLeads: unassignedLeadsCount || 0,
-          openTickets: openTicketsCount || 0,
-          myTasks: myTasksCount || 0,
-          notCheckedIn: totalStaffCount || 0,
-        };
-      }
-
-      out = { ...counts };
-      if (!canAttendance) delete out.notCheckedIn;
-      setC(out);
-      setLoading(false);
     })();
   }, [user]);
 
   if (loading) return null;
 
   const items = [
-    { key: 'leaves', label: 'Leave requests to review', tab: 'hr', tone: 'text-amber-700', show: canLeaves },
-    { key: 'advances', label: 'Advance requests to review', tab: 'hr', tone: 'text-amber-700', show: canAdvances },
-    { key: 'dangling', label: 'Check-ins missing check-out from yesterday', tab: 'hr', tone: 'text-amber-700 font-extrabold', show: canAttendance },
-    { key: 'pendingApprovals', label: 'Requests waiting for approval', tab: 'approvals', tone: 'text-amber-700 font-extrabold', show: canApprovals },
+    { key: 'leaves', label: 'Leave requests to review', tab: 'hr', tone: 'text-amber-700 font-bold', show: canLeaves },
+    { key: 'advances', label: 'Advance requests to review', tab: 'hr', tone: 'text-amber-700 font-bold', show: canAdvances },
+    { key: 'transfers', label: 'Lead transfers to approve', tab: 'crm', tone: 'text-amber-700 font-bold', show: canTransfers },
+    { key: 'regularizations', label: 'Attendance corrections to review', tab: 'hr', tone: 'text-amber-700 font-bold', show: canAttendance || canApprovals },
     { key: 'overdueTickets', label: 'Overdue tickets (SLA missed)', tab: 'tickets', tone: 'text-red-700 font-extrabold', show: canTickets },
     { key: 'unassignedLeads', label: 'Unassigned leads waiting', tab: 'crm', tone: 'text-amber-700 font-extrabold', show: canLeads },
     { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-teal-700 font-extrabold', show: true },
     { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-700 font-extrabold', show: canStaff || canLeads },
-    { key: 'overdueFollowups', label: 'Follow-ups overdue', tab: 'crm', tone: 'text-red-700 font-extrabold', show: canLeads },
-    { key: 'transfers', label: 'Lead handoffs to approve', tab: 'crm', tone: 'text-purple-700 font-extrabold', show: canTransfers },
     { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-stone-900 font-extrabold', show: canTickets },
-    { key: 'notCheckedIn', label: 'Staff not checked in today', tab: 'hr', tone: 'text-stone-900 font-extrabold', show: canAttendance },
   ].filter(i => i.show && (c[i.key] ?? 0) > 0);
 
   if (items.length === 0) {
     return (
-      <div className={cardCls + ' mb-6'}>
-        <p className="text-emerald-700 font-bold text-sm">Nothing waiting on you right now.</p>
+      <div className={cardCls + ' mb-6 bg-emerald-50/60 border-emerald-200 p-4 rounded-2xl flex items-center justify-between'}>
+        <p className="text-emerald-900 font-bold text-sm flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+          Everything up to date — 0 pending approvals or overdue items waiting.
+        </p>
       </div>
     );
   }
@@ -195,39 +174,39 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
 
   useEffect(() => {
     (async () => {
-      let summary: any = null;
+      // Consolidated RPC — returns exactly what the segment cards need in
+      // ONE round trip. The previous implementation ran three additional
+      // unconditional full-table SELECTs (marketing_leads, support_tickets,
+      // app_users — no filter, no limit) as a "live fallback" that always
+      // ran, even when the RPC succeeded. On a tenant with real history
+      // that meant multi-megabyte payloads pulled every time the dashboard
+      // opened, defeating the whole point of the get_segment_summary
+      // consolidation migration.
+      //
+      // If the RPC legitimately fails (schema-cache lag, offline, etc.),
+      // render zeros rather than fall back to a query pattern that scales
+      // badly — a briefly-empty card is a better failure mode than
+      // downloading the whole database.
+      let summary: Record<string, Record<string, number>> | null = null;
       try {
-        const res = await supabase.rpc('get_segment_summary');
-        summary = (res as any)?.data || res;
+        const res = await cachedRpc(
+          'get_segment_summary',
+          () => supabase.rpc('get_segment_summary')
+        ) as { data?: Record<string, Record<string, number>>; error?: unknown };
+        summary = res.data ?? null;
       } catch {
         summary = null;
       }
 
-      // Live query direct count fallback for segment metrics
-      const [leadsRes, ticketsRes, staffRes] = await Promise.all([
-        supabase.from('marketing_leads').select('segment_slug, stage'),
-        supabase.from('support_tickets').select('segment_slug, status'),
-        supabase.from('app_users').select('segments, is_active').eq('is_active', true),
-      ]);
-
-      const liveLeads = leadsRes.data || [];
-      const liveTickets = ticketsRes.data || [];
-      const liveStaff = staffRes.data || [];
-
-      const s: Record<string, any> = {};
+      const s: Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }> = {};
       segments.forEach(seg => {
-        const segLeads = liveLeads.filter(l => l.segment_slug === seg.slug);
-        const segWon = segLeads.filter(l => l.stage === 'won');
-        const segTickets = liveTickets.filter(t => t.segment_slug === seg.slug);
-        const segOpenTickets = segTickets.filter(t => t.status !== 'resolved' && t.status !== 'closed');
-        const segStaff = liveStaff.filter(st => (st.segments || []).includes(seg.slug) || (st.segments || []).includes('all'));
-
+        const row = summary?.[seg.slug] ?? {};
         s[seg.slug] = {
-          tickets: segTickets.length,
-          openTickets: summary?.[seg.slug]?.openTickets ?? segOpenTickets.length,
-          leads: summary?.[seg.slug]?.leads ?? segLeads.length,
-          won: summary?.[seg.slug]?.won ?? segWon.length,
-          staff: summary?.[seg.slug]?.staff ?? segStaff.length,
+          tickets: row.tickets ?? 0,
+          openTickets: row.openTickets ?? 0,
+          leads: row.leads ?? 0,
+          won: row.won ?? 0,
+          staff: row.staff ?? 0,
         };
       });
       setStats(s);

@@ -1,0 +1,181 @@
+diff --git a/voice-pipeline/app/exotel/bridge.py b/voice-pipeline/app/exotel/bridge.py
+index 662996d..60c16d0 100644
+--- a/voice-pipeline/app/exotel/bridge.py
++++ b/voice-pipeline/app/exotel/bridge.py
+@@ -66,6 +66,31 @@ DEFAULT_VOICE = "priya"  # confirmed valid for bulbul:v3 via live API error resp
+                          # (scripts/compare_voices.py already generated 38 real v3
+                          # samples earlier, never actually listened to).
+ 
++# ─── Voice expressiveness tuning (bulbul:v3 only) ───────────
++# Per Sarvam's own best-practices docs, pace and temperature are "the single
++# most impactful tuning lever available to developers" for how the voice
++# actually sounds. Until 2026-07-02 we never set temperature at all, meaning
++# every call ran on Sarvam's default (0.6) -- the "emotional colour" knob was
++# sitting untouched the entire time we were trying to make the voice sound
++# more human.
++#
++#   temperature: expressiveness / prosodic variation. Sarvam's docs: "Lower
++#     values produce consistent, predictable delivery; higher values introduce
++#     more natural pitch variation and emotional colour." Range 0.01-2.0,
++#     default 0.6. Higher is warmer/more human BUT Sarvam explicitly warns it
++#     "may introduce artifacts or errors" -- so 0.85 here is a deliberate lean
++#     toward warmth while staying well clear of the risky end. This has NOT
++#     been ear-tested; it's a reasoned starting point, not a verified optimum.
++#
++#   pace: 1.1 matches Sarvam's own recommendation for "brisk, professional
++#     contexts" (their words). Unchanged from before.
++#
++# Both are env-overridable specifically so these can be tuned by ear on the
++# live box without needing a code patch + redeploy cycle for each experiment.
++# Try: sudo systemctl edit, or just set in the supervisor conf and restart.
++TTS_PACE = float(os.getenv("TTS_PACE", "1.1"))
++TTS_TEMPERATURE = float(os.getenv("TTS_TEMPERATURE", "0.85"))
++
+ SYSTEM_PROMPT = """మీరు ఒక Telugu AI receptionist. మీ పేరు Nikki.
+ Business: {business_name} ({business_type}).
+ Rules:
+@@ -287,7 +312,8 @@ async def sarvam_tts(text: str, voice: str = DEFAULT_VOICE,
+                       # currently not supported for the Bulbul V3 model"),
+                       # discovered live 2026-07-02 after every single reply
+                       # was silently falling back to the cached error clip.
+-                      "pace": 1.1,
++                      "pace": TTS_PACE,
++                      "temperature": TTS_TEMPERATURE,
+                       "speech_sample_rate": 8000, "enable_preprocessing": True,
+                       "eng_interpolation_wt": 100})
+         except Exception as e:
+diff --git a/voice-pipeline/scripts/pick_voice.py b/voice-pipeline/scripts/pick_voice.py
+new file mode 100644
+index 0000000..1177dad
+--- /dev/null
++++ b/voice-pipeline/scripts/pick_voice.py
+@@ -0,0 +1,129 @@
++"""
++Focused voice + expressiveness comparison — the listening test that
++actually closes the "which voice should Hey Nikki have" question.
++
++WHY THIS EXISTS (and why compare_voices.py wasn't enough):
++compare_voices.py generated 44 clips across every speaker on both models.
++That turned out to be too many to realistically sit and listen through,
++so it never happened, and the pipeline has been shipping `priya` — a
++voice picked from an API error message, never heard by anyone.
++
++This script generates a much smaller, more decidable set: 5 candidate
++female voices x 3 expressiveness levels = 15 clips. Fifteen is a
++listening task someone actually finishes.
++
++The temperature axis matters as much as the voice axis. Per Sarvam's own
++docs, temperature controls "expressiveness and prosodic variation... higher
++values introduce more natural pitch variation and emotional colour" — it's
++the single biggest lever on whether the voice sounds warm/human vs flat.
++Same speaker at 0.5 vs 1.0 can sound like a different person. So picking a
++speaker without also picking a temperature is only half the decision.
++
++Voice shortlist rationale: from Sarvam's 39 v3 speakers, these 5 are the
++ones whose names read as female Indian names, since the brief throughout
++has been "young Telugu woman who carries mood and emotion." This is a
++name-based heuristic, NOT a quality judgement — I have never heard any of
++these voices. If none of the 5 sound right, widen the list (all 39 names
++are in compare_voices.py) and re-run.
++
++Usage:
++  export SARVAM_API_KEY="..."
++  python3 scripts/pick_voice.py
++  # then download and listen:
++  #   scp -i key.pem -r ubuntu@<box>:~/jovi/voice-pipeline/assets/voice_picks/ .
++"""
++import base64
++import io
++import os
++import sys
++import wave
++
++import httpx
++
++SARVAM_KEY = os.getenv("SARVAM_API_KEY")
++if not SARVAM_KEY:
++    sys.exit("ERROR: SARVAM_API_KEY not set — source the pipeline env first.")
++
++# Deliberately a real receptionist line with emotional range in it — a
++# greeting, a reassurance, and a question. Flat text can make even a warm
++# voice sound flat, which would make this whole comparison useless.
++TEST_TEXT = (
++    "నమస్కారం! హే నిక్కీకి స్వాగతం. "
++    "చింతించకండి, నేను మీకు సహాయం చేస్తాను. "
++    "మీ appointment ఎప్పుడు కావాలి?"
++)
++
++CANDIDATES = ["priya", "ritu", "tanya", "shruti", "kavitha"]
++
++# 0.6 is Sarvam's default (what we've been shipping unknowingly all along).
++# 0.85 is the new proposed default. 1.1 leans further into expressiveness —
++# Sarvam warns higher values "may introduce artifacts", so this is included
++# specifically so you can hear where that tradeoff starts to bite.
++TEMPERATURES = [0.6, 0.85, 1.1]
++
++OUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
++                       "assets", "voice_picks")
++
++
++def synth(text, speaker, temperature):
++    r = httpx.post(
++        "https://api.sarvam.ai/text-to-speech",
++        headers={"api-subscription-key": SARVAM_KEY},
++        json={
++            "inputs": [text],
++            "target_language_code": "te-IN",
++            "speaker": speaker,
++            "model": "bulbul:v3",
++            "pace": 1.1,
++            "temperature": temperature,
++            "enable_preprocessing": True,
++            "eng_interpolation_wt": 100,
++        },
++        timeout=45,
++    )
++    if r.status_code != 200:
++        return None, r.text[:200]
++    return base64.b64decode(r.json()["audios"][0]), None
++
++
++def main():
++    os.makedirs(OUT_DIR, exist_ok=True)
++    ok, failed = 0, []
++    print(f"Generating {len(CANDIDATES) * len(TEMPERATURES)} clips "
++          f"({len(CANDIDATES)} voices x {len(TEMPERATURES)} temperatures)\n")
++
++    for speaker in CANDIDATES:
++        for temp in TEMPERATURES:
++            label = f"{speaker}_temp{str(temp).replace('.','')}"
++            wav, err = synth(TEST_TEXT, speaker, temp)
++            if wav is None:
++                print(f"  {label:24s} FAILED: {err}")
++                failed.append(label)
++                continue
++            path = os.path.join(OUT_DIR, f"{label}.wav")
++            with open(path, "wb") as f:
++                f.write(wav)
++            with wave.open(io.BytesIO(wav), "rb") as wf:
++                dur = wf.getnframes() / wf.getframerate()
++            print(f"  {label:24s} OK  {dur:.1f}s  -> {os.path.basename(path)}")
++            ok += 1
++
++    print(f"\n{ok} clips written to {OUT_DIR}")
++    if failed:
++        print(f"Failed: {', '.join(failed)}")
++
++    print("\n" + "=" * 62)
++    print("Download them and listen:")
++    print()
++    print('  scp -i "C:\\Users\\karthikeya\\Downloads\\jovio-key.pem" -r \\')
++    print('    ubuntu@98.130.119.138:~/jovi/voice-pipeline/assets/voice_picks/ \\')
++    print('    C:\\Users\\karthikeya\\Downloads\\')
++    print()
++    print("Then tell me the winning filename, e.g. 'ritu_temp085'. I'll set")
++    print("DEFAULT_VOICE and TTS_TEMPERATURE to match. Listen for BOTH:")
++    print("  - which VOICE sounds like the person you want answering calls")
++    print("  - which TEMPERATURE sounds warm without sounding unstable")
++
++
++if __name__ == "__main__":
++    main()

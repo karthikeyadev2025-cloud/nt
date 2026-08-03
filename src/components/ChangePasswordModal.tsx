@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Lock, Key, CheckCircle2 } from 'lucide-react';
+import { X, Lock, Key } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../lib/toast';

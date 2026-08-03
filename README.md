@@ -2,6 +2,9 @@
 
 Multi-segment business platform: **Kite & Tail Digital Media | Software Solutions** — one backend, one login, full no-code Super Admin control.
 
+> **Note on segments.** The platform currently runs **two** segments: Digital Media and Software Solutions. It originally shipped with a third — CCTV Installation — which was retired and removed from the schema. References to CCTV further down this document are **historical** (they explain why certain migrations exist and what was tested during the retirement). Any present-tense phrasing that still says "three segments" or "CCTV/DM/Software" is stale; treat it as if it read "DM/Software".
+
+
 ## Stack
 React 18 + Vite + TypeScript + Tailwind + Supabase (Postgres, Auth, RLS, Edge Functions).
 
@@ -96,13 +99,13 @@ Replaced the static loading spinner with a letter-by-letter reveal of "N-I-K-K-I
   - **Off** → she sees a **counts-only dashboard** (queue size, calls made today, callbacks pending, converted this month, transfers awaiting approval — no raw data grid) plus her **own Call Queue**: only leads currently assigned to her.
   - Each queue row has a **click-to-call** button (`tel:` link — opens the phone dialer directly).
   - Logging an outcome is mandatory before a lead leaves her queue. **Callback Requested** keeps the lead in her queue (with the callback date shown, sorted to the top). Every other outcome (interested/not interested/no answer/converted) **releases the lead back to the pool** — it disappears from her queue and only a manager/admin can reassign it.
-  - She can also **request a handoff to a Field Executive** once an appointment is fixed — this doesn't move the lead directly; it creates a pending request that a **Manager or Super Admin must approve** before the executive actually receives it. Same mechanism across all three segments (CCTV/Digital Media/Software) since it's segment-agnostic on the shared `marketing_leads` table.
+  - She can also **request a handoff to a Field Executive** once an appointment is fixed — this doesn't move the lead directly; it creates a pending request that a **Manager or Super Admin must approve** before the executive actually receives it. Same mechanism across every segment since it's segment-agnostic on the shared `marketing_leads` table.
 - **Manager/Super Admin → CRM → Handoff Approvals**: review and approve/reject pending telecaller→executive requests; both sides get notified automatically.
 - All of this is permission-gated (`full_leads_view`, `bulk_assign_leads`, `approve_transfers`), so you decide per person — not hardcoded by role — via Access Control → Manage Access.
 
 ## Confirmed / Fixed from cross-check
 - **Selfie attendance** — check-in and check-out now open the device camera (works in any browser, desktop or mobile) and capture a photo before submitting. Stored to the private `selfies` bucket, viewable by HR/managers via "Photo" link (signed URL) next to each attendance record. **Important distinction:** this is photographic proof-of-presence, not biometric face-matching verification — that requires ML/device-native APIs and remains out of scope for the web app (see Punchly cross-check note).
-- **Offer Letter & Welcome Letter are now segment-specific** (previously generic/company-wide) — CCTV, Digital Media and Software each get their own tailored wording, matching how Roles & Responsibilities already worked.
+- **Offer Letter & Welcome Letter are now segment-specific** (previously generic/company-wide) — each segment gets its own tailored wording, matching how Roles & Responsibilities already worked.
 - **Reporting Time / Shift** is now captured during onboarding and appears on the Offer Letter and Welcome Letter automatically (`{{reporting_time}}` placeholder).
 - **Job Description** added as its own document type, with a starter template per segment (Field Technician / Digital Media Executive / Software Developer) — Super Admin can add more per specific role from Documents & Onboarding → New Template.
 - Confirmed already working: documents auto-filter to the employee's segment, e-signature capture (draw or type) on every generated document.
@@ -240,7 +243,7 @@ No open issues, no build warnings, clean typecheck. This is the final state for 
 Two things confirmed/fixed per your workflow description:
 
 1. **Fixed a real restriction**: Bulk Upload's assignee dropdown was hardcoded to telecallers only. Now shows **any active staff member** — telecaller, executive, manager, HR, anyone — with their role shown next to their name. Staff already belonging to the segment you picked are listed first for convenience, but you can assign across segments (assignment grants access regardless of the person's own segment, same mechanism as telecaller→executive handoffs).
-2. **Confirmed (already correct, no change needed)**: when a staff member enters a remark on a lead, that remark is only ever visible to people who can access that lead's specific category — enforced at the database level (`can_access_segment` check), not just hidden in the UI. A CCTV-only manager cannot see remarks on Digital Media leads even if she tried to query them directly.
+2. **Confirmed (already correct, no change needed)**: when a staff member enters a remark on a lead, that remark is only ever visible to people who can access that lead's specific category — enforced at the database level (`can_access_segment` check), not just hidden in the UI. A Digital Media-only manager cannot see remarks on Software leads even if she tried to query them directly.
 
 **One practical note**: whoever you assign bulk contacts to needs *some* lead-related permission (`view_leads`/`manage_leads` — telecaller, executive, manager and HR all have this by default) to actually see their assigned leads anywhere in their portal. Assigning to someone with zero lead permissions (a plain support agent, for example) would leave the lead invisible to them — worth keeping in mind when picking an assignee outside the usual sales roles.
 
@@ -330,7 +333,7 @@ One migration: `20260726000001_lifecycle_deep_gaps.sql`.
 ## Remaining gaps closed
 1. **Dangling check-ins** — someone checks in, forgets to check out, and the record sits open forever: hours read as 0, payroll auto-fill undercounts, and the day is stuck. Added **HR → Unclosed Days**: lists every open day with how long it's been open, closes it at their shift end time (or a time you set), flags it `auto_closed` so it's never mistaken for a real punch, and notifies the staff member so they can request a correction if the time is wrong.
 
-2. **Ticket SLA / overdue tracking** — an urgent CCTV outage and a low-priority query looked identical in the queue after a week. Added per-priority SLA targets (urgent 8h → low 168h, editable) and **Tickets → Overdue (SLA)** showing exactly how many hours past target each breached ticket is, worst first.
+2. **Ticket SLA / overdue tracking** — an urgent Software outage and a low-priority query looked identical in the queue after a week. Added per-priority SLA targets (urgent 8h → low 168h, editable) and **Tickets → Overdue (SLA)** showing exactly how many hours past target each breached ticket is, worst first.
 
 3. **`reports_to` was dead code** — I added the column in the previous migration and never used it anywhere. Now wired properly: set a direct manager during onboarding, and their leave requests notify **that manager specifically** rather than blasting every approver in the segment. Falls back to notifying all approvers when no manager is set.
 
@@ -1657,3 +1660,55 @@ checks itself, automatically, within a minute of any new deploy — or
 instantly on the next tab switch.
 
 Verified: 39 migrations clean, typecheck clean, build clean, build-version.json confirmed generated correctly.
+
+## Very likely THE real, dominant cause of today's stuck-loading reports — found via a full audit
+
+Pulled latest and ran a genuine, complete typecheck as the first step of a
+requested cross-check. Found the build was **not** clean — 11 real
+TypeScript errors, revealing that a concurrent session had reverted
+`ActionCentre` (the very first thing that loads on the Overview tab) from
+the verified, consolidated `get_dashboard_counts` RPC back to 8 separate
+hand-written queries.
+
+**Two of those 8 queries were broken beyond redundancy — they were
+querying things that don't exist**:
+- `employee_tasks` — no such table. The real table, used correctly
+  everywhere else in this codebase, is `office_tasks`.
+- `support_tickets.is_overdue` — no such column. Confirmed via schema
+  search; the real overdue-ticket logic (used correctly elsewhere via
+  `list_overdue_tickets`) joins against `ticket_sla_policies` by priority
+  and compares elapsed hours to the policy's resolution time.
+
+**Why this mattered so much**: those 8 queries ran inside a single
+`Promise.all()` with no error handling. `Promise.all` rejects entirely the
+moment any one of its promises rejects — and querying a table that
+genuinely doesn't exist is a guaranteed rejection, every single time. With
+no try/catch, `setLoading(false)` never ran, leaving this component's
+loading state stuck true permanently. `ActionCentre` sits at the very top
+of the Overview tab. This is very likely the real, dominant, root cause
+behind a large share of today's "dashboard never finishes loading"
+reports — not the database region, not timer throttling, not any of the
+other real-but-smaller issues found and fixed today, though all of those
+were genuine improvements worth keeping.
+
+**Fixed properly, not just patched**:
+- Restored `ActionCentre` to the verified `get_dashboard_counts` RPC,
+  wrapped in real try/catch/finally so `setLoading(false)` is now
+  *guaranteed* to run no matter what happens.
+- Added the one genuinely new field the reverted code needed
+  (`overdueTickets`) to the RPC itself, using the correct SLA-policy logic
+  — so the "Overdue tickets" and new "Lead transfers to approve" /
+  "Attendance corrections to review" cards this session was clearly trying
+  to add now work correctly end-to-end, rather than being deleted.
+- Implemented `invalidateQueryCache()` in `cachedRpc.ts` — a function
+  `leads-workflow.tsx` was already trying to call after a bulk lead
+  upload (to bust the 5-minute RPC cache another concurrent session had
+  added) but which never actually existed, meaning it would have thrown a
+  real `ReferenceError` on every successful bulk upload.
+- Cleaned up every remaining unused-variable warning by completing what
+  they were clearly pointing at, rather than deleting them: added the
+  filename to the bulk-upload detection summary, added the two missing
+  ActionCentre items these variables were gating.
+
+Verified: 40 migrations clean, typecheck genuinely clean (exit code 0),
+build clean.

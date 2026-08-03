@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, Circle, Clock3, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -51,7 +51,16 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
     priority: 'medium', segment_slug: '', category: '',
   });
 
-  async function load() {
+  // `load` is wrapped in useCallback so:
+  //   (a) the useEffect below can list it as a dependency without looping —
+  //       useCallback's identity is stable until one of ITS deps changes;
+  //   (b) createTask() and setStatus() can call it and always get the
+  //       CURRENT closure (scope/segFilter/user) — the old plain-function
+  //       version captured stale values after any of those changed, so
+  //       refreshing after a create would sometimes re-render the wrong
+  //       filter's data. This is the pattern to apply everywhere else that
+  //       eslint still warns about `missing dependency: 'load'`.
+  const load = useCallback(async () => {
     const cacheKey = `office_tasks:${scope}:${segFilter}:${user?.id}`;
     try {
       const data = await cachedQuery(cacheKey, async () => {
@@ -67,12 +76,12 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
         return data || [];
       });
       setTasks(data);
-    } catch (err: any) {
-      toast.error(`Couldn't load tasks: ${err.message}`);
+    } catch (err) {
+      toast.error(`Couldn't load tasks: ${err instanceof Error ? err.message : 'unknown error'}`);
     }
-  }
+  }, [scope, segFilter, user, toast]);
 
-  useEffect(() => { load(); }, [scope, segFilter, user]);
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     if (!canAssign) return;

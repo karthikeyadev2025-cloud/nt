@@ -1,0 +1,250 @@
+diff --git a/super-admin/components/NikkiLogo.tsx b/super-admin/components/NikkiLogo.tsx
+index c7072f3..ef6f60b 100644
+--- a/super-admin/components/NikkiLogo.tsx
++++ b/super-admin/components/NikkiLogo.tsx
+@@ -20,10 +20,10 @@ interface Props {
+  * away from the earlier dark-navy + neon-green scheme, which read as a
+  * generic "AI startup" template rather than a distinct brand.
+  */
+-const TERRACOTTA = "#E8623D";
+-const TEAL = "#1A5C54";
+-const ESPRESSO = "#2B2420";
+-const CREAM = "#FAF6EF";
++const TERRACOTTA = "#E5533D";
++const TEAL = "#0F5F52";
++const ESPRESSO = "#1F1915";
++const CREAM = "#FDFBF7";
+ 
+ export default function NikkiLogo({ size = 48, showText = true, variant = "horizontal", dark = false }: Props) {
+   const textColor = dark ? CREAM : ESPRESSO;
+diff --git a/web/app/forgot-password/page.tsx b/web/app/forgot-password/page.tsx
+index 25fdc60..9f31bb5 100644
+--- a/web/app/forgot-password/page.tsx
++++ b/web/app/forgot-password/page.tsx
+@@ -6,11 +6,11 @@ import { createClient } from "../../lib/supabase";
+ import NikkiLogo from "../../components/NikkiLogo";
+ 
+ const J = {
+-  bg: "#FAF6EF", vault: "#F3ECE1", surface: "#FFFFFF",
+-  border: "#E5DDD0", borderHi: "#D4C7B4",
+-  mercury: "#1A5C54", surya: "#E8623D", chandra: "#2B2420",
+-  textMid: "#8A7F73", textDim: "#B5A996", red: "#EF4444",
+-  grad: "linear-gradient(135deg, #E8623D 0%, #1A5C54 100%)",
++  bg: "#FDFBF7", vault: "#F5EFE5", surface: "#FFFFFF",
++  border: "#E8DFD1", borderHi: "#C9B9A2",
++  mercury: "#0F5F52", surya: "#E5533D", chandra: "#1F1915",
++  textMid: "#6B6055", textDim: "#9A8D7E", red: "#EF4444",
++  grad: "linear-gradient(135deg, #F97316 0%, #E5533D 100%)",
+ };
+ 
+ export default function ForgotPasswordPage() {
+diff --git a/web/app/login/page.tsx b/web/app/login/page.tsx
+index 284b11d..d9d2c86 100644
+--- a/web/app/login/page.tsx
++++ b/web/app/login/page.tsx
+@@ -5,11 +5,11 @@ import { createClient } from "../../lib/supabase";
+ import NikkiLogo from "../../components/NikkiLogo";
+ 
+ const J = {
+-  bg: "#FAF6EF", vault: "#F3ECE1", surface: "#FFFFFF",
+-  border: "#E5DDD0", borderHi: "#D4C7B4",
+-  mercury: "#1A5C54", surya: "#E8623D", chandra: "#2B2420",
+-  textMid: "#8A7F73", textDim: "#B5A996", red: "#EF4444",
+-  grad: "linear-gradient(135deg, #E8623D 0%, #1A5C54 100%)",
++  bg: "#FDFBF7", vault: "#F5EFE5", surface: "#FFFFFF",
++  border: "#E8DFD1", borderHi: "#C9B9A2",
++  mercury: "#0F5F52", surya: "#E5533D", chandra: "#1F1915",
++  textMid: "#6B6055", textDim: "#9A8D7E", red: "#EF4444",
++  grad: "linear-gradient(135deg, #F97316 0%, #E5533D 100%)",
+ };
+ 
+ export default function LoginPage() {
+diff --git a/web/app/not-found.tsx b/web/app/not-found.tsx
+index 3e9441c..1b82026 100644
+--- a/web/app/not-found.tsx
++++ b/web/app/not-found.tsx
+@@ -5,21 +5,21 @@ import NikkiLogo from "@/components/NikkiLogo";
+ export default function NotFound() {
+   return (
+     <div style={{
+-      minHeight: "100vh", background: "#FAF6EF", color: "#2B2420",
++      minHeight: "100vh", background: "#FDFBF7", color: "#1F1915",
+       display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+     }}>
+       <div style={{ textAlign: "center", maxWidth: 480 }}>
+         <div style={{ marginBottom: 24, display: "inline-block" }}>
+           <NikkiLogo size={80} variant="icon" />
+         </div>
+-        <h1 style={{ fontSize: 48, fontWeight: 900, margin: "0 0 12px", color: "#2B2420" }}>404</h1>
+-        <p style={{ color: "#8A7F73", fontSize: 16, marginBottom: 32 }}>
++        <h1 style={{ fontSize: 48, fontWeight: 900, margin: "0 0 12px", color: "#1F1915" }}>404</h1>
++        <p style={{ color: "#6B6055", fontSize: 16, marginBottom: 32 }}>
+           This page doesn't exist on Hey Nikki.
+         </p>
+         <Link href="/" style={{
+           display: "inline-block",
+-          background: "linear-gradient(135deg, #E8623D 0%, #1A5C54 100%)",
+-          color: "#FAF6EF", padding: "12px 28px", borderRadius: 10,
++          background: "linear-gradient(135deg, #F97316 0%, #E5533D 100%)",
++          color: "#FDFBF7", padding: "12px 28px", borderRadius: 10,
+           textDecoration: "none", fontWeight: 700, fontSize: 14,
+         }}>← Back to Hey Nikki</Link>
+       </div>
+diff --git a/web/app/page.tsx b/web/app/page.tsx
+index 6c85c43..5755282 100644
+--- a/web/app/page.tsx
++++ b/web/app/page.tsx
+@@ -5,17 +5,17 @@ import NikkiLogo from "../components/NikkiLogo";
+ import VoiceWidget from "../components/VoiceWidget";
+ 
+ const J = {
+-  bg: "#FAF6EF",
+-  vault: "#F3ECE1",
++  bg: "#FDFBF7",
++  vault: "#F5EFE5",
+   surface: "#FFFFFF",
+-  border: "#E5DDD0",
+-  borderHi: "#D4C7B4",
+-  mercury: "#1A5C54",
+-  surya: "#E8623D",
+-  chandra: "#2B2420",
+-  textMid: "#8A7F73",
+-  textDim: "#B5A996",
+-  grad: "linear-gradient(135deg, #E8623D 0%, #1A5C54 100%)",
++  border: "#E8DFD1",
++  borderHi: "#C9B9A2",
++  mercury: "#0F5F52",
++  surya: "#E5533D",
++  chandra: "#1F1915",
++  textMid: "#6B6055",
++  textDim: "#9A8D7E",
++  grad: "linear-gradient(135deg, #F97316 0%, #E5533D 100%)",
+ };
+ 
+ function Logo({ size = 40, showText = true }: { size?: number; showText?: boolean }) {
+@@ -327,7 +327,7 @@ export default function Home() {
+ 
+       <nav style={{
+         position: "sticky", top: 0, zIndex: 100,
+-        background: "rgba(250, 246, 239, 0.85)", backdropFilter: "blur(12px)",
++        background: "rgba(253, 251, 247, 0.88)", backdropFilter: "blur(12px)",
+         borderBottom: `1px solid ${J.border}`,
+         padding: mobile ? "12px 16px" : "16px 5%", display: "flex",
+         justifyContent: "space-between", alignItems: "center",
+diff --git a/web/app/reset-password/page.tsx b/web/app/reset-password/page.tsx
+index 9d896a8..3600f5c 100644
+--- a/web/app/reset-password/page.tsx
++++ b/web/app/reset-password/page.tsx
+@@ -7,11 +7,11 @@ import { createClient } from "../../lib/supabase";
+ import NikkiLogo from "../../components/NikkiLogo";
+ 
+ const J = {
+-  bg: "#FAF6EF", vault: "#F3ECE1", surface: "#FFFFFF",
+-  border: "#E5DDD0", borderHi: "#D4C7B4",
+-  mercury: "#1A5C54", surya: "#E8623D", chandra: "#2B2420",
+-  textMid: "#8A7F73", textDim: "#B5A996", red: "#EF4444",
+-  grad: "linear-gradient(135deg, #E8623D 0%, #1A5C54 100%)",
++  bg: "#FDFBF7", vault: "#F5EFE5", surface: "#FFFFFF",
++  border: "#E8DFD1", borderHi: "#C9B9A2",
++  mercury: "#0F5F52", surya: "#E5533D", chandra: "#1F1915",
++  textMid: "#6B6055", textDim: "#9A8D7E", red: "#EF4444",
++  grad: "linear-gradient(135deg, #F97316 0%, #E5533D 100%)",
+ };
+ 
+ export default function ResetPasswordPage() {
+diff --git a/web/app/signup/page.tsx b/web/app/signup/page.tsx
+index af3ddbe..6f2eccb 100644
+--- a/web/app/signup/page.tsx
++++ b/web/app/signup/page.tsx
+@@ -5,11 +5,11 @@ import { createClient } from "../../lib/supabase";
+ import NikkiLogo from "../../components/NikkiLogo";
+ 
+ const J = {
+-  bg: "#FAF6EF", vault: "#F3ECE1", surface: "#FFFFFF",
+-  border: "#E5DDD0", borderHi: "#D4C7B4",
+-  mercury: "#1A5C54", surya: "#E8623D", chandra: "#2B2420",
+-  textMid: "#8A7F73", textDim: "#B5A996", red: "#EF4444",
+-  grad: "linear-gradient(135deg, #E8623D 0%, #1A5C54 100%)",
++  bg: "#FDFBF7", vault: "#F5EFE5", surface: "#FFFFFF",
++  border: "#E8DFD1", borderHi: "#C9B9A2",
++  mercury: "#0F5F52", surya: "#E5533D", chandra: "#1F1915",
++  textMid: "#6B6055", textDim: "#9A8D7E", red: "#EF4444",
++  grad: "linear-gradient(135deg, #F97316 0%, #E5533D 100%)",
+ };
+ 
+ export default function SignupPage() {
+diff --git a/web/components/LegalLayout.tsx b/web/components/LegalLayout.tsx
+index efe9970..b2622aa 100644
+--- a/web/components/LegalLayout.tsx
++++ b/web/components/LegalLayout.tsx
+@@ -3,9 +3,9 @@ import Link from "next/link";
+ import NikkiLogo from "./NikkiLogo";
+ 
+ const J = {
+-  bg: "#FAF6EF", vault: "#F3ECE1", border: "#E5DDD0",
+-  mercury: "#1A5C54", surya: "#E8623D", chandra: "#2B2420",
+-  textMid: "#8A7F73", textDim: "#B5A996",
++  bg: "#FDFBF7", vault: "#F5EFE5", border: "#E8DFD1",
++  mercury: "#0F5F52", surya: "#E5533D", chandra: "#1F1915",
++  textMid: "#6B6055", textDim: "#9A8D7E",
+ };
+ 
+ export default function LegalLayout({
+@@ -15,7 +15,7 @@ export default function LegalLayout({
+     <div style={{ minHeight: "100vh", background: J.bg, color: J.chandra }}>
+       <nav style={{
+         position: "sticky", top: 0, zIndex: 100,
+-        background: "rgba(250, 246, 239, 0.85)", backdropFilter: "blur(12px)",
++        background: "rgba(253, 251, 247, 0.88)", backdropFilter: "blur(12px)",
+         borderBottom: `1px solid ${J.border}`,
+         padding: "16px 5%", display: "flex",
+         justifyContent: "space-between", alignItems: "center",
+diff --git a/web/components/NikkiLogo.tsx b/web/components/NikkiLogo.tsx
+index c7072f3..ef6f60b 100644
+--- a/web/components/NikkiLogo.tsx
++++ b/web/components/NikkiLogo.tsx
+@@ -20,10 +20,10 @@ interface Props {
+  * away from the earlier dark-navy + neon-green scheme, which read as a
+  * generic "AI startup" template rather than a distinct brand.
+  */
+-const TERRACOTTA = "#E8623D";
+-const TEAL = "#1A5C54";
+-const ESPRESSO = "#2B2420";
+-const CREAM = "#FAF6EF";
++const TERRACOTTA = "#E5533D";
++const TEAL = "#0F5F52";
++const ESPRESSO = "#1F1915";
++const CREAM = "#FDFBF7";
+ 
+ export default function NikkiLogo({ size = 48, showText = true, variant = "horizontal", dark = false }: Props) {
+   const textColor = dark ? CREAM : ESPRESSO;
+diff --git a/web/components/VoiceWidget.tsx b/web/components/VoiceWidget.tsx
+index cd0fe5d..f5b140d 100644
+--- a/web/components/VoiceWidget.tsx
++++ b/web/components/VoiceWidget.tsx
+@@ -3,16 +3,16 @@
+ import { useRef, useState, useCallback, useEffect } from "react";
+ 
+ const J = {
+-  bg: "#FAF6EF",
+-  vault: "#F3ECE1",
++  bg: "#FDFBF7",
++  vault: "#F5EFE5",
+   surface: "#FFFFFF",
+-  border: "#E5DDD0",
+-  borderHi: "#D4C7B4",
+-  mercury: "#1A5C54",
+-  surya: "#E8623D",
+-  chandra: "#2B2420",
+-  textMid: "#8A7F73",
+-  textDim: "#B5A996",
++  border: "#E8DFD1",
++  borderHi: "#C9B9A2",
++  mercury: "#0F5F52",
++  surya: "#E5533D",
++  chandra: "#1F1915",
++  textMid: "#6B6055",
++  textDim: "#9A8D7E",
+ };
+ 
+ type CallState = "idle" | "connecting" | "listening" | "error" | "ended";

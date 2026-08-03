@@ -1,0 +1,36 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c0a09"/>
+      <stop offset="55%" stop-color="#1c1917"/>
+      <stop offset="100%" stop-color="#431407"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ea580c" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ea580c" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#14b8a6" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#14b8a6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="950" cy="150" r="280" fill="url(#glow1)"/>
+  <circle cx="180" cy="480" r="240" fill="url(#glow2)"/>
+
+  <g transform="translate(90, 150) scale(2.6)">
+    <path d="M54 6 L18 36 L54 60 Z" fill="#EA580C"/>
+    <path d="M54 6 L86 28 L54 60 Z" fill="#F97316"/>
+    <path d="M38 46 L38 20 L45 20 L58 40 L58 20 L65 20 L65 46 L58 46 L45 26 L45 46 Z" fill="#FFFFFF"/>
+    <path d="M52 60 C35 72 20 80 8 84 C28 78 44 70 52 60 Z" fill="#0D9488"/>
+    <path d="M18 82 C38 76 60 70 82 48 L74 52 L88 34 L76 48 L82 48 C60 70 38 76 18 82 Z" fill="#0D9488"/>
+    <path d="M78 46 L88 34 L72 42 L77 47 L78 46 Z" fill="#2DD4BF"/>
+  </g>
+
+  <text x="90" y="430" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="700" fill="#FAFAF9">Nikki Technologies</text>
+  <text x="90" y="480" font-family="Georgia, 'Times New Roman', serif" font-size="32" font-weight="600" fill="#2DD4BF">Digital Media Hub • Software Studio</text>
+  <text x="90" y="518" font-family="Arial, sans-serif" font-size="21" fill="#D6D3D1">One technology partner for digital growth and software products</text>
+
+  <text x="90" y="590" font-family="Arial, sans-serif" font-size="20" fill="#A8A29E">nikkitechnologies.com</text>
+</svg>

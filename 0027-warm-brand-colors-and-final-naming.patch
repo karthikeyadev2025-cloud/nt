@@ -1,0 +1,630 @@
+diff --git a/EC2_SETUP_GUIDE.md b/EC2_SETUP_GUIDE.md
+index 8cac90e..4e1d468 100644
+--- a/EC2_SETUP_GUIDE.md
++++ b/EC2_SETUP_GUIDE.md
+@@ -177,4 +177,4 @@ EC2 t3.micro (Mumbai ap-south-1)
+ 
+ ---
+ 
+-*Jovio Global Technologies · Powered by Nikki Tech Labs*
++*Nikki Technologies · Powered by Nikki Tech Labs*
+diff --git a/README.md b/README.md
+index 125d531..a721e4a 100644
+--- a/README.md
++++ b/README.md
+@@ -142,6 +142,6 @@ Caller → Exotel (inbound) / Plivo (outbound)
+ ---
+ 
+ <p align="center">
+-  <strong>© 2026 Jovio Global Technologies</strong><br/>
++  <strong>© 2026 Nikki Technologies</strong><br/>
+   <em>Powered by Nikki Tech Labs</em>
+ </p>
+diff --git a/supabase/001_schema.sql b/supabase/001_schema.sql
+index a314423..1bcff69 100644
+--- a/supabase/001_schema.sql
++++ b/supabase/001_schema.sql
+@@ -660,5 +660,5 @@ create policy "docs_tenant_access" on storage.objects for all
+ -- DONE
+ -- Nikki — Telugu AI Receptionist
+ -- Powered by Nikki Tech Labs
+--- © 2026 Jovio Global Technologies
++-- © 2026 Nikki Technologies
+ -- ══════════════════════════════════════════════════════════════
+diff --git a/supabase/email-templates/confirm-signup.html b/supabase/email-templates/confirm-signup.html
+index 6248daa..ea01aea 100644
+--- a/supabase/email-templates/confirm-signup.html
++++ b/supabase/email-templates/confirm-signup.html
+@@ -49,7 +49,7 @@
+ 
+   <!-- FOOTER -->
+   <div style="text-align:center;padding:24px;font-size:12px;color:#6B7280;">
+-    © 2026 Jovio Global Technologies · Hyderabad, India 🇮🇳<br>
++    © 2026 Nikki Technologies · Hyderabad, India 🇮🇳<br>
+     <a href="https://jovio.in/privacy" style="color:#6B7280;text-decoration:underline;">Privacy</a> ·
+     <a href="https://jovio.in/terms"   style="color:#6B7280;text-decoration:underline;">Terms</a> ·
+     <a href="mailto:support@jovio.in"  style="color:#6B7280;text-decoration:underline;">Support</a>
+diff --git a/supabase/email-templates/magic-link.html b/supabase/email-templates/magic-link.html
+index ba33c43..df9f8a3 100644
+--- a/supabase/email-templates/magic-link.html
++++ b/supabase/email-templates/magic-link.html
+@@ -33,7 +33,7 @@
+   </div>
+ 
+   <div style="text-align:center;padding:24px;font-size:12px;color:#6B7280;">
+-    © 2026 Jovio Global Technologies · <a href="mailto:support@jovio.in" style="color:#6B7280;">support@jovio.in</a>
++    © 2026 Nikki Technologies · <a href="mailto:support@jovio.in" style="color:#6B7280;">support@jovio.in</a>
+   </div>
+ 
+ </body>
+diff --git a/supabase/email-templates/reset-password.html b/supabase/email-templates/reset-password.html
+index 5470280..3487bdc 100644
+--- a/supabase/email-templates/reset-password.html
++++ b/supabase/email-templates/reset-password.html
+@@ -35,7 +35,7 @@
+   </div>
+ 
+   <div style="text-align:center;padding:24px;font-size:12px;color:#6B7280;">
+-    © 2026 Jovio Global Technologies
++    © 2026 Nikki Technologies
+   </div>
+ 
+ </body>
+diff --git a/super-admin/components/NikkiLogo.tsx b/super-admin/components/NikkiLogo.tsx
+index 21f0ec2..c7072f3 100644
+--- a/super-admin/components/NikkiLogo.tsx
++++ b/super-admin/components/NikkiLogo.tsx
+@@ -4,94 +4,72 @@ interface Props {
+   size?: number;
+   showText?: boolean;
+   variant?: "horizontal" | "icon" | "stacked";
++  dark?: boolean;
+ }
+ 
+ /**
+- * Nikki logo — replaces the old Jovio "J" monogram (2026-07-02 rebrand).
++ * Hey Nikki logo (2026-07-02 redesign, replacing the earlier "N" monogram).
++ * Wordmark-forward rather than a monogram -- "Hey Nikki" is a spoken product
++ * name in the Siri/Alexa mold, not an abstract initial. The mark is a small
++ * voice-pulse (audio equalizer bars), directly representing the product
++ * category rather than an arbitrary letterform. Built from simple filled
++ * rects at varying heights -- safe, predictable geometry since this
++ * environment can't render/preview SVG output before shipping it.
+  *
+- * Design note: the mark is built from three thick, rounded-cap strokes
+- * forming an "N" monogram, rather than a hand-computed filled path like
+- * the old logo's custom "J" curves. This is deliberate — I can't visually
+- * render/preview SVG output from this environment, and a stroke-based
+- * geometric construction (line, line, line) is far more likely to render
+- * correctly on the first try than hand-computed bezier/polygon path data
+- * I can't check by eye. Same gradient/glow treatment as before (surya
+- * amber + mercury green), so it stays visually consistent with the rest
+- * of the brand system — only the letterform and wordmark text changed.
++ * Palette: warm terracotta + deep teal on a cream/espresso base -- moved
++ * away from the earlier dark-navy + neon-green scheme, which read as a
++ * generic "AI startup" template rather than a distinct brand.
+  */
+-export default function NikkiLogo({ size = 48, showText = true, variant = "horizontal" }: Props) {
+-  const SURYA = "#F59E0B";
+-  const MERCURY = "#00E676";
+-  const CHANDRA = "#F8FAFC";
++const TERRACOTTA = "#E8623D";
++const TEAL = "#1A5C54";
++const ESPRESSO = "#2B2420";
++const CREAM = "#FAF6EF";
+ 
+-  const NMark = (
++export default function NikkiLogo({ size = 48, showText = true, variant = "horizontal", dark = false }: Props) {
++  const textColor = dark ? CREAM : ESPRESSO;
++
++  const PulseMark = (
+     <svg
+       width={size} height={size}
+       viewBox="0 0 100 100"
+       xmlns="http://www.w3.org/2000/svg"
+       style={{ flexShrink: 0 }}
++      role="img"
++      aria-label="Hey Nikki voice pulse mark"
+     >
+-      <defs>
+-        <linearGradient id="surya-grad-n" x1="0%" y1="0%" x2="100%" y2="100%">
+-          <stop offset="0%" stopColor="#FCD34D"/>
+-          <stop offset="60%" stopColor={SURYA}/>
+-          <stop offset="100%" stopColor="#D97706"/>
+-        </linearGradient>
+-        <linearGradient id="mercury-grad-n" x1="0%" y1="0%" x2="100%" y2="100%">
+-          <stop offset="0%" stopColor="#34F39A"/>
+-          <stop offset="60%" stopColor={MERCURY}/>
+-          <stop offset="100%" stopColor="#00B358"/>
+-        </linearGradient>
+-        <filter id="glow-mark-n">
+-          <feGaussianBlur stdDeviation="1.5" result="blur"/>
+-          <feMerge>
+-            <feMergeNode in="blur"/>
+-            <feMergeNode in="SourceGraphic"/>
+-          </feMerge>
+-        </filter>
+-      </defs>
+-
+-      {/* Left stroke of the N */}
+-      <line x1="26" y1="18" x2="26" y2="82"
+-            stroke="url(#surya-grad-n)" strokeWidth="15" strokeLinecap="round"
+-            filter="url(#glow-mark-n)" />
+-      {/* Right stroke of the N */}
+-      <line x1="74" y1="18" x2="74" y2="82"
+-            stroke="url(#mercury-grad-n)" strokeWidth="15" strokeLinecap="round"
+-            filter="url(#glow-mark-n)" />
+-      {/* Diagonal connecting stroke */}
+-      <line x1="26" y1="22" x2="74" y2="78"
+-            stroke="url(#mercury-grad-n)" strokeWidth="13" strokeLinecap="round"
+-            filter="url(#glow-mark-n)" />
++      <rect x="12" y="35" width="14" height="30" rx="7" fill={TEAL} />
++      <rect x="32" y="18" width="14" height="64" rx="7" fill={TERRACOTTA} />
++      <rect x="52" y="8"  width="14" height="84" rx="7" fill={TERRACOTTA} />
++      <rect x="72" y="28" width="14" height="44" rx="7" fill={TEAL} />
+     </svg>
+   );
+ 
+-  if (variant === "icon") return NMark;
++  if (variant === "icon") return PulseMark;
+ 
+   if (variant === "stacked") {
+     return (
+       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+-        {NMark}
++        {PulseMark}
+         {showText && (
+           <div style={{ textAlign: "center" }}>
+             <div style={{
+-              fontSize: size * 0.42,
+-              fontWeight: 900,
+-              color: CHANDRA,
+-              letterSpacing: size * 0.04,
++              fontSize: size * 0.4,
++              fontWeight: 800,
++              color: textColor,
++              letterSpacing: -size * 0.01,
+               lineHeight: 1,
+             }}>
+-              NIK<span style={{ color: SURYA }}>K</span><span style={{ color: SURYA }}>I</span>
++              hey <span style={{ color: TERRACOTTA }}>nikki</span>
+             </div>
+             <div style={{
+-              fontSize: size * 0.13,
+-              color: MERCURY,
+-              letterSpacing: size * 0.05,
++              fontSize: size * 0.12,
++              color: TEAL,
++              letterSpacing: size * 0.04,
+               fontWeight: 600,
+               marginTop: size * 0.08,
+               textTransform: "uppercase",
+             }}>
+-              Global Technologies
++              Nikki Technologies
+             </div>
+           </div>
+         )}
+@@ -100,27 +78,27 @@ export default function NikkiLogo({ size = 48, showText = true, variant = "horiz
+   }
+ 
+   return (
+-    <div style={{ display: "inline-flex", alignItems: "center", gap: size * 0.25 }}>
+-      {NMark}
++    <div style={{ display: "inline-flex", alignItems: "center", gap: size * 0.22 }}>
++      {PulseMark}
+       {showText && (
+         <div style={{ lineHeight: 1.1 }}>
+           <div style={{
+-            fontSize: size * 0.55,
+-            fontWeight: 900,
+-            color: CHANDRA,
+-            letterSpacing: size * 0.02,
++            fontSize: size * 0.5,
++            fontWeight: 800,
++            color: textColor,
++            letterSpacing: -size * 0.008,
+           }}>
+-            NIK<span style={{ color: SURYA }}>KI</span>
++            hey <span style={{ color: TERRACOTTA }}>nikki</span>
+           </div>
+           <div style={{
+-            fontSize: size * 0.14,
+-            color: MERCURY,
+-            letterSpacing: size * 0.06,
++            fontSize: size * 0.13,
++            color: TEAL,
++            letterSpacing: size * 0.05,
+             fontWeight: 600,
+-            marginTop: size * 0.06,
++            marginTop: size * 0.05,
+             textTransform: "uppercase",
+           }}>
+-            Global Technologies
++            Nikki Technologies
+           </div>
+         </div>
+       )}
+diff --git a/voice-pipeline/app/exotel/bridge.py b/voice-pipeline/app/exotel/bridge.py
+index 662996d..f82dc47 100644
+--- a/voice-pipeline/app/exotel/bridge.py
++++ b/voice-pipeline/app/exotel/bridge.py
+@@ -66,7 +66,7 @@ DEFAULT_VOICE = "priya"  # confirmed valid for bulbul:v3 via live API error resp
+                          # (scripts/compare_voices.py already generated 38 real v3
+                          # samples earlier, never actually listened to).
+ 
+-SYSTEM_PROMPT = """మీరు ఒక Telugu AI receptionist. మీ పేరు Nikki.
++SYSTEM_PROMPT = """మీరు ఒక Telugu AI receptionist. మీ పేరు Hey Nikki.
+ Business: {business_name} ({business_type}).
+ Rules:
+ __LANGUAGE_RULE__
+@@ -140,14 +140,14 @@ def apply_language(prompt: str, lang_code: str) -> str:
+     return prompt.replace(LANGUAGE_MARKER, language_instruction(lang_code))
+ 
+ SKU_SYSTEM_PROMPTS = {
+-    "standard": """మీరు ఒక professional Telugu AI receptionist. మీ పేరు Nikki.
++    "standard": """మీరు ఒక professional Telugu AI receptionist. మీ పేరు Hey Nikki.
+ Business: {business_name} — general business / retail / coaching.
+ Rules:
+ __LANGUAGE_RULE__
+ - SHORT responses (1-2 sentences). Phone call, not chat.
+ - Warm, friendly, approachable tone.
+ {shared_rules}""",
+-    "clinic": """మీరు ఒక professional Telugu AI receptionist ఒక clinic/hospital కోసం. మీ పేరు Nikki.
++    "clinic": """మీరు ఒక professional Telugu AI receptionist ఒక clinic/hospital కోసం. మీ పేరు Hey Nikki.
+ Business: {business_name} — hospital / clinic / diagnostic lab.
+ Rules:
+ __LANGUAGE_RULE__
+@@ -157,7 +157,7 @@ __LANGUAGE_RULE__
+   questions to "డాక్టర్ గారు call back చేస్తారు" (translate that redirect into whichever
+   language the caller is using).
+ {shared_rules}""",
+-    "real_estate": """మీరు ఒక professional Telugu AI receptionist ఒక real estate business కోసం. మీ పేరు Nikki.
++    "real_estate": """మీరు ఒక professional Telugu AI receptionist ఒక real estate business కోసం. మీ పేరు Hey Nikki.
+ Business: {business_name} — real estate, site visits, property enquiries.
+ Rules:
+ __LANGUAGE_RULE__
+@@ -165,7 +165,7 @@ __LANGUAGE_RULE__
+ - SHORT responses (1-2 sentences). Phone call, not chat.
+ - If caller mentions budget or location preference, acknowledge it and note it's passed to the team.
+ {shared_rules}""",
+-    "premium": """మీరు ఒక professional Telugu AI receptionist ఒక premium/luxury business కోసం. మీ పేరు Nikki.
++    "premium": """మీరు ఒక professional Telugu AI receptionist ఒక premium/luxury business కోసం. మీ పేరు Hey Nikki.
+ Business: {business_name} — premium, high-value clientele.
+ Rules:
+ __LANGUAGE_RULE__
+diff --git a/web/app/contact/page.tsx b/web/app/contact/page.tsx
+index 7065e39..0a90884 100644
+--- a/web/app/contact/page.tsx
++++ b/web/app/contact/page.tsx
+@@ -22,7 +22,7 @@ export default function Contact() {
+ 
+       <h2>Registered office</h2>
+       <p>
+-        <strong>Jovio Global Technologies</strong><br />
++        <strong>Nikki Technologies</strong><br />
+         Hyderabad, Telangana, India
+       </p>
+       <p style={{ fontSize: 13, color: "#9CA3AF" }}>
+diff --git a/web/app/layout.tsx b/web/app/layout.tsx
+index f57eed3..ef627be 100644
+--- a/web/app/layout.tsx
++++ b/web/app/layout.tsx
+@@ -36,7 +36,7 @@ export const metadata: Metadata = {
+   title: "Nikki — Telugu AI Receptionist for Indian Businesses",
+   description: "Your business never misses a call. Nikki answers in Telugu, books appointments, sends WhatsApp confirmations — 24/7.",
+   keywords: "Telugu AI, voice agent, receptionist, India, SMB, automation, WhatsApp, AI",
+-  authors: [{ name: "Jovio Global Technologies" }],
++  authors: [{ name: "Nikki Technologies" }],
+   alternates: {
+     canonical: "https://jovio.in",
+   },
+diff --git a/web/app/page.tsx b/web/app/page.tsx
+index 08089c5..ba77713 100644
+--- a/web/app/page.tsx
++++ b/web/app/page.tsx
+@@ -5,17 +5,17 @@ import NikkiLogo from "../components/NikkiLogo";
+ import VoiceWidget from "../components/VoiceWidget";
+ 
+ const J = {
+-  bg: "#070B19",
+-  vault: "#111827",
+-  surface: "#1A2235",
+-  border: "#1F2937",
+-  borderHi: "#374151",
+-  mercury: "#00E676",
+-  surya: "#F59E0B",
+-  chandra: "#F8FAFC",
+-  textMid: "#9CA3AF",
+-  textDim: "#4B5563",
+-  grad: "linear-gradient(135deg, #F59E0B 0%, #00E676 100%)",
++  bg: "#FAF6EF",
++  vault: "#F3ECE1",
++  surface: "#FFFFFF",
++  border: "#E5DDD0",
++  borderHi: "#D4C7B4",
++  mercury: "#1A5C54",
++  surya: "#E8623D",
++  chandra: "#2B2420",
++  textMid: "#8A7F73",
++  textDim: "#B5A996",
++  grad: "linear-gradient(135deg, #E8623D 0%, #1A5C54 100%)",
+ };
+ 
+ function Logo({ size = 40, showText = true }: { size?: number; showText?: boolean }) {
+@@ -585,7 +585,7 @@ export default function Home() {
+       }}>
+         <Logo size={36} />
+         <p style={{ fontSize: 13, color: J.textDim, marginTop: 20 }}>
+-          © 2026 Jovio Global Technologies · Made in India 🇮🇳 · jovio.in
++          © 2026 Nikki Technologies · Made in India 🇮🇳 · jovio.in
+         </p>
+         <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 16, fontSize: 13 }}>
+           <a href="#" style={{ color: J.textMid, textDecoration: "none" }}>Privacy</a>
+diff --git a/web/app/privacy/page.tsx b/web/app/privacy/page.tsx
+index bd477f0..9c3e045 100644
+--- a/web/app/privacy/page.tsx
++++ b/web/app/privacy/page.tsx
+@@ -6,7 +6,7 @@ export default function Privacy() {
+   return (
+     <LegalLayout title="Privacy Policy" lastUpdated="29 June 2026">
+       <p>
+-        Jovio Global Technologies ("<strong>Nikki</strong>", "we", "us", "our") respects
++        Nikki Technologies ("<strong>Nikki</strong>", "we", "us", "our") respects
+         your privacy and is committed to protecting your personal data. This Privacy Policy
+         explains what data we collect, why, how we use it, and the rights you have over it
+         under the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong> of
+@@ -122,7 +122,7 @@ export default function Privacy() {
+       <h2>Grievance Officer</h2>
+       <p>
+         <strong>Karthikeya</strong><br />
+-        Jovio Global Technologies<br />
++        Nikki Technologies<br />
+         Hyderabad, Telangana, India<br />
+         Email: <a href="mailto:privacy@jovio.in">privacy@jovio.in</a>
+       </p>
+diff --git a/web/app/refund-policy/page.tsx b/web/app/refund-policy/page.tsx
+index 58b4636..4bd4585 100644
+--- a/web/app/refund-policy/page.tsx
++++ b/web/app/refund-policy/page.tsx
+@@ -6,7 +6,7 @@ export default function Refund() {
+   return (
+     <LegalLayout title="Refund & Cancellation Policy" lastUpdated="29 June 2026">
+       <p>
+-        This Refund Policy describes when and how Jovio Global Technologies issues refunds
++        This Refund Policy describes when and how Nikki Technologies issues refunds
+         for subscription fees and related charges.
+       </p>
+ 
+diff --git a/web/app/terms/page.tsx b/web/app/terms/page.tsx
+index a0db4e3..ed38f54 100644
+--- a/web/app/terms/page.tsx
++++ b/web/app/terms/page.tsx
+@@ -7,7 +7,7 @@ export default function Terms() {
+     <LegalLayout title="Terms of Service" lastUpdated="29 June 2026">
+       <p>
+         These Terms govern your use of Nikki (the "<strong>Service</strong>"), provided by
+-        Jovio Global Technologies ("<strong>Nikki</strong>", "we", "us"). By creating an
++        Nikki Technologies ("<strong>Nikki</strong>", "we", "us"). By creating an
+         account, you agree to these Terms. If you don't agree, don't use the Service.
+       </p>
+ 
+diff --git a/web/components/LegalLayout.tsx b/web/components/LegalLayout.tsx
+index bfafd32..db20738 100644
+--- a/web/components/LegalLayout.tsx
++++ b/web/components/LegalLayout.tsx
+@@ -64,7 +64,7 @@ export default function LegalLayout({
+         color: J.textMid, fontSize: 13,
+       }}>
+         <div style={{ marginBottom: 12 }}>
+-          © {new Date().getFullYear()} Jovio Global Technologies. Made in India 🇮🇳
++          © {new Date().getFullYear()} Nikki Technologies. Made in India 🇮🇳
+         </div>
+         <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
+           <Link href="/privacy"        style={{ color: J.textMid, textDecoration: "none" }}>Privacy</Link>
+diff --git a/web/components/NikkiLogo.tsx b/web/components/NikkiLogo.tsx
+index 21f0ec2..c7072f3 100644
+--- a/web/components/NikkiLogo.tsx
++++ b/web/components/NikkiLogo.tsx
+@@ -4,94 +4,72 @@ interface Props {
+   size?: number;
+   showText?: boolean;
+   variant?: "horizontal" | "icon" | "stacked";
++  dark?: boolean;
+ }
+ 
+ /**
+- * Nikki logo — replaces the old Jovio "J" monogram (2026-07-02 rebrand).
++ * Hey Nikki logo (2026-07-02 redesign, replacing the earlier "N" monogram).
++ * Wordmark-forward rather than a monogram -- "Hey Nikki" is a spoken product
++ * name in the Siri/Alexa mold, not an abstract initial. The mark is a small
++ * voice-pulse (audio equalizer bars), directly representing the product
++ * category rather than an arbitrary letterform. Built from simple filled
++ * rects at varying heights -- safe, predictable geometry since this
++ * environment can't render/preview SVG output before shipping it.
+  *
+- * Design note: the mark is built from three thick, rounded-cap strokes
+- * forming an "N" monogram, rather than a hand-computed filled path like
+- * the old logo's custom "J" curves. This is deliberate — I can't visually
+- * render/preview SVG output from this environment, and a stroke-based
+- * geometric construction (line, line, line) is far more likely to render
+- * correctly on the first try than hand-computed bezier/polygon path data
+- * I can't check by eye. Same gradient/glow treatment as before (surya
+- * amber + mercury green), so it stays visually consistent with the rest
+- * of the brand system — only the letterform and wordmark text changed.
++ * Palette: warm terracotta + deep teal on a cream/espresso base -- moved
++ * away from the earlier dark-navy + neon-green scheme, which read as a
++ * generic "AI startup" template rather than a distinct brand.
+  */
+-export default function NikkiLogo({ size = 48, showText = true, variant = "horizontal" }: Props) {
+-  const SURYA = "#F59E0B";
+-  const MERCURY = "#00E676";
+-  const CHANDRA = "#F8FAFC";
++const TERRACOTTA = "#E8623D";
++const TEAL = "#1A5C54";
++const ESPRESSO = "#2B2420";
++const CREAM = "#FAF6EF";
+ 
+-  const NMark = (
++export default function NikkiLogo({ size = 48, showText = true, variant = "horizontal", dark = false }: Props) {
++  const textColor = dark ? CREAM : ESPRESSO;
++
++  const PulseMark = (
+     <svg
+       width={size} height={size}
+       viewBox="0 0 100 100"
+       xmlns="http://www.w3.org/2000/svg"
+       style={{ flexShrink: 0 }}
++      role="img"
++      aria-label="Hey Nikki voice pulse mark"
+     >
+-      <defs>
+-        <linearGradient id="surya-grad-n" x1="0%" y1="0%" x2="100%" y2="100%">
+-          <stop offset="0%" stopColor="#FCD34D"/>
+-          <stop offset="60%" stopColor={SURYA}/>
+-          <stop offset="100%" stopColor="#D97706"/>
+-        </linearGradient>
+-        <linearGradient id="mercury-grad-n" x1="0%" y1="0%" x2="100%" y2="100%">
+-          <stop offset="0%" stopColor="#34F39A"/>
+-          <stop offset="60%" stopColor={MERCURY}/>
+-          <stop offset="100%" stopColor="#00B358"/>
+-        </linearGradient>
+-        <filter id="glow-mark-n">
+-          <feGaussianBlur stdDeviation="1.5" result="blur"/>
+-          <feMerge>
+-            <feMergeNode in="blur"/>
+-            <feMergeNode in="SourceGraphic"/>
+-          </feMerge>
+-        </filter>
+-      </defs>
+-
+-      {/* Left stroke of the N */}
+-      <line x1="26" y1="18" x2="26" y2="82"
+-            stroke="url(#surya-grad-n)" strokeWidth="15" strokeLinecap="round"
+-            filter="url(#glow-mark-n)" />
+-      {/* Right stroke of the N */}
+-      <line x1="74" y1="18" x2="74" y2="82"
+-            stroke="url(#mercury-grad-n)" strokeWidth="15" strokeLinecap="round"
+-            filter="url(#glow-mark-n)" />
+-      {/* Diagonal connecting stroke */}
+-      <line x1="26" y1="22" x2="74" y2="78"
+-            stroke="url(#mercury-grad-n)" strokeWidth="13" strokeLinecap="round"
+-            filter="url(#glow-mark-n)" />
++      <rect x="12" y="35" width="14" height="30" rx="7" fill={TEAL} />
++      <rect x="32" y="18" width="14" height="64" rx="7" fill={TERRACOTTA} />
++      <rect x="52" y="8"  width="14" height="84" rx="7" fill={TERRACOTTA} />
++      <rect x="72" y="28" width="14" height="44" rx="7" fill={TEAL} />
+     </svg>
+   );
+ 
+-  if (variant === "icon") return NMark;
++  if (variant === "icon") return PulseMark;
+ 
+   if (variant === "stacked") {
+     return (
+       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+-        {NMark}
++        {PulseMark}
+         {showText && (
+           <div style={{ textAlign: "center" }}>
+             <div style={{
+-              fontSize: size * 0.42,
+-              fontWeight: 900,
+-              color: CHANDRA,
+-              letterSpacing: size * 0.04,
++              fontSize: size * 0.4,
++              fontWeight: 800,
++              color: textColor,
++              letterSpacing: -size * 0.01,
+               lineHeight: 1,
+             }}>
+-              NIK<span style={{ color: SURYA }}>K</span><span style={{ color: SURYA }}>I</span>
++              hey <span style={{ color: TERRACOTTA }}>nikki</span>
+             </div>
+             <div style={{
+-              fontSize: size * 0.13,
+-              color: MERCURY,
+-              letterSpacing: size * 0.05,
++              fontSize: size * 0.12,
++              color: TEAL,
++              letterSpacing: size * 0.04,
+               fontWeight: 600,
+               marginTop: size * 0.08,
+               textTransform: "uppercase",
+             }}>
+-              Global Technologies
++              Nikki Technologies
+             </div>
+           </div>
+         )}
+@@ -100,27 +78,27 @@ export default function NikkiLogo({ size = 48, showText = true, variant = "horiz
+   }
+ 
+   return (
+-    <div style={{ display: "inline-flex", alignItems: "center", gap: size * 0.25 }}>
+-      {NMark}
++    <div style={{ display: "inline-flex", alignItems: "center", gap: size * 0.22 }}>
++      {PulseMark}
+       {showText && (
+         <div style={{ lineHeight: 1.1 }}>
+           <div style={{
+-            fontSize: size * 0.55,
+-            fontWeight: 900,
+-            color: CHANDRA,
+-            letterSpacing: size * 0.02,
++            fontSize: size * 0.5,
++            fontWeight: 800,
++            color: textColor,
++            letterSpacing: -size * 0.008,
+           }}>
+-            NIK<span style={{ color: SURYA }}>KI</span>
++            hey <span style={{ color: TERRACOTTA }}>nikki</span>
+           </div>
+           <div style={{
+-            fontSize: size * 0.14,
+-            color: MERCURY,
+-            letterSpacing: size * 0.06,
++            fontSize: size * 0.13,
++            color: TEAL,
++            letterSpacing: size * 0.05,
+             fontWeight: 600,
+-            marginTop: size * 0.06,
++            marginTop: size * 0.05,
+             textTransform: "uppercase",
+           }}>
+-            Global Technologies
++            Nikki Technologies
+           </div>
+         </div>
+       )}
+diff --git a/web/components/VoiceWidget.tsx b/web/components/VoiceWidget.tsx
+index e6e6106..cd0fe5d 100644
+--- a/web/components/VoiceWidget.tsx
++++ b/web/components/VoiceWidget.tsx
+@@ -3,16 +3,16 @@
+ import { useRef, useState, useCallback, useEffect } from "react";
+ 
+ const J = {
+-  bg: "#070B19",
+-  vault: "#111827",
+-  surface: "#1A2235",
+-  border: "#1F2937",
+-  borderHi: "#374151",
+-  mercury: "#00E676",
+-  surya: "#F59E0B",
+-  chandra: "#F8FAFC",
+-  textMid: "#9CA3AF",
+-  textDim: "#4B5563",
++  bg: "#FAF6EF",
++  vault: "#F3ECE1",
++  surface: "#FFFFFF",
++  border: "#E5DDD0",
++  borderHi: "#D4C7B4",
++  mercury: "#1A5C54",
++  surya: "#E8623D",
++  chandra: "#2B2420",
++  textMid: "#8A7F73",
++  textDim: "#B5A996",
+ };
+ 
+ type CallState = "idle" | "connecting" | "listening" | "error" | "ended";

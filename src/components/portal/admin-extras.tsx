@@ -114,7 +114,7 @@ export function TodayAtAGlance() {
 }
 
 // ─────────────────────────── Setup Checklist (helps a new admin see what's not configured yet)
-export function SetupChecklist({ segments }: { segments: Segment[] }) {
+export function SetupChecklist({ segments: _segments }: { segments: Segment[] }) {
   const [checks, setChecks] = useState<{ label: string; done: boolean; hint: string }[] | null>(null);
   const [dismissed, setDismissed] = useState(false);
 

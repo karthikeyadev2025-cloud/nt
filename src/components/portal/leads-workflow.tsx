@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin } from 'lucide-react';
 import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
+import { invalidateQueryCache } from '../../lib/cachedRpc';
 import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -586,7 +587,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
         <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 space-y-3">
           <div className="flex justify-between items-center flex-wrap gap-2">
             <p className="text-stone-900 text-xs font-bold">
-              Detected <span className="text-emerald-700">{rows.length}</span> valid lead(s) out of {parseInfo.totalRows} total row(s)
+              <span className="text-stone-600 font-normal">{fileName}</span> — Detected <span className="text-emerald-700">{rows.length}</span> valid lead(s) out of {parseInfo.totalRows} total row(s)
             </p>
             <p className="text-stone-700 text-xs">File columns: <span className="font-mono text-stone-900">{parseInfo.headers.join(', ')}</span></p>
           </div>

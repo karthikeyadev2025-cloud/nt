@@ -63,3 +63,15 @@ export async function cachedRpc<T>(
     inFlight.delete(key);
   }
 }
+
+// Removes every cached entry whose key starts with the given prefix, from
+// both the in-memory cache and its sessionStorage backup. Call this right
+// after any action that changes data the cache might be holding stale —
+// e.g. after a bulk lead upload, so the next dashboard view reflects the
+// new leads immediately instead of serving up to 5 minutes of stale counts.
+export function invalidateQueryCache(keyPrefix: string) {
+  const keysToRemove: string[] = [];
+  recent.forEach((_, k) => { if (k.startsWith(keyPrefix)) keysToRemove.push(k); });
+  keysToRemove.forEach(k => recent.delete(k));
+  if (keysToRemove.length > 0) syncToSessionStorage();
+}
