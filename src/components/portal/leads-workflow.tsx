@@ -1360,12 +1360,12 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             )}
           </div>
         ))}
-        {leads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No field leads assigned. Claim from the unassigned pool below, add your own, or ask for a handoff.</p>}
+        {leads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No field leads assigned to you yet. Tap "View Available Unassigned Leads" below to assign leads to yourself or tap "+ Add Lead".</p>}
       </div>
 
       <div className="mt-8">
-        <button onClick={() => setShowPool(!showPool)} className="text-teal-700 text-sm font-medium">
-          {showPool ? '▾' : '▸'} Unassigned Pool — claim new leads
+        <button onClick={() => setShowPool(!showPool)} className="text-orange-800 text-sm font-bold bg-orange-50 hover:bg-orange-100 border border-orange-200 px-4 py-2 rounded-xl transition-colors">
+          {showPool ? '▾ Hide Available Leads' : '▸ View Available Unassigned Leads'}
         </button>
         {showPool && <div className="mt-4"><UnassignedLeadsPool segments={segments} onChanged={load} /></div>}
       </div>

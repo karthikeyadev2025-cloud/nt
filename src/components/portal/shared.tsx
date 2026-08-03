@@ -236,6 +236,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   // Assignment & Staff filter state
   const [assignFilter, setAssignFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
   const [staffFilter, setStaffFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { user, hasPermission } = useAuth();
   const toast = useToast();
@@ -458,9 +459,16 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       if (assignFilter === 'assigned' && !l.assigned_to) return false;
       if (assignFilter === 'unassigned' && l.assigned_to) return false;
       if (staffFilter && l.assigned_to !== staffFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const nameMatch = (l.customer_name || '').toLowerCase().includes(q);
+        const phoneMatch = (l.phone || '').toLowerCase().includes(q);
+        const notesMatch = (l.interested_in || '').toLowerCase().includes(q);
+        if (!nameMatch && !phoneMatch && !notesMatch) return false;
+      }
       return true;
     });
-  }, [leads, assignFilter, staffFilter]);
+  }, [leads, assignFilter, staffFilter, searchQuery]);
 
   const funnel = useMemo(() => {
     const f: Record<string, number> = {};
@@ -470,42 +478,53 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
 
   return (
     <div>
+      {/* Top Header & Search Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
-        {hasPermission('create_leads') || hasPermission('manage_leads') ? (
-          <button className={btnCls} onClick={() => { setDupWarning(null); setShowAdd(true); }}>+ Add Lead</button>
-        ) : null}
+        <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
+          <input
+            type="text"
+            className={inputCls + ' text-xs py-2 w-full sm:w-64 bg-white shadow-sm'}
+            placeholder="🔍 Search leads by name, phone..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {hasPermission('create_leads') || hasPermission('manage_leads') ? (
+            <button className={btnCls + ' shrink-0'} onClick={() => { setDupWarning(null); setShowAdd(true); }}>+ Add Lead</button>
+          ) : null}
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 bg-stone-50 border border-stone-200 rounded-2xl">
-        {/* Stage Filters */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button onClick={() => setStageFilter('')} className={`px-3 py-1 rounded-lg text-xs font-semibold border ${stageFilter === '' ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-stone-200 bg-white text-stone-700'}`}>All Stages ({filteredLeads.length})</button>
-          {stages.map(s => (
-            <button key={s} onClick={() => setStageFilter(s)} className={`px-3 py-1 rounded-lg text-xs font-semibold border ${stageFilter === s ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-stone-200 bg-white text-stone-700'}`}>
-              {s.replace('_', ' ')} ({funnel[s] || 0})
+      {/* Simplified Unified Filter Bar */}
+      <div className="p-3 bg-white border border-stone-200 rounded-2xl shadow-sm mb-4 space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-2">
+          {/* Assignment Switcher */}
+          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl">
+            <button onClick={() => { setAssignFilter('all'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'all' && !staffFilter ? 'bg-orange-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+              All ({leads.length})
             </button>
-          ))}
-        </div>
-
-        {/* Assignment Filter Switcher */}
-        <div className="flex items-center gap-2 flex-wrap ml-auto">
-          <div className="flex items-center rounded-xl bg-stone-200/70 p-1">
-            <button onClick={() => { setAssignFilter('all'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'all' && !staffFilter ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
-              All
+            <button onClick={() => { setAssignFilter('assigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'assigned' && !staffFilter ? 'bg-indigo-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+              Assigned ({leads.filter(l => l.assigned_to).length})
             </button>
-            <button onClick={() => { setAssignFilter('assigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'assigned' && !staffFilter ? 'bg-indigo-600 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
-              👤 Assigned ({leads.filter(l => l.assigned_to).length})
-            </button>
-            <button onClick={() => { setAssignFilter('unassigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'unassigned' && !staffFilter ? 'bg-amber-600 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
-              📥 Unassigned ({leads.filter(l => !l.assigned_to).length})
+            <button onClick={() => { setAssignFilter('unassigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'unassigned' && !staffFilter ? 'bg-amber-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+              Unassigned ({leads.filter(l => !l.assigned_to).length})
             </button>
           </div>
 
-          <select className={inputCls + ' text-xs py-1.5 w-auto bg-white'} value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
+          <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-stone-200 font-semibold'} value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
             <option value="">Filter by Staff Member...</option>
             {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
           </select>
+        </div>
+
+        {/* Stage Filter Chips */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button onClick={() => setStageFilter('')} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === '' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>All Stages</button>
+          {stages.map(s => (
+            <button key={s} onClick={() => setStageFilter(s)} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === s ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
+              {s.replace('_', ' ')} ({funnel[s] || 0})
+            </button>
+          ))}
         </div>
       </div>
 
