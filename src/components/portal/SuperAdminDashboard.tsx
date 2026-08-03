@@ -1719,7 +1719,7 @@ export default function SuperAdminDashboard() {
         { id: 'my_requests', label: 'Leaves & Advances', icon: CalendarDays, show: !isSuperAdmin },
         { id: 'my_profile', label: 'My Profile', icon: CreditCard, show: !isSuperAdmin },
         { id: 'my_swap', label: 'Shift Swap', icon: Repeat, show: !isSuperAdmin },
-        { id: 'my_sessions', label: 'My Sessions', icon: Shield, show: true },
+        { id: 'my_sessions', label: 'My Sessions', icon: Shield, show: isSuperAdmin },
       ],
     },
     {

@@ -143,6 +143,45 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
         )}
       </div>
 
+      {/* Interactive Quick Shortcuts & Actions */}
+      <div className={cardCls + ' space-y-3'}>
+        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider">Quick Actions & Shortcuts</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {hasPermission('view_leads') && (
+            <button onClick={() => onNavigate('leads')} className="flex items-center gap-2 p-3 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-900 font-bold text-xs transition-colors shadow-sm">
+              <span className="text-base">➕</span> + Add Lead
+            </button>
+          )}
+          {isExec && (
+            <button onClick={() => onNavigate('leads')} className="flex items-center gap-2 p-3 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-900 font-bold text-xs transition-colors shadow-sm">
+              <span className="text-base">📍</span> Log Field Visit
+            </button>
+          )}
+          {isCaller && (
+            <button onClick={() => onNavigate('leads')} className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 font-bold text-xs transition-colors shadow-sm">
+              <span className="text-base">📞</span> Call Queue
+            </button>
+          )}
+          {isSupport && (
+            <button onClick={() => onNavigate('tickets')} className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs transition-colors shadow-sm">
+              <span className="text-base">🎫</span> View Tickets
+            </button>
+          )}
+          <button onClick={() => onNavigate('attendance')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+            <span className="text-base">⏱</span> Attendance
+          </button>
+          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+            <span className="text-base">🌴</span> Request Leave
+          </button>
+          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+            <span className="text-base">💰</span> Apply Advance
+          </button>
+          <button onClick={() => onNavigate('documents')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+            <span className="text-base">📄</span> My Documents
+          </button>
+        </div>
+      </div>
+
       {/* Role-specific tiles */}
       {(isCaller || isExec) && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -609,6 +648,7 @@ export function MyDocuments() {
 // ─────────────────────────── My Profile: ID card + bank details
 export function MyProfile() {
   const [showModal, setShowModal] = useState(false);
+  const { user } = useAuth();
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
@@ -626,7 +666,7 @@ export function MyProfile() {
           <MyPromotionHistory />
         </div>
       </div>
-      <SessionDevices />
+      {user?.role === 'super_admin' && <SessionDevices />}
       {showModal && <ChangePasswordModal onClose={() => setShowModal(false)} />}
     </div>
   );
