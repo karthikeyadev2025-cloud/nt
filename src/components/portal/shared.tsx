@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapPin, Eye, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -131,7 +131,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
         {['', 'open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-3 py-1 rounded-lg text-xs font-medium border ${statusFilter === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
-            {s === '' ? `All (${tickets.length})` : `${s.replace('_', ' ')} (${counts[s] || 0})`}
+            {s === '' ? `All (${tickets.length})` : `${stageLabel(s)} (${counts[s] || 0})`}
           </button>
         ))}
       </div>
@@ -172,7 +172,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
             {hasPermission('manage_tickets') && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                 <select className={inputCls} value={openTicket.status} onChange={e => update(openTicket.id, { status: e.target.value as SupportTicket['status'] })}>
-                  {['open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                  {['open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => <option key={s} value={s}>{stageLabel(s)}</option>)}
                 </select>
                 <select className={inputCls} value={openTicket.priority} onChange={e => update(openTicket.id, { priority: e.target.value as SupportTicket['priority'] })}>
                   {['low', 'medium', 'high', 'urgent'].map(p => <option key={p} value={p}>{p}</option>)}
@@ -213,6 +213,57 @@ const stageColors: Record<string, string> = {
   not_answered: 'bg-stone-100 text-stone-700',
 };
 
+// Friendly labels for the stage values shown to staff. DB values stay the
+// same (no migration) — only the rendered text changes. Anywhere the UI
+// used `stage.replace('_', ' ')` it now uses this map so the vocabulary is
+// consistent everywhere and reads like a person talking, not a CRM.
+export const STAGE_LABELS: Record<string, string> = {
+  new: 'New',
+  contacted: 'Called',
+  qualified: 'Interested',
+  quoted: 'Quote Sent',
+  won: 'Won',
+  lost: 'Lost',
+  not_answered: 'Callback later',
+};
+export const stageLabel = (stage: string) => STAGE_LABELS[stage] ?? stage.replace('_', ' ');
+
+// The "Log Outcome" catalog — this is what a staff member sees when they
+// record what happened on a call or visit. Each row maps a
+// person-language outcome to (a) the underlying DB stage, (b) the
+// call_type for the lead_remarks row, and (c) how many days later the
+// system should nudge them to follow up. `requiresNote` forces the user
+// to say why for deal-ending outcomes so we never lose the reason a deal
+// was lost.
+export type Outcome = {
+  key: string;
+  label: string;
+  stage: string;
+  callType: 'outgoing' | 'incoming' | 'visit' | 'whatsapp' | 'email' | 'note';
+  followupDays: number | null;   // null = no follow-up (deal closed)
+  requiresNote?: boolean;
+  hint?: string;
+};
+
+export const CALL_OUTCOMES: Outcome[] = [
+  { key: 'no_answer',        label: 'No answer',              stage: 'not_answered', callType: 'outgoing', followupDays: 1 },
+  { key: 'voicemail',        label: 'Left voicemail',         stage: 'contacted',    callType: 'outgoing', followupDays: 1 },
+  { key: 'callback_later',   label: 'Asked to call back',     stage: 'not_answered', callType: 'outgoing', followupDays: 2, hint: 'Pick a specific follow-up time below.' },
+  { key: 'interested',       label: 'Spoke — interested',     stage: 'qualified',    callType: 'outgoing', followupDays: 3 },
+  { key: 'not_interested',   label: 'Spoke — not interested', stage: 'lost',         callType: 'outgoing', followupDays: null, requiresNote: true, hint: 'Say briefly why so we can learn from it.' },
+  { key: 'quote_sent',       label: 'Sent quote',             stage: 'quoted',       callType: 'outgoing', followupDays: 7 },
+  { key: 'deal_won',         label: 'Deal won 🎉',            stage: 'won',          callType: 'note',     followupDays: null, requiresNote: true },
+  { key: 'deal_lost',        label: 'Deal lost',              stage: 'lost',         callType: 'note',     followupDays: null, requiresNote: true, hint: 'Say briefly why so we can learn from it.' },
+];
+
+export const VISIT_OUTCOMES: Outcome[] = [
+  { key: 'visit_interested',  label: 'Met — interested',      stage: 'qualified', callType: 'visit', followupDays: 3 },
+  { key: 'visit_not_interested', label: 'Met — not interested', stage: 'lost',    callType: 'visit', followupDays: null, requiresNote: true },
+  { key: 'visit_absent',      label: 'Nobody home',           stage: 'not_answered', callType: 'visit', followupDays: 1 },
+  { key: 'visit_quoted',      label: 'Quoted on site',        stage: 'quoted',    callType: 'visit', followupDays: 7 },
+  { key: 'visit_won',         label: 'Closed deal on site 🎉', stage: 'won',      callType: 'visit', followupDays: null, requiresNote: true },
+];
+
 export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; focusLeadId?: string }) {
   const [segFilter, setSegFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
@@ -234,12 +285,25 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const [bulkBusy, setBulkBusy] = useState(false);
 
   // Assignment & Staff filter state
-  const [assignFilter, setAssignFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
+  // Staff without full_leads_view land on their own leads by default —
+  // the old default of 'all' meant a telecaller opened the board and
+  // couldn't see which rows were theirs without an extra click.
+  // "Log Outcome" flow state — the primary action a staff member takes
+  // after a call/visit. See LogOutcomeDialog at the bottom of this file.
+  const [logOutcomeLead, setLogOutcomeLead] = useState<Lead | null>(null);
+
+  const [assignFilter, setAssignFilter] = useState<'all' | 'mine' | 'assigned' | 'unassigned'>('all');
   const [staffFilter, setStaffFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
   const { user, hasPermission } = useAuth();
   const toast = useToast();
+  // See comment on assignFilter above — restricted staff default to 'mine'.
+  useEffect(() => {
+    if (user && !hasPermission('full_leads_view') && !hasPermission('bulk_assign_leads')) {
+      setAssignFilter('mine');
+    }
+  }, [user, hasPermission]);
 
   function toggleSelectAll() {
     if (selectedIds.length === leads.length) {
@@ -294,7 +358,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
 
     if (error) { toast.error(`Bulk stage change failed: ${error.message}`); setBulkBusy(false); return; }
 
-    toast.success(`${selectedIds.length} leads updated to stage "${bulkStage.replace('_', ' ')}"`);
+    toast.success(`${selectedIds.length} leads updated to stage "${stageLabel(bulkStage)}"`);
     setBulkBusy(false);
     setSelectedIds([]);
     setBulkStage('');
@@ -458,6 +522,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     return leads.filter(l => {
       if (assignFilter === 'assigned' && !l.assigned_to) return false;
       if (assignFilter === 'unassigned' && l.assigned_to) return false;
+      if (assignFilter === 'mine' && l.assigned_to !== user?.id) return false;
       if (staffFilter && l.assigned_to !== staffFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -499,7 +564,10 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       <div className="p-3 bg-white border border-stone-200 rounded-2xl shadow-sm mb-4 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-2">
           {/* Assignment Switcher */}
-          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl">
+          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl flex-wrap">
+            <button onClick={() => { setAssignFilter('mine'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'mine' && !staffFilter ? 'bg-teal-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+              My Leads ({leads.filter(l => l.assigned_to === user?.id).length})
+            </button>
             <button onClick={() => { setAssignFilter('all'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'all' && !staffFilter ? 'bg-orange-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
               All ({leads.length})
             </button>
@@ -522,7 +590,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
           <button onClick={() => setStageFilter('')} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === '' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>All Stages</button>
           {stages.map(s => (
             <button key={s} onClick={() => setStageFilter(s)} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === s ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
-              {s.replace('_', ' ')} ({funnel[s] || 0})
+              {stageLabel(s)} ({funnel[s] || 0})
             </button>
           ))}
         </div>
@@ -555,7 +623,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
 
               <select className={inputCls + ' text-xs py-1.5 w-auto bg-white'} value={bulkStage} onChange={e => setBulkStage(e.target.value)}>
                 <option value="">Change Stage...</option>
-                {stages.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                {stages.map(s => <option key={s} value={s}>{stageLabel(s)}</option>)}
               </select>
               <button disabled={bulkBusy || !bulkStage} onClick={handleBulkStage} className="px-3 py-1.5 bg-stone-800 hover:bg-stone-900 text-white text-xs font-bold rounded-xl shadow-sm">
                 Apply Stage
@@ -588,11 +656,11 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                   className="mt-1 w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0"
                 />
               )}
-              <div className="flex-1 min-w-0" onClick={() => { setOpenLead(l); loadRemarks(l.id); }}>
-                <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2.5" onClick={() => { setOpenLead(l); loadRemarks(l.id); }} style={{ cursor: 'pointer' }}>
                   <span className="text-stone-900 font-bold">{l.customer_name}</span>
                   <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color ?? undefined }}>{seg?.name}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{stageLabel(l.stage)}</span>
                   {assignedStaffName ? (
                     <span className="px-2 py-0.5 rounded text-[11px] bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold flex items-center gap-1 shadow-sm">
                       👤 {assignedStaffName}
@@ -616,6 +684,23 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                   {l.priority === 'low' && <span className="text-stone-700">● Low </span>}
                   {l.interested_in && `${l.interested_in} • `}Created {new Date(l.created_at ?? '').toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}
                 </p>
+                {/* Primary action: log what happened. Only shown to whoever
+                    can actually work the lead (owner or a manage_leads holder)
+                    and only while the deal is still open. */}
+                {hasPermission('manage_leads') && (l.assigned_to === user?.id || hasPermission('full_leads_view')) && !['won', 'lost'].includes(l.stage) && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setLogOutcomeLead(l); }}
+                      className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm inline-flex items-center gap-1.5">
+                      📞 Log Outcome
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setOpenLead(l); loadRemarks(l.id); }}
+                      className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-lg">
+                      View history
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -681,7 +766,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
             {hasPermission('manage_leads') && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 <select className={inputCls} value={openLead.stage} onChange={e => update(openLead.id, { stage: e.target.value as Lead['stage'] })}>
-                  {stages.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                  {stages.map(s => <option key={s} value={s}>{stageLabel(s)}</option>)}
                 </select>
                 <select className={inputCls} value={openLead.assigned_to || ''} onChange={e => update(openLead.id, { assigned_to: e.target.value || null })}>
                   <option value="">Unassigned</option>
@@ -743,6 +828,18 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         </div>
       )}
 
+      {logOutcomeLead && (
+        <LogOutcomeDialog
+          lead={logOutcomeLead}
+          onClose={() => setLogOutcomeLead(null)}
+          onDone={() => {
+            setLogOutcomeLead(null);
+            invalidateQueryCache('leads:');
+            load();
+          }}
+        />
+      )}
+
       {previewLeadPhoto && (
         <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewLeadPhoto(null)}>
           <button onClick={() => setPreviewLeadPhoto(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
@@ -784,7 +881,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">Stage</label>
                   <select className={inputCls} value={editingLead.stage} onChange={e => setEditingLead({ ...editingLead, stage: e.target.value as Lead['stage'] })}>
-                    {stages.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                    {stages.map(s => <option key={s} value={s}>{stageLabel(s)}</option>)}
                   </select>
                 </div>
               </div>
@@ -826,6 +923,177 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+// ─────────────────────────────────────────────────────────────────────
+// LogOutcomeDialog — the "record what happened" primary action for staff.
+//
+// Replaces the old confusion where a telecaller had to (a) change the
+// stage dropdown, (b) type a remark separately, (c) set next-followup in
+// yet another dialog, and (d) hope everything saved. This dialog collapses
+// all of that into one form and one RPC call (log_lead_outcome) that does
+// all three writes atomically — so we never end up with half-updated
+// records like "stage changed to qualified with no note explaining why".
+// ─────────────────────────────────────────────────────────────────────
+function LogOutcomeDialog({
+  lead,
+  onClose,
+  onDone,
+}: {
+  lead: Lead;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const toast = useToast();
+  // Field visits use a different outcome list (with 'visit' call_type).
+  const [mode, setMode] = useState<'call' | 'visit'>('call');
+  const catalog = mode === 'call' ? CALL_OUTCOMES : VISIT_OUTCOMES;
+  const [outcomeKey, setOutcomeKey] = useState<string>('');
+  const [note, setNote] = useState('');
+  const [followupOverride, setFollowupOverride] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+
+  const outcome = catalog.find(o => o.key === outcomeKey) || null;
+
+  // Default follow-up: today + outcome.followupDays, in the format
+  // <input type="datetime-local"> expects (YYYY-MM-DDTHH:mm, LOCAL time).
+  const defaultFollowup = React.useMemo(() => {
+    if (!outcome || outcome.followupDays === null) return '';
+    const d = new Date();
+    d.setDate(d.getDate() + outcome.followupDays);
+    d.setHours(10, 0, 0, 0);  // default to 10 AM local, feels human
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }, [outcome]);
+
+  const followupValue = followupOverride || defaultFollowup;
+
+  async function submit() {
+    if (!outcome) { toast.error('Pick what happened first.'); return; }
+    if (outcome.requiresNote && !note.trim()) {
+      toast.error('Please add a short note — this outcome needs a reason.');
+      return;
+    }
+    setBusy(true);
+    // Build the remark: prefix with outcome label so history reads clearly
+    // even when the note is empty, and never lose the person's typed context.
+    const remark = note.trim()
+      ? `[${outcome.label}] ${note.trim()}`
+      : `[${outcome.label}]`;
+    const nextFollowup = outcome.followupDays === null
+      ? null
+      : (followupValue ? new Date(followupValue).toISOString() : null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC added in
+    // migration 20260803140000; Database types were generated before that ran.
+    // Regenerate with `supabase gen types typescript` and remove this cast.
+    const { error } = await (supabase.rpc as any)('log_lead_outcome', {
+      p_lead_id: lead.id,
+      p_new_stage: outcome.stage,
+      p_call_type: outcome.callType,
+      p_remark: remark,
+      p_next_followup_at: nextFollowup,
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(`Could not save: ${error.message}`);
+      return;
+    }
+    toast.success('Saved. Stage and follow-up updated.');
+    onDone();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <p className="text-stone-700 text-xs uppercase tracking-wide font-bold">Log outcome for</p>
+            <h3 className="text-stone-900 text-lg font-bold mt-0.5">{lead.customer_name}</h3>
+            <p className="text-stone-600 text-xs mt-0.5">{lead.phone} • currently {stageLabel(lead.stage)}</p>
+          </div>
+          <button onClick={onClose} className="text-stone-700 hover:text-stone-900 p-1">✕</button>
+        </div>
+
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => { setMode('call'); setOutcomeKey(''); }}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'call' ? 'bg-teal-700 text-white' : 'bg-stone-100 text-stone-700'}`}>
+            📞 Phone call
+          </button>
+          <button
+            onClick={() => { setMode('visit'); setOutcomeKey(''); }}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'visit' ? 'bg-teal-700 text-white' : 'bg-stone-100 text-stone-700'}`}>
+            🚗 Field visit
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-bold text-stone-700 mb-1">What happened?</label>
+            <select
+              className={inputCls}
+              value={outcomeKey}
+              onChange={e => setOutcomeKey(e.target.value)}>
+              <option value="">Pick an outcome…</option>
+              {catalog.map(o => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </select>
+            {outcome?.hint && <p className="text-xs text-stone-600 mt-1 italic">{outcome.hint}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-700 mb-1">
+              Notes {outcome?.requiresNote && <span className="text-red-600">*</span>}
+            </label>
+            <textarea
+              className={inputCls}
+              rows={3}
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder={outcome?.requiresNote ? 'Required — say briefly why.' : 'Optional — anything worth remembering.'}
+            />
+          </div>
+
+          {outcome && outcome.followupDays !== null && (
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">
+                Next follow-up
+                <span className="text-stone-600 font-normal"> (auto-set to {outcome.followupDays} day{outcome.followupDays === 1 ? '' : 's'} from now — change if you want)</span>
+              </label>
+              <input
+                type="datetime-local"
+                className={inputCls}
+                value={followupValue}
+                onChange={e => setFollowupOverride(e.target.value)}
+              />
+            </div>
+          )}
+
+          {outcome && outcome.followupDays === null && (
+            <p className="text-xs text-stone-600 italic">
+              This outcome closes the lead — no follow-up will be scheduled.
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-stone-100">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-xl">
+            Cancel
+          </button>
+          <button
+            onClick={submit}
+            disabled={busy || !outcome}
+            className="px-4 py-2 text-xs font-bold text-white bg-orange-700 hover:bg-orange-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl shadow-md">
+            {busy ? 'Saving…' : 'Save & advance'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

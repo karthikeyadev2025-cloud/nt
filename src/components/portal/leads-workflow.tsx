@@ -1030,22 +1030,64 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
 export function LeadsWorkspace({ segments, focusLeadId }: { segments: Segment[]; focusLeadId?: string }) {
   const { hasPermission } = useAuth();
   const [sub, setSub] = useState<'board' | 'appointments' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity'>('board');
+  const [moreOpen, setMoreOpen] = useState(false);
   const showBulk = hasPermission('bulk_assign_leads');
   const showTransfers = hasPermission('approve_transfers');
+  // A staff member without any admin-ish permission is a "restricted" user
+  // in this context — they should see only the two views they actually
+  // work in (their board, their appointments) and everything else is
+  // tucked behind a compact "More" menu so it isn't visual noise.
+  const isRestricted = !showBulk && !showTransfers && !hasPermission('full_leads_view');
 
   // A search result forces the board sub-tab so the record can be opened there.
   useEffect(() => { if (focusLeadId) setSub('board'); }, [focusLeadId]);
 
+  // Options that live behind the "More" menu when restricted, and inline for managers.
+  const secondaryTabs = [
+    { key: 'pool' as const,        label: 'Unassigned Pool', when: true },
+    { key: 'activity' as const,    label: 'Team Activity',   when: true },
+    { key: 'bulk' as const,        label: 'Bulk Upload',     when: showBulk },
+    { key: 'reassign' as const,    label: 'Reassign Leads',  when: showBulk },
+    { key: 'transfers' as const,   label: 'Handoff Approvals', when: showTransfers },
+  ].filter(t => t.when);
+
+  const primaryBtn = (k: typeof sub, label: string) => (
+    <button key={k} onClick={() => setSub(k)}
+      className={`px-3 py-1.5 rounded-lg text-sm border ${sub === k ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
+      {label}
+    </button>
+  );
+
   return (
     <div>
-      <div className="flex gap-2 mb-5 flex-wrap">
-        <button onClick={() => setSub('board')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'board' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Leads Board</button>
-        <button onClick={() => setSub('appointments')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'appointments' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Appointments</button>
-        <button onClick={() => setSub('pool')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'pool' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Unassigned Pool</button>
-        <button onClick={() => setSub('activity')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'activity' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Team Activity</button>
-        {showBulk && <button onClick={() => setSub('bulk')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bulk' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Bulk Upload</button>}
-        {showBulk && <button onClick={() => setSub('reassign')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'reassign' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Reassign Leads</button>}
-        {showTransfers && <button onClick={() => setSub('transfers')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'transfers' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Handoff Approvals</button>}
+      <div className="flex gap-2 mb-5 flex-wrap items-center">
+        {primaryBtn('board', 'Leads Board')}
+        {primaryBtn('appointments', 'Appointments')}
+        {/* Managers/admins see everything inline. Restricted staff get a
+            compact "More" popover so they aren't overwhelmed by tools they
+            wouldn't normally use. */}
+        {!isRestricted && secondaryTabs.map(t => primaryBtn(t.key, t.label))}
+        {isRestricted && secondaryTabs.length > 0 && (
+          <div className="relative">
+            <button
+              onClick={() => setMoreOpen(v => !v)}
+              onBlur={() => setTimeout(() => setMoreOpen(false), 150)}
+              className={`px-3 py-1.5 rounded-lg text-sm border ${['pool','activity','bulk','reassign','transfers'].includes(sub) ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
+              More ▾
+            </button>
+            {moreOpen && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-10 py-1 min-w-[180px]">
+                {secondaryTabs.map(t => (
+                  <button key={t.key}
+                    onMouseDown={() => { setSub(t.key); setMoreOpen(false); }}
+                    className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-stone-50 ${sub === t.key ? 'text-teal-700 font-semibold' : 'text-stone-700'}`}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {sub === 'board' && <LeadsBoard segments={segments} focusLeadId={focusLeadId} />}
       {sub === 'appointments' && <AppointmentsBoard segments={segments} />}
