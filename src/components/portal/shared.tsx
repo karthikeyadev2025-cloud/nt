@@ -810,12 +810,25 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
           data.flatMap(r => [r.check_in_selfie_url, r.check_out_selfie_url]).filter(Boolean)
         )) as string[];
         if (paths.length > 0) {
-          const { data: signed } = await supabase.storage.from('selfies').createSignedUrls(paths, 3600);
-          if (signed) {
-            const map: Record<string, string> = {};
-            signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
-            setPhotoUrls(map);
+          const map: Record<string, string> = {};
+          const relativePaths: string[] = [];
+          paths.forEach(p => {
+            if (p.startsWith('http') || p.startsWith('data:')) {
+              map[p] = p;
+            } else {
+              relativePaths.push(p);
+            }
+          });
+
+          if (relativePaths.length > 0) {
+            const [{ data: signed1 }, { data: signed2 }] = await Promise.all([
+              supabase.storage.from('selfies').createSignedUrls(relativePaths, 3600),
+              supabase.storage.from('attendance-selfies').createSignedUrls(relativePaths, 3600),
+            ]);
+            if (signed1) signed1.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
+            if (signed2) signed2.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
           }
+          setPhotoUrls(map);
         }
       }).catch(() => setAttendanceLoaded(true));
     }
@@ -969,15 +982,16 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                       {/* Check in */}
                       <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-100 flex items-center gap-3">
-                        {rec.check_in_selfie_url && (
-                          photoUrls[rec.check_in_selfie_url] ? (
-                            <button onClick={() => setPreviewImage(photoUrls[rec.check_in_selfie_url])} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
-                              <img src={photoUrls[rec.check_in_selfie_url]} alt="Check-in selfie" className="w-full h-full object-cover" />
+                        {rec.check_in_selfie_url && (() => {
+                          const src = photoUrls[rec.check_in_selfie_url] || (rec.check_in_selfie_url.startsWith('http') || rec.check_in_selfie_url.startsWith('data:') ? rec.check_in_selfie_url : null);
+                          return src ? (
+                            <button onClick={() => setPreviewImage(src)} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm hover:opacity-90 transition-opacity">
+                              <img src={src} alt="Check-in selfie" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
                             </button>
                           ) : (
                             <div className="shrink-0 w-14 h-14 rounded-lg bg-stone-200 animate-pulse" />
-                          )
-                        )}
+                          );
+                        })()}
                         <div className="flex-1 flex items-center justify-between gap-2">
                           <div>
                             <p className="text-stone-500 font-medium">Check In</p>
@@ -1001,15 +1015,16 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
 
                       {/* Check out */}
                       <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-100 flex items-center gap-3">
-                        {rec.check_out_selfie_url && (
-                          photoUrls[rec.check_out_selfie_url] ? (
-                            <button onClick={() => setPreviewImage(photoUrls[rec.check_out_selfie_url])} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
-                              <img src={photoUrls[rec.check_out_selfie_url]} alt="Check-out selfie" className="w-full h-full object-cover" />
+                        {rec.check_out_selfie_url && (() => {
+                          const src = photoUrls[rec.check_out_selfie_url] || (rec.check_out_selfie_url.startsWith('http') || rec.check_out_selfie_url.startsWith('data:') ? rec.check_out_selfie_url : null);
+                          return src ? (
+                            <button onClick={() => setPreviewImage(src)} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm hover:opacity-90 transition-opacity">
+                              <img src={src} alt="Check-out selfie" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
                             </button>
                           ) : (
                             <div className="shrink-0 w-14 h-14 rounded-lg bg-stone-200 animate-pulse" />
-                          )
-                        )}
+                          );
+                        })()}
                         <div className="flex-1 flex items-center justify-between gap-2">
                           <div>
                             <p className="text-stone-500 font-medium">Check Out</p>
