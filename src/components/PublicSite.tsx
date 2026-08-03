@@ -4,6 +4,7 @@ import {
   Boxes, Bot, Layers, Phone, Mail, MapPin, ExternalLink, Star, Menu, X,
   Ticket, Send, CheckCircle2, ChevronRight, Briefcase, Upload, User,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSegments, useSiteContent } from '../lib/useSegments';
 import type { Segment, Product } from '../lib/database.types';
@@ -20,7 +21,7 @@ export function hasRealPhone(v?: string) {
   return digits.length >= 10 && !/^0+$/.test(digits.slice(2));
 }
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette,
   TrendingUp, Boxes, Bot, Layers,
 };
@@ -806,8 +807,8 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
       });
       if (insErr) throw insErr;
       setDone(true);
-    } catch (e: any) {
-      setError(e.message || 'Something went wrong. Please try again.');
+    } catch (e) {
+      setError((e instanceof Error ? e.message : String(e)) || 'Something went wrong. Please try again.');
     } finally {
       setBusy(false);
     }

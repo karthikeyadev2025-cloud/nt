@@ -9,7 +9,7 @@ try {
   const stored = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('nkt_rpc_cache') : null;
   if (stored) {
     const parsed = JSON.parse(stored);
-    Object.entries(parsed).forEach(([k, v]: [string, any]) => {
+    Object.entries(parsed as Record<string, { result: unknown; at: number }>).forEach(([k, v]) => {
       if (v && typeof v.at === 'number' && Date.now() - v.at < 600_000) {
         recent.set(k, v);
       }
@@ -22,7 +22,7 @@ try {
 function syncToSessionStorage() {
   try {
     if (typeof sessionStorage === 'undefined') return;
-    const obj: Record<string, any> = {};
+    const obj: Record<string, { result: unknown; at: number }> = {};
     let count = 0;
     recent.forEach((val, k) => {
       if (count < 20) {

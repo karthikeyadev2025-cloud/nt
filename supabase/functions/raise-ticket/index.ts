@@ -117,6 +117,46 @@ Deno.serve(async (req: Request) => {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
+  // ── Rate limit (Turnstile stops bots; this stops a legit human on a
+  //    script from flooding the queue). Two buckets so we throttle
+  //    both source machine and target account:
+  //      • by IP:    10 tickets / hour  — noticeable-but-usable ceiling
+  //      • by phone:  5 tickets / hour  — one phone shouldn't file more
+  //
+  //    Both checks skip on service-side failure (rateErr) — we refuse to
+  //    fail-open on the bot check but allow submissions through if the
+  //    limiter itself is broken. The alternative (fail-closed) means one
+  //    Postgres blip stops every customer from filing a ticket, which is
+  //    worse than briefly-unmetered submissions.
+  const RATE_LIMIT_IP_MAX = 10;
+  const RATE_LIMIT_PHONE_MAX = 5;
+  const RATE_LIMIT_WINDOW_SEC = 3600;
+
+  async function checkLimit(bucket: string, identifier: string, max: number): Promise<{ allowed: boolean; error?: string }> {
+    const { data, error } = await supabaseAdmin.rpc("check_rate_limit", {
+      p_bucket: bucket,
+      p_identifier: identifier,
+      p_max: max,
+      p_window_seconds: RATE_LIMIT_WINDOW_SEC,
+    });
+    if (error) {
+      console.error(`[raise-ticket] rate limit check failed (${bucket}):`, error.message);
+      return { allowed: true };  // fail-open on infra error, see comment above
+    }
+    return { allowed: data === true };
+  }
+
+  if (remoteIp) {
+    const ipCheck = await checkLimit("ticket_raise_ip", remoteIp, RATE_LIMIT_IP_MAX);
+    if (!ipCheck.allowed) {
+      return json({ error: "Too many tickets from your network in the last hour. Please try again later or call us." }, 429);
+    }
+  }
+  const phoneCheck = await checkLimit("ticket_raise_phone", String(body.customer_phone).replace(/\D/g, ""), RATE_LIMIT_PHONE_MAX);
+  if (!phoneCheck.allowed) {
+    return json({ error: "This phone number has raised several tickets recently. Please wait an hour or call us." }, 429);
+  }
+
   // Whitelist columns to prevent a client from sneaking in fields we
   // don't want it to control (assigned_to, status, ticket_no, etc.)
   const insertRow = {

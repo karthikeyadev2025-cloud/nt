@@ -97,9 +97,9 @@ export function ImageUpload({
 
       onChange(publicUrl);
       toast.success('Image uploaded successfully');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Upload error:', err);
-      toast.error(err.message || 'Failed to upload image');
+      toast.error((err instanceof Error ? err.message : String(err)) || 'Failed to upload image');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

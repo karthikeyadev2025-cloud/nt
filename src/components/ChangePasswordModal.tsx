@@ -32,8 +32,8 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
       toast.success('Your password has been changed successfully!');
       onClose();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update password');
+    } catch (err) {
+      toast.error((err instanceof Error ? err.message : String(err)) || 'Failed to update password');
     } finally {
       setBusy(false);
     }

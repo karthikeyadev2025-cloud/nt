@@ -72,8 +72,8 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
         return data as SupportTicket[];
       });
       if (data) setTickets(data);
-    } catch (err: any) {
-      toast.error(`Couldn't load tickets: ${err.message}`);
+    } catch (err) {
+      toast.error(`Couldn't load tickets: ${(err instanceof Error ? err.message : String(err))}`);
     }
   }, [segFilter, statusFilter]);
 
@@ -364,8 +364,8 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         return data as Lead[];
       });
       if (data) setLeads(data);
-    } catch (err: any) {
-      toast.error(`Couldn't load leads: ${err.message}`);
+    } catch (err) {
+      toast.error(`Couldn't load leads: ${(err instanceof Error ? err.message : String(err))}`);
     }
   }, [segFilter, stageFilter]);
   useEffect(() => { load(); }, [load]);

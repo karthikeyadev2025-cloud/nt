@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 // ─────────────────────────────────────────────────────────────
 // Offline queue for field work.
 //
@@ -102,7 +104,7 @@ export type FlushResult = { synced: number; failed: number; remaining: number };
  * item is removed only after the server confirms, and client_ref makes a
  * duplicate insert a no-op.
  */
-export async function flushQueue(supabase: any): Promise<FlushResult> {
+export async function flushQueue(supabase: SupabaseClient): Promise<FlushResult> {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     return { synced: 0, failed: 0, remaining: await queueCount() };
   }
@@ -156,8 +158,8 @@ export async function flushQueue(supabase: any): Promise<FlushResult> {
 
       await removeQueued(item.id);
       synced++;
-    } catch (err: any) {
-      const message = err?.message || String(err);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
       if (!offline && item.attempts + 1 >= MAX_ATTEMPTS) {
         console.error('Dropping unsyncable visit after repeated failures', item.id, message);
@@ -179,7 +181,7 @@ export async function flushQueue(supabase: any): Promise<FlushResult> {
  * Wire up automatic flushing: on reconnect, on tab focus, and on a slow timer
  * as a backstop for flaky connections that never fire an `online` event.
  */
-export function startAutoFlush(supabase: any, onChange?: (r: FlushResult) => void): () => void {
+export function startAutoFlush(supabase: SupabaseClient, onChange?: (r: FlushResult) => void): () => void {
   let stopped = false;
 
   const run = async () => {

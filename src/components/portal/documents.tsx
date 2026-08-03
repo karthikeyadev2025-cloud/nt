@@ -252,8 +252,8 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
       });
       setDocs(data);
       setLoaded(true);
-    } catch (err: any) {
-      toast.error(`Couldn't load documents: ${err.message}`);
+    } catch (err) {
+      toast.error(`Couldn't load documents: ${(err instanceof Error ? err.message : String(err))}`);
       setLoaded(true);
     }
   }, [staffUserId]);

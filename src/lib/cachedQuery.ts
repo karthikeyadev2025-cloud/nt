@@ -1,7 +1,7 @@
 import { withTimeout } from './withTimeout';
 
-const queryCache = new Map<string, { result: any; at: number }>();
-const inFlightQueries = new Map<string, Promise<any>>();
+const queryCache = new Map<string, { result: unknown; at: number }>();
+const inFlightQueries = new Map<string, Promise<unknown>>();
 const DEFAULT_TTL_MS = 300_000; // 5 minutes
 
 // Initialize memory cache from sessionStorage for instant 0ms startup
@@ -9,7 +9,7 @@ try {
   const stored = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('nkt_query_cache') : null;
   if (stored) {
     const parsed = JSON.parse(stored);
-    Object.entries(parsed).forEach(([k, v]: [string, any]) => {
+    Object.entries(parsed as Record<string, { result: unknown; at: number }>).forEach(([k, v]) => {
       if (v && typeof v.at === 'number' && Date.now() - v.at < 600_000) {
         queryCache.set(k, v);
       }
@@ -22,7 +22,7 @@ try {
 function syncToSessionStorage() {
   try {
     if (typeof sessionStorage === 'undefined') return;
-    const obj: Record<string, any> = {};
+    const obj: Record<string, { result: unknown; at: number }> = {};
     let count = 0;
     queryCache.forEach((val, k) => {
       if (count < 40) {

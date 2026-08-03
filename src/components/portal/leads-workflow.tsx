@@ -110,8 +110,8 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
         return data;
       });
       if (data) setLeads(data);
-    } catch (err: any) {
-      toast.error(`Couldn't load queue: ${err.message}`);
+    } catch (err) {
+      toast.error(`Couldn't load queue: ${(err instanceof Error ? err.message : String(err))}`);
     }
   }, [user]);
   useEffect(() => { load(); }, [load]);
@@ -940,8 +940,8 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
         rows = rows.filter((l: any) => !l.assigned_to || !execIds.has(l.assigned_to));
       }
       setLeads(rows);
-    } catch (err: any) {
-      toast.error(`Couldn't load appointments: ${err.message}`);
+    } catch (err) {
+      toast.error(`Couldn't load appointments: ${(err instanceof Error ? err.message : String(err))}`);
     }
   }, [segFilter, scope, execs.length]);
 
