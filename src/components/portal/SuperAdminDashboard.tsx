@@ -229,7 +229,7 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
         return (
           <div key={seg.slug} className={cardCls}>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }} />
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color ?? undefined }} />
               <h3 className="text-stone-900 font-bold">{seg.name}</h3>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
@@ -347,7 +347,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
         id_proof_number: form.id_proof_number,
         reports_to: form.reports_to || null,
         salary_structure: form.salary_structure,
-      }).eq('id', userId);
+      } as never).eq('id', userId);
       updateError = err;
       if (!err) break;
       if (attempt < 2) await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
@@ -356,7 +356,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 
     // Assign the selected work shift so late tracking works from day one.
     if (form.shift_id) {
-      const { error: shiftError } = await supabase.from('staff_shifts').insert({ staff_user_id: userId, shift_id: form.shift_id });
+      const { error: shiftError } = await supabase.from('staff_shifts').insert({ staff_user_id: userId, shift_id: form.shift_id } as never);
       if (shiftError) failures.push(`Shift assignment: ${shiftError.message}`);
     }
 
@@ -669,7 +669,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
       employment_type: editing.employment_type || 'full_time',
       salary_structure: editing.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 },
       updated_at: new Date().toISOString(),
-    }).eq('id', editing.id);
+    } as never).eq('id', editing.id);
     if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
 
     const newDesig = editing.designation || '';
@@ -681,7 +681,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
         previous_designation: snapshot.designation, new_designation: newDesig,
         previous_ctc: snapshot.ctc, new_ctc: newCtc,
         note: 'Updated via Access Control', created_by: currentUser?.id,
-      });
+      } as never);
       historyError = histErr?.message || null;
     }
 
@@ -902,7 +902,7 @@ function LeavePolicyManager() {
 
   async function save(id: string, annual_days: number) {
     setBusy(true);
-    const { error } = await supabase.from('leave_policies').update({ annual_days }).eq('id', id);
+    const { error } = await supabase.from('leave_policies').update({ annual_days } as never).eq('id', id);
     setBusy(false);
     if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
     toast.success('Entitlement updated');
@@ -1019,7 +1019,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
         : `Retire "${seg.name}"? It will disappear from the public website. Nothing is deleted and you can reactivate it any time.`;
       if (!confirm(warning)) return;
     }
-    const { error } = await supabase.from('segments').update({ active: !seg.active }).eq('id', seg.id);
+    const { error } = await supabase.from('segments').update({ active: !seg.active } as never).eq('id', seg.id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(retiring ? `${seg.name} retired — hidden from the website` : `${seg.name} reactivated`);
     load(); onChanged();
@@ -1032,7 +1032,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
       const { id, ...patch } = editing;
       ({ error } = await supabase.from('segments').update(patch).eq('id', id));
     } else {
-      ({ error } = await supabase.from('segments').insert(editing));
+      ({ error } = await supabase.from('segments').insert(editing as never));
     }
     if (error) { toast.error(`Couldn't save segment: ${error.message}`); return; }
     toast.success(editing.id ? 'Segment updated' : 'Segment created');
@@ -1049,7 +1049,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
         {rows.map(s => (
           <div key={s.id} className={cardCls + ' flex items-center justify-between' + (s.active ? '' : ' opacity-60')}>
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color ?? undefined }} />
               <div>
                 <p className="text-stone-900 font-bold">{s.name} <span className="text-stone-700 text-xs">({s.slug} • NKT-{s.ticket_prefix}-)</span></p>
                 <p className="text-stone-700 text-xs">{s.tagline}</p>
@@ -1114,7 +1114,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
     let error;
     if (editing.id) {
       const { id, ...patch } = payload;
-      ({ error } = await supabase.from('products').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id));
+      ({ error } = await supabase.from('products').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id));
     } else {
       ({ error } = await supabase.from('products').insert(payload));
     }
@@ -1219,7 +1219,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
 
   async function addService() {
     if (!newService.title || !seg) { toast.error('Enter a service title'); return; }
-    const { error } = await supabase.from('services').insert({ ...newService, segment_slug: seg, order_index: services.filter(x => x.segment_slug === seg).length + 1 });
+    const { error } = await supabase.from('services').insert({ ...newService, segment_slug: seg, order_index: services.filter(x => x.segment_slug === seg).length + 1 } as never);
     if (error) { toast.error(`Couldn't add: ${error.message}`); return; }
     toast.success('Service added');
     setNewService({ title: '', description: '', icon: 'Settings' });
@@ -1227,7 +1227,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
   }
   async function addType() {
     if (!newType || !seg) { toast.error('Enter a ticket type name'); return; }
-    const { error } = await supabase.from('ticket_types').insert({ segment_slug: seg, name: newType, order_index: types.filter(x => x.segment_slug === seg).length + 1 });
+    const { error } = await supabase.from('ticket_types').insert({ segment_slug: seg, name: newType, order_index: types.filter(x => x.segment_slug === seg).length + 1 } as never);
     if (error) { toast.error(`Couldn't add: ${error.message}`); return; }
     toast.success('Ticket type added');
     setNewType('');
@@ -1312,7 +1312,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
 
   async function addLogo() {
     if (!newLogo.name || !newLogo.logo_url) { toast.error('Name and logo URL are required'); return; }
-    const { error } = await supabase.from('client_logos').insert({ ...newLogo, segment_slug: newLogo.segment_slug || null, order_index: logos.length + 1 });
+    const { error } = await supabase.from('client_logos').insert({ ...newLogo, segment_slug: newLogo.segment_slug || null, order_index: logos.length + 1 } as never);
     if (error) { toast.error(error.message); return; }
     toast.success('Client logo added');
     setNewLogo({ name: '', logo_url: '', segment_slug: '' });
@@ -1321,7 +1321,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
 
   async function addGallery() {
     if (!newGallery.image_url) { toast.error('Image URL is required'); return; }
-    const { error } = await supabase.from('gallery_items').insert({ ...newGallery, segment_slug: newGallery.segment_slug || null, order_index: gallery.length + 1 });
+    const { error } = await supabase.from('gallery_items').insert({ ...newGallery, segment_slug: newGallery.segment_slug || null, order_index: gallery.length + 1 } as never);
     if (error) { toast.error(error.message); return; }
     toast.success('Added to gallery');
     setNewGallery({ title: '', image_url: '', segment_slug: '' });
@@ -1329,7 +1329,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
   }
   async function addTeam() {
     if (!newTeam.name) { toast.error('Name is required'); return; }
-    const { error } = await supabase.from('team_members').insert({ ...newTeam, segment_slug: newTeam.segment_slug || null, order_index: team.length + 1 });
+    const { error } = await supabase.from('team_members').insert({ ...newTeam, segment_slug: newTeam.segment_slug || null, order_index: team.length + 1 } as never);
     if (error) { toast.error(error.message); return; }
     toast.success('Team member added');
     setNewTeam({ name: '', designation: '', photo_url: '', segment_slug: '' });
@@ -1337,20 +1337,20 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
   }
   async function addTestimonial() {
     if (!newTestimonial.customer_name || !newTestimonial.content) { toast.error('Name and testimonial text are required'); return; }
-    const { error } = await supabase.from('testimonials').insert({ ...newTestimonial, segment_slug: newTestimonial.segment_slug || null, order_index: testimonials.length + 1 });
+    const { error } = await supabase.from('testimonials').insert({ ...newTestimonial, segment_slug: newTestimonial.segment_slug || null, order_index: testimonials.length + 1 } as never);
     if (error) { toast.error(error.message); return; }
     toast.success('Testimonial added');
     setNewTestimonial({ customer_name: '', content: '', rating: 5, segment_slug: '' });
     load();
   }
   async function toggleActive(table: string, id: string, active: boolean, setter: () => void) {
-    const { error } = await supabase.from(table).update({ active: !active }).eq('id', id);
+    const { error } = await supabase.from(table as never).update({ active: !active } as never).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setter();
   }
   async function remove(table: string, id: string, setter: () => void) {
     if (!confirm('Delete this item?')) return;
-    const { error } = await supabase.from(table).delete().eq('id', id);
+    const { error } = await supabase.from(table as never).delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success('Deleted');
     setter();
@@ -1501,7 +1501,7 @@ function ContentManager() {
   }, []);
 
   async function save(row: { id: string; value: string }) {
-    const { error } = await supabase.from('site_content').update({ value: row.value, updated_at: new Date().toISOString() }).eq('id', row.id);
+    const { error } = await supabase.from('site_content').update({ value: row.value, updated_at: new Date().toISOString() } as never).eq('id', row.id);
     if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
     setSaved(row.id);
     setTimeout(() => setSaved(''), 1500);
@@ -1560,7 +1560,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
     let error;
     if (editingTpl.id) {
       const { id, ...patch } = editingTpl;
-      ({ error } = await supabase.from('document_templates').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id));
+      ({ error } = await supabase.from('document_templates').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id));
     } else {
       ({ error } = await supabase.from('document_templates').insert(editingTpl));
     }

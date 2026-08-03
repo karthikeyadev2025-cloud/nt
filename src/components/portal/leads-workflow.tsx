@@ -894,7 +894,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
                 <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)} />
                 <div className="min-w-0">
                   <p className="text-stone-900 text-sm font-medium truncate">{l.customer_name}
-                    {seg && <span className="text-xs px-2 py-0.5 rounded ml-2" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
+                    {seg && <span className="text-xs px-2 py-0.5 rounded ml-2" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}
                   </p>
                   <p className="text-stone-700 text-xs">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at).toLocaleDateString()}</p>
                 </div>
@@ -1594,7 +1594,7 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
                     <span className="text-stone-900 text-sm">{l.customer_name}</span>
                     <span className="text-stone-700 text-xs ml-2">{l.phone} • {l.stage}</span>
                   </div>
-                  {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
+                  {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}
                 </label>
               );
             })}

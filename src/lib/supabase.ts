@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from './database.types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -25,7 +26,7 @@ if (!isSupabaseConfigured) {
 
 // We still create a client (with harmless placeholders if unconfigured) so imports don't crash;
 // AuthContext gates real calls behind `isSupabaseConfigured`.
-export const supabase = createClient(
+export const supabase = createClient<Database>(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-anon-key',
   {

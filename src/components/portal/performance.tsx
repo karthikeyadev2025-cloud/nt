@@ -166,7 +166,7 @@ export function LeadsFunnelChart({ segments }: { segments: Segment[] }) {
           color: seg.color,
         };
       });
-      setData(rows);
+      setData(rows as never);
     }).catch(() => {});
   }, [segments]);
 

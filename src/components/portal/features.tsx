@@ -285,7 +285,7 @@ export function MyBankDetails() {
   const load = useCallback(async () => {
     if (!user) return;
     const { data: u } = await supabase.from('app_users').select('bank_details').eq('id', user.id).maybeSingle();
-    if (u?.bank_details) { setCurrent(u.bank_details); setForm((f) => ({ ...f, ...u.bank_details })); }
+    if (u?.bank_details) { setCurrent(u.bank_details); setForm((f) => ({ ...f, ...(u.bank_details as Record<string, unknown> ?? {}) })); }
     const { data: p } = await supabase.from('bank_change_requests').select('*').eq('staff_user_id', user.id).eq('status', 'pending').maybeSingle();
     setPendingReq(p || null);
   }, [user]);
@@ -661,7 +661,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
               return (
                 <div key={j.id} className={cardCls + ' flex items-center justify-between'}>
                   <div>
-                    <p className="text-stone-900 text-sm font-medium">{j.title} {seg && <span className="text-xs px-1.5 py-0.5 rounded ml-1" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}</p>
+                    <p className="text-stone-900 text-sm font-medium">{j.title} {seg && <span className="text-xs px-1.5 py-0.5 rounded ml-1" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}</p>
                     <p className="text-stone-700 text-xs mt-0.5">{j.location} • {j.employment_type.replace('_', ' ')} • {apps.filter(a => a.job_posting_id === j.id).length} applicants</p>
                   </div>
                   <div className="flex items-center gap-3">

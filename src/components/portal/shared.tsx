@@ -101,7 +101,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
   }
 
   async function update(id: string, patch: Partial<SupportTicket>) {
-    const { error } = await supabase.from('support_tickets').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from('support_tickets').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id);
     if (error) { toast.error(`Update failed: ${error.message}`); return; }
     toast.success('Ticket updated');
     load();
@@ -112,7 +112,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
     if (!reply.trim() || !openTicket || !user) return;
     const { error } = await supabase.from('ticket_replies').insert({
       ticket_id: openTicket.id, author_user_id: user.id, author_name: user.full_name, message: reply, is_staff: true,
-    });
+    } as never);
     if (error) { toast.error(`Couldn't send reply: ${error.message}`); return; }
     setReply('');
     loadReplies(openTicket.id);
@@ -144,13 +144,13 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
               onClick={() => { setOpenTicket(t); loadReplies(t.id); }}>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="font-mono text-teal-700 text-sm">{t.ticket_no}</span>
-                <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
+                <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color ?? undefined }}>{seg?.name}</span>
                 <span className={`px-2 py-0.5 rounded text-xs ${ticketStatusColors[t.status]}`}>{t.status.replace('_', ' ')}</span>
                 <span className="text-xs text-stone-700">{t.ticket_type}</span>
                 <span className={`text-xs ${t.priority === 'urgent' ? 'text-red-700' : t.priority === 'high' ? 'text-amber-700' : 'text-stone-700'}`}>{t.priority}</span>
               </div>
               <p className="text-stone-900 font-medium mt-1.5">{t.subject}</p>
-              <p className="text-stone-700 text-xs mt-0.5">{t.customer_name} • {t.customer_phone} • {new Date(t.created_at).toLocaleString()}</p>
+              <p className="text-stone-700 text-xs mt-0.5">{t.customer_name} • {t.customer_phone} • {new Date(t.created_at ?? '').toLocaleString()}</p>
             </div>
           );
         })}
@@ -187,7 +187,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
               {replies.map(r => (
                 <div key={r.id} className="text-sm">
                   <span className="text-teal-700 font-medium">{r.author_name}</span>
-                  <span className="text-stone-700 text-xs ml-2">{new Date(r.created_at).toLocaleString()}</span>
+                  <span className="text-stone-700 text-xs ml-2">{new Date(r.created_at ?? '').toLocaleString()}</span>
                   <p className="text-stone-700 mt-0.5">{r.message}</p>
                 </div>
               ))}
@@ -258,7 +258,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     setBulkBusy(true);
     const { error } = await supabase
       .from('marketing_leads')
-      .update({ assigned_to: bulkAssignee || null, updated_at: new Date().toISOString() })
+      .update({ assigned_to: bulkAssignee || null, updated_at: new Date().toISOString() } as never)
       .in('id', selectedIds);
 
     if (error) { toast.error(`Bulk assign failed: ${error.message}`); setBulkBusy(false); return; }
@@ -271,7 +271,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         title: 'New leads assigned to you',
         body: `${selectedIds.length} leads were assigned to you.`,
         link: '/portal',
-      });
+      } as never);
       toast.success(`${selectedIds.length} leads assigned to ${assigneeObj?.full_name || 'staff'}`);
     } else {
       toast.success(`${selectedIds.length} leads set to Unassigned`);
@@ -289,7 +289,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     setBulkBusy(true);
     const { error } = await supabase
       .from('marketing_leads')
-      .update({ stage: bulkStage, updated_at: new Date().toISOString() })
+      .update({ stage: bulkStage, updated_at: new Date().toISOString() } as never)
       .in('id', selectedIds);
 
     if (error) { toast.error(`Bulk stage change failed: ${error.message}`); setBulkBusy(false); return; }
@@ -342,7 +342,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       invoice_no: editingLead.invoice_no || null,
       invoice_amount: editingLead.invoice_amount || null,
       updated_at: new Date().toISOString(),
-    }).eq('id', editingLead.id);
+    } as never).eq('id', editingLead.id);
 
     if (error) { toast.error(`Failed to save lead: ${error.message}`); return; }
     toast.success('Lead details updated');
@@ -387,7 +387,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   }, []);
 
   async function update(id: string, patch: Partial<Lead>) {
-    const { error } = await supabase.from('marketing_leads').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await supabase.from('marketing_leads').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id);
     if (error) { toast.error(`Update failed: ${error.message}`); return; }
     toast.success('Lead updated');
     invalidateQueryCache('leads:');
@@ -418,7 +418,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     const { error } = await supabase.from('lead_remarks').insert({
       lead_id: openLead.id, user_id: user.id, remark: newRemark,
       call_type: asReview ? 'review' : 'note',
-    });
+    } as never);
     if (error) { toast.error(`Couldn't add remark: ${error.message}`); return; }
     setNewRemark('');
     toast.success(
@@ -442,7 +442,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       if (exists) { setDupWarning([{ id: 'exists', customer_name: 'An active lead with this number already exists', stage: '', assignee_name: '' }]); return; }
     }
 
-    const { error } = await supabase.from('marketing_leads').insert({ ...form, phone, created_by: user.id });
+    const { error } = await supabase.from('marketing_leads').insert({ ...form, phone, created_by: user.id } as never);
     if (error) { toast.error(`Couldn't create lead: ${error.message}`); return; }
     toast.success('Lead created');
     setShowAdd(false);
@@ -591,7 +591,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
               <div className="flex-1 min-w-0" onClick={() => { setOpenLead(l); loadRemarks(l.id); }}>
                 <div className="flex flex-wrap items-center gap-2.5">
                   <span className="text-stone-900 font-bold">{l.customer_name}</span>
-                  <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
+                  <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color ?? undefined }}>{seg?.name}</span>
                   <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
                   {assignedStaffName ? (
                     <span className="px-2 py-0.5 rounded text-[11px] bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold flex items-center gap-1 shadow-sm">
@@ -614,7 +614,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 <p className="text-stone-700 text-xs mt-1">
                   {l.priority === 'high' && <span className="text-red-700 font-medium">● High </span>}
                   {l.priority === 'low' && <span className="text-stone-700">● Low </span>}
-                  {l.interested_in && `${l.interested_in} • `}Created {new Date(l.created_at).toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}
+                  {l.interested_in && `${l.interested_in} • `}Created {new Date(l.created_at ?? '').toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}
                 </p>
               </div>
             </div>
@@ -661,7 +661,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 <p className="text-stone-700 text-sm">{openLead.phone} {openLead.email && `• ${openLead.email}`}</p>
                 {openLead.interested_in && <p className="text-stone-700 text-sm mt-1">Interested in: {openLead.interested_in}</p>}
                 <p className="text-stone-700 text-xs mt-1.5">
-                  Created {new Date(openLead.created_at).toLocaleString()} • source: {openLead.source}
+                  Created {new Date(openLead.created_at ?? '').toLocaleString()} • source: {openLead.source}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -718,7 +718,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 return (
                   <div key={r.id} className={`text-sm ${isSystem ? 'pl-2 border-l-2 border-stone-800' : ''}`}>
                     <span className="text-stone-700 text-xs">
-                      {new Date(r.created_at).toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''}{!isSystem && ` • ${r.call_type}`}
+                      {new Date(r.created_at ?? '').toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''}{!isSystem && ` • ${r.call_type}`}
                     </span>
                     <p className={isSystem ? 'text-stone-700 text-xs italic' : 'text-stone-700'}>{r.remark}</p>
                     {(r.address || r.photo_url) && (
@@ -937,7 +937,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   async function review(table: string, id: string, status: string, setter: (fn: any) => void, override = false) {
     const patch: any = { status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() };
     if (override) patch.override_balance = true;
-    const { error } = await supabase.from(table).update(patch).eq('id', id);
+    const { error } = await supabase.from(table as never).update(patch as never).eq('id', id);
     if (error) {
       // The balance guard raises a descriptive exception — offer the override
       // rather than leaving the approver stuck.
@@ -1192,7 +1192,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-stone-900 text-sm font-medium">{staffById[a.staff_user_id]?.full_name || '—'} • ₹{Number(a.amount).toLocaleString('en-IN')}</p>
-                  <p className="text-stone-700 text-xs">{a.reason} • {new Date(a.created_at).toLocaleDateString()}</p>
+                  <p className="text-stone-700 text-xs">{a.reason} • {new Date(a.created_at ?? '').toLocaleDateString()}</p>
                 </div>
                 {a.status === 'pending' && hasPermission('approve_advances') ? (
                   <div className="flex gap-2">

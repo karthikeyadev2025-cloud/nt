@@ -320,8 +320,8 @@ export function DanglingCheckins() {
   async function close(rec: any) {
     setBusy(rec.id);
     const t = customTime[rec.id];
-    const checkOut = t ? new Date(`${rec.attendance_date}T${t}`).toISOString() : null;
-    const { error } = await supabase.rpc('close_dangling_checkin', { _record_id: rec.id, _check_out: checkOut });
+    const checkOut = t ? new Date(`${rec.attendance_date}T${t}`).toISOString() : undefined;
+    const { error } = await supabase.rpc('close_dangling_checkin', { _record_id: (rec.id ?? undefined), _check_out: checkOut });
     setBusy('');
     if (error) { toast.error(`Couldn't close: ${error.message}`); return; }
     toast.success('Day closed — staff member notified');
@@ -370,7 +370,7 @@ export function OverdueTickets({ segments }: { segments: Segment[] }) {
   const [segment, setSegment] = useState('');
 
   useEffect(() => {
-    cachedRpc(`list_overdue_tickets:${segment}`, () => supabase.rpc('list_overdue_tickets', { _segment_slug: segment || null }))
+    cachedRpc(`list_overdue_tickets:${segment}`, () => supabase.rpc('list_overdue_tickets', { _segment_slug: segment || undefined }))
       .then(res => {
         const data = (res as any)?.data || res;
         if (Array.isArray(data)) setItems(data);
@@ -397,7 +397,7 @@ export function OverdueTickets({ segments }: { segments: Segment[] }) {
               <div key={t.id} className={cardCls + ' border-red-900/50'}>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-teal-700 text-sm">{t.ticket_no}</span>
-                  {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color + '22', color: seg.color }}>{seg.name}</span>}
+                  {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}
                   <span className="text-xs text-red-700 font-medium">{over}h over target</span>
                   <span className="text-xs text-stone-700">{t.priority} • target {t.target_hours}h</span>
                 </div>

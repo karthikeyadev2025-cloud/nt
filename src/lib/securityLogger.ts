@@ -7,7 +7,7 @@ async function log(event_type: string, user_email: string, details: Record<strin
       event_type,
       details,
       user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-    });
+    } as never);
   } catch {
     // never block auth flow on logging
   }

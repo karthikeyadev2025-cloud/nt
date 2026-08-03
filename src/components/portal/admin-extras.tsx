@@ -232,7 +232,7 @@ export function ExportStaffButton() {
     const headers = ['id', 'full_name', 'email', 'role', 'phone', 'designation', 'is_active', 'joining_date'];
     const csvRows = [headers.join(',')];
     data.forEach(u => {
-      csvRows.push(headers.map(h => JSON.stringify(u[h] ?? '')).join(','));
+      csvRows.push(headers.map(h => JSON.stringify((u as Record<string, unknown>)[h] ?? '')).join(','));
     });
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

@@ -576,7 +576,7 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
 
   useEffect(() => {
     cachedRpc(`staff_attendance_summary:${segment}:${days}`, () =>
-      supabase.rpc('staff_attendance_summary', { _segment_slug: segment || null, _days: days })
+      supabase.rpc('staff_attendance_summary', { _segment_slug: segment ?? undefined, _days: days })
     ).then(res => {
       const data = (res as any)?.data || res;
       if (Array.isArray(data)) setRows(data);

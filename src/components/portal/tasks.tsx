@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { Database } from '../../lib/database.types';
+import type { LucideIcon } from 'lucide-react';
+
+type OfficeTask = Database['public']['Tables']['office_tasks']['Row'];
+type StaffOption = Pick<Database['public']['Tables']['app_users']['Row'], 'id' | 'full_name' | 'role' | 'segments'>;
 import { CheckCircle2, Circle, Clock3, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -13,7 +18,7 @@ const PRIORITY_TONE: Record<string, string> = {
   low: 'text-stone-700 border-stone-300 bg-stone-100/60',
 };
 
-const STATUS_META: Record<string, { label: string; icon: any; tone: string }> = {
+const STATUS_META: Record<string, { label: string; icon: LucideIcon; tone: string }> = {
   pending: { label: 'Pending', icon: Circle, tone: 'text-stone-700' },
   in_progress: { label: 'In progress', icon: Clock3, tone: 'text-teal-700' },
   completed: { label: 'Completed', icon: CheckCircle2, tone: 'text-emerald-700' },
@@ -40,8 +45,8 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
   const canAssign = user?.role === 'super_admin' || hasPermission('view_staff') || hasPermission('manage_staff');
   const showManagerView = canAssign && !mineOnly;
 
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [staff, setStaff] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<OfficeTask[]>([]);
+  const [staff, setStaff] = useState<StaffOption[]>([]);
   const [segFilter, setSegFilter] = useState('');
   const [scope, setScope] = useState<'open' | 'mine' | 'done'>(mineOnly ? 'mine' : 'open');
   const [showNew, setShowNew] = useState(false);
@@ -113,9 +118,9 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
     load();
   }
 
-  async function setStatus(t: any, status: string, note?: string) {
+  async function setStatus(t: OfficeTask, status: string, note?: string) {
     setBusy(t.id);
-    const patch: any = { status };
+    const patch: Database['public']['Tables']['office_tasks']['Update'] = { status };
     if (note !== undefined) patch.completion_note = note;
     const { error } = await supabase.from('office_tasks').update(patch).eq('id', t.id);
     setBusy('');
@@ -124,7 +129,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
     load();
   }
 
-  async function reassign(t: any, to: string) {
+  async function reassign(t: OfficeTask, to: string) {
     setBusy(t.id);
     const { error } = await supabase.from('office_tasks').update({ assigned_to: to || null }).eq('id', t.id);
     setBusy('');

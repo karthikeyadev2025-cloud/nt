@@ -7,7 +7,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSegments, useSiteContent } from '../lib/useSegments';
-import type { Segment, Product } from '../lib/database.types';
+import type { Segment, Product, ProductFeature } from '../lib/database.types';
 import WhatsAppButton from './WhatsAppButton';
 import SEOHead from './SEOHead';
 import Reveal from './Reveal';
@@ -396,7 +396,7 @@ function Hero({ segments }: { segments: Segment[] }) {
           {segments.map((s) => (
             <a key={s.slug} href={`#seg-${s.slug}`}
               className="flex items-center gap-2 px-5 py-3 rounded-xl border border-stone-300 bg-white hover:border-orange-600 hover:bg-stone-50 transition-all text-stone-900 shadow-md font-semibold text-sm">
-              <Icon name={s.icon} className="w-5 h-5 text-orange-700" />
+              <Icon name={s.icon ?? ''} className="w-5 h-5 text-orange-700" />
               <span>{s.name}</span>
               <ChevronRight className="w-4 h-4 text-stone-400" />
             </a>
@@ -495,8 +495,8 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
               <div key={seg.slug} id={`seg-${seg.slug}`} className="scroll-mt-24">
                 <Reveal>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xs" style={{ backgroundColor: seg.color + '15', color: seg.color }}>
-                      <Icon name={seg.icon} className="w-6 h-6" />
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xs" style={{ backgroundColor: seg.color ?? undefined + '15', color: seg.color ?? undefined }}>
+                      <Icon name={seg.icon ?? ''} className="w-6 h-6" />
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-stone-900">{seg.name}</h3>
@@ -513,7 +513,7 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
                         className="p-6 rounded-2xl bg-white border border-stone-200/90 shadow-md hover:shadow-xl hover:border-orange-300 transition-all h-full flex flex-col justify-between"
                       >
                         <div>
-                          <Icon name={s.icon} className="w-8 h-8 mb-4 text-orange-700" />
+                          <Icon name={s.icon ?? ''} className="w-8 h-8 mb-4 text-orange-700" />
                           <h4 className="text-lg font-bold text-stone-900 mb-2">{s.title}</h4>
                           <p className="text-stone-700 text-sm leading-relaxed font-medium">{s.description}</p>
                         </div>
@@ -539,7 +539,7 @@ const DEFAULT_FALLBACK_PRODUCTS: Product[] = [
     name: 'MyStore OS',
     tagline: 'Retail POS & Billing ERP',
     description: 'Cloud billing, barcode inventory, GST invoicing, and multi-store management for retail & supermarket businesses.',
-    logo_url: null,
+    logo_url: null, created_at: null, updated_at: null,
     screenshots: [],
     status: 'active',
     external_url: 'https://mystoreos.com',
@@ -557,7 +557,7 @@ const DEFAULT_FALLBACK_PRODUCTS: Product[] = [
     name: 'Punchly',
     tagline: 'Face & Geo Attendance ERP',
     description: 'Smart attendance tracking with selfie camera verification, GPS geo-fencing, leave approvals, and automated payroll calculation.',
-    logo_url: null,
+    logo_url: null, created_at: null, updated_at: null,
     screenshots: [],
     status: 'active',
     external_url: 'https://punchly.app',
@@ -575,7 +575,7 @@ const DEFAULT_FALLBACK_PRODUCTS: Product[] = [
     name: 'Jovio AI',
     tagline: 'AI Voice & Chatbot Agent',
     description: 'Autonomous AI voice call bots and WhatsApp conversational agents for automated lead qualification and appointment booking.',
-    logo_url: null,
+    logo_url: null, created_at: null, updated_at: null,
     screenshots: [],
     status: 'active',
     external_url: 'https://jovio.ai',
@@ -622,7 +622,7 @@ function Products() {
                 </div>
                 <p className="text-stone-700 text-sm mb-5 leading-relaxed font-medium">{p.description}</p>
                 <div className="space-y-2.5 mb-6">
-                  {(p.features || []).map((f, i) => (
+                  {((p.features as unknown as ProductFeature[] | null) || []).map((f, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-orange-700 mt-0.5 shrink-0" />
                       <div>
@@ -914,7 +914,7 @@ function Careers({ segments }: { segments: Segment[] }) {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-stone-900 font-bold">{job.title}</h3>
-                    {seg && <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: seg.color + '15', color: seg.color }}>{seg.name}</span>}
+                    {seg && <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: seg.color ?? undefined + '15', color: seg.color ?? undefined }}>{seg.name}</span>}
                   </div>
                   <p className="text-stone-700 text-sm font-medium">{job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}</p>
                 </div>

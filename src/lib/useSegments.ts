@@ -14,7 +14,7 @@ const DEFAULT_FALLBACK_SEGMENTS: Segment[] = [
     color: '#1d4ed8',
     ticket_prefix: 'NKT-DM',
     active: true,
-    order_index: 1,
+    order_index: 1, created_at: null,
   },
   {
     id: 'seg-soft',
@@ -26,7 +26,7 @@ const DEFAULT_FALLBACK_SEGMENTS: Segment[] = [
     color: '#0284c7',
     ticket_prefix: 'NKT-SW',
     active: true,
-    order_index: 2,
+    order_index: 2, created_at: null,
   },
 ];
 
