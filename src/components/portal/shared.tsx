@@ -345,10 +345,10 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const [dupWarning, setDupWarning] = useState<any[] | null>(null);
 
   async function createLead() {
-    if (!form.segment_slug || !form.customer_name || !form.phone || !user) { toast.error('Segment, name and phone are required'); return; }
-    const phone = normalizePhone(form.phone);
+    if (!form.segment_slug || !form.customer_name || !user) { toast.error('Segment and name are required'); return; }
+    const phone = form.phone ? normalizePhone(form.phone) : 'Pending Collection';
 
-    if (!dupWarning) {
+    if (phone !== 'Pending Collection' && !dupWarning) {
       const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: phone, _segment_slug: form.segment_slug });
       if (dupes && dupes.length > 0) { setDupWarning(dupes); return; }
       const { data: exists } = await supabase.rpc('lead_phone_exists', { _phone: phone, _segment_slug: form.segment_slug });
@@ -361,6 +361,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     setShowAdd(false);
     setDupWarning(null);
     setForm({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
+    invalidateQueryCache('leads:');
     load();
   }
 
@@ -390,18 +391,27 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       <div className="space-y-2">
         {leads.map(l => {
           const seg = segments.find(s => s.slug === l.segment_slug);
+          const needsPhone = !l.phone || l.phone === 'Pending Collection';
           return (
             <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => { setOpenLead(l); loadRemarks(l.id); }}>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-stone-900 font-medium">{l.customer_name}</span>
-                <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="text-stone-900 font-bold">{l.customer_name}</span>
+                <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
                 <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
-                <span className="text-xs text-stone-700">{l.source}</span>
+                {needsPhone ? (
+                  <span className="px-2 py-0.5 rounded text-[11px] bg-amber-50 text-amber-900 border border-amber-300 font-bold flex items-center gap-1 shadow-sm">
+                    📍 Collect Phone on Visit
+                  </span>
+                ) : (
+                  <span className="text-xs text-stone-700 font-semibold">📞 {l.phone}</span>
+                )}
+                <span className="text-xs text-stone-700 ml-auto">{l.source}</span>
               </div>
               <p className="text-stone-700 text-xs mt-1">
                 {l.priority === 'high' && <span className="text-red-700 font-medium">● High </span>}
                 {l.priority === 'low' && <span className="text-stone-700">● Low </span>}
-                {l.phone} {l.interested_in && `• ${l.interested_in}`} • {new Date(l.created_at).toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}</p>
+                {l.interested_in && `${l.interested_in} • `}Created {new Date(l.created_at).toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}
+              </p>
             </div>
           );
         })}

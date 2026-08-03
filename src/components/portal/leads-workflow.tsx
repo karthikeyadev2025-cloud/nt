@@ -500,13 +500,15 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
 
       return {
         customer_name: customerName,
-        phone,
+        phone: phone || 'Pending Collection',
         email,
         interested_in: notesParts.join(' | '),
       };
     });
 
-    const validRows = mapped.filter(r => r.customer_name && r.phone);
+    // Flexible mode: Accept any row that has a Customer / Business Name!
+    // Phone numbers are fully optional — if missing, marked as "Pending Collection" for field executives to collect on site.
+    const validRows = mapped.filter(r => r.customer_name);
     setRows(validRows);
     setParseInfo({ totalRows: json.length, matchedRows: validRows.length, headers });
   }
