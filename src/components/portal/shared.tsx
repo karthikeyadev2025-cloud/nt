@@ -219,6 +219,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const [leads, setLeads] = useState<Lead[]>([]);
   const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[] }[]>([]);
   const [openLead, setOpenLead] = useState<Lead | null>(null);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [remarks, setRemarks] = useState<{ id: string; remark: string; call_type: string; created_at: string; address?: string; photo_url?: string; author_name?: string; author_staff_code?: string }[]>([]);
   const [leadPhotoUrls, setLeadPhotoUrls] = useState<Record<string, string>>({});
   const [previewLeadPhoto, setPreviewLeadPhoto] = useState<string | null>(null);
@@ -227,6 +228,42 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
   const { user, hasPermission } = useAuth();
   const toast = useToast();
+
+  async function deleteLead(id: string) {
+    if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) return;
+    const { error } = await supabase.from('marketing_leads').delete().eq('id', id);
+    if (error) { toast.error(`Couldn't delete lead: ${error.message}`); return; }
+    toast.success('Lead deleted successfully');
+    setOpenLead(null);
+    setEditingLead(null);
+    invalidateQueryCache('leads:');
+    load();
+  }
+
+  async function saveEditedLead(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingLead) return;
+    const { error } = await supabase.from('marketing_leads').update({
+      customer_name: editingLead.customer_name,
+      phone: editingLead.phone,
+      email: editingLead.email || null,
+      segment_slug: editingLead.segment_slug,
+      interested_in: editingLead.interested_in || null,
+      stage: editingLead.stage,
+      priority: editingLead.priority || 'medium',
+      assigned_to: editingLead.assigned_to || null,
+      invoice_no: editingLead.invoice_no || null,
+      invoice_amount: editingLead.invoice_amount || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', editingLead.id);
+
+    if (error) { toast.error(`Failed to save lead: ${error.message}`); return; }
+    toast.success('Lead details updated');
+    if (openLead?.id === editingLead.id) setOpenLead({ ...openLead, ...editingLead });
+    setEditingLead(null);
+    invalidateQueryCache('leads:');
+    load();
+  }
 
   async function load() {
     const cacheKey = `leads:${segFilter}:${stageFilter}`;
@@ -266,6 +303,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     const { error } = await supabase.from('marketing_leads').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
     if (error) { toast.error(`Update failed: ${error.message}`); return; }
     toast.success('Lead updated');
+    invalidateQueryCache('leads:');
     load();
     if (openLead?.id === id) setOpenLead({ ...openLead, ...patch } as Lead);
   }
@@ -402,16 +440,28 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       {openLead && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenLead(null)}>
           <div className="bg-white border border-stone-200 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between mb-3">
+            <div className="flex justify-between items-start mb-3 gap-3">
               <div>
-                <h3 className="text-stone-900 text-lg font-semibold">{openLead.customer_name}</h3>
+                <h3 className="text-stone-900 text-lg font-bold">{openLead.customer_name}</h3>
                 <p className="text-stone-700 text-sm">{openLead.phone} {openLead.email && `• ${openLead.email}`}</p>
                 {openLead.interested_in && <p className="text-stone-700 text-sm mt-1">Interested in: {openLead.interested_in}</p>}
                 <p className="text-stone-700 text-xs mt-1.5">
                   Created {new Date(openLead.created_at).toLocaleString()} • source: {openLead.source}
                 </p>
               </div>
-              <button className="text-stone-700 hover:text-stone-900" onClick={() => setOpenLead(null)}>✕</button>
+              <div className="flex items-center gap-2">
+                {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
+                  <>
+                    <button onClick={() => setEditingLead(openLead)} className="px-3 py-1 bg-orange-50 hover:bg-orange-100 text-orange-800 text-xs font-bold rounded-xl border border-orange-200 shadow-sm transition-colors">
+                      Edit Lead
+                    </button>
+                    <button onClick={() => deleteLead(openLead.id)} className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 shadow-sm transition-colors">
+                      Delete
+                    </button>
+                  </>
+                )}
+                <button className="text-stone-700 hover:text-stone-900 p-1" onClick={() => setOpenLead(null)}>✕</button>
+              </div>
             </div>
             {hasPermission('manage_leads') && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -484,6 +534,81 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
             <X className="w-6 h-6" />
           </button>
           <img src={previewLeadPhoto} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
+      {editingLead && (
+        <div className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditingLead(null)}>
+          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <h3 className="text-stone-900 font-extrabold text-lg">Edit Lead Details</h3>
+              <button onClick={() => setEditingLead(null)} className="text-stone-700 hover:text-stone-900">✕</button>
+            </div>
+            <form onSubmit={saveEditedLead} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Customer Name</label>
+                <input className={inputCls} required value={editingLead.customer_name} onChange={e => setEditingLead({ ...editingLead, customer_name: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Phone Number</label>
+                  <input className={inputCls} required value={editingLead.phone} onChange={e => setEditingLead({ ...editingLead, phone: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Email</label>
+                  <input className={inputCls} value={editingLead.email || ''} onChange={e => setEditingLead({ ...editingLead, email: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Segment</label>
+                  <select className={inputCls} value={editingLead.segment_slug} onChange={e => setEditingLead({ ...editingLead, segment_slug: e.target.value })}>
+                    {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Stage</label>
+                  <select className={inputCls} value={editingLead.stage} onChange={e => setEditingLead({ ...editingLead, stage: e.target.value as Lead['stage'] })}>
+                    {stages.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Interested In</label>
+                  <input className={inputCls} value={editingLead.interested_in || ''} onChange={e => setEditingLead({ ...editingLead, interested_in: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Assign To Staff</label>
+                  <select className={inputCls} value={editingLead.assigned_to || ''} onChange={e => setEditingLead({ ...editingLead, assigned_to: e.target.value || null })}>
+                    <option value="">Unassigned</option>
+                    {staff.filter(s => s.segments.includes('all') || s.segments.includes(editingLead.segment_slug)).map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+                  </select>
+                </div>
+              </div>
+              {editingLead.stage === 'won' && (
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-stone-100">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Invoice Number</label>
+                    <input className={inputCls} value={editingLead.invoice_no || ''} onChange={e => setEditingLead({ ...editingLead, invoice_no: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Invoice Amount (₹)</label>
+                    <input type="number" className={inputCls} value={editingLead.invoice_amount || ''} onChange={e => setEditingLead({ ...editingLead, invoice_amount: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-3 border-t border-stone-100">
+                <button type="button" onClick={() => deleteLead(editingLead.id)} className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200">
+                  Delete Lead
+                </button>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setEditingLead(null)} className="px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-xl">Cancel</button>
+                  <button type="submit" className="px-4 py-2 text-xs font-bold text-white bg-orange-700 hover:bg-orange-600 rounded-xl shadow-md">Save Changes</button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

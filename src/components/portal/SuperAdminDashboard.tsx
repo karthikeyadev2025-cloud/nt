@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cachedRpc } from '../../lib/cachedRpc';
+import { cachedQuery } from '../../lib/cachedQuery';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import type { Segment, Product } from '../../lib/database.types';
@@ -585,6 +586,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
   const [showOffboard, setShowOffboard] = useState(false);
+  const [viewDocsFor, setViewDocsFor] = useState<any | null>(null);
   const [showChangePwModal, setShowChangePwModal] = useState(false);
 
   useEffect(() => { if (openSignal) setShowOnboard(true); }, [openSignal]);
