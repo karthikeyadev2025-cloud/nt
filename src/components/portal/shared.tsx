@@ -233,6 +233,10 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const [bulkStage, setBulkStage] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
 
+  // Assignment & Staff filter state
+  const [assignFilter, setAssignFilter] = useState<'all' | 'assigned' | 'unassigned'>('all');
+  const [staffFilter, setStaffFilter] = useState<string>('');
+
   const { user, hasPermission } = useAuth();
   const toast = useToast();
 
@@ -447,11 +451,22 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     load();
   }
 
+  const staffById = useMemo(() => Object.fromEntries(staff.map(s => [s.id, s.full_name])), [staff]);
+
+  const filteredLeads = useMemo(() => {
+    return leads.filter(l => {
+      if (assignFilter === 'assigned' && !l.assigned_to) return false;
+      if (assignFilter === 'unassigned' && l.assigned_to) return false;
+      if (staffFilter && l.assigned_to !== staffFilter) return false;
+      return true;
+    });
+  }, [leads, assignFilter, staffFilter]);
+
   const funnel = useMemo(() => {
     const f: Record<string, number> = {};
-    leads.forEach(l => { f[l.stage] = (f[l.stage] || 0) + 1; });
+    filteredLeads.forEach(l => { f[l.stage] = (f[l.stage] || 0) + 1; });
     return f;
-  }, [leads]);
+  }, [filteredLeads]);
 
   return (
     <div>
@@ -461,13 +476,37 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
           <button className={btnCls} onClick={() => { setDupWarning(null); setShowAdd(true); }}>+ Add Lead</button>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={() => setStageFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === '' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>All ({leads.length})</button>
-        {stages.map(s => (
-          <button key={s} onClick={() => setStageFilter(s)} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
-            {s.replace('_', ' ')} ({funnel[s] || 0})
-          </button>
-        ))}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 bg-stone-50 border border-stone-200 rounded-2xl">
+        {/* Stage Filters */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button onClick={() => setStageFilter('')} className={`px-3 py-1 rounded-lg text-xs font-semibold border ${stageFilter === '' ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-stone-200 bg-white text-stone-700'}`}>All Stages ({filteredLeads.length})</button>
+          {stages.map(s => (
+            <button key={s} onClick={() => setStageFilter(s)} className={`px-3 py-1 rounded-lg text-xs font-semibold border ${stageFilter === s ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-stone-200 bg-white text-stone-700'}`}>
+              {s.replace('_', ' ')} ({funnel[s] || 0})
+            </button>
+          ))}
+        </div>
+
+        {/* Assignment Filter Switcher */}
+        <div className="flex items-center gap-2 flex-wrap ml-auto">
+          <div className="flex items-center rounded-xl bg-stone-200/70 p-1">
+            <button onClick={() => { setAssignFilter('all'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'all' && !staffFilter ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+              All
+            </button>
+            <button onClick={() => { setAssignFilter('assigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'assigned' && !staffFilter ? 'bg-indigo-600 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+              👤 Assigned ({leads.filter(l => l.assigned_to).length})
+            </button>
+            <button onClick={() => { setAssignFilter('unassigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'unassigned' && !staffFilter ? 'bg-amber-600 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+              📥 Unassigned ({leads.filter(l => !l.assigned_to).length})
+            </button>
+          </div>
+
+          <select className={inputCls + ' text-xs py-1.5 w-auto bg-white'} value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
+            <option value="">Filter by Staff Member...</option>
+            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+          </select>
+        </div>
       </div>
 
       {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
@@ -476,11 +515,11 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
             <input
               type="checkbox"
               className="w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
-              checked={leads.length > 0 && selectedIds.length === leads.length}
+              checked={filteredLeads.length > 0 && selectedIds.length === filteredLeads.length}
               onChange={toggleSelectAll}
             />
             <span className="text-xs font-bold text-stone-800">
-              {selectedIds.length > 0 ? `${selectedIds.length} Selected` : `Select All (${leads.length})`}
+              {selectedIds.length > 0 ? `${selectedIds.length} Selected` : `Select All (${filteredLeads.length})`}
             </span>
           </div>
 
@@ -514,10 +553,11 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       )}
 
       <div className="space-y-2">
-        {leads.map(l => {
+        {filteredLeads.map(l => {
           const seg = segments.find(s => s.slug === l.segment_slug);
           const needsPhone = !l.phone || l.phone === 'Pending Collection';
           const isSelected = selectedIds.includes(l.id);
+          const assignedStaffName = l.assigned_to ? staffById[l.assigned_to] : null;
           return (
             <div key={l.id} className={cardCls + ` cursor-pointer hover:border-stone-300 flex items-start gap-3 transition-colors ${isSelected ? 'bg-orange-50/50 border-orange-300' : ''}`}>
               {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
@@ -534,9 +574,18 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                   <span className="text-stone-900 font-bold">{l.customer_name}</span>
                   <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
                   <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
+                  {assignedStaffName ? (
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold flex items-center gap-1 shadow-sm">
+                      👤 {assignedStaffName}
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-amber-50 text-amber-900 border border-amber-200 font-medium">
+                      📥 Unassigned
+                    </span>
+                  )}
                   {needsPhone ? (
-                    <span className="px-2 py-0.5 rounded text-[11px] bg-amber-50 text-amber-900 border border-amber-300 font-bold flex items-center gap-1 shadow-sm">
-                      📍 Collect Phone on Visit
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1 shadow-sm">
+                      📍 Collect Phone
                     </span>
                   ) : (
                     <span className="text-xs text-stone-700 font-semibold">📞 {l.phone}</span>
@@ -552,7 +601,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
             </div>
           );
         })}
-        {leads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No leads found.</p>}
+        {filteredLeads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No matching leads found.</p>}
       </div>
 
       {showAdd && (
