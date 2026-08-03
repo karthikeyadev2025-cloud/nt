@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
   Landmark, Megaphone, Briefcase, Image as ImageIcon, Shield,
-  Clock, CalendarDays, CreditCard, Repeat, Menu, X,
+  Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cachedRpc } from '../../lib/cachedRpc';
@@ -35,6 +35,7 @@ import { RegularizationApprovals, HolidayManager, OffboardStaff, DanglingCheckin
 import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
 import { SecurityLogsViewer, TodayAtAGlance, SetupChecklist, QuickSearch, ExportStaffButton } from './admin-extras';
 import SessionDevices from '../SessionDevices';
+import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
 import { KiteTailLogo } from '../KiteTailLogo';
@@ -584,7 +585,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
   const [showOffboard, setShowOffboard] = useState(false);
-  const [viewDocsFor, setViewDocsFor] = useState<any | null>(null);
+  const [showChangePwModal, setShowChangePwModal] = useState(false);
 
   useEffect(() => { if (openSignal) setShowOnboard(true); }, [openSignal]);
 
@@ -592,6 +593,16 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
     if (!editing) return;
     if (resetPasswordValue.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     setResettingPassword(true);
+
+    if (editing.id === currentUser?.id) {
+      const { error } = await supabase.auth.updateUser({ password: resetPasswordValue });
+      setResettingPassword(false);
+      if (error) { toast.error(error.message); return; }
+      toast.success('Your password has been updated!');
+      setResetPasswordValue('');
+      return;
+    }
+
     const { data, error } = await supabase.functions.invoke('create-user', {
       body: { action: 'reset_password', user_id: editing.id, new_password: resetPasswordValue },
     });
@@ -701,7 +712,11 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
                 </p>
                 <p className="text-stone-700 text-xs">{u.email}</p>
               </div>
-              <span className="text-stone-700 text-xs">Not a managed employee</span>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setShowChangePwModal(true)} className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors">
+                  <Key className="w-3.5 h-3.5 text-orange-700" /> Change My Password
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -835,6 +850,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
           onClose={() => setViewDocsFor(null)}
         />
       )}
+      {showChangePwModal && <ChangePasswordModal onClose={() => setShowChangePwModal(false)} />}
     </div>
   );
 }
@@ -1674,6 +1690,7 @@ export default function SuperAdminDashboard() {
   const [onboardSignal, setOnboardSignal] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const [focus, setFocus] = useState<{ kind: 'staff' | 'lead' | 'ticket'; id: string } | null>(null);
+  const [showHeaderPwModal, setShowHeaderPwModal] = useState(false);
 
   function navigateWithFocus(t: string, f?: { kind: 'staff' | 'lead' | 'ticket'; id: string }) {
     setTab(t as Tab);
@@ -1832,7 +1849,10 @@ export default function SuperAdminDashboard() {
           <div className="flex items-center gap-3">
             <QuickSearch onNavigate={navigateWithFocus} />
             <NotificationBell onNavigate={(t) => setTab(t as Tab)} />
-            <span className="text-stone-700 text-sm hidden sm:block">{user?.full_name}</span>
+            <button onClick={() => setShowHeaderPwModal(true)} title="Click to Change Password" className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 hover:bg-orange-50 border border-stone-200 hover:border-orange-200 text-stone-800 hover:text-orange-900 rounded-xl text-xs font-bold transition-all">
+              <Key className="w-3.5 h-3.5 text-orange-700" />
+              <span className="hidden sm:inline">{user?.full_name}</span>
+            </button>
             <button onClick={signOut} className="md:hidden text-stone-700"><LogOut className="w-5 h-5" /></button>
           </div>
         </div>
@@ -1860,6 +1880,7 @@ export default function SuperAdminDashboard() {
         {tab === 'security' && <SecurityLogsViewer />}
         {tab === 'my_sessions' && <SessionDevices />}
       </main>
+      {showHeaderPwModal && <ChangePasswordModal onClose={() => setShowHeaderPwModal(false)} />}
     </div>
   );
 }

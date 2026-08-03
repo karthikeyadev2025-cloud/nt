@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu } from 'lucide-react';
+import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu, Key } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -16,6 +16,7 @@ import { MyPayslips } from './payroll';
 import CameraCapture from '../CameraCapture';
 import { KiteTailLogo } from '../KiteTailLogo';
 import SessionDevices from '../SessionDevices';
+import { ChangePasswordModal } from '../ChangePasswordModal';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { cachedRpc } from '../../lib/cachedRpc';
 
@@ -607,8 +608,14 @@ export function MyDocuments() {
 
 // ─────────────────────────── My Profile: ID card + bank details
 export function MyProfile() {
+  const [showModal, setShowModal] = useState(false);
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-800 text-xs font-bold rounded-xl flex items-center gap-2 transition-colors">
+          <Key className="w-4 h-4 text-orange-700" /> Change My Password
+        </button>
+      </div>
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-6">
           <IDCard />
@@ -620,6 +627,7 @@ export function MyProfile() {
         </div>
       </div>
       <SessionDevices />
+      {showModal && <ChangePasswordModal onClose={() => setShowModal(false)} />}
     </div>
   );
 }
