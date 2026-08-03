@@ -226,8 +226,90 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const [newRemark, setNewRemark] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
+
+  // Bulk action state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAssignee, setBulkAssignee] = useState('');
+  const [bulkStage, setBulkStage] = useState('');
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   const { user, hasPermission } = useAuth();
   const toast = useToast();
+
+  function toggleSelectAll() {
+    if (selectedIds.length === leads.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(leads.map(l => l.id));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  async function handleBulkAssign() {
+    if (selectedIds.length === 0) return;
+    setBulkBusy(true);
+    const { error } = await supabase
+      .from('marketing_leads')
+      .update({ assigned_to: bulkAssignee || null, updated_at: new Date().toISOString() })
+      .in('id', selectedIds);
+
+    if (error) { toast.error(`Bulk assign failed: ${error.message}`); setBulkBusy(false); return; }
+
+    if (bulkAssignee) {
+      const assigneeObj = staff.find(s => s.id === bulkAssignee);
+      await supabase.from('notifications').insert({
+        user_id: bulkAssignee,
+        kind: 'lead_assigned',
+        title: 'New leads assigned to you',
+        body: `${selectedIds.length} leads were assigned to you.`,
+        link: '/portal',
+      });
+      toast.success(`${selectedIds.length} leads assigned to ${assigneeObj?.full_name || 'staff'}`);
+    } else {
+      toast.success(`${selectedIds.length} leads set to Unassigned`);
+    }
+
+    setBulkBusy(false);
+    setSelectedIds([]);
+    setBulkAssignee('');
+    invalidateQueryCache('leads:');
+    load();
+  }
+
+  async function handleBulkStage() {
+    if (selectedIds.length === 0 || !bulkStage) return;
+    setBulkBusy(true);
+    const { error } = await supabase
+      .from('marketing_leads')
+      .update({ stage: bulkStage, updated_at: new Date().toISOString() })
+      .in('id', selectedIds);
+
+    if (error) { toast.error(`Bulk stage change failed: ${error.message}`); setBulkBusy(false); return; }
+
+    toast.success(`${selectedIds.length} leads updated to stage "${bulkStage.replace('_', ' ')}"`);
+    setBulkBusy(false);
+    setSelectedIds([]);
+    setBulkStage('');
+    invalidateQueryCache('leads:');
+    load();
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} selected lead(s)? This action cannot be undone.`)) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from('marketing_leads').delete().in('id', selectedIds);
+    if (error) { toast.error(`Bulk delete failed: ${error.message}`); setBulkBusy(false); return; }
+
+    toast.success(`${selectedIds.length} leads deleted successfully`);
+    setBulkBusy(false);
+    setSelectedIds([]);
+    invalidateQueryCache('leads:');
+    load();
+  }
 
   async function deleteLead(id: string) {
     if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) return;
@@ -379,7 +461,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
           <button className={btnCls} onClick={() => { setDupWarning(null); setShowAdd(true); }}>+ Add Lead</button>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-2 mb-5">
+      <div className="flex flex-wrap gap-2 mb-4">
         <button onClick={() => setStageFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === '' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>All ({leads.length})</button>
         {stages.map(s => (
           <button key={s} onClick={() => setStageFilter(s)} className={`px-3 py-1 rounded-lg text-xs border ${stageFilter === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
@@ -388,30 +470,85 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         ))}
       </div>
 
+      {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
+        <div className="mb-4 flex items-center justify-between gap-3 p-3 bg-stone-100/90 border border-stone-200 rounded-2xl flex-wrap shadow-sm">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              className="w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+              checked={leads.length > 0 && selectedIds.length === leads.length}
+              onChange={toggleSelectAll}
+            />
+            <span className="text-xs font-bold text-stone-800">
+              {selectedIds.length > 0 ? `${selectedIds.length} Selected` : `Select All (${leads.length})`}
+            </span>
+          </div>
+
+          {selectedIds.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap ml-auto">
+              <select className={inputCls + ' text-xs py-1.5 w-auto bg-white'} value={bulkAssignee} onChange={e => setBulkAssignee(e.target.value)}>
+                <option value="">Reassign To...</option>
+                <option value="">Unassigned Pool</option>
+                {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+              </select>
+              <button disabled={bulkBusy} onClick={handleBulkAssign} className="px-3 py-1.5 bg-orange-700 hover:bg-orange-800 text-white text-xs font-bold rounded-xl shadow-sm">
+                Assign ({selectedIds.length})
+              </button>
+
+              <select className={inputCls + ' text-xs py-1.5 w-auto bg-white'} value={bulkStage} onChange={e => setBulkStage(e.target.value)}>
+                <option value="">Change Stage...</option>
+                {stages.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+              </select>
+              <button disabled={bulkBusy || !bulkStage} onClick={handleBulkStage} className="px-3 py-1.5 bg-stone-800 hover:bg-stone-900 text-white text-xs font-bold rounded-xl shadow-sm">
+                Apply Stage
+              </button>
+
+              {user?.role === 'super_admin' && (
+                <button disabled={bulkBusy} onClick={handleBulkDelete} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-sm">
+                  Delete ({selectedIds.length})
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
         {leads.map(l => {
           const seg = segments.find(s => s.slug === l.segment_slug);
           const needsPhone = !l.phone || l.phone === 'Pending Collection';
+          const isSelected = selectedIds.includes(l.id);
           return (
-            <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => { setOpenLead(l); loadRemarks(l.id); }}>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="text-stone-900 font-bold">{l.customer_name}</span>
-                <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
-                <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
-                {needsPhone ? (
-                  <span className="px-2 py-0.5 rounded text-[11px] bg-amber-50 text-amber-900 border border-amber-300 font-bold flex items-center gap-1 shadow-sm">
-                    📍 Collect Phone on Visit
-                  </span>
-                ) : (
-                  <span className="text-xs text-stone-700 font-semibold">📞 {l.phone}</span>
-                )}
-                <span className="text-xs text-stone-700 ml-auto">{l.source}</span>
+            <div key={l.id} className={cardCls + ` cursor-pointer hover:border-stone-300 flex items-start gap-3 transition-colors ${isSelected ? 'bg-orange-50/50 border-orange-300' : ''}`}>
+              {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={e => { e.stopPropagation(); toggleSelect(l.id); }}
+                  onClick={e => e.stopPropagation()}
+                  className="mt-1 w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0"
+                />
+              )}
+              <div className="flex-1 min-w-0" onClick={() => { setOpenLead(l); loadRemarks(l.id); }}>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="text-stone-900 font-bold">{l.customer_name}</span>
+                  <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color }}>{seg?.name}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{l.stage.replace('_', ' ')}</span>
+                  {needsPhone ? (
+                    <span className="px-2 py-0.5 rounded text-[11px] bg-amber-50 text-amber-900 border border-amber-300 font-bold flex items-center gap-1 shadow-sm">
+                      📍 Collect Phone on Visit
+                    </span>
+                  ) : (
+                    <span className="text-xs text-stone-700 font-semibold">📞 {l.phone}</span>
+                  )}
+                  <span className="text-xs text-stone-700 ml-auto">{l.source}</span>
+                </div>
+                <p className="text-stone-700 text-xs mt-1">
+                  {l.priority === 'high' && <span className="text-red-700 font-medium">● High </span>}
+                  {l.priority === 'low' && <span className="text-stone-700">● Low </span>}
+                  {l.interested_in && `${l.interested_in} • `}Created {new Date(l.created_at).toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}
+                </p>
               </div>
-              <p className="text-stone-700 text-xs mt-1">
-                {l.priority === 'high' && <span className="text-red-700 font-medium">● High </span>}
-                {l.priority === 'low' && <span className="text-stone-700">● Low </span>}
-                {l.interested_in && `${l.interested_in} • `}Created {new Date(l.created_at).toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}
-              </p>
             </div>
           );
         })}
