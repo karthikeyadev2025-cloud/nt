@@ -283,7 +283,43 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
+  // ONB-1: localStorage draft. Real complaint from HR: they'd get halfway
+  // through onboarding a new hire, get interrupted (phone call, meeting),
+  // close the wizard, and lose everything. Now the form auto-saves on
+  // every change and offers to restore on next open.
+  //
+  // Draft is cleared on successful submit and on explicit "Discard draft".
+  // Password is NOT saved to storage (security — see comment on the effect
+  // below).
+  const DRAFT_KEY = 'nikki:onboarding_draft_v1';
+  const [showRestore, setShowRestore] = useState(false);
   const toast = useToast();
+
+  // Check for a stored draft on mount. Don't auto-restore — ask, because
+  // an unexpected pre-filled form is worse than a blank one.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw && JSON.parse(raw)?.full_name) setShowRestore(true);
+    } catch {
+      // localStorage may be disabled in private-browsing modes; that's fine.
+    }
+  }, []);
+
+  // Auto-save on every form change. Strip the password before writing —
+  // even in localStorage it isn't worth the risk of it sitting there in
+  // plaintext until someone remembers to clear it.
+  useEffect(() => {
+    if (busy) return;  // don't save while submitting
+    if (form === emptyOnboard) return;
+    try {
+      const { password, ...safe } = form;
+      void password;  // intentionally discarded
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...safe, _step: step }));
+    } catch {
+      // storage full / disabled — silently skip
+    }
+  }, [form, step, busy]);
 
   useEffect(() => {
     supabase.from('document_templates').select('*').eq('active', true).then(({ data }) => { if (data) setTemplates(data); });
@@ -390,6 +426,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       toast.success(`${form.full_name} onboarded successfully`);
     }
     setBusy(false);
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     onDone();
   }
 
@@ -428,6 +465,45 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             </div>
           ))}
         </div>
+
+        {showRestore && (
+          <div className="space-y-3 mb-4 p-4 rounded-xl border border-amber-300 bg-amber-50">
+            <p className="text-stone-900 font-bold text-sm">Unfinished onboarding found</p>
+            <p className="text-stone-700 text-xs">
+              You started onboarding someone and closed the wizard before finishing.
+              Restore the draft, or discard it and start fresh?
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+                  setShowRestore(false);
+                }}
+                className="px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-lg">
+                Discard
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    const raw = localStorage.getItem(DRAFT_KEY);
+                    if (raw) {
+                      const parsed = JSON.parse(raw);
+                      const stepFromDraft = typeof parsed._step === 'number' ? parsed._step : 0;
+                      delete parsed._step;
+                      setForm({ ...emptyOnboard, ...parsed });
+                      setStep(stepFromDraft);
+                    }
+                  } catch {
+                    // draft was corrupt — ignore
+                  }
+                  setShowRestore(false);
+                }}
+                className="px-3 py-1.5 bg-orange-700 hover:bg-orange-800 text-white text-xs font-bold rounded-lg">
+                Restore draft
+              </button>
+            </div>
+          </div>
+        )}
 
         {step === 0 && (
           <div className="space-y-3">
@@ -557,18 +633,93 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
           </div>
         )}
 
-        {step === 4 && (
+        {step === 4 && (() => {
+          // ONB-2: richer review card. Old version showed 6 lines and missed
+          // the fields most likely to cause post-onboarding "wait, is this
+          // right?" moments — the salary breakdown, all segments (not just
+          // the first), the reporting manager, the shift assignment. Show
+          // them all here so HR/admin catch typos BEFORE the account is
+          // created and the person gets a welcome email with the wrong salary.
+          const sal = form.salary_structure || {};
+          const manager = managers.find((m: any) => m.id === form.reporting_manager_id);
+          const shift = shifts.find((sh: any) => sh.id === form.shift_id);
+          const segNames = (form.segments || []).map((sl: string) =>
+            segments.find(sg => sg.slug === sl)?.name ?? sl
+          ).join(', ') || 'none';
+          const money = (n: number | string | undefined) =>
+            n ? `₹${Number(n).toLocaleString('en-IN')}` : '—';
+          return (
           <div className="space-y-3 text-sm">
-            <div className={cardCls}>
-              <p className="text-stone-900 font-medium">{form.full_name} — {form.designation || form.role}</p>
-              <p className="text-stone-700 text-xs mt-1">{form.email} • {primarySegment?.name || form.segments.join(', ')}</p>
-              <p className="text-stone-700 text-xs">Joining {form.joining_date} • {form.employment_type.replace('_', ' ')}</p>
-              <p className="text-stone-700 text-xs mt-1">CTC ₹{Number(form.salary_structure.ctc).toLocaleString('en-IN')}/yr</p>
-              <p className="text-stone-700 text-xs mt-1">Documents: {form.doc_types.map((d: string) => DOC_TYPE_LABELS[d]).join(', ') || 'none'}</p>
+            <div className={cardCls + ' space-y-3'}>
+              <div>
+                <p className="text-stone-900 font-bold text-base">{form.full_name || <span className="text-red-700">(name missing)</span>}</p>
+                <p className="text-stone-700 text-xs mt-0.5">{form.designation || form.role}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs pt-2 border-t border-stone-100">
+                <div>
+                  <p className="text-stone-500 uppercase text-[10px] font-bold">Email</p>
+                  <p className="text-stone-800">{form.email || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-stone-500 uppercase text-[10px] font-bold">Phone</p>
+                  <p className="text-stone-800">{form.phone || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-stone-500 uppercase text-[10px] font-bold">Role</p>
+                  <p className="text-stone-800">{form.role}</p>
+                </div>
+                <div>
+                  <p className="text-stone-500 uppercase text-[10px] font-bold">Employment</p>
+                  <p className="text-stone-800">{form.employment_type.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <p className="text-stone-500 uppercase text-[10px] font-bold">Segments</p>
+                  <p className="text-stone-800">{segNames}</p>
+                </div>
+                <div>
+                  <p className="text-stone-500 uppercase text-[10px] font-bold">Joining</p>
+                  <p className="text-stone-800">{form.joining_date || '—'}</p>
+                </div>
+                {manager && (
+                  <div>
+                    <p className="text-stone-500 uppercase text-[10px] font-bold">Reports to</p>
+                    <p className="text-stone-800">{manager.full_name} ({manager.role})</p>
+                  </div>
+                )}
+                {shift && (
+                  <div>
+                    <p className="text-stone-500 uppercase text-[10px] font-bold">Shift</p>
+                    <p className="text-stone-800">{shift.name}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-stone-100">
+                <p className="text-stone-500 uppercase text-[10px] font-bold mb-1">Salary structure</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                  <p className="text-stone-700">Basic</p><p className="text-stone-900 text-right">{money(sal.basic)}</p>
+                  <p className="text-stone-700">HRA</p><p className="text-stone-900 text-right">{money(sal.hra)}</p>
+                  <p className="text-stone-700">Allowances</p><p className="text-stone-900 text-right">{money(sal.allowances)}</p>
+                  <p className="text-stone-900 font-bold pt-1 border-t border-stone-100 mt-1">CTC (annual)</p>
+                  <p className="text-stone-900 font-bold text-right pt-1 border-t border-stone-100 mt-1">{money(sal.ctc)}</p>
+                </div>
+              </div>
+
+              {form.doc_types?.length > 0 && (
+                <div className="pt-2 border-t border-stone-100">
+                  <p className="text-stone-500 uppercase text-[10px] font-bold mb-1">Documents to generate</p>
+                  <p className="text-stone-800 text-xs">{form.doc_types.map((d: string) => DOC_TYPE_LABELS[d]).join(', ')}</p>
+                </div>
+              )}
             </div>
+            <p className="text-stone-600 text-xs italic">
+              Review each field carefully — the welcome email and offer letter go out with these exact values.
+            </p>
             {msg && <p className="text-red-700 text-xs">{msg}</p>}
           </div>
-        )}
+          );
+        })()}
 
         {msg && step < 4 && <p className="text-red-700 text-xs mt-4">{msg}</p>}
 

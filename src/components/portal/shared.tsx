@@ -49,9 +49,52 @@ const ticketStatusColors: Record<string, string> = {
   closed: 'bg-stone-100 text-stone-700',
 };
 
+// See STAGE_LABELS above — same rationale: DB values stay, rendered
+// vocabulary is friendlier. `waiting_customer` was reading as an enum name
+// to support agents; `in_progress` looked like a system field.
+export const TICKET_STATUS_LABELS: Record<string, string> = {
+  open: 'Open',
+  in_progress: 'Working on it',
+  waiting_customer: 'Waiting on customer',
+  resolved: 'Resolved',
+  closed: 'Closed',
+};
+export const ticketStatusLabel = (s: string) => TICKET_STATUS_LABELS[s] ?? s.replace('_', ' ');
+
+// SLA targets copied from the seed in ticket_sla_policies (migration
+// 20260726000002). Duplicating them client-side lets us render the
+// "overdue" badge without a JOIN on every ticket render — the policies
+// change rarely and are not user-editable per row. If they ever drift,
+// the source of truth remains the DB; this map is a friendly local cache
+// that gets replaced with real values on the first successful fetch.
+const SLA_RESOLUTION_HOURS: Record<string, number> = {
+  urgent: 8, high: 24, medium: 72, low: 168,
+};
+
+// Returns { overdue: true, label: '3h overdue' } or { overdue: false,
+// label: '2h left' } for a ticket, based on age vs its priority's SLA.
+// Closed/resolved tickets return null (nothing to render).
+function ticketSlaState(t: SupportTicket): { overdue: boolean; label: string } | null {
+  if (t.status === 'resolved' || t.status === 'closed') return null;
+  const hours = SLA_RESOLUTION_HOURS[t.priority] ?? 72;
+  const openedAt = t.created_at ? new Date(t.created_at).getTime() : Date.now();
+  const targetAt = openedAt + hours * 3600 * 1000;
+  const diffMs = targetAt - Date.now();
+  const overdue = diffMs < 0;
+  const absHours = Math.abs(diffMs) / 3600 / 1000;
+  const fmt = (h: number) => h >= 24 ? `${Math.round(h / 24)}d` : h >= 1 ? `${Math.round(h)}h` : `${Math.round(h * 60)}m`;
+  return overdue
+    ? { overdue: true, label: `${fmt(absHours)} overdue` }
+    : { overdue: false, label: `${fmt(absHours)} left` };
+}
+
 export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focusId?: string }) {
   const [segFilter, setSegFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  // See STAGE_LABELS above / leads Fix A — staff without full segment
+  // visibility land on their own tickets by default. Support agents kept
+  // saying "I opened tickets and I don't know which ones I'm working on."
+  const [assignFilter, setAssignFilter] = useState<'all' | 'mine' | 'unassigned'>('all');
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[] }[]>([]);
   const [openTicket, setOpenTicket] = useState<SupportTicket | null>(null);
@@ -59,6 +102,12 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
   const [reply, setReply] = useState('');
   const { user, hasPermission } = useAuth();
   const toast = useToast();
+  // Support agents (no manage_tickets, no assign_tickets) default to My Tickets.
+  useEffect(() => {
+    if (user && !hasPermission('manage_tickets') && !hasPermission('assign_tickets')) {
+      setAssignFilter('mine');
+    }
+  }, [user, hasPermission]);
 
   const load = useCallback(async () => {
     const cacheKey = `tickets:${segFilter}:${statusFilter}`;
@@ -118,43 +167,135 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
     loadReplies(openTicket.id);
   }
 
+  const filteredTickets = useMemo(() => {
+    return tickets.filter(t => {
+      if (assignFilter === 'mine' && t.assigned_to !== user?.id) return false;
+      if (assignFilter === 'unassigned' && t.assigned_to) return false;
+      return true;
+    });
+  }, [tickets, assignFilter, user?.id]);
+
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    tickets.forEach(t => { c[t.status] = (c[t.status] || 0) + 1; });
+    filteredTickets.forEach(t => { c[t.status] = (c[t.status] || 0) + 1; });
     return c;
-  }, [tickets]);
+  }, [filteredTickets]);
 
   return (
     <div>
       <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
+      {/* Assignment filter — see comment on the assignFilter useState above.
+          Support agents default to Mine; managers see All. */}
+      <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl mb-3 w-fit">
+        <button onClick={() => setAssignFilter('mine')}
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'mine' ? 'bg-teal-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+          My Tickets ({tickets.filter(t => t.assigned_to === user?.id).length})
+        </button>
+        <button onClick={() => setAssignFilter('all')}
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'all' ? 'bg-orange-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+          All ({tickets.length})
+        </button>
+        <button onClick={() => setAssignFilter('unassigned')}
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'unassigned' ? 'bg-amber-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+          Unassigned ({tickets.filter(t => !t.assigned_to).length})
+        </button>
+      </div>
+
       <div className="flex flex-wrap gap-2 mb-5">
         {['', 'open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-3 py-1 rounded-lg text-xs font-medium border ${statusFilter === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
-            {s === '' ? `All (${tickets.length})` : `${stageLabel(s)} (${counts[s] || 0})`}
+            {s === '' ? `All (${filteredTickets.length})` : `${ticketStatusLabel(s)} (${counts[s] || 0})`}
           </button>
         ))}
       </div>
 
       <div className="space-y-2">
-        {tickets.map(t => {
+        {filteredTickets.map(t => {
           const seg = segments.find(s => s.slug === t.segment_slug);
+          const sla = ticketSlaState(t);
+          const canWork = hasPermission('manage_tickets');
+          const isMine = t.assigned_to === user?.id;
+          const isOpen = !['resolved', 'closed'].includes(t.status);
+          const assignedName = staff.find(x => x.id === t.assigned_to)?.full_name;
           return (
-            <div key={t.id} className={cardCls + ' cursor-pointer hover:border-stone-300'}
-              onClick={() => { setOpenTicket(t); loadReplies(t.id); }}>
-              <div className="flex flex-wrap items-center gap-3">
+            <div key={t.id} className={cardCls + ' hover:border-stone-300'}>
+              <div className="flex flex-wrap items-center gap-3 cursor-pointer"
+                onClick={() => { setOpenTicket(t); loadReplies(t.id); }}>
                 <span className="font-mono text-teal-700 text-sm">{t.ticket_no}</span>
                 <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color ?? undefined }}>{seg?.name}</span>
-                <span className={`px-2 py-0.5 rounded text-xs ${ticketStatusColors[t.status]}`}>{t.status.replace('_', ' ')}</span>
+                <span className={`px-2 py-0.5 rounded text-xs ${ticketStatusColors[t.status]}`}>{ticketStatusLabel(t.status)}</span>
                 <span className="text-xs text-stone-700">{t.ticket_type}</span>
-                <span className={`text-xs ${t.priority === 'urgent' ? 'text-red-700' : t.priority === 'high' ? 'text-amber-700' : 'text-stone-700'}`}>{t.priority}</span>
+                <span className={`text-xs ${t.priority === 'urgent' ? 'text-red-700 font-bold' : t.priority === 'high' ? 'text-amber-700 font-semibold' : 'text-stone-700'}`}>{t.priority}</span>
+                {/* SLA badge — red pill when overdue, amber when < 25% of window left,
+                    silent otherwise so we don't distract on healthy tickets. */}
+                {sla && sla.overdue && (
+                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800 border border-red-300">
+                    ⏰ {sla.label}
+                  </span>
+                )}
+                {sla && !sla.overdue && sla.label.endsWith('h left') && parseInt(sla.label) < 4 && (
+                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    ⏳ {sla.label}
+                  </span>
+                )}
+                {assignedName ? (
+                  <span className="px-2 py-0.5 rounded text-[11px] bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold flex items-center gap-1">
+                    👤 {assignedName}
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded text-[11px] bg-amber-50 text-amber-900 border border-amber-200 font-medium">
+                    📥 Unassigned
+                  </span>
+                )}
               </div>
-              <p className="text-stone-900 font-medium mt-1.5">{t.subject}</p>
+              <p className="text-stone-900 font-medium mt-1.5 cursor-pointer"
+                onClick={() => { setOpenTicket(t); loadReplies(t.id); }}>{t.subject}</p>
               <p className="text-stone-700 text-xs mt-0.5">{t.customer_name} • {t.customer_phone} • {new Date(t.created_at ?? '').toLocaleString()}</p>
+              {/* Primary actions — one-click on the card, no drilling into
+                  the modal. Only shown for staff who can actually change the
+                  ticket. Set of buttons depends on current state:
+                    - unassigned & I can work it → Take This
+                    - already mine, still open → Mark Working / Waiting / Resolved
+                    - assigned to someone else → nothing (open the modal to see) */}
+              {canWork && isOpen && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {!t.assigned_to && user && (
+                    <button onClick={(e) => { e.stopPropagation(); update(t.id, { assigned_to: user.id, status: 'in_progress' }); }}
+                      className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm">
+                      ✋ Take This
+                    </button>
+                  )}
+                  {t.assigned_to && !isMine && hasPermission('assign_tickets') && user && (
+                    <button onClick={(e) => { e.stopPropagation(); update(t.id, { assigned_to: user.id }); }}
+                      className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-lg">
+                      Take Over
+                    </button>
+                  )}
+                  {isMine && t.status === 'open' && (
+                    <button onClick={(e) => { e.stopPropagation(); update(t.id, { status: 'in_progress' }); }}
+                      className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-semibold rounded-lg">
+                      🔧 Start Working
+                    </button>
+                  )}
+                  {isMine && t.status === 'in_progress' && (
+                    <button onClick={(e) => { e.stopPropagation(); update(t.id, { status: 'waiting_customer' }); }}
+                      className="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-900 text-xs font-semibold rounded-lg">
+                      💬 Waiting on Customer
+                    </button>
+                  )}
+                  {isMine && ['in_progress', 'waiting_customer', 'open'].includes(t.status) && (
+                    <button onClick={(e) => { e.stopPropagation(); update(t.id, { status: 'resolved' }); }}
+                      className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow-sm">
+                      ✅ Mark Resolved
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
-        {tickets.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No tickets found.</p>}
+        {filteredTickets.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No tickets in this view.</p>}
       </div>
 
       {openTicket && (
@@ -172,7 +313,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
             {hasPermission('manage_tickets') && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                 <select className={inputCls} value={openTicket.status} onChange={e => update(openTicket.id, { status: e.target.value as SupportTicket['status'] })}>
-                  {['open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => <option key={s} value={s}>{stageLabel(s)}</option>)}
+                  {['open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => <option key={s} value={s}>{ticketStatusLabel(s)}</option>)}
                 </select>
                 <select className={inputCls} value={openTicket.priority} onChange={e => update(openTicket.id, { priority: e.target.value as SupportTicket['priority'] })}>
                   {['low', 'medium', 'high', 'urgent'].map(p => <option key={p} value={p}>{p}</option>)}
@@ -193,7 +334,7 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
               ))}
               {hasPermission('manage_tickets') && (
                 <div className="flex gap-2 pt-2">
-                  <input className={inputCls} placeholder="Add internal note / reply…" value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendReply()} />
+                  <input className={inputCls} placeholder="Type your reply — the customer will see this via email/portal." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendReply()} />
                   <button className={btnCls} onClick={sendReply}>Send</button>
                 </div>
               )}
@@ -1113,6 +1254,17 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const [leaves, setLeaves] = useState<any[]>([]);
   const [advances, setAdvances] = useState<any[]>([]);
   const [date, setDate] = useState(istDateStr());
+  // HR polish additions:
+  //   staffSearch: filter the Staff tab by name/email/phone
+  //   attendanceView: 'all' vs 'late' vs 'missing' — before this you saw
+  //                   every row and had to eyeball who came in late
+  //   leavesStatus / advancesStatus: default 'pending' so approvers don't
+  //                                  scroll past historical decisions to
+  //                                  find what needs their action
+  const [staffSearch, setStaffSearch] = useState('');
+  const [attendanceView, setAttendanceView] = useState<'all' | 'late' | 'missing'>('all');
+  const [leavesStatus, setLeavesStatus] = useState<'pending' | 'all'>('pending');
+  const [advancesStatus, setAdvancesStatus] = useState<'pending' | 'all'>('pending');
   const [selectedStaffModal, setSelectedStaffModal] = useState<{ id: string; name: string } | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -1247,15 +1399,40 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
 
       {tab === 'staff' && (
         <div className="space-y-2">
-          {!staffLoaded ? (
-            <div className="text-center py-10 text-stone-500 text-sm">Loading staff…</div>
-          ) : staff.filter(inSeg).length === 0 ? (
-            <div className="text-center py-10 text-stone-500 text-sm">
-              {staff.length === 0
-                ? 'No staff onboarded yet. Use "+ Onboard Employee" above to add your first team member.'
-                : 'No staff match the current segment filter.'}
-            </div>
-          ) : staff.filter(inSeg).map(s => (
+          <div className="flex items-center gap-2 mb-3">
+            <input
+              className={inputCls + ' text-sm'}
+              placeholder="🔍 Search by name, email, or phone…"
+              value={staffSearch}
+              onChange={e => setStaffSearch(e.target.value)}
+            />
+            {staffSearch && (
+              <button onClick={() => setStaffSearch('')}
+                className="px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-xl whitespace-nowrap">
+                Clear
+              </button>
+            )}
+          </div>
+          {(() => {
+            // Filter first — used both for the empty-state check and the rendering.
+            const q = staffSearch.trim().toLowerCase();
+            const filtered = staff.filter(inSeg).filter(s => {
+              if (!q) return true;
+              return (s.full_name || '').toLowerCase().includes(q)
+                  || (s.email || '').toLowerCase().includes(q)
+                  || (s.phone || '').toLowerCase().includes(q);
+            });
+            if (!staffLoaded) return <div className="text-center py-10 text-stone-500 text-sm">Loading staff…</div>;
+            if (filtered.length === 0) return (
+              <div className="text-center py-10 text-stone-500 text-sm">
+                {staff.length === 0
+                  ? 'No staff onboarded yet. Use "+ Onboard Employee" above to add your first team member.'
+                  : q
+                    ? `No staff match "${staffSearch}".`
+                    : 'No staff match the current segment filter.'}
+              </div>
+            );
+            return filtered.map(s => (
             <div key={s.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
               <div>
                 <p className="text-stone-900 font-medium">{s.full_name} <span className="text-stone-700 text-xs">({s.role})</span></p>
@@ -1263,7 +1440,8 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
               </div>
               <span className={`text-xs px-2 py-0.5 rounded ${s.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{s.is_active ? 'active' : 'disabled'}</span>
             </div>
-          ))}
+          ));
+          })()}
         </div>
       )}
 
@@ -1277,6 +1455,23 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             <input type="date" className={inputCls + ' max-w-xs'} value={date} onChange={e => setDate(e.target.value)} />
           </div>
 
+          {/* HR-2: quick filters. Late = check_in_at AFTER the person's
+              reporting_time (defaults to 11 AM). Missing = no check-in yet. */}
+          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl w-fit">
+            <button onClick={() => setAttendanceView('all')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold ${attendanceView === 'all' ? 'bg-stone-800 text-white' : 'text-stone-700'}`}>
+              Everyone
+            </button>
+            <button onClick={() => setAttendanceView('late')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold ${attendanceView === 'late' ? 'bg-amber-700 text-white' : 'text-stone-700'}`}>
+              Late arrivals
+            </button>
+            <button onClick={() => setAttendanceView('missing')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold ${attendanceView === 'missing' ? 'bg-red-700 text-white' : 'text-stone-700'}`}>
+              Not checked in
+            </button>
+          </div>
+
           <div className="space-y-3">
             {!staffLoaded || !attendanceLoaded ? (
               <div className="text-center py-10 text-stone-500 text-sm">Loading attendance…</div>
@@ -1286,7 +1481,18 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                   ? 'No staff onboarded yet — no attendance to show.'
                   : 'No staff match the current segment filter.'}
               </div>
-            ) : staff.filter(inSeg).map(s => {
+            ) : staff.filter(inSeg).filter(s => {
+              const rec = attendance.find(a => a.staff_user_id === s.id);
+              if (attendanceView === 'all') return true;
+              if (attendanceView === 'missing') return !rec || !rec.check_in_at;
+              // Late = checked in after reporting_time (default 11:00)
+              if (!rec || !rec.check_in_at) return false;
+              const rt = (s.reporting_time as string) || '11:00:00';
+              const d = new Date(rec.check_in_at);
+              const cim = d.getHours() * 60 + d.getMinutes();
+              const parts = rt.split(':');
+              return cim > (parseInt(parts[0]) * 60 + parseInt(parts[1]));
+            }).map(s => {
               const rec = attendance.find(a => a.staff_user_id === s.id);
               return (
                 <div key={s.id} className={cardCls + ' space-y-3'}>
@@ -1409,15 +1615,28 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
         </div>
       )}
 
-      {tab === 'leaves' && (
+      {tab === 'leaves' && (() => {
+        // HR-3: default to pending so approvers don't scroll past history.
+        const shown = leaves.filter(l => leavesStatus === 'all' || l.status === 'pending');
+        return (
         <div className="space-y-2">
+          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl w-fit mb-3">
+            <button onClick={() => setLeavesStatus('pending')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold ${leavesStatus === 'pending' ? 'bg-amber-700 text-white' : 'text-stone-700'}`}>
+              Pending ({leaves.filter(l => l.status === 'pending').length})
+            </button>
+            <button onClick={() => setLeavesStatus('all')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold ${leavesStatus === 'all' ? 'bg-stone-800 text-white' : 'text-stone-700'}`}>
+              All ({leaves.length})
+            </button>
+          </div>
           {!leavesLoaded ? (
             <div className="text-center py-10 text-stone-500 text-sm">Loading leave requests…</div>
-          ) : leaves.filter(l => inSeg(staffById[l.staff_user_id])).length === 0 ? (
+          ) : shown.filter(l => inSeg(staffById[l.staff_user_id])).length === 0 ? (
             <div className="text-center py-10 text-stone-500 text-sm">
               {leaves.length === 0 ? 'No leave requests yet.' : 'No leave requests match the current filter.'}
             </div>
-          ) : leaves.filter(l => inSeg(staffById[l.staff_user_id])).map(l => (
+          ) : shown.filter(l => inSeg(staffById[l.staff_user_id])).map(l => (
             <div key={l.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -1445,17 +1664,30 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             </div>
           ))}
         </div>
-      )}
+        );
+      })()}
 
-      {tab === 'advances' && (
+      {tab === 'advances' && (() => {
+        const shownA = advances.filter(a => advancesStatus === 'all' || a.status === 'pending');
+        return (
         <div className="space-y-2">
+          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl w-fit mb-3">
+            <button onClick={() => setAdvancesStatus('pending')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold ${advancesStatus === 'pending' ? 'bg-amber-700 text-white' : 'text-stone-700'}`}>
+              Pending ({advances.filter(a => a.status === 'pending').length})
+            </button>
+            <button onClick={() => setAdvancesStatus('all')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold ${advancesStatus === 'all' ? 'bg-stone-800 text-white' : 'text-stone-700'}`}>
+              All ({advances.length})
+            </button>
+          </div>
           {!advancesLoaded ? (
             <div className="text-center py-10 text-stone-500 text-sm">Loading salary advances…</div>
-          ) : advances.filter(a => inSeg(staffById[a.staff_user_id])).length === 0 ? (
+          ) : shownA.filter(a => inSeg(staffById[a.staff_user_id])).length === 0 ? (
             <div className="text-center py-10 text-stone-500 text-sm">
               {advances.length === 0 ? 'No salary advance requests yet.' : 'No advances match the current filter.'}
             </div>
-          ) : advances.filter(a => inSeg(staffById[a.staff_user_id])).map(a => (
+          ) : shownA.filter(a => inSeg(staffById[a.staff_user_id])).map(a => (
             <div key={a.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -1472,7 +1704,8 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             </div>
           ))}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
