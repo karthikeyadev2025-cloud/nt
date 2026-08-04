@@ -70,11 +70,31 @@ Deno.serve(async (req: Request) => {
 
     // ── Create staff
     if (body.email && body.password && body.full_name) {
-      if (body.role === "super_admin" && callerRow.role !== "super_admin") {
+      // Validation floor — was previously enforced only on reset (≥6) and
+      // bootstrap (≥8). Create path had none, which meant an HR user
+      // could onboard someone with password "a". Match bootstrap's ≥8.
+      if (String(body.password).length < 8) {
+        return json({ error: "Password must be at least 8 characters." }, 400);
+      }
+      // Email format check up-front — auth.admin.createUser will reject
+      // garbage anyway, but with a less clear error and after a round-trip.
+      const emailStr = String(body.email).trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(emailStr)) {
+        return json({ error: "Invalid email address." }, 400);
+      }
+      // Role must be a known UserRole. Unknown roles have no
+      // role_permissions row, so has_permission() returns false for
+      // everything and the account silently can't do anything.
+      const VALID_ROLES = ["super_admin", "manager", "hr", "marketing_executive", "telecaller", "support_agent", "employee"] as const;
+      const requestedRole = body.role || "employee";
+      if (!VALID_ROLES.includes(requestedRole)) {
+        return json({ error: `Invalid role: ${requestedRole}` }, 400);
+      }
+      if (requestedRole === "super_admin" && callerRow.role !== "super_admin") {
         return json({ error: "Only a super admin can create another super admin." }, 403);
       }
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: body.email,
+        email: emailStr,
         password: body.password,
         email_confirm: true,
       });
@@ -82,9 +102,9 @@ Deno.serve(async (req: Request) => {
 
       const { error: insertError } = await supabaseAdmin.from("app_users").insert({
         id: authData.user.id,
-        email: body.email,
+        email: emailStr,
         full_name: body.full_name,
-        role: body.role || "employee",
+        role: requestedRole,
         segments: Array.isArray(body.segments) ? body.segments : [],
         phone: body.phone || "",
         designation: body.designation || "",

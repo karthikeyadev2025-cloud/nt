@@ -101,7 +101,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
 
 // ─────────────────────────── Announcements banner + list (StaffPortal)
 export function AnnouncementsFeed() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Announcement[]>([]);
   useEffect(() => {
     cachedQuery('announcements_feed', async () => {
       const { data, error } = await supabase.from('announcements').select('*').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(20);
@@ -516,11 +516,11 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
         supabase.from('attendance_records').select('*').gte('attendance_date', istDateStrDaysAgo(30)),
       ]);
       if (!staff || !records) return [];
-      return staff.map((s: any) => {
-        const mine = records.filter((r: any) => r.staff_user_id === s.id && (r.status === 'present' || r.status === 'half_day'));
-        const onTime = mine.filter((r: any) => r.check_in_at && !r.is_late).length;
+      return staff.map(s => {
+        const mine = records.filter(r => r.staff_user_id === s.id && (r.status === 'present' || r.status === 'half_day'));
+        const onTime = mine.filter(r => r.check_in_at && !r.is_late).length;
         return { name: s.full_name, presentDays: mine.length, punctuality: mine.length ? Math.round((onTime / mine.length) * 100) : 0 };
-      }).filter((r: any) => r.presentDays > 0).sort((a: any, b: any) => b.punctuality - a.punctuality).slice(0, 10);
+      }).filter(r => r.presentDays > 0).sort((a, b) => b.punctuality - a.punctuality).slice(0, 10);
     }).then(computed => {
       if (computed) setRows(computed);
     }).catch(() => {});
@@ -543,7 +543,8 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
 }
 
 export function BirthdaysWidget() {
-  const [items, setItems] = useState<any[]>([]);
+  type Celebrant = { full_name: string; date_of_birth: string | null; joining_date: string | null };
+  const [items, setItems] = useState<Celebrant[]>([]);
   useEffect(() => {
     cachedQuery('today_birthdays_celebrations', async () => {
       const { data, error } = await supabase.from('app_users').select('full_name, date_of_birth, joining_date').eq('is_active', true).neq('role', 'super_admin');
@@ -552,12 +553,12 @@ export function BirthdaysWidget() {
     }).then(data => {
       if (!data) return;
       const today = new Date();
-      const isToday = (d?: string) => {
+      const isToday = (d?: string | null) => {
         if (!d) return false;
         const dt = new Date(d);
         return dt.getMonth() === today.getMonth() && dt.getDate() === today.getDate();
       };
-      setItems(data.filter((u: any) => isToday(u.date_of_birth) || isToday(u.joining_date)));
+      setItems(data.filter(u => isToday(u.date_of_birth) || isToday(u.joining_date)));
     }).catch(() => {});
   }, []);
   if (items.length === 0) return null;
@@ -579,14 +580,18 @@ const APP_STATUS_COLORS: Record<string, string> = {
 };
 const APP_STATUSES = ['new', 'shortlisted', 'interviewed', 'hired', 'rejected'];
 
+type JobPosting = Database['public']['Tables']['job_postings']['Row'];
+type CareerApplication = Database['public']['Tables']['career_applications']['Row'];
+type QuestionAnswer = { question: string; answer: string };
+
 export function CareersManager({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
   const [tab, setTab] = useState<'jobs' | 'applications'>('jobs');
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [apps, setApps] = useState<any[]>([]);
-  const [editingJob, setEditingJob] = useState<any | null>(null);
-  const [openApp, setOpenApp] = useState<any | null>(null);
+  const [jobs, setJobs] = useState<JobPosting[]>([]);
+  const [apps, setApps] = useState<CareerApplication[]>([]);
+  const [editingJob, setEditingJob] = useState<Partial<JobPosting> | null>(null);
+  const [openApp, setOpenApp] = useState<CareerApplication | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [fileUrls, setFileUrls] = useState<{ resume?: string; photo?: string }>({});
 
@@ -606,7 +611,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
     let error;
     if (editingJob.id) {
       const { id, ...patch } = payload;
-      ({ error } = await supabase.from('job_postings').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id));
+      ({ error } = await supabase.from('job_postings').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id!));
     } else {
       ({ error } = await supabase.from('job_postings').insert({ ...payload, created_by: user?.id } as never));
     }
@@ -615,7 +620,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
     setEditingJob(null); load();
   }
 
-  async function toggleJobStatus(job: any) {
+  async function toggleJobStatus(job: JobPosting) {
     const status = job.status === 'open' ? 'closed' : 'open';
     const { error } = await supabase.from('job_postings').update({ status } as never).eq('id', job.id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
@@ -628,10 +633,10 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(`Marked as ${status}`);
     load();
-    setOpenApp((prev: any) => prev ? { ...prev, status } : prev);
+    setOpenApp(prev => prev ? { ...prev, status } : prev);
   }
 
-  async function viewFiles(app: any) {
+  async function viewFiles(app: CareerApplication) {
     setOpenApp(app);
     setFileUrls({});
     const urls: { resume?: string; photo?: string } = {};
@@ -696,7 +701,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
             {filteredApps.map(a => (
               <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => viewFiles(a)}>
                 <div>
-                  <p className="text-stone-900 text-sm font-medium">{a.name} <span className="text-stone-700 text-xs">— {a.position || jobTitle(a.job_posting_id)}</span></p>
+                  <p className="text-stone-900 text-sm font-medium">{a.name} <span className="text-stone-700 text-xs">— {a.position || jobTitle(a.job_posting_id || '')}</span></p>
                   <p className="text-stone-700 text-xs mt-0.5">{a.phone} • {a.experience || 'exp not specified'} • {new Date(a.created_at ?? '').toLocaleDateString()}</p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded capitalize ${APP_STATUS_COLORS[a.status]}`}>{a.status}</span>
@@ -711,31 +716,31 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingJob(null)}>
           <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-stone-900 font-semibold">{editingJob.id ? 'Edit' : 'New'} Job Posting</h3>
-            <input className={inputCls} placeholder="Job Title *" value={editingJob.title} onChange={e => setEditingJob({ ...editingJob, title: e.target.value })} />
+            <input className={inputCls} placeholder="Job Title *" value={editingJob.title || ''} onChange={e => setEditingJob({ ...editingJob, title: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
-              <select className={inputCls} value={editingJob.segment_slug} onChange={e => setEditingJob({ ...editingJob, segment_slug: e.target.value })}>
+              <select className={inputCls} value={editingJob.segment_slug || ''} onChange={e => setEditingJob({ ...editingJob, segment_slug: e.target.value })}>
                 <option value="">Company-wide</option>
                 {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
-              <select className={inputCls} value={editingJob.employment_type} onChange={e => setEditingJob({ ...editingJob, employment_type: e.target.value })}>
+              <select className={inputCls} value={editingJob.employment_type || 'full_time'} onChange={e => setEditingJob({ ...editingJob, employment_type: e.target.value })}>
                 {['full_time', 'part_time', 'contract', 'intern'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
               </select>
-              <input className={inputCls} placeholder="Location" value={editingJob.location} onChange={e => setEditingJob({ ...editingJob, location: e.target.value })} />
-              <input type="number" min={1} className={inputCls} placeholder="Openings" value={editingJob.positions_open} onChange={e => setEditingJob({ ...editingJob, positions_open: Number(e.target.value) })} />
+              <input className={inputCls} placeholder="Location" value={editingJob.location || ''} onChange={e => setEditingJob({ ...editingJob, location: e.target.value })} />
+              <input type="number" min={1} className={inputCls} placeholder="Openings" value={editingJob.positions_open ?? 1} onChange={e => setEditingJob({ ...editingJob, positions_open: Number(e.target.value) })} />
             </div>
-            <textarea className={inputCls} rows={3} placeholder="Description" value={editingJob.description} onChange={e => setEditingJob({ ...editingJob, description: e.target.value })} />
-            <textarea className={inputCls} rows={2} placeholder="Requirements" value={editingJob.requirements} onChange={e => setEditingJob({ ...editingJob, requirements: e.target.value })} />
+            <textarea className={inputCls} rows={3} placeholder="Description" value={editingJob.description || ''} onChange={e => setEditingJob({ ...editingJob, description: e.target.value })} />
+            <textarea className={inputCls} rows={2} placeholder="Requirements" value={editingJob.requirements || ''} onChange={e => setEditingJob({ ...editingJob, requirements: e.target.value })} />
             <div>
               <div className="flex justify-between items-center mb-2">
                 <p className="text-stone-700 text-sm font-medium">Screening Questions</p>
-                <button className="text-teal-700 text-xs" onClick={() => setEditingJob({ ...editingJob, questions: [...(editingJob.questions || []), ''] })}>+ Add question</button>
+                <button className="text-teal-700 text-xs" onClick={() => setEditingJob({ ...editingJob, questions: [...((editingJob.questions as string[] | null) || []), ''] })}>+ Add question</button>
               </div>
-              {(editingJob.questions || []).map((q: string, i: number) => (
+              {((editingJob.questions as string[] | null) || []).map((q: string, i: number) => (
                 <div key={i} className="flex gap-2 mb-2">
                   <input className={inputCls} value={q} onChange={e => {
-                    const next = [...editingJob.questions]; next[i] = e.target.value; setEditingJob({ ...editingJob, questions: next });
+                    const next = [...((editingJob.questions as string[] | null) || [])]; next[i] = e.target.value; setEditingJob({ ...editingJob, questions: next });
                   }} placeholder={`Question ${i + 1}`} />
-                  <button className="text-red-700 text-xs px-2" onClick={() => setEditingJob({ ...editingJob, questions: editingJob.questions.filter((_: string, j: number) => j !== i) })}>✕</button>
+                  <button className="text-red-700 text-xs px-2" onClick={() => setEditingJob({ ...editingJob, questions: ((editingJob.questions as string[] | null) || []).filter((_, j) => j !== i) })}>✕</button>
                 </div>
               ))}
             </div>
@@ -751,7 +756,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
               <div>
                 <h3 className="text-stone-900 text-lg font-semibold">{openApp.name}</h3>
                 <p className="text-stone-700 text-sm">{openApp.phone} {openApp.email && `• ${openApp.email}`}</p>
-                <p className="text-stone-700 text-xs mt-0.5">Applied for: {openApp.position || jobTitle(openApp.job_posting_id)} • {openApp.experience || 'exp not specified'}</p>
+                <p className="text-stone-700 text-xs mt-0.5">Applied for: {openApp.position || jobTitle(openApp.job_posting_id || '')} • {openApp.experience || 'exp not specified'}</p>
               </div>
               <button className="text-stone-700 hover:text-stone-900" onClick={() => setOpenApp(null)}>✕</button>
             </div>
@@ -763,9 +768,9 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
 
             {openApp.message && <p className="text-stone-700 text-sm mb-3">{openApp.message}</p>}
 
-            {(openApp.question_answers || []).length > 0 && (
+            {((openApp.question_answers as QuestionAnswer[] | null) || []).length > 0 && (
               <div className="space-y-2 mb-4 border-t border-stone-800 pt-3">
-                {openApp.question_answers.map((qa: any, i: number) => (
+                {(openApp.question_answers as QuestionAnswer[]).map((qa, i) => (
                   <div key={i}>
                     <p className="text-stone-700 text-xs">{qa.question}</p>
                     <p className="text-stone-900 text-sm">{qa.answer || '—'}</p>
@@ -847,14 +852,14 @@ export function MyPhotoRequest() {
 export function PhotoChangeApprovals() {
   const { user } = useAuth();
   const toast = useToast();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<PhotoChangeReq[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('photo_change_requests').select('*').order('created_at', { ascending: false }).limit(100);
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
-    if (users) setNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
+    if (users) setNames(Object.fromEntries(users.map(u => [u.id, u.full_name])));
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -889,7 +894,7 @@ export function PhotoChangeApprovals() {
 // ─────────────────────────── Promotions / designation-salary history
 export function MyPromotionHistory() {
   const { user } = useAuth();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Database['public']['Tables']['promotions']['Row'][]>([]);
   useEffect(() => {
     if (!user) return;
     supabase.from('promotions').select('*').eq('staff_user_id', user.id).order('effective_date', { ascending: false })
@@ -906,8 +911,8 @@ export function MyPromotionHistory() {
             {p.new_designation && p.new_designation !== p.previous_designation && (
               <p className="text-stone-900">{p.previous_designation || '—'} → {p.new_designation}</p>
             )}
-            {p.new_ctc > 0 && p.new_ctc !== p.previous_ctc && (
-              <p className="text-emerald-700">₹{Number(p.previous_ctc).toLocaleString('en-IN')} → ₹{Number(p.new_ctc).toLocaleString('en-IN')}</p>
+            {(p.new_ctc ?? 0) > 0 && p.new_ctc !== p.previous_ctc && (
+              <p className="text-emerald-700">₹{Number(p.previous_ctc ?? 0).toLocaleString('en-IN')} → ₹{Number(p.new_ctc ?? 0).toLocaleString('en-IN')}</p>
             )}
             {p.note && <p className="text-stone-700 mt-0.5">{p.note}</p>}
           </div>

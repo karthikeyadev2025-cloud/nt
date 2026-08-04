@@ -117,6 +117,25 @@ Deno.serve(async (req: Request) => {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
+  // ── Whitelist segment_slug against the real segments table.
+  //    Without this, any string sneaks through — a curl user could
+  //    insert segment_slug = "arbitrary" and pollute support_tickets
+  //    with rows that no dashboard, RPC, or assignee pool maps to,
+  //    and they'd sit forever as orphaned queue.
+  {
+    const slug = String(body.segment_slug);
+    const { data: seg, error: segErr } = await supabaseAdmin
+      .from("segments").select("slug").eq("slug", slug).eq("is_active", true).maybeSingle();
+    if (segErr) {
+      console.error("[raise-ticket] segment lookup failed:", segErr.message);
+      return json({ error: "Could not verify segment. Please try again." }, 500);
+    }
+    if (!seg) return json({ error: "Unknown segment." }, 400);
+  }
+  // Same length cap on ticket_type — no whitelist because the business
+  // may add types, but 100 chars is far more than any real label.
+  if (String(body.ticket_type ?? "").length > 100) return json({ error: "Ticket type too long" }, 400);
+
   // ── Rate limit (Turnstile stops bots; this stops a legit human on a
   //    script from flooding the queue). Two buckets so we throttle
   //    both source machine and target account:

@@ -4,13 +4,14 @@ import {
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
   Landmark, Megaphone, Briefcase, Image as ImageIcon, Shield,
   Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key,
+  type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cachedRpc } from '../../lib/cachedRpc';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
-import type { Segment, Product } from '../../lib/database.types';
+import type { Segment, Product, ProductFeature, Tables } from '../../lib/database.types';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge, EmployeeDocumentsModal } from './documents';
 import { ImageUpload } from './ImageUpload';
@@ -284,12 +285,15 @@ const emptyOnboard = {
   doc_types: ['offer_letter', 'appointment_letter', 'welcome_letter', 'roles_responsibilities'] as string[],
 };
 
+type OnboardForm = typeof emptyOnboard;
+type ManagerLite = Pick<Tables<'app_users'>, 'id' | 'full_name' | 'role'>;
+
 function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; onDone: () => void; onClose: () => void }) {
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<any>(emptyOnboard);
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [shifts, setShifts] = useState<any[]>([]);
-  const [managers, setManagers] = useState<any[]>([]);
+  const [form, setForm] = useState<OnboardForm>(emptyOnboard);
+  const [templates, setTemplates] = useState<Tables<'document_templates'>[]>([]);
+  const [shifts, setShifts] = useState<Tables<'shifts'>[]>([]);
+  const [managers, setManagers] = useState<ManagerLite[]>([]);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
@@ -351,7 +355,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
   const primarySegment = segments.find(s => form.segments.includes(s.slug)) || null;
   const availableTemplates = templates.filter(t => !t.segment_slug || t.segment_slug === primarySegment?.slug);
 
-  function previewDoc(t: any) {
+  function previewDoc(t: Tables<'document_templates'>) {
     const vars = buildOnboardingVars({
       full_name: form.full_name, designation: form.designation, role: form.role,
       segmentName: primarySegment?.name || 'Nikki Technologies',
@@ -436,7 +440,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       toast.success(`${form.full_name} onboarded successfully`);
     }
     setBusy(false);
-    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* storage disabled or full */ }
     onDone();
   }
 
@@ -486,7 +490,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => {
-                  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+                  try { localStorage.removeItem(DRAFT_KEY); } catch { /* storage disabled or full */ }
                   setShowRestore(false);
                 }}
                 className="px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-lg">
@@ -651,8 +655,8 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
           // them all here so HR/admin catch typos BEFORE the account is
           // created and the person gets a welcome email with the wrong salary.
           const sal = form.salary_structure || {};
-          const manager = managers.find((m: any) => m.id === form.reporting_manager_id);
-          const shift = shifts.find((sh: any) => sh.id === form.shift_id);
+          const manager = managers.find(m => m.id === form.reports_to);
+          const shift = shifts.find(sh => sh.id === form.shift_id);
           const segNames = (form.segments || []).map((sl: string) =>
             segments.find(sg => sg.slug === sl)?.name ?? sl
           ).join(', ') || 'none';
@@ -752,9 +756,28 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 }
 
 // ─────────────────────────────────────── Access Control (users × segments × permissions)
+// The salary_structure column is `Json` in DB types but this app uses a
+// consistent narrow shape. Widening once here saves scattered casts.
+type SalaryStructure = {
+  basic?: number; hra?: number; allowances?: number; deductions?: number;
+  performance_bonus?: number; incentives?: number; ctc?: number;
+};
+type AccessUser = Pick<
+  Tables<'app_users'>,
+  'id' | 'email' | 'full_name' | 'role' | 'segments' | 'phone' | 'designation'
+  | 'is_active' | 'must_change_password' | 'joining_date' | 'employment_type'
+  | 'reporting_time' | 'created_at' | 'exit_date' | 'exit_reason'
+> & {
+  salary_structure: SalaryStructure | null;
+  // permission_overrides is stored as jsonb — read as unknown shape and
+  // narrowed to boolean-map at write-time. The wrapper still lets the UI
+  // treat missing/null as "no overrides".
+  permission_overrides: Record<string, boolean> | null;
+};
+
 function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segment[]; openSignal?: number; focusStaffId?: string }) {
-  const [users, setUsers] = useState<any[]>([]);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [users, setUsers] = useState<AccessUser[]>([]);
+  const [editing, setEditing] = useState<AccessUser | null>(null);
   const [snapshot, setSnapshot] = useState<{ designation: string; ctc: number } | null>(null);
   const [showOnboard, setShowOnboard] = useState(false);
   const { user: currentUser } = useAuth();
@@ -762,7 +785,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
   const [showOffboard, setShowOffboard] = useState(false);
-  const [viewDocsFor, setViewDocsFor] = useState<any | null>(null);
+  const [viewDocsFor, setViewDocsFor] = useState<AccessUser | null>(null);
   const [showChangePwModal, setShowChangePwModal] = useState(false);
 
   useEffect(() => { if (openSignal) setShowOnboard(true); }, [openSignal]);
@@ -791,16 +814,22 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
   }
 
   async function load() {
+    // Include exit_date/exit_reason so the "already offboarded" UI branch
+    // actually detects offboarded staff. Previously those columns weren't
+    // in the select list, editing.exit_date was always undefined, and the
+    // ternary at the bottom of the edit modal always rendered "Offboard
+    // this employee" even for staff who had already been offboarded.
+    const COLS = 'id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at, exit_date, exit_reason';
     try {
       const data = await cachedQuery('access_control_users', async () => {
-        const { data, error } = await supabase.from('app_users').select('id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('app_users').select(COLS).order('created_at', { ascending: false });
         if (error) throw error;
         return data;
       });
-      if (data) setUsers(data);
+      if (data) setUsers(data as AccessUser[]);
     } catch {
-      const { data } = await supabase.from('app_users').select('id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at').order('created_at', { ascending: false });
-      if (data) setUsers(data);
+      const { data } = await supabase.from('app_users').select(COLS).order('created_at', { ascending: false });
+      if (data) setUsers(data as AccessUser[]);
     }
   }
 
@@ -861,7 +890,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
     load();
   }
 
-  const toggleSeg = (obj: any, setObj: (o: any) => void, slug: string) => {
+  const toggleSeg = <T extends { segments: string[] | null }>(obj: T, setObj: (o: T) => void, slug: string) => {
     const cur: string[] = obj.segments || [];
     setObj({ ...obj, segments: cur.includes(slug) ? cur.filter(s => s !== slug) : [...cur, slug] });
   };
@@ -1052,7 +1081,7 @@ function TicketsSection({ segments, focusId }: { segments: Segment[]; focusId?: 
 // ─────────────────────────── Leave entitlement policy (HR)
 function LeavePolicyManager() {
   const toast = useToast();
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<Tables<'leave_policies'>[]>([]);
   const [busy, setBusy] = useState(false);
 
   async function load() {
@@ -1158,10 +1187,10 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
       supabase.from('support_tickets').select('segment_slug').in('status', ['open', 'in_progress', 'waiting_customer']),
     ]);
     const u: Record<string, { staff: number; leads: number; tickets: number }> = {};
-    (data || []).forEach((s: any) => { u[s.slug] = { staff: 0, leads: 0, tickets: 0 }; });
-    (staff || []).forEach((s: any) => (s.segments || []).forEach((slug: string) => { if (u[slug]) u[slug].staff++; }));
-    (leads || []).forEach((l: any) => { if (u[l.segment_slug]) u[l.segment_slug].leads++; });
-    (tickets || []).forEach((t: any) => { if (u[t.segment_slug]) u[t.segment_slug].tickets++; });
+    (data || []).forEach(s => { u[s.slug] = { staff: 0, leads: 0, tickets: 0 }; });
+    (staff || []).forEach(s => (s.segments || []).forEach((slug: string) => { if (u[slug]) u[slug].staff++; }));
+    (leads || []).forEach(l => { if (l.segment_slug && u[l.segment_slug]) u[l.segment_slug].leads++; });
+    (tickets || []).forEach(t => { if (t.segment_slug && u[t.segment_slug]) u[t.segment_slug].tickets++; });
     setUsage(u);
   }
   useEffect(() => { load(); }, []);
@@ -1258,7 +1287,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
 // ─────────────────────────────────────── Products Manager (no-code add)
 function ProductsManager({ segments }: { segments: Segment[] }) {
   const [rows, setRows] = useState<Product[]>([]);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<(Partial<Product> & { features?: ProductFeature[] }) | null>(null);
   const toast = useToast();
 
   async function load() {
@@ -1268,16 +1297,17 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
   useEffect(() => { load(); }, []);
 
   async function save() {
-    const name = (editing?.name || '').trim();
-    const slug = (editing?.slug || '').trim();
+    if (!editing) return;
+    const name = (editing.name || '').trim();
+    const slug = (editing.slug || '').trim();
     if (!name || !slug) { toast.error('Name and slug are required'); return; }
-    const payload = { ...editing, name, slug, tagline: (editing?.tagline || '').trim(), features: editing.features || [] };
+    const payload = { ...editing, name, slug, tagline: (editing.tagline || '').trim(), features: editing.features || [] };
     let error;
     if (editing.id) {
       const { id, ...patch } = payload;
-      ({ error } = await supabase.from('products').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id));
+      ({ error } = await supabase.from('products').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id!));
     } else {
-      ({ error } = await supabase.from('products').insert(payload));
+      ({ error } = await supabase.from('products').insert(payload as never));
     }
     if (error) { toast.error(`Couldn't save product: ${error.message}`); return; }
     toast.success(editing.id ? 'Product updated' : 'Product added');
@@ -1307,7 +1337,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
             </div>
             <div className="flex items-center gap-3">
               <span className={`text-xs px-2 py-0.5 rounded ${p.status === 'active' ? 'bg-emerald-100 text-emerald-700' : p.status === 'coming_soon' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'}`}>{p.status}</span>
-              <button className="text-teal-700 text-sm" onClick={() => setEditing({ ...p, features: p.features || [] })}>Edit</button>
+              <button className="text-teal-700 text-sm" onClick={() => setEditing({ ...p, features: (p.features as ProductFeature[] | null) || [] })}>Edit</button>
               <button className="text-red-700 text-sm" onClick={() => remove(p.id)}>Delete</button>
             </div>
           </div>
@@ -1318,18 +1348,18 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
           <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-stone-900 font-semibold">{editing.id ? 'Edit' : 'Add'} Product</h3>
             <div className="grid grid-cols-2 gap-3">
-              <input className={inputCls} placeholder="Name *" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} />
-              <input className={inputCls} placeholder="Slug *" value={editing.slug} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} />
+              <input className={inputCls} placeholder="Name *" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} />
+              <input className={inputCls} placeholder="Slug *" value={editing.slug || ''} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} />
             </div>
-            <input className={inputCls} placeholder="Tagline" value={editing.tagline} onChange={e => setEditing({ ...editing, tagline: e.target.value })} />
-            <textarea className={inputCls} rows={3} placeholder="Description" value={editing.description} onChange={e => setEditing({ ...editing, description: e.target.value })} />
+            <input className={inputCls} placeholder="Tagline" value={editing.tagline || ''} onChange={e => setEditing({ ...editing, tagline: e.target.value })} />
+            <textarea className={inputCls} rows={3} placeholder="Description" value={editing.description || ''} onChange={e => setEditing({ ...editing, description: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
               <input className={inputCls} placeholder="External URL (link-out)" value={editing.external_url || ''} onChange={e => setEditing({ ...editing, external_url: e.target.value })} />
-              <input className={inputCls} placeholder="Button label" value={editing.demo_cta} onChange={e => setEditing({ ...editing, demo_cta: e.target.value })} />
-              <select className={inputCls} value={editing.segment_slug} onChange={e => setEditing({ ...editing, segment_slug: e.target.value })}>
+              <input className={inputCls} placeholder="Button label" value={editing.demo_cta || ''} onChange={e => setEditing({ ...editing, demo_cta: e.target.value })} />
+              <select className={inputCls} value={editing.segment_slug || ''} onChange={e => setEditing({ ...editing, segment_slug: e.target.value })}>
                 {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
-              <select className={inputCls} value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value })}>
+              <select className={inputCls} value={editing.status || 'active'} onChange={e => setEditing({ ...editing, status: e.target.value })}>
                 <option value="active">Active</option><option value="coming_soon">Coming Soon</option><option value="hidden">Hidden</option>
               </select>
             </div>
@@ -1337,17 +1367,17 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <p className="text-stone-700 text-sm font-medium">Feature Cards</p>
-                <button className="text-teal-700 text-xs" onClick={() => setEditing({ ...editing, features: [...editing.features, { title: '', description: '', icon: 'CheckCircle2' }] })}>+ Add feature</button>
+                <button className="text-teal-700 text-xs" onClick={() => setEditing({ ...editing, features: [...(editing.features || []), { title: '', description: '', icon: 'CheckCircle2' }] })}>+ Add feature</button>
               </div>
-              {editing.features.map((f: any, i: number) => (
+              {(editing.features || []).map((f, i) => (
                 <div key={i} className="grid grid-cols-[1fr_2fr_auto] gap-2 mb-2">
                   <input className={inputCls} placeholder="Title" value={f.title} onChange={e => {
-                    const fs = [...editing.features]; fs[i] = { ...f, title: e.target.value }; setEditing({ ...editing, features: fs });
+                    const fs = [...(editing.features || [])]; fs[i] = { ...f, title: e.target.value }; setEditing({ ...editing, features: fs });
                   }} />
                   <input className={inputCls} placeholder="Description" value={f.description} onChange={e => {
-                    const fs = [...editing.features]; fs[i] = { ...f, description: e.target.value }; setEditing({ ...editing, features: fs });
+                    const fs = [...(editing.features || [])]; fs[i] = { ...f, description: e.target.value }; setEditing({ ...editing, features: fs });
                   }} />
-                  <button className="text-red-700 text-xs px-2" onClick={() => setEditing({ ...editing, features: editing.features.filter((_: any, j: number) => j !== i) })}>✕</button>
+                  <button className="text-red-700 text-xs px-2" onClick={() => setEditing({ ...editing, features: (editing.features || []).filter((_, j) => j !== i) as ProductFeature[] })}>✕</button>
                 </div>
               ))}
             </div>
@@ -1362,8 +1392,8 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
 // ─────────────────────────────────────── Services + Ticket Types Manager
 function CatalogManager({ segments }: { segments: Segment[] }) {
   const [seg, setSeg] = useState(segments[0]?.slug || '');
-  const [services, setServices] = useState<any[]>([]);
-  const [types, setTypes] = useState<any[]>([]);
+  const [services, setServices] = useState<Tables<'services'>[]>([]);
+  const [types, setTypes] = useState<Tables<'ticket_types'>[]>([]);
   const [newService, setNewService] = useState({ title: '', description: '', icon: 'Settings' });
   const [newType, setNewType] = useState('');
   const toast = useToast();
@@ -1448,10 +1478,10 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
 function SiteMediaManager({ segments }: { segments: Segment[] }) {
   const toast = useToast();
   const [tab, setTab] = useState<'gallery' | 'team' | 'testimonials' | 'logos'>('gallery');
-  const [gallery, setGallery] = useState<any[]>([]);
-  const [team, setTeam] = useState<any[]>([]);
-  const [testimonials, setTestimonials] = useState<any[]>([]);
-  const [logos, setLogos] = useState<any[]>([]);
+  const [gallery, setGallery] = useState<Tables<'gallery_items'>[]>([]);
+  const [team, setTeam] = useState<Tables<'team_members'>[]>([]);
+  const [testimonials, setTestimonials] = useState<Tables<'testimonials'>[]>([]);
+  const [logos, setLogos] = useState<Tables<'client_logos'>[]>([]);
   const [newGallery, setNewGallery] = useState({ title: '', image_url: '', segment_slug: '' });
   const [newTeam, setNewTeam] = useState({ name: '', designation: '', photo_url: '', segment_slug: '' });
   const [newTestimonial, setNewTestimonial] = useState({ customer_name: '', content: '', rating: 5, segment_slug: '' });
@@ -1504,7 +1534,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
     setNewTestimonial({ customer_name: '', content: '', rating: 5, segment_slug: '' });
     load();
   }
-  async function toggleActive(table: string, id: string, active: boolean, setter: () => void) {
+  async function toggleActive(table: string, id: string, active: boolean | null, setter: () => void) {
     const { error } = await supabase.from(table as never).update({ active: !active } as never).eq('id', id);
     if (error) { toast.error(error.message); return; }
     setter();
@@ -1541,7 +1571,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {gallery.map(g => (
               <div key={g.id} className="relative rounded-lg overflow-hidden border border-stone-800">
-                <img src={g.image_url} alt={g.title} className="w-full h-28 object-cover" />
+                <img src={g.image_url || ''} alt={g.title || ''} className="w-full h-28 object-cover" />
                 <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
                   <button className="text-xs text-stone-900" onClick={() => toggleActive('gallery_items', g.id, g.active, load)}>{g.active ? 'Hide' : 'Show'}</button>
                   <button className="text-xs text-red-700" onClick={() => remove('gallery_items', g.id, load)}>Delete</button>
@@ -1608,7 +1638,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
             {testimonials.map(t => (
               <div key={t.id} className={cardCls}>
                 <div className="flex items-center justify-between">
-                  <p className="text-stone-900 text-sm font-medium">{t.customer_name} <span className="text-amber-700 text-xs">{'★'.repeat(t.rating)}</span></p>
+                  <p className="text-stone-900 text-sm font-medium">{t.customer_name} <span className="text-amber-700 text-xs">{'★'.repeat(t.rating ?? 0)}</span></p>
                   <div className="flex gap-3">
                     <button className="text-stone-700 text-xs" onClick={() => toggleActive('testimonials', t.id, t.active, load)}>{t.active ? 'Hide' : 'Show'}</button>
                     <button className="text-red-700 text-xs" onClick={() => remove('testimonials', t.id, load)}>Delete</button>
@@ -1658,7 +1688,7 @@ function ContentManager() {
   const toast = useToast();
 
   useEffect(() => {
-    supabase.from('site_content').select('*').order('section').then(({ data }) => { if (data) setRows(data as any); });
+    supabase.from('site_content').select('*').order('section').then(({ data }) => { if (data) setRows(data); });
   }, []);
 
   async function save(row: { id: string; value: string }) {
@@ -1696,11 +1726,11 @@ function ContentManager() {
 // ─────────────────────────────────────── Dashboard shell
 // ─────────────────────────────────────── Documents Manager (templates + issue to existing staff)
 function DocumentsManager({ segments }: { segments: Segment[] }) {
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [staff, setStaff] = useState<any[]>([]);
-  const [editingTpl, setEditingTpl] = useState<any | null>(null);
-  const [issueFor, setIssueFor] = useState<any | null>(null);
-  const [viewDocsFor, setViewDocsFor] = useState<any | null>(null);
+  const [templates, setTemplates] = useState<Tables<'document_templates'>[]>([]);
+  const [staff, setStaff] = useState<Tables<'app_users'>[]>([]);
+  const [editingTpl, setEditingTpl] = useState<Partial<Tables<'document_templates'>> | null>(null);
+  const [issueFor, setIssueFor] = useState<Tables<'app_users'> | null>(null);
+  const [viewDocsFor, setViewDocsFor] = useState<Tables<'app_users'> | null>(null);
   const [issueDocs, setIssueDocs] = useState<string[]>([]);
   const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -1723,19 +1753,19 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       const { id, ...patch } = editingTpl;
       ({ error } = await supabase.from('document_templates').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id));
     } else {
-      ({ error } = await supabase.from('document_templates').insert(editingTpl));
+      ({ error } = await supabase.from('document_templates').insert(editingTpl as never));
     }
     if (error) { toast.error(`Couldn't save template: ${error.message}`); return; }
     toast.success(editingTpl.id ? 'Template updated' : 'Template created');
     setEditingTpl(null); load();
   }
 
-  function openIssue(staffMember: any) {
+  function openIssue(staffMember: Tables<'app_users'>) {
     setIssueFor(staffMember);
     setIssueDocs([]);
   }
 
-  const relevantTemplates = (staffMember: any) => templates.filter(t => t.active && (!t.segment_slug || (staffMember?.segments || []).includes(t.segment_slug) || (staffMember?.segments || []).includes('all')));
+  const relevantTemplates = (staffMember: Tables<'app_users'> | null) => templates.filter(t => t.active && (!t.segment_slug || (staffMember?.segments || []).includes(t.segment_slug) || (staffMember?.segments || []).includes('all')));
 
   async function issue() {
     if (!issueFor || issueDocs.length === 0) { toast.error('Select at least one document'); return; }
@@ -1744,7 +1774,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
     const vars = buildOnboardingVars({
       full_name: issueFor.full_name, designation: issueFor.designation, role: issueFor.role,
       segmentName: seg?.name || 'Nikki Technologies', joining_date: issueFor.joining_date,
-      salary_structure: issueFor.salary_structure || {}, employment_type: issueFor.employment_type,
+      salary_structure: (issueFor.salary_structure as { ctc?: number } | null) || {}, employment_type: issueFor.employment_type,
       reporting_time: issueFor.reporting_time,
       staff_code: issueFor.staff_code, exit_date: issueFor.exit_date,
     });
@@ -1881,7 +1911,7 @@ export default function SuperAdminDashboard() {
   // Admin tabs: each requires the same permission enforced at the database (RLS) level —
   // shown here only when the person can actually use it, not just when they're super_admin.
   // Grouped so the sidebar (and mobile drawer) reads as sections, not one flat list of 20+ items.
-  type TabDef = { id: Tab; label: string; icon: any; show: boolean };
+  type TabDef = { id: Tab; label: string; icon: LucideIcon; show: boolean };
   const rawGroups: { label: string; items: TabDef[] }[] = [
     {
       label: 'My Workspace',

@@ -38,9 +38,9 @@ export function renderTemplate(body: string, vars: Record<string, string>) {
 }
 
 export function buildOnboardingVars(user: {
-  full_name: string; designation: string; role: string; segmentName: string;
-  joining_date: string; salary_structure: { ctc: number }; employment_type: string;
-  reporting_time?: string; staff_code?: string | null; exit_date?: string | null;
+  full_name: string; designation: string | null; role: string; segmentName: string;
+  joining_date: string | null; salary_structure: { ctc?: number } | null; employment_type: string | null;
+  reporting_time?: string | null; staff_code?: string | null; exit_date?: string | null;
 }) {
   return {
     name: user.full_name,

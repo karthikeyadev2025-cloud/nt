@@ -23,6 +23,13 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      // Standard escape hatch: prefixing an argument or variable with `_`
+      // marks it as intentionally unused. Used for props a component
+      // accepts (for API/caller compatibility) but doesn't read internally.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
     },
   }
 );

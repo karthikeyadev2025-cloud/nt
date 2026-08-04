@@ -102,4 +102,8 @@ END;
 $$;
 
 REVOKE EXECUTE ON FUNCTION public.log_lead_outcome(uuid, text, text, text, timestamptz) FROM PUBLIC;
-GRANT  EXECUTE ON FUNCTION
+GRANT  EXECUTE ON FUNCTION public.log_lead_outcome(uuid, text, text, text, timestamptz) TO authenticated;
+
+COMMIT;
+
+NOTIFY pgrst, 'reload schema';

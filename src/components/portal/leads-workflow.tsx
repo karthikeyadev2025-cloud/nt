@@ -90,7 +90,7 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
   const toast = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [executives, setExecutives] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);
-  const [active, setActive] = useState<any | null>(null);
+  const [active, setActive] = useState<Lead | null>(null);
   const [history, setHistory] = useState<LeadRemark[]>([]);
   const [outcome, setOutcome] = useState('contacted');
   const [remark, setRemark] = useState('');
@@ -128,7 +128,7 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
     }).then(data => { if (data) setExecutives(data); }).catch(() => {});
   }, [user]);
 
-  async function openLead(lead: any) {
+  async function openLead(lead: Lead) {
     setActive(lead);
     setOutcome('contacted');
     setRemark('');
@@ -153,7 +153,7 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
     // the unassigned pool. "Interested" and callbacks stay with the caller so the
     // lead never disappears into a pool that restricted staff can't see.
     const releasesToPool = outcome === 'won' || outcome === 'lost' || outcome === 'not_answered';
-    const patch: any = {
+    const patch: Record<string, unknown> = {
       stage: outcome === 'won' ? 'won' : outcome === 'lost' ? 'lost'
            : outcome === 'not_answered' ? 'not_answered'
            : isAppointment ? 'qualified' : 'contacted',
@@ -329,7 +329,7 @@ export function TransferApprovals() {
     const { data } = await supabase.from('marketing_leads').select('*').eq('transfer_status', 'pending').order('updated_at', { ascending: false });
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
-    if (users) setNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
+    if (users) setNames(Object.fromEntries(users.map(u => [u.id, u.full_name])));
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -347,9 +347,9 @@ export function TransferApprovals() {
     //    queue forever the next time it's reassigned to one — the queue only
     //    shows transfer_status = 'none', and executives have no handoff
     //    mechanism of their own to move it out of that stuck state.
-    const step1: any = { transfer_status: approve ? 'approved' : 'rejected', updated_at: new Date().toISOString() };
+    const step1: Record<string, unknown> = { transfer_status: approve ? 'approved' : 'rejected', updated_at: new Date().toISOString() };
     if (approve) step1.assigned_to = targetExec;
-    const { error: err1 } = await supabase.from('marketing_leads').update(step1).eq('id', id);
+    const { error: err1 } = await supabase.from('marketing_leads').update(step1 as never).eq('id', id);
     if (err1) { toast.error(`Couldn't update: ${err1.message}`); return; }
 
     const { error: err2 } = await supabase.from('marketing_leads').update({
@@ -393,7 +393,8 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [rows, setRows] = useState<Record<string, string>[]>([]);
-  const [rawJson, setRawJson] = useState<Record<string, string>[]>([]);
+  type XlsxRow = Record<string, string | number | boolean | null | undefined>;
+  const [rawJson, setRawJson] = useState<XlsxRow[]>([]);
   const [fileName, setFileName] = useState('');
   const [parseInfo, setParseInfo] = useState<{ totalRows: number; matchedRows: number; headers: string[] } | null>(null);
   const [segment, setSegment] = useState('');
@@ -419,7 +420,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     return a.full_name.localeCompare(b.full_name);
   });
 
-  function processParsedData(json: any[], customNameCol?: string, customPhoneCol?: string, customNotesCol?: string) {
+  function processParsedData(json: XlsxRow[], customNameCol?: string, customPhoneCol?: string, customNotesCol?: string) {
     if (!json || json.length === 0) {
       setParseInfo({ totalRows: 0, matchedRows: 0, headers: [] });
       setRows([]);
@@ -541,7 +542,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
           return;
         }
         const sheet = wb.Sheets[wb.SheetNames[0]];
-        const json: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        const json = XLSX.utils.sheet_to_json<XlsxRow>(sheet, { defval: '' });
         setRawJson(json);
         processParsedData(json);
       } catch {
@@ -574,20 +575,79 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     if (!segment) { toast.error('Select a segment for these leads'); return; }
     if (rows.length === 0) { toast.error('No valid rows found in the file'); return; }
     setBusy(true);
-    const payload = rows.map(r => ({
+
+    // ── Dedupe pass ──────────────────────────────────────────────────
+    // Single-lead creation already checks lead_phone_exists per row.
+    // Bulk used to skip this entirely, so a CSV with N phones already
+    // in the target segment would silently create N duplicates.
+    //
+    // 1. Dedupe within the file itself (keep first occurrence).
+    // 2. Query the segment for existing normalized phones in one shot
+    //    and drop any file rows that collide.
+    const seen = new Set<string>();
+    const inFileDeduped = rows.filter(r => {
+      if (!r.phone || r.phone === 'Pending Collection') return true;  // no phone → nothing to dedupe on
+      const p = normalizePhone(r.phone);
+      if (seen.has(p)) return false;
+      seen.add(p);
+      return true;
+    });
+    const phonesToCheck = inFileDeduped
+      .map(r => r.phone)
+      .filter((p): p is string => typeof p === 'string' && p !== 'Pending Collection')
+      .map(p => normalizePhone(p));
+
+    let existingPhones = new Set<string>();
+    if (phonesToCheck.length > 0) {
+      const { data: existing, error: existErr } = await supabase
+        .from('marketing_leads')
+        .select('phone')
+        .eq('segment_slug', segment)
+        .in('phone', phonesToCheck);
+      if (existErr) {
+        setBusy(false);
+        toast.error(`Couldn't check for existing leads: ${existErr.message}`);
+        return;
+      }
+      existingPhones = new Set((existing || []).map((r: { phone: string }) => normalizePhone(r.phone || '')));
+    }
+
+    const finalPayload = inFileDeduped.filter(r => {
+      if (!r.phone || r.phone === 'Pending Collection') return true;
+      return !existingPhones.has(normalizePhone(r.phone));
+    });
+
+    const skipped = rows.length - finalPayload.length;
+    if (finalPayload.length === 0) {
+      setBusy(false);
+      toast.error('All rows in this file are already leads in this segment — nothing to import.');
+      return;
+    }
+
+    const payload = finalPayload.map(r => ({
       ...r, segment_slug: segment, source: 'bulk_upload' as const,
       assigned_to: assignTo || null, created_by: user?.id,
     }));
     const { error } = await supabase.from('marketing_leads').insert(payload as never);
-    if (!error && assignTo) {
-      await supabase.from('notifications').insert({
-        user_id: assignTo, kind: 'lead_assigned', title: 'New leads assigned to you',
-        body: `${rows.length} new leads were uploaded and assigned to you.`, link: '/portal',
-      } as never);
+    if (error) {
+      setBusy(false);
+      toast.error(`Upload failed: ${error.message}`);
+      return;
     }
+
+    if (assignTo) {
+      const { error: notifErr } = await supabase.from('notifications').insert({
+        user_id: assignTo, kind: 'lead_assigned', title: 'New leads assigned to you',
+        body: `${finalPayload.length} new leads were uploaded and assigned to you.`, link: '/portal',
+      } as never);
+      // Surface it instead of silently swallowing — the assignee needs to
+      // know new work landed on them.
+      if (notifErr) toast.error(`Leads imported, but assignee notification failed: ${notifErr.message}`);
+    }
+
     setBusy(false);
-    if (error) { toast.error(`Upload failed: ${error.message}`); return; }
-    toast.success(`${rows.length} leads imported successfully${assignTo ? ' and assigned' : ''}`);
+    const skippedNote = skipped > 0 ? ` (${skipped} duplicate${skipped > 1 ? 's' : ''} skipped)` : '';
+    toast.success(`${finalPayload.length} leads imported successfully${assignTo ? ' and assigned' : ''}${skippedNote}`);
     invalidateQueryCache('leads:');
     invalidateRpcCache('get_dashboard_counts');
     setRows([]); setFileName(''); setParseInfo(null); setRawJson([]);
@@ -729,11 +789,11 @@ export function TeamActivityFeed() {
         const photoPaths = [...new Set((data || []).map((r: LeadRemark) => r.photo_url ?? '').filter(Boolean))] as string[];
         if (leadIds.length) {
           const { data: leads } = await supabase.from('marketing_leads').select('id, customer_name, phone').in('id', leadIds);
-          if (leads) setLeadNames(Object.fromEntries(leads.map((l: any) => [l.id, { name: l.customer_name, phone: l.phone }])));
+          if (leads) setLeadNames(Object.fromEntries(leads.map(l => [l.id, { name: l.customer_name, phone: l.phone }])));
         }
         if (userIds.length) {
           const { data: users } = await supabase.from('app_users').select('id, full_name').in('id', userIds);
-          if (users) setUserNames(Object.fromEntries(users.map((u: any) => [u.id, u.full_name])));
+          if (users) setUserNames(Object.fromEntries(users.map(u => [u.id, u.full_name])));
         }
         if (photoPaths.length) {
           // lead-photos is a private bucket — resolve real signed URLs in bulk
@@ -962,7 +1022,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
       let rows = data || [];
       if (scope === 'unassigned') {
         const execIds = new Set(execs.map(e => e.id));
-        rows = rows.filter((l: any) => !l.assigned_to || !execIds.has(l.assigned_to));
+        rows = rows.filter(l => !l.assigned_to || !execIds.has(l.assigned_to));
       }
       setLeads(rows);
     } catch (err) {
@@ -1161,7 +1221,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [active, setActive] = useState<any | null>(null);
+  const [active, setActive] = useState<Lead | null>(null);
   const [remarks, setRemarks] = useState<LeadRemark[]>([]);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -1231,7 +1291,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     else if (r.remaining > 0) toast.error(`Still offline — ${r.remaining} visit(s) waiting`);
   }
 
-  const [duplicateInfo, setDuplicateInfo] = useState<any[] | null>(null);
+  type DupWarning = { id: string; customer_name: string; stage: string; assignee_name: string };
+  const [duplicateInfo, setDuplicateInfo] = useState<DupWarning[] | null>(null);
 
   async function addFieldLead() {
     if (!user || !newLead.customer_name || !newLead.phone || !newLead.segment_slug) { toast.error('Name, phone and segment are required'); return; }
@@ -1258,13 +1319,13 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     load();
   }
 
-  async function openLead(lead: any) {
+  async function openLead(lead: Lead) {
     setActive(lead);
     setOutcome('contacted');
     setRemark('');
     setPhotoDataUrl(null);
     setLocation(null);
-    setDealValue(lead.invoice_amount || lead.estimated_value || '');
+    setDealValue(String(lead.invoice_amount || lead.estimated_value || ''));
     setVisitRequirement(lead.interested_in || '');
     setCollectedPhone(lead.phone === 'Pending Collection' ? '' : (lead.phone || ''));
     setNextFollowup(lead.next_followup_at ? new Date(lead.next_followup_at ?? '').toISOString().slice(0,16) : '');
@@ -1306,7 +1367,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     const photoBlob = photoDataUrl ? await (await fetch(photoDataUrl)).blob() : null;
 
     const isClosed = outcome === 'won' || outcome === 'lost';
-    const patch: any = { stage: outcome, updated_at: new Date().toISOString() };
+    const patch: Record<string, unknown> = { stage: outcome, updated_at: new Date().toISOString() };
     if (location) {
       patch.latitude = location.lat; patch.longitude = location.lng;
       if (location.address) patch.address = location.address;
@@ -1558,7 +1619,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             {duplicateInfo && (
               <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-600/40 text-xs">
                 <p className="text-amber-700 font-medium mb-1">⚠ This phone number already exists:</p>
-                {duplicateInfo.map((d: any) => (
+                {duplicateInfo.map(d => (
                   <p key={d.id} className="text-amber-200/80">{d.customer_name} — {d.stage} {d.assignee_name ? `• with ${d.assignee_name}` : '• unassigned'}</p>
                 ))}
                 <p className="text-stone-700 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
@@ -1593,7 +1654,7 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
     if (!fromId) { setLeads([]); setSelected(new Set()); return; }
     supabase.from('marketing_leads').select('*').eq('assigned_to', fromId).not('stage', 'in', '(won,lost)').order('created_at', { ascending: false })
       .then(({ data }) => {
-        if (data) { setLeads(data); setSelected(new Set(data.map((l: any) => l.id))); } // default: all selected
+        if (data) { setLeads(data); setSelected(new Set(data.map(l => l.id))); } // default: all selected
       });
   }, [fromId]);
 
