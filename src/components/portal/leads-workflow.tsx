@@ -529,11 +529,31 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     const XLSX = await import('xlsx');
     const reader = new FileReader();
     reader.onload = evt => {
-      const wb = XLSX.read(evt.target?.result, { type: 'array' });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const json: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-      setRawJson(json);
-      processParsedData(json);
+      try {
+        const result = evt.target?.result;
+        if (!result) {
+          toast.error('Could not read that file — please try selecting it again.');
+          return;
+        }
+        const wb = XLSX.read(result, { type: 'array' });
+        if (!wb.SheetNames.length) {
+          toast.error('That file has no sheets — please check the file and try again.');
+          return;
+        }
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const json: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        setRawJson(json);
+        processParsedData(json);
+      } catch {
+        // The most common real cause: the selected file isn't actually a
+        // valid .xlsx/.xls/.csv file (wrong extension, corrupted, or a
+        // renamed file of a different type). Show a clear message instead
+        // of letting XLSX's internal parser throw an uncaught error.
+        toast.error("Couldn't read that file. Please make sure it's a valid Excel (.xlsx/.xls) or CSV file.");
+      }
+    };
+    reader.onerror = () => {
+      toast.error('Could not read that file — please try selecting it again.');
     };
     reader.readAsArrayBuffer(file);
   }
