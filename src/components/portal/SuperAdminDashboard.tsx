@@ -2010,7 +2010,7 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="min-h-screen bg-stone-50 flex text-stone-900" key={refreshKey}>
-      <aside className="w-60 shrink-0 border-r border-stone-200 bg-white p-4 hidden md:flex flex-col shadow-sm">
+      <aside className="w-60 shrink-0 border-r border-stone-200 bg-white p-4 hidden md:flex flex-col shadow-sm sticky top-0 h-screen">
         <div className="flex items-center gap-2.5 mb-8 px-2">
           <KiteTailLogo className="w-8 h-8 shrink-0" />
           <div>
@@ -2018,8 +2018,8 @@ export default function SuperAdminDashboard() {
             <p className="text-stone-700 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
           </div>
         </div>
-        <nav className="flex-1 overflow-y-auto">{navGroups}</nav>
-        <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold mt-auto border-t border-stone-200 pt-3">
+        <nav className="flex-1 overflow-y-auto min-h-0">{navGroups}</nav>
+        <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-stone-200 pt-3 shrink-0">
           <LogOut className="w-4 h-4" /> Sign Out
         </button>
       </aside>
