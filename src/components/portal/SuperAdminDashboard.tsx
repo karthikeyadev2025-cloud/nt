@@ -105,7 +105,11 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
       try {
         const result = await cachedRpc(
           `get_dashboard_counts:${user?.id}`,
-          () => supabase.rpc('get_dashboard_counts', { p_user_id: user?.id })
+          () => supabase.rpc('get_dashboard_counts', { p_user_id: user?.id }),
+          15_000,   // timeout — RPC does 17 sub-counts, needs breathing room
+          30_000    // TTL — 30s means closing a ticket updates the counter
+                    //       within half a minute at worst, no hunt for a
+                    //       manual refresh button.
         ) as { data?: Record<string, number>; error?: { message: string } | null };
         if (result.error) {
           console.error('get_dashboard_counts RPC error:', result.error.message);
@@ -132,30 +136,36 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
     { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-teal-700 font-extrabold', show: true },
     { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-700 font-extrabold', show: canStaff || canLeads },
     { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-stone-900 font-extrabold', show: canTickets },
-  ].filter(i => i.show && (c[i.key] ?? 0) > 0);
-
-  if (items.length === 0) {
-    return (
-      <div className={cardCls + ' mb-6 bg-emerald-50/60 border-emerald-200 p-4 rounded-2xl flex items-center justify-between'}>
-        <p className="text-emerald-900 font-bold text-sm flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-          Everything up to date — 0 pending approvals or overdue items waiting.
-        </p>
-      </div>
-    );
-  }
+  ].filter(i => i.show);
+  // Every applicable item now renders regardless of count. Cards with a
+  // zero count get a dimmed style — they're still CLICKABLE so users can
+  // drill in to see "nothing here, all clear" instead of the card just
+  // vanishing (which was making people wonder if the feature was broken).
+  const nonZeroCount = items.reduce((n, i) => n + ((c[i.key] ?? 0) > 0 ? 1 : 0), 0);
 
   return (
     <div className="mb-6">
-      <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2">NEEDS YOUR ATTENTION</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-stone-900 text-xs font-extrabold tracking-wider">NEEDS YOUR ATTENTION</h3>
+        {nonZeroCount === 0 && (
+          <p className="text-emerald-900 text-xs font-bold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
+            Everything up to date
+          </p>
+        )}
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {items.map(i => (
-          <button key={i.key} onClick={() => onGo(i.tab)}
-            className={cardCls + ' text-left hover:border-orange-400 cursor-pointer transition-all'}>
-            <p className={`text-3xl ${i.tone}`}>{c[i.key]}</p>
-            <p className="text-stone-700 text-xs font-semibold mt-1">{i.label}</p>
-          </button>
-        ))}
+        {items.map(i => {
+          const n = c[i.key] ?? 0;
+          const dim = n === 0;
+          return (
+            <button key={i.key} onClick={() => onGo(i.tab)}
+              className={cardCls + ` text-left transition-all cursor-pointer ` + (dim ? 'opacity-50 hover:opacity-100 hover:border-stone-300' : 'hover:border-orange-400')}>
+              <p className={`text-3xl ${dim ? 'text-stone-400 font-bold' : i.tone}`}>{n}</p>
+              <p className="text-stone-700 text-xs font-semibold mt-1">{i.label}</p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

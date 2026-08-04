@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin } from 'lucide-react';
 import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
-import { invalidateQueryCache } from '../../lib/cachedRpc';
+import { invalidateQueryCache } from '../../lib/cachedQuery';
+import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
 import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -568,6 +569,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     if (error) { toast.error(`Upload failed: ${error.message}`); return; }
     toast.success(`${rows.length} leads imported successfully${assignTo ? ' and assigned' : ''}`);
     invalidateQueryCache('leads:');
+    invalidateRpcCache('get_dashboard_counts');
     setRows([]); setFileName(''); setParseInfo(null); setRawJson([]);
     if (fileRef.current) fileRef.current.value = '';
   }

@@ -12,6 +12,7 @@ import { istDateStr } from '../../lib/dates';
 import { normalizePhone } from '../../lib/phone';
 import { AttendanceDetailsModal } from './payroll';
 import { cachedQuery, invalidateQueryCache } from '../../lib/cachedQuery';
+import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
 
 export const inputCls =
   'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-600 focus:ring-2 focus:ring-orange-600/20 focus:outline-none transition-all placeholder-stone-500';
@@ -157,6 +158,11 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
     const { error } = await supabase.from('support_tickets').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id);
     if (error) { toast.error(`Update failed: ${error.message}`); return; }
     toast.success('Ticket updated');
+    // Any ticket update changes at least one dashboard counter (openTickets,
+    // unassignedTickets, or overdueTickets). Bust the counter cache so the
+    // ActionCentre reflects it on the next render rather than up to its
+    // TTL later. Prefix match: covers every user's cached counters.
+    invalidateRpcCache('get_dashboard_counts');
     load();
     if (openTicket?.id === id) setOpenTicket({ ...openTicket, ...patch } as SupportTicket);
   }
@@ -490,6 +496,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     setSelectedIds([]);
     setBulkAssignee('');
     invalidateQueryCache('leads:');
+    invalidateRpcCache('get_dashboard_counts');
     load();
   }
 
@@ -508,6 +515,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     setSelectedIds([]);
     setBulkStage('');
     invalidateQueryCache('leads:');
+    invalidateRpcCache('get_dashboard_counts');
     load();
   }
 
@@ -522,6 +530,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     setBulkBusy(false);
     setSelectedIds([]);
     invalidateQueryCache('leads:');
+    invalidateRpcCache('get_dashboard_counts');
     load();
   }
 
@@ -533,6 +542,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     setOpenLead(null);
     setEditingLead(null);
     invalidateQueryCache('leads:');
+    invalidateRpcCache('get_dashboard_counts');
     load();
   }
 
@@ -558,6 +568,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     if (openLead?.id === editingLead.id) setOpenLead({ ...openLead, ...editingLead });
     setEditingLead(null);
     invalidateQueryCache('leads:');
+    invalidateRpcCache('get_dashboard_counts');
     load();
   }
 
@@ -600,6 +611,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     if (error) { toast.error(`Update failed: ${error.message}`); return; }
     toast.success('Lead updated');
     invalidateQueryCache('leads:');
+    invalidateRpcCache('get_dashboard_counts');
     load();
     if (openLead?.id === id) setOpenLead({ ...openLead, ...patch } as Lead);
   }
@@ -658,6 +670,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     setDupWarning(null);
     setForm({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
     invalidateQueryCache('leads:');
+    invalidateRpcCache('get_dashboard_counts');
     load();
   }
 
@@ -980,6 +993,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
           onDone={() => {
             setLogOutcomeLead(null);
             invalidateQueryCache('leads:');
+    invalidateRpcCache('get_dashboard_counts');
             load();
           }}
         />

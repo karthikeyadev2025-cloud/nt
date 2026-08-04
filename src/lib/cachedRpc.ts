@@ -2,7 +2,12 @@ import { withTimeout } from './withTimeout';
 
 const inFlight = new Map<string, Promise<unknown>>();
 const recent = new Map<string, { result: unknown; at: number }>();
-const RECENT_WINDOW_MS = 300_000; // 5 minutes
+// Default cache window for RPC results. Individual call sites can override
+// via the ttlMs argument on cachedRpc(). 5 minutes was the original value
+// which turned out to be way too long for the dashboard counters —
+// closing a ticket left the "open tickets" number wrong for up to 5 min.
+// The dashboard call now passes 30_000 explicitly.
+const DEFAULT_RECENT_WINDOW_MS = 300_000; // 5 minutes
 
 // Initialize memory cache from sessionStorage for instant 0ms startup
 try {
@@ -39,10 +44,11 @@ function syncToSessionStorage() {
 export async function cachedRpc<T>(
   key: string,
   fn: () => PromiseLike<T>,
-  timeoutMs = 3000
+  timeoutMs = 15_000,
+  ttlMs = DEFAULT_RECENT_WINDOW_MS
 ): Promise<T> {
   const cachedRecent = recent.get(key);
-  if (cachedRecent && Date.now() - cachedRecent.at < RECENT_WINDOW_MS) {
+  if (cachedRecent && Date.now() - cachedRecent.at < ttlMs) {
     return cachedRecent.result as T;
   }
 
