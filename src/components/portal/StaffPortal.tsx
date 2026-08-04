@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu, Key } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import type { Database } from '../../lib/database.types';
+
+type LeaveRequest = Database['public']['Tables']['leave_requests']['Row'];
+type SalaryAdvance = Database['public']['Tables']['salary_advance_requests']['Row'];
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { useSegments } from '../../lib/useSegments';
@@ -214,7 +218,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
                   <p className="text-stone-700 text-xs">{a.phone}{a.appointment_note ? ` • ${a.appointment_note}` : ''}</p>
                 </div>
                 <p className="text-teal-700 text-xs whitespace-nowrap">
-                  {new Date(a.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                  {new Date(a.appointment_at ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 </p>
               </div>
             ))}
@@ -332,7 +336,7 @@ export function MyAttendance() {
     const { error } = await supabase.from('attendance_records').update({
       check_out_at: new Date().toISOString(), check_out_lat: lat, check_out_lng: lng,
       check_out_selfie_url: selfiePath,
-    }).eq('id', today.id);
+    } as never).eq('id', today.id);
     setBusy(false);
     if (error) { toast.error(`Check-out failed: ${error.message}`); return; }
     toast.success('Checked out');
@@ -360,7 +364,7 @@ export function MyAttendance() {
           </button>
         ) : !today.check_out_at ? (
           <div>
-            <p className="text-emerald-700 text-sm mb-1 font-semibold">Checked in at {new Date(today.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+            <p className="text-emerald-700 text-sm mb-1 font-semibold">Checked in at {new Date(today.check_in_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
             <p className="text-stone-700 text-xs mb-3 capitalize">
               {(today.work_mode || 'office').replace('_', ' ')}
               {today.is_late && <span className="text-amber-700 ml-2 font-medium">Late by {today.minutes_late} min</span>}
@@ -369,7 +373,7 @@ export function MyAttendance() {
           </div>
         ) : (
           <p className="text-stone-700 text-sm font-medium">
-            Done for today — In {new Date(today.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })} • Out {new Date(today.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
+            Done for today — In {new Date(today.check_in_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })} • Out {new Date(today.check_out_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
           </p>
         )}
       </div>
@@ -385,7 +389,7 @@ export function MyAttendance() {
             <div key={r.id} className="border border-stone-200 rounded-xl p-3 bg-white space-y-2">
               <div className="flex items-center justify-between text-xs border-b border-stone-100 pb-2">
                 <span className="text-stone-900 font-bold">
-                  {new Date(r.attendance_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(r.attendance_date ?? '').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded-full font-semibold ${r.status === 'present' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
@@ -402,7 +406,7 @@ export function MyAttendance() {
                   <div>
                     <span className="text-stone-500 font-medium block text-[11px]">Check In</span>
                     <span className="text-stone-900 font-semibold">
-                      {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                      {r.check_in_at ? new Date(r.check_in_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -424,7 +428,7 @@ export function MyAttendance() {
                   <div>
                     <span className="text-stone-500 font-medium block text-[11px]">Check Out</span>
                     <span className="text-stone-900 font-semibold">
-                      {r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                      {r.check_out_at ? new Date(r.check_out_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -491,8 +495,8 @@ export function MyAttendance() {
 export function MyRequests() {
   const { user } = useAuth();
   const toast = useToast();
-  const [leaves, setLeaves] = useState<any[]>([]);
-  const [advances, setAdvances] = useState<any[]>([]);
+  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
   const [leaveForm, setLeaveForm] = useState({ from_date: '', to_date: '', leave_type: 'casual', reason: '' });
   const [advForm, setAdvForm] = useState({ amount: '', reason: '' });
   const [busyLeave, setBusyLeave] = useState(false);
@@ -533,7 +537,7 @@ export function MyRequests() {
     if (!leaveForm.from_date || !leaveForm.to_date) { toast.error('Pick both start and end dates'); return; }
     if (leaveForm.to_date < leaveForm.from_date) { toast.error('End date can\u2019t be before start date'); return; }
     setBusyLeave(true);
-    const { error } = await supabase.from('leave_requests').insert({ ...leaveForm, staff_user_id: user.id });
+    const { error } = await supabase.from('leave_requests').insert({ ...leaveForm, staff_user_id: user.id } as never);
     setBusyLeave(false);
     if (error) { toast.error(`Couldn't submit leave: ${error.message}`); return; }
     toast.success('Leave request submitted');
@@ -546,7 +550,7 @@ export function MyRequests() {
     const amount = Number(advForm.amount);
     if (!amount || amount <= 0) { toast.error('Enter a valid amount'); return; }
     setBusyAdv(true);
-    const { error } = await supabase.from('salary_advance_requests').insert({ staff_user_id: user.id, amount, reason: advForm.reason });
+    const { error } = await supabase.from('salary_advance_requests').insert({ staff_user_id: user.id, amount, reason: advForm.reason } as never);
     setBusyAdv(false);
     if (error) { toast.error(`Couldn't submit request: ${error.message}`); return; }
     toast.success('Advance request submitted');
@@ -615,7 +619,7 @@ export function MyRequests() {
         <div className="mt-4 space-y-1.5">
           {advances.map(a => (
             <div key={a.id} className="flex justify-between text-xs">
-              <span className="text-stone-700">₹{Number(a.amount).toLocaleString('en-IN')} • {new Date(a.created_at).toLocaleDateString()}</span>
+              <span className="text-stone-700">₹{Number(a.amount).toLocaleString('en-IN')} • {new Date(a.created_at ?? '').toLocaleDateString()}</span>
               <span className={statusColor(a.status)}>{a.status}</span>
             </div>
           ))}
@@ -839,7 +843,7 @@ export default function StaffPortal() {
                   </p>
                 </div>
                 <div className="text-right text-xs text-stone-700">
-                  {user?.joining_date && <p>Joined {new Date(user.joining_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
+                  {user?.joining_date && <p>Joined {new Date(user.joining_date ?? '').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
                   {(user as any)?.reporting_time && <p className="mt-0.5">{(user as any).reporting_time}</p>}
                 </div>
               </div>

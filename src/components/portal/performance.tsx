@@ -7,6 +7,7 @@ import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import type { Segment } from '../../lib/database.types';
 
+
 const AXIS_COLOR = '#64748b';
 const GRID_COLOR = '#1e293b';
 const TOOLTIP_STYLE = { backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: 12, color: '#e2e8f0' };
@@ -37,7 +38,7 @@ export function MyPerformanceChart() {
         const rec = byDate.get(key);
         let hours = 0;
         if (rec?.check_in_at && rec?.check_out_at) {
-          hours = Math.round(((new Date(rec.check_out_at).getTime() - new Date(rec.check_in_at).getTime()) / 3600000) * 10) / 10;
+          hours = Math.round(((new Date(rec.check_out_at ?? '').getTime() - new Date(rec.check_in_at ?? '').getTime()) / 3600000) * 10) / 10;
         }
         days.push({ day: dayLabel(d), hours });
       }

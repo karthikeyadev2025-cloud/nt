@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { FileText, Plus, X, MapPin, Image as ImageIcon, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import type { Database } from '../../lib/database.types';
+
+type Payslip = Database['public']['Tables']['payslips']['Row'];
+type SalaryPayment = Database['public']['Tables']['salary_payments']['Row'];
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls } from './shared';
@@ -15,7 +19,7 @@ const DAYS = [{ v: 1, l: 'Mon' }, { v: 2, l: 'Tue' }, { v: 3, l: 'Wed' }, { v: 4
 export function ShiftsManager({ segments }: { segments: { slug: string; name: string }[] }) {
   const toast = useToast();
   const [shifts, setShifts] = useState<any[]>([]);
-  const [staff, setStaff] = useState<any[]>([]);
+  const [staff, setStaff] = useState<{ id: string; full_name: string; role?: string; segments?: string[]; salary_structure?: Record<string, number> }[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [assigningFor, setAssigningFor] = useState<any | null>(null);
@@ -58,10 +62,10 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
     // one below would leave two rows with effective_to = null for the same
     // staff member — ambiguous "current shift," which breaks late-tracking
     // and payroll auto-fill (both rely on there being exactly one active row).
-    const { error: closeErr } = await supabase.from('staff_shifts').update({ effective_to: istDateStr() })
+    const { error: closeErr } = await supabase.from('staff_shifts').update({ effective_to: istDateStr() } as never)
       .eq('staff_user_id', assignStaffId).is('effective_to', null);
     if (closeErr) { toast.error(`Couldn't close previous shift assignment: ${closeErr.message}`); return; }
-    const { error } = await supabase.from('staff_shifts').insert({ staff_user_id: assignStaffId, shift_id: assigningFor.id });
+    const { error } = await supabase.from('staff_shifts').insert({ staff_user_id: assignStaffId, shift_id: assigningFor.id } as never);
     if (error) { toast.error(error.message); return; }
     toast.success('Shift assigned');
     setAssigningFor(null); setAssignStaffId(''); load();
@@ -165,13 +169,13 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
 export function PayslipManager() {
   const { user } = useAuth();
   const toast = useToast();
-  const [staff, setStaff] = useState<any[]>([]);
-  const [payslips, setPayslips] = useState<any[]>([]);
+  const [staff, setStaff] = useState<{ id: string; full_name: string; role?: string; segments?: string[]; salary_structure?: Record<string, number> }[]>([]);
+  const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [showGen, setShowGen] = useState(false);
   const [genForm, setGenForm] = useState({ staff_user_id: '', period_year: new Date().getFullYear(), period_month: new Date().getMonth() + 1, present_days: 26, absent_days: 0, paid_leave_days: 0, unpaid_leave_days: 0, working_days: 26, late_days: 0, late_fine: 0, other_deductions: 0 });
   const [openSlip, setOpenSlip] = useState<any | null>(null);
   const [payForm, setPayForm] = useState({ amount: '', method: 'bank_transfer', reference: '', note: '' });
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<SalaryPayment[]>([]);
 
   async function load() {
     try {
@@ -182,7 +186,7 @@ export function PayslipManager() {
         ]);
         return { staff: s || [], payslips: p || [] };
       });
-      if (res) { setStaff(res.staff); setPayslips(res.payslips); }
+      if (res) { setStaff(res.staff as never); setPayslips(res.payslips); }
     } catch {
       // ignore
     }
@@ -280,7 +284,7 @@ export function PayslipManager() {
     const { error } = await supabase.from('salary_payments').insert({
       payslip_id: openSlip.id, staff_user_id: openSlip.staff_user_id, amount: Number(payForm.amount),
       method: payForm.method, reference: payForm.reference, note: payForm.note, paid_by: user?.id,
-    });
+    } as never);
     if (error) { toast.error(`Couldn't record payment: ${error.message}`); return; }
     toast.success('Payment recorded');
     const { data } = await supabase.from('payslips').select('*').eq('id', openSlip.id).single();
@@ -365,7 +369,7 @@ export function PayslipManager() {
                 <p className="text-stone-700 text-xs font-medium">Payment History</p>
                 {payments.map(p => (
                   <div key={p.id} className="flex justify-between text-xs">
-                    <span className="text-stone-700">{new Date(p.paid_at).toLocaleDateString()} • {p.method.replace('_', ' ')}</span>
+                    <span className="text-stone-700">{new Date(p.paid_at ?? '').toLocaleDateString()} • {p.method.replace('_', ' ')}</span>
                     <span className="text-stone-900">₹{Number(p.amount).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
@@ -381,7 +385,7 @@ export function PayslipManager() {
 // ─────────────────────────── Employee: My Payslips
 export function MyPayslips() {
   const { user } = useAuth();
-  const [payslips, setPayslips] = useState<any[]>([]);
+  const [payslips, setPayslips] = useState<Payslip[]>([]);
   useEffect(() => {
     if (!user) return;
     supabase.from('payslips').select('*').eq('staff_user_id', user.id).order('period_year', { ascending: false }).order('period_month', { ascending: false })
@@ -465,7 +469,7 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                 <div key={log.id} className="border border-stone-200 rounded-xl p-4 bg-white shadow-sm flex flex-col md:flex-row gap-6">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-stone-900 font-bold">{new Date(log.attendance_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      <span className="text-stone-900 font-bold">{new Date(log.attendance_date ?? '').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${log.status === 'present' ? 'bg-emerald-100 text-emerald-700' : log.status === 'absent' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                         {log.status.toUpperCase()}
                       </span>
@@ -479,7 +483,7 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                         <p className="text-stone-700 text-xs font-semibold uppercase tracking-wider mb-2">Check In Details</p>
                         {log.check_in_at ? (
                           <div className="space-y-2">
-                            <p className="text-stone-900 text-sm font-semibold">{new Date(log.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                            <p className="text-stone-900 text-sm font-semibold">{new Date(log.check_in_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
                             {log.check_in_lat && log.check_in_lng ? (
                               <a href={mapLink(log.check_in_lat, log.check_in_lng)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-1 rounded text-xs font-medium border border-teal-100">
                                 <MapPin className="w-3.5 h-3.5 text-teal-600" /> View Check-In Location Map
@@ -515,7 +519,7 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                         <p className="text-stone-700 text-xs font-semibold uppercase tracking-wider mb-2">Check Out Details</p>
                         {log.check_out_at ? (
                           <div className="space-y-2">
-                            <p className="text-stone-900 text-sm font-semibold">{new Date(log.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                            <p className="text-stone-900 text-sm font-semibold">{new Date(log.check_out_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
                             {log.check_out_lat && log.check_out_lng ? (
                               <a href={mapLink(log.check_out_lat, log.check_out_lng)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-1 rounded text-xs font-medium border border-teal-100">
                                 <MapPin className="w-3.5 h-3.5 text-teal-600" /> View Check-Out Location Map

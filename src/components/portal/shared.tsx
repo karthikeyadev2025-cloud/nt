@@ -3,7 +3,11 @@ import { MapPin, Eye, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
-import type { Segment, SupportTicket, Lead } from '../../lib/database.types';
+import type { Segment, SupportTicket, Lead, Database } from '../../lib/database.types';
+
+type LeaveRequest = Database['public']['Tables']['leave_requests']['Row'];
+type AttendanceRow = Database['public']['Tables']['attendance_records']['Row'];
+type SalaryAdvance = Database['public']['Tables']['salary_advance_requests']['Row'];
 import { istDateStr } from '../../lib/dates';
 import { normalizePhone } from '../../lib/phone';
 import { AttendanceDetailsModal } from './payroll';
@@ -77,7 +81,7 @@ const SLA_RESOLUTION_HOURS: Record<string, number> = {
 function ticketSlaState(t: SupportTicket): { overdue: boolean; label: string } | null {
   if (t.status === 'resolved' || t.status === 'closed') return null;
   const hours = SLA_RESOLUTION_HOURS[t.priority] ?? 72;
-  const openedAt = t.created_at ? new Date(t.created_at).getTime() : Date.now();
+  const openedAt = t.created_at ? new Date(t.created_at ?? '').getTime() : Date.now();
   const targetAt = openedAt + hours * 3600 * 1000;
   const diffMs = targetAt - Date.now();
   const overdue = diffMs < 0;
@@ -1242,7 +1246,7 @@ function LogOutcomeDialog({
 export function HRBoard({ segments }: { segments: Segment[] }) {
   const [segFilter, setSegFilter] = useState('');
   const [tab, setTab] = useState<'staff' | 'attendance' | 'leaves' | 'advances'>('staff');
-  const [staff, setStaff] = useState<any[]>([]);
+  const [staff, setStaff] = useState<{ id: string; full_name: string; role: string; email: string; phone: string; segments: string[]; is_active: boolean; reporting_time?: string | null }[]>([]);
   // Track whether the first fetch has completed for each tab, so the UI can
   // distinguish "still loading" from "loaded but empty" — a blank screen with
   // no state feedback used to leave users unsure whether the app was working.
@@ -1250,9 +1254,9 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const [attendanceLoaded, setAttendanceLoaded] = useState(false);
   const [leavesLoaded, setLeavesLoaded] = useState(false);
   const [advancesLoaded, setAdvancesLoaded] = useState(false);
-  const [attendance, setAttendance] = useState<any[]>([]);
-  const [leaves, setLeaves] = useState<any[]>([]);
-  const [advances, setAdvances] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
+  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
   const [date, setDate] = useState(istDateStr());
   // HR polish additions:
   //   staffSearch: filter the Staff tab by name/email/phone
@@ -1278,7 +1282,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
       if (error) throw error;
       return data;
     }).then(data => {
-      if (data) setStaff(data);
+      if (data) setStaff(data as never);
       setStaffLoaded(true);
     }).catch(() => setStaffLoaded(true));
   }, []);
@@ -1505,7 +1509,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                     <div className="flex items-center gap-2">
                       {rec ? (
                         <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${rec.status === 'present' ? 'bg-emerald-100 text-emerald-700' : rec.status === 'absent' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {rec.status.toUpperCase()}
+                          {(rec.status ?? "").toUpperCase()}
                         </span>
                       ) : (
                         <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-red-100 text-red-700">ABSENT / NO PUNCH</span>
@@ -1538,7 +1542,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                           <div>
                             <p className="text-stone-500 font-medium">Check In</p>
                             <p className="text-stone-900 font-semibold text-sm">
-                              {rec.check_in_at ? new Date(rec.check_in_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                              {rec.check_in_at ? new Date(rec.check_in_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                             </p>
                             {rec.is_late && <p className="text-amber-700 text-[11px] font-medium">{rec.minutes_late}m late</p>}
                           </div>
@@ -1571,7 +1575,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                           <div>
                             <p className="text-stone-500 font-medium">Check Out</p>
                             <p className="text-stone-900 font-semibold text-sm">
-                              {rec.check_out_at ? new Date(rec.check_out_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+                              {rec.check_out_at ? new Date(rec.check_out_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                             </p>
                             {rec.work_mode && <p className="text-stone-600 text-[11px] capitalize font-medium">{rec.work_mode.replace('_', ' ')}</p>}
                           </div>

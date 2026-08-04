@@ -1001,7 +1001,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
                 <OffboardStaff staffMember={editing} onDone={() => { setShowOffboard(false); setEditing(null); load(); }} />
               ) : editing.exit_date ? (
                 <p className="text-stone-700 text-xs">
-                  Offboarded on {new Date(editing.exit_date).toLocaleDateString()} — {String(editing.exit_reason || '').replace('_', ' ')}
+                  Offboarded on {new Date(editing.exit_date ?? '').toLocaleDateString()} — {String(editing.exit_reason || '').replace('_', ' ')}
                 </p>
               ) : (
                 <button className="text-red-700 text-sm font-medium" onClick={() => setShowOffboard(true)}>Offboard this employee…</button>

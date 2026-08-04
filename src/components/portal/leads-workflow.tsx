@@ -11,7 +11,10 @@ import { normalizePhone } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { MyCallsChart } from './performance';
 import { cachedQuery } from '../../lib/cachedQuery';
-import type { Segment } from '../../lib/database.types';
+import type { Segment, Database } from '../../lib/database.types';
+
+type Lead = Database['public']['Tables']['marketing_leads']['Row'];
+type LeadRemark = Database['public']['Tables']['lead_remarks']['Row'];
 
 // ─────────────────────────── Telecaller: counts-only dashboard
 export function TelecallerStatsDashboard() {
@@ -37,7 +40,7 @@ export function TelecallerStatsDashboard() {
           .eq('user_id', user.id)
           .ilike('remark', '[Converted / Closed]%')
           .gte('created_at', monthStart.toISOString());
-        const convertedMonth = new Set((convRemarks || []).map((r: any) => r.lead_id)).size;
+        const convertedMonth = new Set((convRemarks || []).map((r: { lead_id: string }) => r.lead_id)).size;
 
         return {
           assigned: assigned || 0, calledToday: calledToday || 0, callbacks: callbacks || 0,
@@ -84,10 +87,10 @@ const OUTCOMES = [
 export function TelecallerQueue({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
-  const [leads, setLeads] = useState<any[]>([]);
-  const [executives, setExecutives] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [executives, setExecutives] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);
   const [active, setActive] = useState<any | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<LeadRemark[]>([]);
   const [outcome, setOutcome] = useState('contacted');
   const [remark, setRemark] = useState('');
   const [callbackDate, setCallbackDate] = useState('');
@@ -174,7 +177,7 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
       lead_id: active.id, user_id: user.id, call_type: 'outgoing',
       remark: `[${OUTCOMES.find(o => o.value === outcome)?.label}] ${remark}`
         + (isAppointment ? ` — appointment ${new Date(appointmentDate).toLocaleString('en-IN')}` : ''),
-    });
+    } as never);
 
     setBusy(false);
     if (remarkErr) {
@@ -201,11 +204,11 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
     const { error } = await supabase.from('marketing_leads').update({
       pending_transfer_to: transferTo, transfer_requested_by: user.id, transfer_status: 'pending',
       transfer_note: remark, updated_at: new Date().toISOString(),
-    }).eq('id', active.id);
+    } as never).eq('id', active.id);
     setBusy(false);
     if (error) { toast.error(`Couldn't request transfer: ${error.message}`); return; }
     if (remark.trim()) {
-      await supabase.from('lead_remarks').insert({ lead_id: active.id, user_id: user.id, call_type: 'note', remark: `[Requested handoff to executive] ${remark}` });
+      await supabase.from('lead_remarks').insert({ lead_id: active.id, user_id: user.id, call_type: 'note', remark: `[Requested handoff to executive] ${remark}` } as never);
     }
     toast.success('Handoff requested — awaiting manager/admin approval');
     setActive(null);
@@ -225,8 +228,8 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
               <p className="text-stone-700 text-xs mt-0.5">
                 {l.interested_in || 'No notes'} {l.callback_at && (
                   new Date(l.callback_at) <= new Date()
-                    ? <span className="text-red-700 ml-2 font-medium">⚠ Overdue callback: {new Date(l.callback_at).toLocaleString()}</span>
-                    : <span className="text-amber-700 ml-2">Callback: {new Date(l.callback_at).toLocaleString()}</span>
+                    ? <span className="text-red-700 ml-2 font-medium">⚠ Overdue callback: {new Date(l.callback_at ?? '').toLocaleString()}</span>
+                    : <span className="text-amber-700 ml-2">Callback: {new Date(l.callback_at ?? '').toLocaleString()}</span>
                 )}
               </p>
             </div>
@@ -300,7 +303,7 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
                   return (
                     <div key={h.id} className={`text-xs ${isSystem ? 'pl-2 border-l-2 border-stone-800' : ''}`}>
                       <p className="text-stone-700">
-                        {new Date(h.created_at).toLocaleString()} • {h.author_name || 'System'}{h.author_staff_code ? ` (${h.author_staff_code})` : ''}
+                        {new Date(h.created_at ?? '').toLocaleString()} • {h.author_name || 'System'}{h.author_staff_code ? ` (${h.author_staff_code})` : ''}
                       </p>
                       <p className={isSystem ? 'text-stone-700 italic' : 'text-stone-700'}>{h.remark}</p>
                     </div>
@@ -318,7 +321,7 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
 // ─────────────────────────── Manager/Super Admin: transfer approvals
 export function TransferApprovals() {
   const toast = useToast();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Lead[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
@@ -350,7 +353,7 @@ export function TransferApprovals() {
 
     const { error: err2 } = await supabase.from('marketing_leads').update({
       transfer_status: 'none', pending_transfer_to: null, transfer_requested_by: null, transfer_note: null,
-    }).eq('id', id);
+    } as never).eq('id', id);
     if (err2) { toast.error(`Saved, but cleanup failed: ${err2.message}`); return; }
 
     toast.success(approve ? 'Handoff approved' : 'Handoff rejected — lead returned to their queue');
@@ -365,14 +368,14 @@ export function TransferApprovals() {
         <div key={l.id} className={cardCls}>
           <p className="text-stone-900 text-sm font-medium">{l.customer_name} <span className="text-stone-700 text-xs">• {l.phone}</span></p>
           <p className="text-stone-700 text-xs mt-1">
-            Requested by <span className="text-stone-700">{names[l.transfer_requested_by] || '—'}</span> → to <span className="text-stone-700">{names[l.pending_transfer_to] || '—'}</span>
+            Requested by <span className="text-stone-700">{names[l.transfer_requested_by ?? ''] || '—'}</span> → to <span className="text-stone-700">{names[l.pending_transfer_to ?? ''] || '—'}</span>
           </p>
           {l.transfer_note && <p className="text-stone-700 text-xs mt-1">"{l.transfer_note}"</p>}
           <div className="flex gap-2 mt-3">
-            <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs flex items-center gap-1" onClick={() => resolve(l.id, true, l.pending_transfer_to)}>
+            <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs flex items-center gap-1" onClick={() => resolve(l.id, true, l.pending_transfer_to ?? '')}>
               <CheckCircle2 className="w-3.5 h-3.5" /> Approve
             </button>
-            <button className="px-3 py-1 rounded bg-red-600 text-white text-xs flex items-center gap-1" onClick={() => resolve(l.id, false, l.pending_transfer_to)}>
+            <button className="px-3 py-1 rounded bg-red-600 text-white text-xs flex items-center gap-1" onClick={() => resolve(l.id, false, l.pending_transfer_to ?? '')}>
               <XCircle className="w-3.5 h-3.5" /> Reject
             </button>
           </div>
@@ -388,12 +391,12 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
   const isSuperAdmin = user?.role === 'super_admin';
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const [rows, setRows] = useState<any[]>([]);
-  const [rawJson, setRawJson] = useState<any[]>([]);
+  const [rows, setRows] = useState<Record<string, string>[]>([]);
+  const [rawJson, setRawJson] = useState<Record<string, string>[]>([]);
   const [fileName, setFileName] = useState('');
   const [parseInfo, setParseInfo] = useState<{ totalRows: number; matchedRows: number; headers: string[] } | null>(null);
   const [segment, setSegment] = useState('');
-  const [allStaff, setAllStaff] = useState<any[]>([]);
+  const [allStaff, setAllStaff] = useState<{ id: string; full_name: string; segments: string[]; role: string }[]>([]);
   const [assignTo, setAssignTo] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -404,7 +407,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
 
   useEffect(() => {
     supabase.from('app_users').select('id, full_name, role, segments').eq('is_active', true).neq('role', 'super_admin').order('full_name')
-      .then(({ data }) => { if (data) setAllStaff(data); });
+      .then(({ data }) => { if (data) setAllStaff(data as never); });
   }, []);
 
   const sortedAssignees = [...allStaff].sort((a, b) => {
@@ -554,12 +557,12 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
       ...r, segment_slug: segment, source: 'bulk_upload' as const,
       assigned_to: assignTo || null, created_by: user?.id,
     }));
-    const { error } = await supabase.from('marketing_leads').insert(payload);
+    const { error } = await supabase.from('marketing_leads').insert(payload as never);
     if (!error && assignTo) {
       await supabase.from('notifications').insert({
         user_id: assignTo, kind: 'lead_assigned', title: 'New leads assigned to you',
         body: `${rows.length} new leads were uploaded and assigned to you.`, link: '/portal',
-      });
+      } as never);
     }
     setBusy(false);
     if (error) { toast.error(`Upload failed: ${error.message}`); return; }
@@ -638,7 +641,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
                 <option value="">Leave Unassigned (Pool)</option>
                 {sortedAssignees
                   .filter(s => !segment || (s.segments || []).includes(segment) || (s.segments || []).includes('all'))
-                  .map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+                  .map(s => <option key={s.id} value={s.id}>{s.full_name} — {(s.role ?? '').replace('_', ' ')}</option>)}
               </select>
             </div>
           </div>
@@ -675,7 +678,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
 // carried over from the original Aadya ManagerPortal "Conversations" tab.
 // Without this, a manager has to open each lead individually to see any notes.)
 export function TeamActivityFeed() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<LeadRemark[]>([]);
   const [leadNames, setLeadNames] = useState<Record<string, { name: string; phone: string }>>({});
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
@@ -699,9 +702,9 @@ export function TeamActivityFeed() {
         if (days) q = q.gte('created_at', new Date(Date.now() - days * 86400000).toISOString());
         const { data } = await q;
         if (data) setItems(data);
-        const leadIds = [...new Set((data || []).map((r: any) => r.lead_id))];
-        const userIds = [...new Set((data || []).map((r: any) => r.user_id).filter(Boolean))];
-        const photoPaths = [...new Set((data || []).map((r: any) => r.photo_url).filter(Boolean))] as string[];
+        const leadIds = [...new Set((data || []).map((r: LeadRemark) => r.lead_id ?? ''))];
+        const userIds = [...new Set((data || []).map((r: LeadRemark) => r.user_id ?? '').filter(Boolean))];
+        const photoPaths = [...new Set((data || []).map((r: LeadRemark) => r.photo_url ?? '').filter(Boolean))] as string[];
         if (leadIds.length) {
           const { data: leads } = await supabase.from('marketing_leads').select('id, customer_name, phone').in('id', leadIds);
           if (leads) setLeadNames(Object.fromEntries(leads.map((l: any) => [l.id, { name: l.customer_name, phone: l.phone }])));
@@ -770,12 +773,12 @@ export function TeamActivityFeed() {
             <div key={r.id} className={cardCls}>
               <div className="flex items-center justify-between">
                 <p className="text-stone-900 text-sm font-medium">{leadNames[r.lead_id]?.name || 'Unknown lead'}</p>
-                <span className={`text-xs ${typeColor[r.call_type] || 'text-stone-700'} capitalize`}>{r.call_type.replace('_', ' ')}</span>
+                <span className={`text-xs ${typeColor[r.call_type ?? ''] || 'text-stone-700'} capitalize`}>{(r.call_type ?? '').replace('_', ' ')}</span>
               </div>
               <p className="text-stone-700 text-sm mt-1">{r.remark}</p>
               <p className="text-stone-700 text-xs mt-1">
-                {userNames[r.user_id] || 'Unknown'} • {new Date(r.occurred_at || r.created_at).toLocaleString()}
-                {r.occurred_at && new Date(r.created_at).getTime() - new Date(r.occurred_at).getTime() > 3600000 && (
+                {userNames[r.user_id ?? ''] || 'Unknown'} • {new Date(r.occurred_at || r.created_at || '').toLocaleString()}
+                {r.occurred_at && new Date(r.created_at ?? '').getTime() - new Date(r.occurred_at ?? '').getTime() > 3600000 && (
                   <span className="text-stone-700"> • synced later</span>
                 )}
               </p>
@@ -787,9 +790,9 @@ export function TeamActivityFeed() {
                       href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}>📍 View on map</a>
                   )}
                   {r.photo_url && (
-                    photoUrls[r.photo_url] ? (
-                      <button onClick={() => setPreviewImage(photoUrls[r.photo_url])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
-                        <img src={photoUrls[r.photo_url]} alt="Visit proof" className="w-full h-full object-cover" />
+                    photoUrls[r.photo_url ?? ''] ? (
+                      <button onClick={() => setPreviewImage(photoUrls[r.photo_url ?? ''])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                        <img src={photoUrls[r.photo_url ?? '']} alt="Visit proof" className="w-full h-full object-cover" />
                       </button>
                     ) : (
                       <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
@@ -822,8 +825,8 @@ export function TeamActivityFeed() {
 export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment[]; onChanged?: () => void }) {
   const { user } = useAuth();
   const toast = useToast();
-  const [leads, setLeads] = useState<any[]>([]);
-  const [staff, setStaff] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);
   const [segFilter, setSegFilter] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignTo, setAssignTo] = useState('');
@@ -857,7 +860,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
     // INSERT, which it deliberately skips to avoid spamming bulk uploads).
     // Adding one here would double-notify the assignee.
     const { error } = await supabase.from('marketing_leads')
-      .update({ assigned_to: toId, updated_at: new Date().toISOString() }).in('id', ids);
+      .update({ assigned_to: toId, updated_at: new Date().toISOString() } as never).in('id', ids);
     setBusy(false);
     if (error) { toast.error(`Couldn't assign: ${error.message}`); return; }
     toast.success(toId === user?.id ? `${ids.length} lead(s) claimed — now in your queue` : `${ids.length} lead(s) assigned`);
@@ -877,7 +880,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
           <span className="text-stone-700 text-sm">{selected.size} selected</span>
           <select className={inputCls + ' w-auto flex-1 min-w-[180px]'} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
             <option value="">Assign selected to…</option>
-            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {(s.role ?? '').replace('_', ' ')}</option>)}
           </select>
           <button className={btnCls} disabled={busy || !assignTo} onClick={() => assign(assignTo, Array.from(selected))}>
             {busy ? 'Assigning…' : 'Assign'}
@@ -896,7 +899,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
                   <p className="text-stone-900 text-sm font-medium truncate">{l.customer_name}
                     {seg && <span className="text-xs px-2 py-0.5 rounded ml-2" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}
                   </p>
-                  <p className="text-stone-700 text-xs">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at).toLocaleDateString()}</p>
+                  <p className="text-stone-700 text-xs">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at ?? '').toLocaleDateString()}</p>
                 </div>
               </label>
               <button className="text-teal-700 text-xs font-medium shrink-0" disabled={busy} onClick={() => user && assign(user.id, [l.id])}>
@@ -913,8 +916,8 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
 
 export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
   const toast = useToast();
-  const [leads, setLeads] = useState<any[]>([]);
-  const [execs, setExecs] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [execs, setExecs] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);
   const [segFilter, setSegFilter] = useState('');
   const [scope, setScope] = useState<'upcoming' | 'unassigned' | 'past'>('upcoming');
   const [busy, setBusy] = useState('');
@@ -960,13 +963,13 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
     if (!execId) return;
     setBusy(leadId);
     const { error } = await supabase.from('marketing_leads')
-      .update({ assigned_to: execId, updated_at: new Date().toISOString() }).eq('id', leadId);
+      .update({ assigned_to: execId, updated_at: new Date().toISOString() } as never).eq('id', leadId);
     setBusy('');
     if (error) { toast.error(`Couldn't assign: ${error.message}`); return; }
     await supabase.from('notifications').insert({
       user_id: execId, kind: 'appointment', title: `Appointment assigned: ${customerName}`,
       body: `${new Date(apptAt).toLocaleString('en-IN')} — you are attending this appointment.`, link: '/portal',
-    });
+    } as never);
     toast.success('Executive assigned — they have been notified');
     load();
   }
@@ -995,7 +998,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
 
       <div className="space-y-2">
         {leads.map(l => {
-          const overdue = new Date(l.appointment_at) < new Date();
+          const overdue = new Date(l.appointment_at ?? '') < new Date();
           const assignedExec = execs.find(e => e.id === l.assigned_to);
           return (
             <div key={l.id} className={cardCls}>
@@ -1003,7 +1006,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
                 <div className="min-w-0">
                   <p className="text-stone-900 text-sm font-medium">{l.customer_name} <span className="text-stone-700">• {l.phone}</span></p>
                   <p className={`text-xs mt-0.5 ${overdue ? 'text-amber-700' : 'text-teal-700'}`}>
-                    {fmt(l.appointment_at)}{overdue ? ' — date passed' : ''}
+                    {fmt(l.appointment_at ?? '')}{overdue ? ' — date passed' : ''}
                   </p>
                   {l.appointment_note && <p className="text-stone-700 text-xs mt-0.5">{l.appointment_note}</p>}
                   <p className="text-stone-700 text-[11px] mt-1">
@@ -1012,7 +1015,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
                 </div>
                 <select className={inputCls + ' w-auto min-w-[190px]'} value={l.assigned_to || ''}
                   disabled={busy === l.id}
-                  onChange={e => assignExec(l.id, e.target.value, l.customer_name, l.appointment_at)}>
+                  onChange={e => assignExec(l.id, e.target.value, l.customer_name, l.appointment_at ?? '')}>
                   <option value="">Assign executive…</option>
                   {execs
                     .filter(e => (e.segments || []).includes(l.segment_slug) || (e.segments || []).includes('all'))
@@ -1135,9 +1138,9 @@ const VISIT_OUTCOMES = [
 export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
-  const [leads, setLeads] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [active, setActive] = useState<any | null>(null);
-  const [remarks, setRemarks] = useState<any[]>([]);
+  const [remarks, setRemarks] = useState<LeadRemark[]>([]);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
@@ -1224,7 +1227,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
     const { error } = await supabase.from('marketing_leads').insert({
       ...newLead, phone, source: 'field', assigned_to: user.id, created_by: user.id,
-    });
+    } as never);
     if (error) { toast.error(`Couldn't add lead: ${error.message}`); return; }
     toast.success('Lead added to your queue');
     setShowAddLead(false);
@@ -1242,14 +1245,14 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     setDealValue(lead.invoice_amount || lead.estimated_value || '');
     setVisitRequirement(lead.interested_in || '');
     setCollectedPhone(lead.phone === 'Pending Collection' ? '' : (lead.phone || ''));
-    setNextFollowup(lead.next_followup_at ? new Date(lead.next_followup_at).toISOString().slice(0,16) : '');
-    setApptAt(lead.appointment_at ? new Date(lead.appointment_at).toISOString().slice(0,16) : '');
+    setNextFollowup(lead.next_followup_at ? new Date(lead.next_followup_at ?? '').toISOString().slice(0,16) : '');
+    setApptAt(lead.appointment_at ? new Date(lead.appointment_at ?? '').toISOString().slice(0,16) : '');
     const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', lead.id).order('created_at', { ascending: false });
     if (!data) return;
     setRemarks(data);
     // lead-photos is a private bucket — resolve real signed URLs in bulk so
     // proof photos render as thumbnails instead of a click-through link.
-    const paths = Array.from(new Set(data.map((r: any) => r.photo_url).filter(Boolean))) as string[];
+    const paths = Array.from(new Set(data.map((r: LeadRemark) => r.photo_url ?? '').filter(Boolean))) as string[];
     if (paths.length > 0) {
       const { data: signed } = await supabase.storage.from('lead-photos').createSignedUrls(paths, 3600);
       if (signed) {
@@ -1370,7 +1373,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             <div className="mt-2 pt-2 border-t border-stone-200/60 space-y-1">
               {pendingItems.slice(0, 5).map(p => (
                 <p key={p.id} className="text-stone-700 text-[11px]">
-                  {p.leadName} — {new Date(p.occurredAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                  {p.leadName} — {new Date(p.occurredAt ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                   {p.photo ? ' • photo' : ''}{p.attempts > 0 ? ` • ${p.attempts} attempt(s)` : ''}
                 </p>
               ))}
@@ -1391,12 +1394,12 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             {l.next_followup_at && !l.appointment_at && (
               <p className={`text-xs mt-1 ${new Date(l.next_followup_at) < new Date() ? 'text-red-700 font-medium' : 'text-stone-700'}`}>
                 {new Date(l.next_followup_at) < new Date() ? '⚠ Follow-up overdue: ' : '↻ Follow-up: '}
-                {new Date(l.next_followup_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                {new Date(l.next_followup_at ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
               </p>
             )}
             {l.appointment_at && (
               <p className={`text-xs mt-1 font-medium ${new Date(l.appointment_at) < new Date() ? 'text-amber-700' : 'text-teal-700'}`}>
-                📅 {new Date(l.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                📅 {new Date(l.appointment_at ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 {l.appointment_note ? ` — ${l.appointment_note}` : ''}
                 {new Date(l.appointment_at) < new Date() ? ' (date passed)' : ''}
               </p>
@@ -1479,14 +1482,14 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 <p className="text-stone-700 text-xs font-medium">Full History</p>
                 {remarks.map(r => (
                   <div key={r.id} className="text-xs">
-                    <p className="text-stone-700">{new Date(r.created_at).toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''} • {r.call_type}</p>
+                    <p className="text-stone-700">{new Date(r.created_at ?? '').toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''} • {(r.call_type ?? '')}</p>
                     <p className="text-stone-700">{r.remark}</p>
                     <div className="flex items-center gap-3 mt-1">
                       {r.address && <span className="text-stone-700">📍 {r.address}</span>}
                       {r.photo_url && (
-                        photoUrls[r.photo_url] ? (
-                          <button onClick={() => setPreviewImage(photoUrls[r.photo_url])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
-                            <img src={photoUrls[r.photo_url]} alt="Visit proof" className="w-full h-full object-cover" />
+                        photoUrls[r.photo_url ?? ''] ? (
+                          <button onClick={() => setPreviewImage(photoUrls[r.photo_url ?? ''])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                            <img src={photoUrls[r.photo_url ?? '']} alt="Visit proof" className="w-full h-full object-cover" />
                           </button>
                         ) : (
                           <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
@@ -1550,10 +1553,10 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 // ─────────────────────────── Manager/Super Admin: Bulk Reassign (move all of X's active leads to Y in one action)
 export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
   const toast = useToast();
-  const [staff, setStaff] = useState<any[]>([]);
+  const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);
   const [fromId, setFromId] = useState('');
   const [toId, setToId] = useState('');
-  const [leads, setLeads] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
 
@@ -1561,7 +1564,7 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
     // "From" must include disabled staff too — offboarding someone is exactly
     // when you need to move their leads off them, after their account is disabled.
     supabase.from('app_users').select('id, full_name, role, segments, is_active').neq('role', 'super_admin').order('full_name')
-      .then(({ data }) => { if (data) setStaff(data); });
+      .then(({ data }) => { if (data) setStaff(data as never); });
   }, []);
 
   useEffect(() => {
@@ -1585,7 +1588,7 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
     if (selected.size === 0) { toast.error('Select at least one lead'); return; }
     setBusy(true);
     const { error } = await supabase.from('marketing_leads')
-      .update({ assigned_to: toId, updated_at: new Date().toISOString() })
+      .update({ assigned_to: toId, updated_at: new Date().toISOString() } as never)
       .in('id', Array.from(selected));
     setBusy(false);
     if (error) { toast.error(`Couldn't reassign: ${error.message}`); return; }
@@ -1604,14 +1607,14 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
           <label className="text-stone-700 text-xs">From (current owner)</label>
           <select className={inputCls} value={fromId} onChange={e => { setFromId(e.target.value); setToId(''); }}>
             <option value="">Select staff member</option>
-            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}{!s.is_active ? ' (disabled)' : ''}</option>)}
+            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {(s.role ?? '').replace('_', ' ')}{!s.is_active ? ' (disabled)' : ''}</option>)}
           </select>
         </div>
         <div>
           <label className="text-stone-700 text-xs">To (new owner)</label>
           <select className={inputCls} value={toId} onChange={e => setToId(e.target.value)} disabled={!fromId}>
             <option value="">Select staff member</option>
-            {staff.filter(s => s.id !== fromId && s.is_active).map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
+            {staff.filter(s => s.id !== fromId && s.is_active).map(s => <option key={s.id} value={s.id}>{s.full_name} — {(s.role ?? '').replace('_', ' ')}</option>)}
           </select>
         </div>
       </div>
