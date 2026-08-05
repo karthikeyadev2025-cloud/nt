@@ -231,3 +231,131 @@ export function TicketStatusChart() {
     </div>
   );
 }
+
+// ─────────────────────────── Sourcing Funnel — "who sourced the most won deals?"
+// Uses the sourcing_funnel_report RPC added in migration 20260805000002.
+// Table (not chart) because ranked leaderboards read better this way — the
+// eye scans names + numbers instantly, and each row has 4 dimensions
+// (sourced / contacted / won / rate) which a bar chart would compress.
+type FunnelRow = {
+  sourcer_id: string;
+  sourcer_name: string;
+  sourcer_role: string;
+  total_leads: number;
+  contacted_leads: number;
+  won_leads: number;
+  lost_leads: number;
+  in_progress_leads: number;
+  win_rate_pct: number | null;
+};
+
+export function SourcingFunnelWidget({ segments }: { segments: Segment[] }) {
+  const [rows, setRows] = useState<FunnelRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [range, setRange] = useState<'30d' | '90d' | 'all'>('30d');
+  const [segment, setSegment] = useState<string>('');
+
+  useEffect(() => {
+    setLoading(true);
+    const now = new Date();
+    const from = new Date(range === 'all' ? '2020-01-01' : now);
+    if (range === '30d') from.setDate(now.getDate() - 30);
+    if (range === '90d') from.setDate(now.getDate() - 90);
+    const to = new Date(now); to.setDate(now.getDate() + 1);
+
+    cachedQuery(`sourcing_funnel:${range}:${segment}`, async () => {
+      // Not in database.types.ts yet — narrow at call boundary.
+      const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) =>
+        Promise<{ data: FunnelRow[] | null; error: { message: string } | null }>;
+      const { data, error } = await rpc('sourcing_funnel_report', {
+        p_from: from.toISOString(),
+        p_to: to.toISOString(),
+        p_segment_slug: segment || null,
+      });
+      if (error) throw error;
+      return data || [];
+    })
+      .then(data => { if (data) setRows(data); })
+      .catch(() => { /* permission-gated; silent on lack of access */ })
+      .finally(() => setLoading(false));
+  }, [range, segment]);
+
+  return (
+    <div className={cardCls}>
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+        <div>
+          <h3 className="text-stone-900 font-semibold text-sm">Sourcing Funnel</h3>
+          <p className="text-stone-500 text-[11px]">Who's bringing in the deals</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select value={range} onChange={e => setRange(e.target.value as typeof range)}
+            className="text-xs px-2 py-1 rounded-lg border border-stone-200 bg-white text-stone-700 font-semibold">
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="all">All time</option>
+          </select>
+          <select value={segment} onChange={e => setSegment(e.target.value)}
+            className="text-xs px-2 py-1 rounded-lg border border-stone-200 bg-white text-stone-700 font-semibold">
+            <option value="">All segments</option>
+            {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="py-10 text-center text-stone-500 text-xs">Loading…</div>
+      ) : rows.length === 0 ? (
+        <div className="py-10 text-center">
+          <p className="text-stone-500 text-sm">No sourced leads in this range yet.</p>
+          <p className="text-stone-400 text-xs mt-1">Add "Who sourced this lead" when creating leads to build this report.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-stone-700 text-xs font-semibold border-b border-stone-100">
+                <th className="text-left py-2 pr-2">Sourcer</th>
+                <th className="text-right py-2 px-2">Sourced</th>
+                <th className="text-right py-2 px-2">In Progress</th>
+                <th className="text-right py-2 px-2">Won</th>
+                <th className="text-right py-2 px-2">Lost</th>
+                <th className="text-right py-2 pl-2">Win Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={r.sourcer_id} className="border-b border-stone-50 last:border-0 hover:bg-stone-50">
+                  <td className="py-2 pr-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold w-5 ${i === 0 ? 'text-amber-600' : 'text-stone-500'}`}>#{i + 1}</span>
+                      <div className="min-w-0">
+                        <p className="text-stone-900 font-medium truncate">{r.sourcer_name}</p>
+                        <p className="text-stone-500 text-[10px]">{r.sourcer_role}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="text-right py-2 px-2 text-stone-900 font-semibold">{r.total_leads}</td>
+                  <td className="text-right py-2 px-2 text-stone-700">{r.in_progress_leads}</td>
+                  <td className="text-right py-2 px-2 text-emerald-700 font-semibold">{r.won_leads}</td>
+                  <td className="text-right py-2 px-2 text-stone-500">{r.lost_leads}</td>
+                  <td className="text-right py-2 pl-2 font-bold">
+                    {r.win_rate_pct === null ? (
+                      <span className="text-stone-400">—</span>
+                    ) : r.win_rate_pct >= 40 ? (
+                      <span className="text-emerald-700">{r.win_rate_pct}%</span>
+                    ) : r.win_rate_pct >= 20 ? (
+                      <span className="text-amber-700">{r.win_rate_pct}%</span>
+                    ) : (
+                      <span className="text-red-700">{r.win_rate_pct}%</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="text-stone-400 text-[10px] mt-2 italic">Win rate excludes in-progress leads. — means no decided leads yet.</p>
+        </div>
+      )}
+    </div>
+  );
+}

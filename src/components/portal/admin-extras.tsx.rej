@@ -1,0 +1,12 @@
+diff a/src/components/portal/admin-extras.tsx b/src/components/portal/admin-extras.tsx	(rejected hunks)
+@@ -117,7 +117,9 @@ export function TodayAtAGlance() {
+ }
+ 
+ // ─────────────────────────── Setup Checklist (helps a new admin see what's not configured yet)
+-export function SetupChecklist({ segments: _segments }: { segments: Segment[] }) {
++// The segments prop is accepted (callers pass it) but not read: the RPC
++// aggregates across all segments regardless. Keep the type but ignore it.
++export function SetupChecklist(_props: { segments: Segment[] }) {
+   const [checks, setChecks] = useState<{ label: string; done: boolean; hint: string }[] | null>(null);
+   const [dismissed, setDismissed] = useState(false);
+ 

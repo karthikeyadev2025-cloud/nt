@@ -32,6 +32,7 @@ import { LeadsWorkspace } from './leads-workflow';
 const AttendanceTrendChart = lazy(() => import('./performance').then(m => ({ default: m.AttendanceTrendChart })));
 const TicketStatusChart = lazy(() => import('./performance').then(m => ({ default: m.TicketStatusChart })));
 const LeadsFunnelChart = lazy(() => import('./performance').then(m => ({ default: m.LeadsFunnelChart })));
+import { SourcingFunnelWidget } from './performance';
 import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll';
 import { RegularizationApprovals, HolidayManager, OffboardStaff, DanglingCheckins, OverdueTickets } from './lifecycle';
 import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
@@ -265,6 +266,9 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
             <Suspense fallback={<ChartPlaceholder />}><TicketStatusChart /></Suspense>
           </div>
           <Suspense fallback={<ChartPlaceholder />}><LeadsFunnelChart segments={segments} /></Suspense>
+          {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
+            <SourcingFunnelWidget segments={segments} />
+          )}
         </>
       )}
     </div>

@@ -1,0 +1,139 @@
+diff a/src/components/portal/lifecycle.tsx b/src/components/portal/lifecycle.tsx	(rejected hunks)
+@@ -6,13 +6,14 @@ import { useToast } from '../../lib/toast';
+ import { cachedQuery } from '../../lib/cachedQuery';
+ import { cachedRpc } from '../../lib/cachedRpc';
+ import { inputCls, btnCls, cardCls } from './shared';
+-import type { Segment } from '../../lib/database.types';
++import { istDateStr } from '../../lib/dates';
++import type { Segment, Tables } from '../../lib/database.types';
+ 
+ // ─────────────────────────── Staff: request an attendance correction (missed punch)
+ export function MyRegularizations() {
+   const { user } = useAuth();
+   const toast = useToast();
+-  const [items, setItems] = useState<any[]>([]);
++  const [items, setItems] = useState<Tables<'attendance_regularizations'>[]>([]);
+   const [form, setForm] = useState({ attendance_date: '', requested_check_in: '', requested_check_out: '', reason: '' });
+   const [busy, setBusy] = useState(false);
+ 
+@@ -36,7 +37,10 @@ export function MyRegularizations() {
+     if (!user) return;
+     if (!form.attendance_date || !form.reason.trim()) { toast.error('Date and reason are required'); return; }
+     if (!form.requested_check_in && !form.requested_check_out) { toast.error('Enter at least a check-in or check-out time'); return; }
+-    if (form.attendance_date > new Date().toISOString().slice(0, 10)) { toast.error("Can't correct a future date"); return; }
++    // Compare against today in IST, not UTC — between 00:00 and 05:30 IST
++    // the UTC date is still yesterday, so form.attendance_date === "today IST"
++    // was being rejected as "future" for staff opening the portal early.
++    if (form.attendance_date > istDateStr()) { toast.error("Can't correct a future date"); return; }
+     setBusy(true);
+     const { error } = await supabase.from('attendance_regularizations').insert({
+       staff_user_id: user.id,
+@@ -60,7 +64,7 @@ export function MyRegularizations() {
+         <CalendarCheck className="w-4 h-4 text-teal-700" /> Attendance Correction
+       </h3>
+       <p className="text-stone-700 text-xs mb-3">Forgot to check in or out? Request a correction — it needs manager/HR approval.</p>
+-      <input type="date" className={inputCls + ' mb-2'} max={new Date().toISOString().slice(0, 10)}
++      <input type="date" className={inputCls + ' mb-2'} max={istDateStr()}
+         value={form.attendance_date} onChange={e => setForm({ ...form, attendance_date: e.target.value })} />
+       <div className="grid grid-cols-2 gap-2 mb-2">
+         <div>
+@@ -93,7 +97,7 @@ export function MyRegularizations() {
+ export function RegularizationApprovals() {
+   const { user, hasPermission } = useAuth();
+   const toast = useToast();
+-  const [items, setItems] = useState<any[]>([]);
++  const [items, setItems] = useState<Tables<'attendance_regularizations'>[]>([]);
+   const [names, setNames] = useState<Record<string, string>>({});
+ 
+   const load = useCallback(async () => {
+@@ -103,7 +107,7 @@ export function RegularizationApprovals() {
+           supabase.from('attendance_regularizations').select('*').order('created_at', { ascending: false }).limit(100),
+           supabase.from('app_users').select('id, full_name'),
+         ]);
+-        return { items: reg || [], names: Object.fromEntries((users || []).map((u: any) => [u.id, u.full_name])) };
++        return { items: reg || [], names: Object.fromEntries((users || []).map(u => [u.id, u.full_name])) };
+       });
+       if (res) { setItems(res.items); setNames(res.names); }
+     } catch {
+@@ -147,7 +151,7 @@ export function RegularizationApprovals() {
+ // ─────────────────────────── HR: holiday calendar
+ export function HolidayManager({ segments }: { segments: Segment[] }) {
+   const toast = useToast();
+-  const [items, setItems] = useState<any[]>([]);
++  const [items, setItems] = useState<Tables<'holidays'>[]>([]);
+   const [form, setForm] = useState({ holiday_date: '', name: '', segment_slug: '', is_optional: false });
+ 
+   const load = useCallback(async () => {
+@@ -180,8 +184,9 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
+     load();
+   }
+ 
+-  const upcoming = items.filter(h => h.holiday_date >= new Date().toISOString().slice(0, 10));
+-  const past = items.filter(h => h.holiday_date < new Date().toISOString().slice(0, 10));
++  const today = istDateStr();
++  const upcoming = items.filter(h => h.holiday_date >= today);
++  const past = items.filter(h => h.holiday_date < today);
+ 
+   return (
+     <div>
+@@ -235,10 +240,10 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
+ }
+ 
+ // ─────────────────────────── HR/Super Admin: offboard an employee properly
+-export function OffboardStaff({ staffMember, onDone }: { staffMember: any; onDone: () => void }) {
++export function OffboardStaff({ staffMember, onDone }: { staffMember: { id: string; full_name: string }; onDone: () => void }) {
+   const toast = useToast();
+   const [form, setForm] = useState({
+-    exit_date: new Date().toISOString().slice(0, 10),
++    exit_date: istDateStr(),
+     exit_reason: 'resigned',
+     exit_note: '',
+     disable_account: true,
+@@ -302,22 +307,24 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: any; onDon
+ // ─────────────────────────── HR: resolve dangling check-ins (forgot to check out)
+ export function DanglingCheckins() {
+   const toast = useToast();
+-  const [items, setItems] = useState<any[]>([]);
++  // Shape from list_dangling_checkins RPC (see 20260726000002 migration)
++  type DanglingItem = { id: string; staff_user_id: string; full_name: string; attendance_date: string; check_in_at: string; days_open: number };
++  const [items, setItems] = useState<DanglingItem[]>([]);
+   const [customTime, setCustomTime] = useState<Record<string, string>>({});
+   const [busy, setBusy] = useState('');
+ 
+   const load = useCallback(async () => {
+     try {
+       const data = await cachedRpc('list_dangling_checkins', () => supabase.rpc('list_dangling_checkins'));
+-      const list = (data as any)?.data || data;
+-      if (Array.isArray(list)) setItems(list);
++      const list = Array.isArray(data) ? data : (data as { data?: DanglingItem[] })?.data;
++      if (Array.isArray(list)) setItems(list as DanglingItem[]);
+     } catch {
+       // ignore
+     }
+   }, []);
+   useEffect(() => { load(); }, [load]);
+ 
+-  async function close(rec: any) {
++  async function close(rec: DanglingItem) {
+     setBusy(rec.id);
+     const t = customTime[rec.id];
+     const checkOut = t ? new Date(`${rec.attendance_date}T${t}`).toISOString() : undefined;
+@@ -366,14 +373,15 @@ export function DanglingCheckins() {
+ 
+ // ─────────────────────────── Overdue tickets (SLA breach)
+ export function OverdueTickets({ segments }: { segments: Segment[] }) {
+-  const [items, setItems] = useState<any[]>([]);
++  type OverdueRow = { id: string; ticket_no: string; subject: string; customer_name: string; segment_slug: string; priority: string; status: string; created_at: string; hours_open: number; target_hours: number };
++  const [items, setItems] = useState<OverdueRow[]>([]);
+   const [segment, setSegment] = useState('');
+ 
+   useEffect(() => {
+     cachedRpc(`list_overdue_tickets:${segment}`, () => supabase.rpc('list_overdue_tickets', { _segment_slug: segment || undefined }))
+       .then(res => {
+-        const data = (res as any)?.data || res;
+-        if (Array.isArray(data)) setItems(data);
++        const data = Array.isArray(res) ? res : (res as { data?: OverdueRow[] })?.data;
++        if (Array.isArray(data)) setItems(data as OverdueRow[]);
+       }).catch(() => {});
+   }, [segment]);
+ 
