@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { LogOut, LayoutDashboard, Clock, CalendarDays, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu, Key } from 'lucide-react';
+import { LogOut, LayoutDashboard, Clock, CalendarDays, Calendar, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu, Key } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Database, Tables } from '../../lib/database.types';
 
@@ -17,6 +17,7 @@ import { MyRegularizations } from './lifecycle';
 import { TelecallerQueue, LeadsWorkspace, ExecutiveFieldVisits } from './leads-workflow';
 import { MyPerformanceChart } from './performance';
 import { MyPayslips } from './payroll';
+import { MyMeetings } from './meetings';
 import CameraCapture from '../CameraCapture';
 import { KiteTailLogo } from '../KiteTailLogo';
 import SessionDevices from '../SessionDevices';
@@ -698,6 +699,7 @@ export default function StaffPortal() {
   const tabs = [
     { id: 'home', label: 'Home', icon: LayoutDashboard, show: true },
     { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },
+    { id: 'meetings', label: 'My Meetings', icon: Calendar, show: true },
     { id: 'tasks', label: 'My Tasks', icon: ClipboardList, show: true },
     { id: 'documents', label: 'My Documents', icon: FileText, show: true },
     { id: 'requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
@@ -866,6 +868,7 @@ export default function StaffPortal() {
           {tab === 'attendance' && <AnnouncementsFeed />}
           {tab === 'attendance' && <MyAttendance />}
           {tab === 'documents' && <MyDocuments />}
+          {tab === 'meetings' && <MyMeetings />}
           {tab === 'requests' && <MyRequests />}
           {tab === 'home' && <MyHome onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />}
           {tab === 'tasks' && <TasksBoard segments={segments} mineOnly />}

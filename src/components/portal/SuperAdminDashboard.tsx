@@ -18,6 +18,7 @@ import { ImageUpload } from './ImageUpload';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals, ShiftSwapBoard } from './features';
 import { TasksBoard } from './tasks';
 import { LeadsWorkspace } from './leads-workflow';
+import { TeamCalendar, MeetingTypesManager } from './meetings';
 // Charts pull in recharts, which alone accounts for ~380KB of JavaScript —
 // by far the single heaviest chunk in the whole app. A direct static import
 // here forced that entire library to download and parse before ANY part of
@@ -1892,7 +1893,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   );
 }
 
-type Tab = 'overview' | 'tasks' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content' | 'security'
+type Tab = 'overview' | 'tasks' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content' | 'security' | 'calendar' | 'meeting_types'
   | 'my_attendance' | 'my_documents' | 'my_requests' | 'my_profile' | 'my_swap' | 'my_sessions';
 
 export default function SuperAdminDashboard() {
@@ -1936,6 +1937,7 @@ export default function SuperAdminDashboard() {
       label: 'Executive Overview',
       items: [
         { id: 'overview', label: 'Overview', icon: LayoutDashboard, show: true },
+        { id: 'calendar', label: 'Team Calendar', icon: CalendarDays, show: isSuperAdmin || hasPermission('view_leads') || hasPermission('manage_leads') },
         { id: 'tickets', label: 'Tickets', icon: Ticket, show: isSuperAdmin || hasPermission('view_tickets') || hasPermission('manage_tickets') },
         { id: 'tasks', label: 'Tasks', icon: ClipboardList, show: true },
         { id: 'crm', label: 'CRM / Leads', icon: ClipboardList, show: isSuperAdmin || hasPermission('view_leads') || hasPermission('manage_leads') },
@@ -1949,6 +1951,7 @@ export default function SuperAdminDashboard() {
         { id: 'segments', label: 'Segments', icon: Layers, show: isSuperAdmin },
         { id: 'products', label: 'Products', icon: Boxes, show: isSuperAdmin || hasPermission('manage_content') },
         { id: 'catalog', label: 'Services & Ticket Types', icon: Wrench, show: isSuperAdmin || hasPermission('manage_content') },
+        { id: 'meeting_types', label: 'Meeting Types', icon: CalendarDays, show: isSuperAdmin || hasPermission('manage_content') },
         { id: 'documents', label: 'Documents & Onboarding', icon: FileText, show: isSuperAdmin || hasPermission('manage_staff') },
         { id: 'approvals', label: 'Approvals', icon: Landmark, show: isSuperAdmin || hasPermission('approve_advances') || hasPermission('manage_staff') },
         { id: 'announcements', label: 'Announcements', icon: Megaphone, show: isSuperAdmin || hasPermission('manage_staff') },
@@ -2083,6 +2086,8 @@ export default function SuperAdminDashboard() {
         {tab === 'segments' && <SegmentsManager onChanged={() => setRefreshKey(k => k + 1)} />}
         {tab === 'products' && <ProductsManager segments={segments} />}
         {tab === 'catalog' && <CatalogManager segments={segments} />}
+        {tab === 'calendar' && <TeamCalendar />}
+        {tab === 'meeting_types' && <MeetingTypesManager />}
         {tab === 'documents' && <DocumentsManager segments={segments} />}
         {tab === 'approvals' && <ApprovalsSection />}
         {tab === 'announcements' && <AnnouncementsManager segments={segments} />}

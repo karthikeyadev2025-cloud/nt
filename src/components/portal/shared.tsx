@@ -11,6 +11,7 @@ type SalaryAdvance = Database['public']['Tables']['salary_advance_requests']['Ro
 import { istDateStr } from '../../lib/dates';
 import { normalizePhone } from '../../lib/phone';
 import { AttendanceDetailsModal } from './payroll';
+import { LeadMeetingsTab } from './meetings';
 import { cachedQuery, invalidateQueryCache } from '../../lib/cachedQuery';
 import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
 
@@ -427,7 +428,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const [previewLeadPhoto, setPreviewLeadPhoto] = useState<string | null>(null);
   const [newRemark, setNewRemark] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
+  const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field', sourced_by_user_id: '' });
 
   // Bulk action state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -667,12 +668,15 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       if (exists) { setDupWarning([{ id: 'exists', customer_name: 'An active lead with this number already exists', stage: '', assignee_name: '' }]); return; }
     }
 
-    const { error } = await supabase.from('marketing_leads').insert({ ...form, phone, created_by: user.id } as never);
+    const { error } = await supabase.from('marketing_leads').insert({
+      ...form, phone, created_by: user.id,
+      sourced_by_user_id: form.sourced_by_user_id || null,
+    } as never);
     if (error) { toast.error(`Couldn't create lead: ${error.message}`); return; }
     toast.success('Lead created');
     setShowAdd(false);
     setDupWarning(null);
-    setForm({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field' });
+    setForm({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field', sourced_by_user_id: '' });
     invalidateQueryCache('leads:');
     invalidateRpcCache('get_dashboard_counts');
     load();
@@ -717,7 +721,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
             onChange={e => setSearchQuery(e.target.value)}
           />
           {hasPermission('create_leads') || hasPermission('manage_leads') ? (
-            <button className={btnCls + ' shrink-0'} onClick={() => { setDupWarning(null); setShowAdd(true); }}>+ Add Lead</button>
+            <button className={btnCls + ' shrink-0'} onClick={() => { setDupWarning(null); setForm(f => ({ ...f, sourced_by_user_id: f.sourced_by_user_id || user?.id || '' })); setShowAdd(true); }}>+ Add Lead</button>
           ) : null}
         </div>
       </div>
@@ -885,6 +889,13 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
             <select className={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
               {['field', 'telecall', 'referral', 'whatsapp', 'website', 'other'].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
+            <div>
+              <label className="text-stone-700 text-xs font-medium mb-1 block">Who sourced this lead? (Sales attribution)</label>
+              <select className={inputCls} value={form.sourced_by_user_id} onChange={e => setForm({ ...form, sourced_by_user_id: e.target.value })}>
+                <option value="">— Not tracked —</option>
+                {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+              </select>
+            </div>
             {dupWarning && (
               <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-600/40 text-xs">
                 <p className="text-amber-700 font-medium mb-1">⚠ This phone number already exists:</p>
@@ -985,6 +996,14 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                   </div>
                 );
               })}
+            </div>
+            <div className="border-t border-stone-200 pt-4 mt-4">
+              <p className="text-stone-900 text-sm font-bold mb-2">Meetings</p>
+              <LeadMeetingsTab
+                leadId={openLead.id}
+                leadName={openLead.customer_name}
+                leadPhone={openLead.phone}
+              />
             </div>
           </div>
         </div>
