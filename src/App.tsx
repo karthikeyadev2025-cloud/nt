@@ -10,6 +10,8 @@ import { KiteTailLogo } from './components/KiteTailLogo';
 
 const SuperAdminDashboard = lazy(() => import('./components/portal/SuperAdminDashboard'));
 const StaffPortal = lazy(() => import('./components/portal/StaffPortal'));
+const TelecallerPortal = lazy(() => import('./components/portal/TelecallerPortal'));
+const MarketingExecutivePortal = lazy(() => import('./components/portal/MarketingExecutivePortal'));
 const ForcePasswordChange = lazy(() => import('./components/ForcePasswordChange'));
 
 function PageLoader() {
@@ -126,6 +128,13 @@ function AppContent() {
     'bulk_assign_leads', 'approve_transfers', 'approve_advances',
   ].some(p => hasPermission(p));
   if (hasAdminAccess) return <Suspense fallback={<PageLoader />}><SuperAdminDashboard /></Suspense>;
+  // Telecaller and Marketing Executive are the two roles with the most
+  // distinct daily workflow (call queue vs field visits) — they get
+  // dedicated, purpose-built portals instead of sharing the generic
+  // self-service shell. Every other non-admin role (support agent, plain
+  // employee, HR staff without manage_staff) still gets StaffPortal.
+  if (user.role === 'telecaller') return <Suspense fallback={<PageLoader />}><TelecallerPortal /></Suspense>;
+  if (user.role === 'marketing_executive') return <Suspense fallback={<PageLoader />}><MarketingExecutivePortal /></Suspense>;
   return <Suspense fallback={<PageLoader />}><StaffPortal /></Suspense>;
 }
 
