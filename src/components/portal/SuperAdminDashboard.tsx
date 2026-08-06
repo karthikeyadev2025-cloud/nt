@@ -348,9 +348,23 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       .then(({ data }) => { if (data) setManagers(data); });
   }, []);
 
+  // "all" and individual segment slugs are mutually exclusive — picking one
+  // clears the other. Before this fix, both could be selected together
+  // (e.g. ['digital_media', 'all']), and since canAccessSegment() treats
+  // 'all' anywhere in the array as full access, one accidental click on
+  // "ALL SEGMENTS" silently overrode every individual restriction with no
+  // visible warning. This is the root cause of "I picked one segment but
+  // the employee can still see everything."
   const toggleSeg = (slug: string) => {
     const cur: string[] = form.segments;
-    setForm({ ...form, segments: cur.includes(slug) ? cur.filter((s: string) => s !== slug) : [...cur, slug] });
+    if (slug === 'all') {
+      // Selecting ALL clears every individual segment and toggles 'all' alone.
+      setForm({ ...form, segments: cur.includes('all') ? [] : ['all'] });
+    } else {
+      // Selecting an individual segment always drops 'all' first, then toggles.
+      const withoutAll = cur.filter(s => s !== 'all');
+      setForm({ ...form, segments: withoutAll.includes(slug) ? withoutAll.filter(s => s !== slug) : [...withoutAll, slug] });
+    }
   };
   const toggleDoc = (t: string) => {
     const cur: string[] = form.doc_types;
@@ -559,6 +573,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             </div>
             <div>
               <p className="text-stone-700 text-sm font-medium mb-2">Segment Access</p>
+              <p className="text-stone-500 text-xs mb-2">Pick one or more specific segments, or "ALL SEGMENTS" for unrestricted access — picking one clears the other.</p>
               <div className="flex flex-wrap gap-2">
                 {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
                   <button key={s.slug} onClick={() => toggleSeg(s.slug)}
@@ -895,9 +910,18 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
     load();
   }
 
+  // Same mutual-exclusivity fix as the onboarding toggleSeg above — see
+  // that comment for the full rationale. This version edits any object
+  // with a `segments` field (used for both the editing-staff form and
+  // manager/HR forms elsewhere on this page).
   const toggleSeg = <T extends { segments: string[] | null }>(obj: T, setObj: (o: T) => void, slug: string) => {
     const cur: string[] = obj.segments || [];
-    setObj({ ...obj, segments: cur.includes(slug) ? cur.filter(s => s !== slug) : [...cur, slug] });
+    if (slug === 'all') {
+      setObj({ ...obj, segments: cur.includes('all') ? [] : ['all'] });
+    } else {
+      const withoutAll = cur.filter(s => s !== 'all');
+      setObj({ ...obj, segments: withoutAll.includes(slug) ? withoutAll.filter(s => s !== slug) : [...withoutAll, slug] });
+    }
   };
 
   return (
@@ -1002,6 +1026,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
             </div>
             <div>
               <p className="text-stone-700 text-sm font-medium mb-2">Segment Access</p>
+              <p className="text-stone-500 text-xs mb-2">Pick one or more specific segments, or "ALL SEGMENTS" for unrestricted access — picking one clears the other.</p>
               <div className="flex flex-wrap gap-2">
                 {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
                   <button key={s.slug} onClick={() => toggleSeg(editing, setEditing, s.slug)}

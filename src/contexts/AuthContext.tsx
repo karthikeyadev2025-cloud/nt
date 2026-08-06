@@ -352,6 +352,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.id, user, loading]);
 
   // ─────────────────────────────────────────────────────────────────────
+  // Permission refresh — closes a real gap: an admin can change a staff
+  // member's segments or permission_overrides in Super Admin, but that
+  // staff member's already-open session keeps using whatever was cached
+  // at login (localStorage + React state) until they manually sign out
+  // and back in. For a telecaller mid-shift, that could be hours.
+  //
+  // Fix: silently re-fetch role permissions + overrides every 3 minutes,
+  // and immediately on regaining tab visibility (the moment someone
+  // switches back to this tab after being away — the natural point where
+  // "did anything change while I was gone" matters). force:true bypasses
+  // the 15s recentLoad dedup so this always hits the DB, not a stale cache.
+  useEffect(() => {
+    if (!user || loading) return;
+    let stopped = false;
+
+    async function refreshPermissionsSilently() {
+      if (stopped || document.visibilityState !== 'visible') return;
+      await loadUser(user!.id, { force: true }).catch(() => {
+        // Non-fatal — next interval tick or visibility change retries.
+      });
+    }
+
+    const intervalHandle = window.setInterval(refreshPermissionsSilently, 3 * 60 * 1000);
+    const onVisibility = () => { if (document.visibilityState === 'visible') refreshPermissionsSilently(); };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(intervalHandle);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [user?.id, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─────────────────────────────────────────────────────────────────────
   // Public actions
   // ─────────────────────────────────────────────────────────────────────
 

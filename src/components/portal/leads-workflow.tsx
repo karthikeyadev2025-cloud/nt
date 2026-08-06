@@ -950,6 +950,18 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
     onChanged?.();
   }
 
+  // Derived from the ACTUAL leads currently selected, not from segFilter —
+  // segFilter defaults to '' until someone clicks a specific tab, which
+  // would silently show every staff member regardless of segment if we
+  // gated on view state instead of the real data being assigned.
+  const selectedSegments = new Set(
+    leads.filter(l => selected.has(l.id)).map(l => l.segment_slug).filter(Boolean)
+  );
+  const assignableStaff = staff.filter(s =>
+    s.segments?.includes('all') ||
+    Array.from(selectedSegments).every(seg => s.segments?.includes(seg as string))
+  );
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -957,16 +969,21 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
         <button className="text-teal-700 text-xs" onClick={load}>Refresh</button>
       </div>
 
-      {selected.size > 0 && staff.length > 0 && (
+      {selected.size > 0 && (
         <div className={cardCls + ' mb-4 flex flex-wrap items-center gap-3'}>
           <span className="text-stone-700 text-sm">{selected.size} selected</span>
           <select className={inputCls + ' w-auto flex-1 min-w-[180px]'} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
             <option value="">Assign selected to…</option>
-            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {(s.role ?? '').replace('_', ' ')}</option>)}
+            {assignableStaff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {(s.role ?? '').replace('_', ' ')}</option>)}
           </select>
           <button className={btnCls} disabled={busy || !assignTo} onClick={() => assign(assignTo, Array.from(selected))}>
             {busy ? 'Assigning…' : 'Assign'}
           </button>
+          {assignableStaff.length === 0 && (
+            <p className="text-amber-700 text-xs w-full">
+              No staff have access to all the segments in this selection — select leads from a single segment, or assign one at a time.
+            </p>
+          )}
         </div>
       )}
 
@@ -979,7 +996,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
                 <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)} />
                 <div className="min-w-0">
                   <p className="text-stone-900 text-sm font-medium truncate">{l.customer_name}
-                    {seg && <span className="text-xs px-2 py-0.5 rounded ml-2" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}
+                    {seg && <span className="text-xs px-2 py-0.5 rounded ml-2" style={{ backgroundColor: (seg.color || '#64748b') + '22', color: seg.color || '#64748b' }}>{seg.name}</span>}
                   </p>
                   <p className="text-stone-700 text-xs">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at ?? '').toLocaleDateString()}</p>
                 </div>
