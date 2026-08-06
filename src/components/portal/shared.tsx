@@ -21,6 +21,21 @@ export const btnCls =
   'px-4 py-2.5 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-semibold shadow-md shadow-orange-700/20 border border-orange-600/30 transition-all active:scale-[0.98]';
 export const cardCls = 'p-5 rounded-2xl bg-white border border-stone-200/90 shadow-md shadow-stone-200/50 backdrop-blur-md';
 
+// Postgres/PostgREST errors carry far more than .message — .code (e.g.
+// 23514 for a check violation) and .details name the exact constraint,
+// which .message alone often doesn't. Every write-path toast in this file
+// uses this so a failure is instantly diagnosable from the screen, no
+// DevTools required. Also logs the full object to console for anyone who
+// does have DevTools open.
+function describeDbError(error: { message: string; code?: string; details?: string | null; hint?: string | null }): string {
+  console.error('Supabase write error:', error);
+  const parts = [error.message];
+  if (error.code) parts.push(`[${error.code}]`);
+  if (error.details) parts.push(`— ${error.details}`);
+  if (error.hint) parts.push(`(hint: ${error.hint})`);
+  return parts.join(' ');
+}
+
 export function SegmentTabs({
   segments, value, onChange, includeAll = true,
 }: { segments: Segment[]; value: string; onChange: (s: string) => void; includeAll?: boolean }) {
@@ -168,7 +183,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
 
   async function update(id: string, patch: Partial<SupportTicket>) {
     const { error } = await supabase.from('support_tickets').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id);
-    if (error) { toast.error(`Update failed: ${error.message}`); return; }
+    if (error) { toast.error(`Update failed: ${describeDbError(error)}`); return; }
     toast.success('Ticket updated');
     // Any ticket update changes at least one dashboard counter (openTickets,
     // unassignedTickets, or overdueTickets). Bust the counter cache so the
@@ -661,7 +676,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
 
   async function update(id: string, patch: Partial<Lead>) {
     const { error } = await supabase.from('marketing_leads').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id);
-    if (error) { toast.error(`Update failed: ${error.message}`); return; }
+    if (error) { toast.error(`Update failed: ${describeDbError(error)}`); return; }
     toast.success('Lead updated');
     invalidateQueryCache('leads:');
     invalidateRpcCache('get_dashboard_counts');
@@ -733,7 +748,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       ...form, phone, created_by: user.id,
       sourced_by_user_id: form.sourced_by_user_id || null,
     } as never);
-    if (error) { toast.error(`Couldn't create lead: ${error.message}`); return; }
+    if (error) { toast.error(`Couldn't create lead: ${describeDbError(error)}`); return; }
     toast.success('Lead created');
     setShowAdd(false);
     setDupWarning(null);
