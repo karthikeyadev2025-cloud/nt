@@ -1327,6 +1327,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
     const { error } = await supabase.from('marketing_leads').insert({
       ...newLead, phone, source: 'field', assigned_to: user.id, created_by: user.id,
+      latitude: location?.lat ?? null, longitude: location?.lng ?? null,
     } as never);
     if (error) { toast.error(`Couldn't add lead: ${error.message}`); return; }
     toast.success('Lead added to your queue');
@@ -1363,14 +1364,39 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     }
   }
 
-  async function captureLocation() {
-    setLocating(true);
+  async function captureLocation(silent = false) {
+    if (!silent) setLocating(true);
     const pos = await getPosition();
-    if (!pos) { toast.error("Couldn't get location — check GPS permission"); setLocating(false); return; }
+    if (!pos) {
+      if (!silent) { toast.error("Couldn't get location — check GPS permission"); setLocating(false); }
+      return;
+    }
     const address = await reverseGeocode(pos.lat, pos.lng);
     setLocation({ ...pos, address });
-    setLocating(false);
+    if (!silent) setLocating(false);
   }
+
+  // Silent auto-grab on mount — mirrors the pattern of only prompting once:
+  // if the browser already remembers geolocation permission as 'granted'
+  // (from an earlier visit), capture location immediately in the
+  // background so it's already attached by the time the executive opens
+  // "Add Lead" or logs a visit outcome — no extra tap needed. If
+  // permission is still 'prompt' or 'denied', we don't force a popup on
+  // page load; the existing manual "Capture Location" button in the visit
+  // modal remains the fallback.
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    if (!('permissions' in navigator)) return;
+    let cancelled = false;
+    navigator.permissions.query({ name: 'geolocation' as PermissionName }).then(result => {
+      if (cancelled) return;
+      if (result.state === 'granted') captureLocation(true);
+      result.onchange = () => {
+        if (result.state === 'granted') captureLocation(true);
+      };
+    }).catch(() => { /* Permissions API not supported for this query — silent, manual button still works */ });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openMaps() {
     if (!location) return;
@@ -1489,8 +1515,19 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       <div className="space-y-2">
         {leads.map(l => (
           <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => openLead(l)}>
-            <p className="text-stone-900 text-sm font-medium">{l.customer_name}</p>
-            <p className="text-stone-700 text-xs mt-0.5">{l.phone} • {l.address || l.interested_in || 'No address captured yet'}</p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-stone-900 text-sm font-medium">{l.customer_name}</p>
+                <p className="text-stone-700 text-xs mt-0.5">{l.phone} • {l.address || l.interested_in || 'No address captured yet'}</p>
+              </div>
+              {l.latitude && l.longitude && (
+                <a href={`https://www.google.com/maps?q=${l.latitude},${l.longitude}`} target="_blank" rel="noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1 border border-teal-100 shrink-0">
+                  <MapPin className="w-3 h-3" /> Map
+                </a>
+              )}
+            </div>
             {l.next_followup_at && !l.appointment_at && (
               <p className={`text-xs mt-1 ${new Date(l.next_followup_at) < new Date() ? 'text-red-700 font-medium' : 'text-stone-700'}`}>
                 {new Date(l.next_followup_at) < new Date() ? '⚠ Follow-up overdue: ' : '↻ Follow-up: '}
@@ -1546,7 +1583,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                   <button className="text-teal-700 text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
                 </div>
               ) : (
-                <button className="w-full py-2.5 rounded-lg border border-stone-200 text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={captureLocation}>
+                <button className="w-full py-2.5 rounded-lg border border-stone-200 text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={() => captureLocation()}>
                   <MapPin className="w-4 h-4" /> {locating ? 'Getting location…' : 'Capture Location & Address'}
                 </button>
               )}
@@ -1633,6 +1670,22 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             <input className={inputCls} placeholder="Customer Name *" value={newLead.customer_name} onChange={e => setNewLead({ ...newLead, customer_name: e.target.value })} />
             <input className={inputCls} placeholder="Phone *" value={newLead.phone} onChange={e => { setNewLead({ ...newLead, phone: e.target.value }); setDuplicateInfo(null); }} />
             <input className={inputCls} placeholder="Interested In" value={newLead.interested_in} onChange={e => setNewLead({ ...newLead, interested_in: e.target.value })} />
+
+            {/* Location status — auto-captured silently on page load if
+                permission was already granted; otherwise offer one tap to
+                grab it now. Kept to a single clean line either way. */}
+            {location ? (
+              <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <p className="text-emerald-800 text-xs truncate">{location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
+              </div>
+            ) : (
+              <button type="button" onClick={() => captureLocation()} disabled={locating}
+                className="w-full px-3 py-2 rounded-lg border border-stone-200 text-stone-700 text-xs flex items-center justify-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" /> {locating ? 'Getting location…' : 'Attach current location (optional)'}
+              </button>
+            )}
+
             {duplicateInfo && (
               <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-600/40 text-xs">
                 <p className="text-amber-700 font-medium mb-1">⚠ This phone number already exists:</p>

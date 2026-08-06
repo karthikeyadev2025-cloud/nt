@@ -918,9 +918,17 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                 <h3 className="text-stone-900 text-lg font-bold">{openLead.customer_name}</h3>
                 <p className="text-stone-700 text-sm">{openLead.phone} {openLead.email && `• ${openLead.email}`}</p>
                 {openLead.interested_in && <p className="text-stone-700 text-sm mt-1">Interested in: {openLead.interested_in}</p>}
-                <p className="text-stone-700 text-xs mt-1.5">
-                  Created {new Date(openLead.created_at ?? '').toLocaleString()} • source: {openLead.source}
-                </p>
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <p className="text-stone-700 text-xs">
+                    Created {new Date(openLead.created_at ?? '').toLocaleString()} • source: {openLead.source}
+                  </p>
+                  {openLead.latitude && openLead.longitude && (
+                    <a href={`https://www.google.com/maps?q=${openLead.latitude},${openLead.longitude}`} target="_blank" rel="noreferrer"
+                      className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1 border border-teal-100">
+                      <MapPin className="w-3 h-3" /> Location captured
+                    </a>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
