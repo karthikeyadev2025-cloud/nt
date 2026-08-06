@@ -1129,7 +1129,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
   );
 }
 
-export function LeadsWorkspace({ segments, focusLeadId }: { segments: Segment[]; focusLeadId?: string }) {
+export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initialStageFilter, filterNonce }: { segments: Segment[]; focusLeadId?: string; initialSegFilter?: string; initialStageFilter?: string; filterNonce?: number }) {
   const { hasPermission } = useAuth();
   const [sub, setSub] = useState<'board' | 'appointments' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity'>('board');
   const [moreOpen, setMoreOpen] = useState(false);
@@ -1143,6 +1143,8 @@ export function LeadsWorkspace({ segments, focusLeadId }: { segments: Segment[];
 
   // A search result forces the board sub-tab so the record can be opened there.
   useEffect(() => { if (focusLeadId) setSub('board'); }, [focusLeadId]);
+  // A drill-down filter from Overview does the same.
+  useEffect(() => { if (filterNonce) setSub('board'); }, [filterNonce]);
 
   // Options that live behind the "More" menu when restricted, and inline for managers.
   const secondaryTabs = [
@@ -1191,7 +1193,7 @@ export function LeadsWorkspace({ segments, focusLeadId }: { segments: Segment[];
           </div>
         )}
       </div>
-      {sub === 'board' && <LeadsBoard segments={segments} focusLeadId={focusLeadId} />}
+      {sub === 'board' && <LeadsBoard segments={segments} focusLeadId={focusLeadId} initialSegFilter={initialSegFilter} initialStageFilter={initialStageFilter} filterNonce={filterNonce} />}
       {sub === 'appointments' && <AppointmentsBoard segments={segments} />}
       {sub === 'pool' && <UnassignedLeadsPool segments={segments} />}
       {sub === 'activity' && <TeamActivityFeed />}

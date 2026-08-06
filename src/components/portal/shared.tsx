@@ -94,7 +94,7 @@ function ticketSlaState(t: SupportTicket): { overdue: boolean; label: string } |
     : { overdue: false, label: `${fmt(absHours)} left` };
 }
 
-export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focusId?: string }) {
+export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatus, filterNonce }: { segments: Segment[]; focusId?: string; initialSegFilter?: string; initialStatus?: string; filterNonce?: number }) {
   const [segFilter, setSegFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   // See STAGE_LABELS above / leads Fix A — staff without full segment
@@ -114,6 +114,16 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
       setAssignFilter('mine');
     }
   }, [user, hasPermission]);
+  // Drill-down from Overview's "Open tickets" number — 'open' here means the
+  // same thing the segment card counted: status IN (open, in_progress), not
+  // a literal status='open' match, so it uses the '_open_active' sentinel
+  // handled specially in load() below rather than the plain status filter.
+  useEffect(() => {
+    if (!filterNonce) return;
+    setSegFilter(initialSegFilter || '');
+    setStatusFilter(initialStatus === 'open' ? '_open_active' : (initialStatus || ''));
+    setAssignFilter('all');
+  }, [filterNonce, initialSegFilter, initialStatus]);
 
   const load = useCallback(async () => {
     const cacheKey = `tickets:${segFilter}:${statusFilter}`;
@@ -121,7 +131,8 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
       const data = await cachedQuery(cacheKey, async () => {
         let q = supabase.from('support_tickets').select('*').order('created_at', { ascending: false }).limit(300);
         if (segFilter) q = q.eq('segment_slug', segFilter);
-        if (statusFilter) q = q.eq('status', statusFilter);
+        if (statusFilter === '_open_active') q = q.in('status', ['open', 'in_progress']);
+        else if (statusFilter) q = q.eq('status', statusFilter);
         const { data, error } = await q;
         if (error) throw error;
         return data as SupportTicket[];
@@ -213,6 +224,11 @@ export function TicketsBoard({ segments, focusId }: { segments: Segment[]; focus
       </div>
 
       <div className="flex flex-wrap gap-2 mb-5">
+        {statusFilter === '_open_active' && (
+          <button onClick={() => setStatusFilter('_open_active')} className="px-3 py-1 rounded-lg text-xs font-bold border border-teal-500 text-teal-700 bg-teal-50">
+            Open + In Progress ({filteredTickets.length})
+          </button>
+        )}
         {['', 'open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-3 py-1 rounded-lg text-xs font-medium border ${statusFilter === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
@@ -416,7 +432,7 @@ export const VISIT_OUTCOMES: Outcome[] = [
   { key: 'visit_won',         label: 'Closed deal on site 🎉', stage: 'won',      callType: 'visit', followupDays: null, requiresNote: true },
 ];
 
-export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; focusLeadId?: string }) {
+export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialStageFilter, filterNonce }: { segments: Segment[]; focusLeadId?: string; initialSegFilter?: string; initialStageFilter?: string; filterNonce?: number }) {
   const [segFilter, setSegFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -432,6 +448,15 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   // Follow-up count badge (Aadya pattern) — one batched RPC call per lead
   // list load rather than a query per card. See migration 20260806000004.
   const [followupCounts, setFollowupCounts] = useState<Record<string, number>>({});
+  // Date-range filter — client-side, over the already-loaded lead list
+  // (leads are fetched up to 400 at a time already, so no extra round trip).
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  // List vs Kanban view toggle. Kanban lets you drag a card between stage
+  // columns instead of using the dropdown/one-click buttons.
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [dragLeadId, setDragLeadId] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   // Bulk action state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -453,6 +478,15 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
 
   const { user, hasPermission } = useAuth();
   const toast = useToast();
+  // Drill-down from Overview (segment card / funnel chart click) — applies
+  // once per nonce so the same filter can be re-applied by clicking again.
+  useEffect(() => {
+    if (!filterNonce) return;
+    setSegFilter(initialSegFilter || '');
+    setStageFilter(initialStageFilter || '');
+    setAssignFilter('all');
+    setStaffFilter('');
+  }, [filterNonce, initialSegFilter, initialStageFilter]);
   // See comment on assignFilter above — restricted staff default to 'mine'.
   useEffect(() => {
     if (user && !hasPermission('full_leads_view') && !hasPermission('bulk_assign_leads')) {
@@ -717,6 +751,8 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       if (assignFilter === 'unassigned' && l.assigned_to) return false;
       if (assignFilter === 'mine' && l.assigned_to !== user?.id) return false;
       if (staffFilter && l.assigned_to !== staffFilter) return false;
+      if (dateFrom && (!l.created_at || l.created_at < dateFrom)) return false;
+      if (dateTo && (!l.created_at || l.created_at > dateTo + 'T23:59:59')) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const nameMatch = (l.customer_name || '').toLowerCase().includes(q);
@@ -726,7 +762,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       }
       return true;
     });
-  }, [leads, assignFilter, staffFilter, searchQuery, user?.id]);
+  }, [leads, assignFilter, staffFilter, searchQuery, dateFrom, dateTo, user?.id]);
 
   const funnel = useMemo(() => {
     const f: Record<string, number> = {};
@@ -740,6 +776,11 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
         <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
+          {/* List / Kanban toggle */}
+          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl shrink-0">
+            <button onClick={() => setViewMode('list')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-700'}`}>☰ List</button>
+            <button onClick={() => setViewMode('kanban')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'kanban' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-700'}`}>▦ Kanban</button>
+          </div>
           <input
             type="text"
             className={inputCls + ' text-xs py-2 w-full sm:w-64 bg-white shadow-sm'}
@@ -772,10 +813,21 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
             </button>
           </div>
 
-          <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-stone-200 font-semibold'} value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
-            <option value="">Filter by Staff Member...</option>
-            {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
-          </select>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Date range filter */}
+            <div className="flex items-center gap-1">
+              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-stone-200'} value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
+              <span className="text-stone-500 text-xs">–</span>
+              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-stone-200'} value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" />
+              {(dateFrom || dateTo) && (
+                <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-stone-500 hover:text-stone-800 text-xs px-1" title="Clear date range">✕</button>
+              )}
+            </div>
+            <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-stone-200 font-semibold'} value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
+              <option value="">Filter by Staff Member...</option>
+              {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* Stage Filter Chips */}
@@ -789,7 +841,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         </div>
       </div>
 
-      {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
+      {viewMode === 'list' && (user?.role === 'super_admin' || hasPermission('manage_leads')) && (
         <div className="mb-4 flex items-center justify-between gap-3 p-3 bg-stone-100/90 border border-stone-200 rounded-2xl flex-wrap shadow-sm">
           <div className="flex items-center gap-2">
             <input
@@ -832,6 +884,7 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         </div>
       )}
 
+      {viewMode === 'list' && (
       <div className="space-y-2">
         {filteredLeads.map(l => {
           const seg = segments.find(s => s.slug === l.segment_slug);
@@ -938,6 +991,57 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
         })}
         {filteredLeads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No matching leads found.</p>}
       </div>
+      )}
+
+      {viewMode === 'kanban' && (
+        <div className="flex gap-3 overflow-x-auto pb-3">
+          {stages.map(s => {
+            const colLeads = filteredLeads.filter(l => l.stage === s);
+            const canDragHere = hasPermission('manage_leads');
+            return (
+              <div
+                key={s}
+                onDragOver={e => { if (canDragHere) { e.preventDefault(); setDragOverStage(s); } }}
+                onDragLeave={() => setDragOverStage(prev => prev === s ? null : prev)}
+                onDrop={e => {
+                  e.preventDefault();
+                  setDragOverStage(null);
+                  if (!canDragHere || !dragLeadId) return;
+                  const lead = leads.find(l => l.id === dragLeadId);
+                  if (lead && lead.stage !== s) quickSetStage(lead, s);
+                  setDragLeadId(null);
+                }}
+                className={`shrink-0 w-72 rounded-2xl border p-2.5 transition-colors ${dragOverStage === s ? 'border-teal-400 bg-teal-50/50' : 'border-stone-200 bg-stone-50'}`}>
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${stageColors[s]}`}>{stageLabel(s)}</span>
+                  <span className="text-stone-500 text-xs font-semibold">{colLeads.length}</span>
+                </div>
+                <div className="space-y-2 min-h-[60px]">
+                  {colLeads.map(l => {
+                    const assignedStaffName = l.assigned_to ? staffById[l.assigned_to] : null;
+                    return (
+                      <div
+                        key={l.id}
+                        draggable={canDragHere}
+                        onDragStart={() => setDragLeadId(l.id)}
+                        onDragEnd={() => { setDragLeadId(null); setDragOverStage(null); }}
+                        onClick={() => { setOpenLead(l); loadRemarks(l.id); }}
+                        className={`bg-white border border-stone-200 rounded-xl p-2.5 shadow-sm hover:border-stone-300 transition-colors ${canDragHere ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}>
+                        <p className="text-stone-900 text-sm font-bold truncate">{l.customer_name}</p>
+                        <p className="text-stone-700 text-xs mt-0.5 truncate">{assignedStaffName || 'Unassigned'} • {l.phone}</p>
+                        {followupCounts[l.id] > 0 && (
+                          <p className="text-stone-500 text-[11px] mt-1">📞 {followupCounts[l.id]} follow-up{followupCounts[l.id] === 1 ? '' : 's'}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {colLeads.length === 0 && <p className="text-stone-400 text-xs text-center py-4">Drop here</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {showAdd && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>

@@ -69,7 +69,7 @@ function ChartPlaceholder() {
   );
 }
 
-function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
+function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: string; stageFilter?: string; ticketStatus?: string }) => void }) {
   const { user, hasPermission } = useAuth();
   const [c, setC] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -164,11 +164,44 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
   );
 }
 
-function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddStaff: () => void; onGo: (tab: string) => void }) {
+// Date-range presets for the Overview filter. `days: null` means all-time
+// (no lower bound at all — matches the RPC's old unfiltered behaviour).
+const OVERVIEW_RANGES: { key: string; label: string; days: number | null }[] = [
+  { key: 'today', label: 'Today', days: 0 },
+  { key: '7d', label: '7 days', days: 7 },
+  { key: '30d', label: '30 days', days: 30 },
+  { key: 'month', label: 'This month', days: null }, // handled specially below
+  { key: 'all', label: 'All time', days: null },
+];
+
+function rangeToDates(key: string): { from: string | null; to: string | null } {
+  const now = new Date();
+  const to = new Date(now); to.setHours(23, 59, 59, 999);
+  if (key === 'today') {
+    const from = new Date(now); from.setHours(0, 0, 0, 0);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (key === '7d') {
+    const from = new Date(now); from.setDate(now.getDate() - 7); from.setHours(0, 0, 0, 0);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (key === '30d') {
+    const from = new Date(now); from.setDate(now.getDate() - 30); from.setHours(0, 0, 0, 0);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  if (key === 'month') {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  return { from: null, to: null }; // 'all'
+}
+
+function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddStaff: () => void; onGo: (tab: string, filter?: { segFilter?: string; stageFilter?: string; ticketStatus?: string }) => void }) {
   const { user, hasPermission } = useAuth();
   const canOnboard = user?.role === 'super_admin' || hasPermission('manage_staff');
   const [stats, setStats] = useState<Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }>>({});
   const [showSecondary, setShowSecondary] = useState(false);
+  const [range, setRange] = useState('all');
 
   useEffect(() => {
     const t = setTimeout(() => setShowSecondary(true), 600);
@@ -177,24 +210,12 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
 
   useEffect(() => {
     (async () => {
-      // Consolidated RPC — returns exactly what the segment cards need in
-      // ONE round trip. The previous implementation ran three additional
-      // unconditional full-table SELECTs (marketing_leads, support_tickets,
-      // app_users — no filter, no limit) as a "live fallback" that always
-      // ran, even when the RPC succeeded. On a tenant with real history
-      // that meant multi-megabyte payloads pulled every time the dashboard
-      // opened, defeating the whole point of the get_segment_summary
-      // consolidation migration.
-      //
-      // If the RPC legitimately fails (schema-cache lag, offline, etc.),
-      // render zeros rather than fall back to a query pattern that scales
-      // badly — a briefly-empty card is a better failure mode than
-      // downloading the whole database.
       let summary: Record<string, Record<string, number>> | null = null;
       try {
+        const { from, to } = rangeToDates(range);
         const res = await cachedRpc(
-          'get_segment_summary',
-          () => supabase.rpc('get_segment_summary')
+          `get_segment_summary:${range}`,
+          () => supabase.rpc('get_segment_summary', { p_from: from, p_to: to })
         ) as { data?: Record<string, Record<string, number>>; error?: unknown };
         summary = res.data ?? null;
       } catch {
@@ -214,7 +235,7 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
       });
       setStats(s);
     })();
-  }, [segments]);
+  }, [segments, range]);
 
   return (
     <div className="space-y-5">
@@ -226,9 +247,31 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
         </div>
       )}
 
+      {/* Date-range filter — scopes the segment cards (and, via drill-down,
+          what you land on in Leads/Tickets) to a window instead of always
+          showing all-time totals. */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-stone-700 text-xs font-semibold">Show:</span>
+        {OVERVIEW_RANGES.map(r => (
+          <button key={r.key} onClick={() => setRange(r.key)}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${range === r.key ? 'bg-orange-700 text-white shadow-sm' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
+            {r.label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {segments.map(seg => {
         const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
+        // Each number is a drill-down button — Aadya-style click-to-see-
+        // the-records-behind-it instead of a static stat you have to go
+        // re-find manually in another tab.
+        const numBtn = (value: number, label: string, tone: string, onClick: () => void) => (
+          <button onClick={onClick} className="text-left rounded-lg -m-1 p-1 hover:bg-stone-50 transition-colors">
+            <p className={`text-2xl font-extrabold ${tone} hover:underline`}>{value}</p>
+            <p className="text-stone-700 text-xs">{label}</p>
+          </button>
+        );
         return (
           <div key={seg.slug} className={cardCls}>
             <div className="flex items-center gap-2 mb-4">
@@ -236,10 +279,10 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
               <h3 className="text-stone-900 font-bold">{seg.name}</h3>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><p className="text-2xl font-extrabold text-stone-900">{st.openTickets}</p><p className="text-stone-700 text-xs">Open tickets</p></div>
-              <div><p className="text-2xl font-extrabold text-stone-900">{st.leads}</p><p className="text-stone-700 text-xs">Total leads</p></div>
-              <div><p className="text-2xl font-extrabold text-emerald-700">{st.won}</p><p className="text-stone-700 text-xs">Won deals</p></div>
-              <div><p className="text-2xl font-extrabold text-stone-900">{st.staff}</p><p className="text-stone-700 text-xs">Staff</p></div>
+              {numBtn(st.openTickets, 'Open tickets', 'text-stone-900', () => onGo('tickets', { segFilter: seg.slug, ticketStatus: 'open' }))}
+              {numBtn(st.leads, 'Total leads', 'text-stone-900', () => onGo('crm', { segFilter: seg.slug }))}
+              {numBtn(st.won, 'Won deals', 'text-emerald-700', () => onGo('crm', { segFilter: seg.slug, stageFilter: 'won' }))}
+              {numBtn(st.staff, 'Staff', 'text-stone-900', () => onGo('access'))}
             </div>
           </div>
         );
@@ -270,7 +313,9 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
                 <Suspense fallback={<ChartPlaceholder />}><AttendanceTrendChart /></Suspense>
                 <Suspense fallback={<ChartPlaceholder />}><TicketStatusChart /></Suspense>
               </div>
-              <Suspense fallback={<ChartPlaceholder />}><LeadsFunnelChart segments={segments} /></Suspense>
+              <Suspense fallback={<ChartPlaceholder />}>
+                <LeadsFunnelChart segments={segments} onSegmentClick={slug => onGo('crm', { segFilter: slug })} />
+              </Suspense>
             </div>
           </div>
 
@@ -1184,15 +1229,16 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
 }
 
 // ─────────────────────────────────────── Tickets composite (queue + SLA overdue)
-function TicketsSection({ segments, focusId }: { segments: Segment[]; focusId?: string }) {
+function TicketsSection({ segments, focusId, initialSegFilter, initialStatus, filterNonce }: { segments: Segment[]; focusId?: string; initialSegFilter?: string; initialStatus?: string; filterNonce?: number }) {
   const [sub, setSub] = useState<'queue' | 'overdue'>('queue');
+  useEffect(() => { if (filterNonce) setSub('queue'); }, [filterNonce]);
   return (
     <div>
       <div className="flex gap-2 mb-5">
         <button onClick={() => setSub('queue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'queue' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>All Tickets</button>
         <button onClick={() => setSub('overdue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'overdue' ? 'border-red-500 text-red-700' : 'border-stone-200 text-stone-700'}`}>Overdue (SLA)</button>
       </div>
-      {sub === 'queue' && <TicketsBoard segments={segments} focusId={focusId} />}
+      {sub === 'queue' && <TicketsBoard segments={segments} focusId={focusId} initialSegFilter={initialSegFilter} initialStatus={initialStatus} filterNonce={filterNonce} />}
       {sub === 'overdue' && <OverdueTickets segments={segments} />}
     </div>
   );
@@ -2020,10 +2066,28 @@ export default function SuperAdminDashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [focus, setFocus] = useState<{ kind: 'staff' | 'lead' | 'ticket'; id: string } | null>(null);
   const [showHeaderPwModal, setShowHeaderPwModal] = useState(false);
+  // Drill-down from Overview's clickable numbers (Aadya pattern) — carries
+  // a nonce so navigating to the same filter twice in a row still re-fires
+  // the effect that applies it inside LeadsBoard/TicketsBoard.
+  const [leadsFilter, setLeadsFilter] = useState<{ segFilter?: string; stageFilter?: string; nonce: number } | null>(null);
+  const [ticketsFilter, setTicketsFilter] = useState<{ segFilter?: string; status?: string; nonce: number } | null>(null);
 
   function navigateWithFocus(t: string, f?: { kind: 'staff' | 'lead' | 'ticket'; id: string }) {
     setTab(t as Tab);
     setFocus(f || null);
+  }
+
+  // Overview's segment-card numbers and funnel-chart bars call this with an
+  // optional filter — routes to the right tab AND pre-applies the filter,
+  // so "12 Open tickets" actually lands you on those 12 tickets instead of
+  // just the Tickets tab in general.
+  function navigateWithFilter(t: string, filter?: { segFilter?: string; stageFilter?: string; ticketStatus?: string }) {
+    setTab(t as Tab);
+    if (t === 'crm' && filter) {
+      setLeadsFilter({ segFilter: filter.segFilter, stageFilter: filter.stageFilter, nonce: Date.now() });
+    } else if (t === 'tickets' && filter) {
+      setTicketsFilter({ segFilter: filter.segFilter, status: filter.ticketStatus, nonce: Date.now() });
+    }
   }
 
   const isSuperAdmin = user?.role === 'super_admin';
@@ -2193,10 +2257,10 @@ export default function SuperAdminDashboard() {
         {tab === 'my_requests' && <MyRequests />}
         {tab === 'my_profile' && <MyProfile />}
         {tab === 'my_swap' && <ShiftSwapBoard />}
-        {tab === 'overview' && <Overview segments={segments} onGo={(t) => setTab(t as Tab)} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
+        {tab === 'overview' && <Overview segments={segments} onGo={navigateWithFilter} onAddStaff={() => { setOnboardSignal(s => s + 1); setTab('access'); }} />}
         {tab === 'tasks' && <TasksBoard segments={segments} />}
-        {tab === 'tickets' && <TicketsSection segments={segments} focusId={focus?.kind === 'ticket' ? focus.id : undefined} />}
-        {tab === 'crm' && <LeadsWorkspace segments={segments} focusLeadId={focus?.kind === 'lead' ? focus.id : undefined} />}
+        {tab === 'tickets' && <TicketsSection segments={segments} focusId={focus?.kind === 'ticket' ? focus.id : undefined} initialSegFilter={ticketsFilter?.segFilter} initialStatus={ticketsFilter?.status} filterNonce={ticketsFilter?.nonce} />}
+        {tab === 'crm' && <LeadsWorkspace segments={segments} focusLeadId={focus?.kind === 'lead' ? focus.id : undefined} initialSegFilter={leadsFilter?.segFilter} initialStageFilter={leadsFilter?.stageFilter} filterNonce={leadsFilter?.nonce} />}
         {tab === 'hr' && <HRSection segments={segments} />}
         {tab === 'access' && <AccessControl segments={segments} openSignal={onboardSignal} focusStaffId={focus?.kind === 'staff' ? focus.id : undefined} />}
         {tab === 'segments' && <SegmentsManager onChanged={() => setRefreshKey(k => k + 1)} />}

@@ -148,8 +148,8 @@ export function AttendanceTrendChart() {
 }
 
 // ─────────────────────────── Super Admin: leads funnel by segment
-export function LeadsFunnelChart({ segments }: { segments: Segment[] }) {
-  const [data, setData] = useState<{ segment: string; new: number; contacted: number; won: number; color: string }[]>([]);
+export function LeadsFunnelChart({ segments, onSegmentClick }: { segments: Segment[]; onSegmentClick?: (segmentSlug: string) => void }) {
+  const [data, setData] = useState<{ segment: string; slug: string; new: number; contacted: number; won: number; color: string }[]>([]);
 
   useEffect(() => {
     cachedQuery('leads_funnel_chart_data', async () => {
@@ -162,6 +162,7 @@ export function LeadsFunnelChart({ segments }: { segments: Segment[] }) {
         const mine = leads.filter(l => l.segment_slug === seg.slug);
         return {
           segment: seg.name,
+          slug: seg.slug,
           new: mine.filter(l => l.stage === 'new').length,
           contacted: mine.filter(l => ['contacted', 'qualified', 'quoted'].includes(l.stage)).length,
           won: mine.filter(l => l.stage === 'won').length,
@@ -173,6 +174,7 @@ export function LeadsFunnelChart({ segments }: { segments: Segment[] }) {
   }, [segments]);
 
   if (data.length === 0) return null;
+  const barClick = (point: { slug?: string }) => { if (point?.slug) onSegmentClick?.(point.slug); };
   return (
     <div className={cardCls}>
       <h3 className="text-stone-900 font-semibold text-sm mb-4">Leads Funnel by Segment</h3>
@@ -182,9 +184,9 @@ export function LeadsFunnelChart({ segments }: { segments: Segment[] }) {
           <XAxis dataKey="segment" stroke={AXIS_COLOR} fontSize={11} tickLine={false} axisLine={false} />
           <YAxis stroke={AXIS_COLOR} fontSize={11} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
           <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#1e293b' }} />
-          <Bar dataKey="new" stackId="a" fill="#64748b" radius={[0, 0, 0, 0]} name="New" />
-          <Bar dataKey="contacted" stackId="a" fill="#f59e0b" name="In Progress" />
-          <Bar dataKey="won" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} name="Won" />
+          <Bar dataKey="new" stackId="a" fill="#64748b" radius={[0, 0, 0, 0]} name="New" onClick={barClick} cursor={onSegmentClick ? 'pointer' : undefined} />
+          <Bar dataKey="contacted" stackId="a" fill="#f59e0b" name="In Progress" onClick={barClick} cursor={onSegmentClick ? 'pointer' : undefined} />
+          <Bar dataKey="won" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} name="Won" onClick={barClick} cursor={onSegmentClick ? 'pointer' : undefined} />
         </BarChart>
       </ResponsiveContainer>
     </div>
