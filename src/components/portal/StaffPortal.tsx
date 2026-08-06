@@ -30,6 +30,7 @@ import { cachedRpc } from '../../lib/cachedRpc';
 export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user, hasPermission } = useAuth();
   type Appointment = { id: string; customer_name: string; phone: string; appointment_at: string | null; appointment_note: string | null };
+  type TodayMeeting = { id: string; meeting_type_name: string; scheduled_at: string; customer_name: string | null; meet_link: string | null };
   type HomeStats = {
     attendance?: Tables<'attendance_records'> | null;
     pendingLeaves?: number;
@@ -39,6 +40,8 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
     callbacksDue?: number;
     openTickets?: number;
     myTickets?: number;
+    todaysMeetings?: TodayMeeting[];
+    teamPulse?: { openLeads: number; overdueLeads: number; pendingApprovals: number; ticketsOpen: number };
   };
   const [stats, setStats] = useState<HomeStats>({});
   const [loading, setLoading] = useState(true);
@@ -47,6 +50,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const isCaller = role === 'telecaller';
   const isExec = role === 'marketing_executive';
   const isSupport = hasPermission('view_tickets');
+  const isManagerish = hasPermission('manage_leads') || hasPermission('view_staff') || hasPermission('manage_staff');
 
   useEffect(() => {
     if (!user) return;
@@ -64,6 +68,22 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       ]);
       s.attendance = att;
       s.pendingLeaves = pendingLeaves || 0;
+
+      // Today's meetings — organizer or attendee, scheduled, within today (IST).
+      // Surfaces the new meetings feature right where people actually look
+      // first thing in the morning, instead of leaving it buried in its own tab.
+      try {
+        const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) =>
+          Promise<{ data: TodayMeeting[] | null; error: unknown }>;
+        const dayStart = new Date(`${todayStr}T00:00:00+05:30`).toISOString();
+        const dayEnd = new Date(`${todayStr}T23:59:59+05:30`).toISOString();
+        const { data: meetings } = await rpc('list_meetings', { p_from: dayStart, p_to: dayEnd, p_scope: 'mine' });
+        if (Array.isArray(meetings)) {
+          s.todaysMeetings = meetings
+            .filter((m) => (m as { status?: string }).status === 'scheduled')
+            .slice(0, 5);
+        }
+      } catch { /* meetings RPC may not be reachable for this role — non-fatal */ }
 
       if (isCaller || isExec) {
         const [{ count: myLeads }, { count: callsToday }, { data: appts }] = await Promise.all([
@@ -96,6 +116,28 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
         ]);
         s.openTickets = openT || 0;
         s.myTickets = mineT || 0;
+      }
+
+      // Team Pulse — a manager/HR-focused snapshot so their home screen
+      // leads with "what needs my attention across the team" rather than
+      // the same self-service tiles a telecaller sees. Kept lightweight
+      // (counts only, no row fetches) so it doesn't slow Home down.
+      if (isManagerish) {
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        const [{ count: openLeads }, { count: overdueLeads }, { count: pendingApprovals }, { count: ticketsOpen }] = await Promise.all([
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
+            .not('stage', 'in', '(won,lost)'),
+          supabase.from('marketing_leads').select('id', { count: 'exact', head: true })
+            .not('stage', 'in', '(won,lost)').lt('updated_at', sevenDaysAgo),
+          supabase.from('leave_requests').select('id', { count: 'exact', head: true })
+            .eq('status', 'pending'),
+          supabase.from('support_tickets').select('id', { count: 'exact', head: true })
+            .in('status', ['open', 'in_progress']),
+        ]);
+        s.teamPulse = {
+          openLeads: openLeads || 0, overdueLeads: overdueLeads || 0,
+          pendingApprovals: pendingApprovals || 0, ticketsOpen: ticketsOpen || 0,
+        };
       }
 
       return s;
@@ -234,6 +276,67 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Today's meetings — surfaces the meetings feature on the screen
+          everyone actually opens first, instead of leaving it buried in
+          its own tab where people forget to check it. */}
+      {(stats.todaysMeetings || []).length > 0 && (
+        <div className={cardCls}>
+          <h3 className="text-stone-900 text-sm font-semibold mb-3 flex items-center justify-between">
+            <span>Today's meetings</span>
+            <button onClick={() => onNavigate('meetings')} className="text-teal-700 text-xs font-medium">View all →</button>
+          </h3>
+          <div className="space-y-2">
+            {(stats.todaysMeetings || []).map(m => (
+              <div key={m.id} className="flex items-center justify-between gap-3 border-b border-stone-100 last:border-0 pb-2 last:pb-0">
+                <div className="min-w-0">
+                  <p className="text-stone-900 text-sm font-medium truncate">{m.meeting_type_name}</p>
+                  <p className="text-stone-700 text-xs truncate">{m.customer_name || 'Internal'}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <p className="text-teal-700 text-xs whitespace-nowrap">
+                    {new Date(m.scheduled_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </p>
+                  {m.meet_link && (
+                    <a href={m.meet_link} target="_blank" rel="noreferrer"
+                      className="px-2 py-1 rounded-lg bg-teal-600 text-white text-[11px] font-semibold hover:bg-teal-700">
+                      Join
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Team Pulse — manager/HR-focused "what needs my attention across
+          the team" glance. This is what makes a manager's Home feel
+          purpose-built rather than a copy of a telecaller's screen with
+          extra tabs unlocked. */}
+      {stats.teamPulse && (
+        <div className={cardCls}>
+          <h3 className="text-stone-900 text-sm font-semibold mb-3">Team pulse</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => onNavigate('leads')} className="text-left hover:bg-stone-50 rounded-lg p-2 -m-2">
+              <p className="text-stone-700 text-xs">Open leads</p>
+              <p className="text-stone-900 text-xl font-semibold">{stats.teamPulse.openLeads}</p>
+            </button>
+            <button onClick={() => onNavigate('leads')} className="text-left hover:bg-stone-50 rounded-lg p-2 -m-2">
+              <p className="text-stone-700 text-xs">Stale 7+ days</p>
+              <p className={`text-xl font-semibold ${stats.teamPulse.overdueLeads > 0 ? 'text-amber-700' : 'text-stone-900'}`}>{stats.teamPulse.overdueLeads}</p>
+            </button>
+            <button onClick={() => onNavigate('requests')} className="text-left hover:bg-stone-50 rounded-lg p-2 -m-2">
+              <p className="text-stone-700 text-xs">Pending approvals</p>
+              <p className={`text-xl font-semibold ${stats.teamPulse.pendingApprovals > 0 ? 'text-amber-700' : 'text-stone-900'}`}>{stats.teamPulse.pendingApprovals}</p>
+            </button>
+            <button onClick={() => onNavigate('tickets')} className="text-left hover:bg-stone-50 rounded-lg p-2 -m-2">
+              <p className="text-stone-700 text-xs">Open tickets</p>
+              <p className="text-stone-900 text-xl font-semibold">{stats.teamPulse.ticketsOpen}</p>
+            </button>
           </div>
         </div>
       )}
@@ -696,19 +799,41 @@ export default function StaffPortal() {
   const { user, signOut, hasPermission } = useAuth();
   const { segments } = useSegments(true);
 
-  const tabs = [
-    { id: 'home', label: 'Home', icon: LayoutDashboard, show: true },
-    { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },
+  // Role-specific primary tab — the thing this person does all day — comes
+  // right after Home. Self-service tabs (attendance, documents, leaves,
+  // profile, swap) are secondary for everyone and always come after.
+  // This mirrors the Aadya pattern: a telecaller's portal leads with their
+  // call queue, a manager's leads with Team, not a one-size-fits-all list.
+  const isFieldRole = user?.role === 'telecaller' || user?.role === 'marketing_executive';
+  const isTeamRole = hasPermission('view_staff') || hasPermission('manage_staff');
+  const isTicketRole = hasPermission('view_tickets') && !isFieldRole;
+
+  const primaryTabs = [
     { id: 'meetings', label: 'My Meetings', icon: Calendar, show: true },
+    { id: 'leads', label: hasPermission('full_leads_view') ? 'Leads / CRM' : (user?.role === 'marketing_executive' ? 'Field Visits' : 'My Call Queue'), icon: ClipboardList, show: hasPermission('view_leads') && isFieldRole },
+    { id: 'team', label: 'Team / HR', icon: Users2, show: isTeamRole },
+    { id: 'tickets', label: 'Tickets', icon: Ticket, show: isTicketRole },
     { id: 'tasks', label: 'My Tasks', icon: ClipboardList, show: true },
+  ].filter(t => t.show);
+
+  const secondaryTabs = [
+    { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },
     { id: 'documents', label: 'My Documents', icon: FileText, show: true },
     { id: 'requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
     { id: 'profile', label: 'My Profile', icon: CreditCard, show: true },
     { id: 'swap', label: 'Shift Swap', icon: Repeat, show: true },
-    { id: 'tickets', label: 'Tickets', icon: Ticket, show: hasPermission('view_tickets') },
-    { id: 'leads', label: hasPermission('full_leads_view') ? 'Leads / CRM' : (user?.role === 'marketing_executive' ? 'Field Visits' : 'My Call Queue'), icon: ClipboardList, show: hasPermission('view_leads') },
-    { id: 'team', label: 'Team / HR', icon: Users2, show: hasPermission('view_staff') || hasPermission('view_attendance') },
+    // Catch-all: leads/tickets/team for roles not already covered above
+    // (e.g. a support agent who ALSO has view_leads but isn't a field role).
+    { id: 'leads', label: hasPermission('full_leads_view') ? 'Leads / CRM' : 'My Call Queue', icon: ClipboardList, show: hasPermission('view_leads') && !isFieldRole },
+    { id: 'tickets', label: 'Tickets', icon: Ticket, show: hasPermission('view_tickets') && isFieldRole },
+    { id: 'team', label: 'Team / HR', icon: Users2, show: hasPermission('view_attendance') && !isTeamRole },
   ].filter(t => t.show);
+
+  const tabs = [
+    { id: 'home', label: 'Home', icon: LayoutDashboard, show: true },
+    ...primaryTabs,
+    ...secondaryTabs,
+  ];
 
   const [tab, setTab] = useState(tabs[0]?.id || 'home');
   const [collapsed, setCollapsed] = useState(false);
