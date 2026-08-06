@@ -807,6 +807,83 @@ type AccessUser = Pick<
   permission_overrides: Record<string, boolean> | null;
 };
 
+// Color-coded roles overview (Aadya pattern) — each built-in role gets its
+// own color and a one-line plain-English summary of what it can do, read
+// straight from role_permissions.permissions, so an admin understands a
+// role at a glance without opening a specific employee's editor.
+const ROLE_THEME: Record<string, { label: string; bg: string; border: string; text: string; chip: string }> = {
+  super_admin:          { label: 'Super Admin',         bg: 'bg-teal-50',   border: 'border-teal-200',   text: 'text-teal-800',   chip: 'bg-teal-600' },
+  manager:               { label: 'Manager',             bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-800', chip: 'bg-indigo-600' },
+  hr:                     { label: 'HR',                  bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800', chip: 'bg-purple-600' },
+  marketing_executive:   { label: 'Marketing Executive',  bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-800',  chip: 'bg-amber-600' },
+  telecaller:             { label: 'Telecaller',          bg: 'bg-emerald-50',border: 'border-emerald-200',text: 'text-emerald-800',chip: 'bg-emerald-600' },
+  support_agent:         { label: 'Support Agent',        bg: 'bg-sky-50',    border: 'border-sky-200',    text: 'text-sky-800',    chip: 'bg-sky-600' },
+  employee:               { label: 'Employee',            bg: 'bg-stone-100', border: 'border-stone-300',  text: 'text-stone-700',  chip: 'bg-stone-600' },
+};
+
+// Groups raw permission-flag keys into the handful of capability areas an
+// admin actually thinks in, so the card reads like "Leads + Staff +
+// Approvals" instead of a dump of internal flag names.
+const PERMISSION_CATEGORIES: { label: string; keys: string[] }[] = [
+  { label: 'Leads',      keys: ['view_leads', 'manage_leads', 'create_leads', 'full_leads_view', 'bulk_assign_leads', 'approve_transfers'] },
+  { label: 'Tickets',    keys: ['view_tickets', 'manage_tickets', 'assign_tickets'] },
+  { label: 'Staff',      keys: ['view_staff', 'manage_staff'] },
+  { label: 'Attendance', keys: ['view_attendance'] },
+  { label: 'Approvals',  keys: ['approve_leaves', 'approve_advances'] },
+  { label: 'Payroll',    keys: ['view_payroll', 'manage_payroll'] },
+  { label: 'Reports',    keys: ['view_reports'] },
+];
+
+function summarizePermissions(permissions: Record<string, boolean> | null): string {
+  if (!permissions) return 'No permissions granted';
+  if (permissions.all) return 'Full system access — every permission';
+  const active = PERMISSION_CATEGORIES.filter(c => c.keys.some(k => permissions[k]));
+  if (active.length === 0) return 'Self-service only — attendance, leave, payslips';
+  const shown = active.slice(0, 4).map(c => c.label);
+  const rest = active.length - shown.length;
+  return shown.join(' + ') + (rest > 0 ? ` (+${rest} more)` : '');
+}
+
+function RolesOverview({ staffCountByRole }: { staffCountByRole: Record<string, number> }) {
+  const [roles, setRoles] = useState<{ role_name: string; description: string; permissions: Record<string, boolean> }[]>([]);
+  const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    cachedQuery('role_permissions_overview', async () => {
+      const { data, error } = await supabase.from('role_permissions').select('role_name, description, permissions').order('role_name');
+      if (error) throw error;
+      return data;
+    }).then(data => { if (data) setRoles(data as never); }).catch(() => {});
+  }, []);
+
+  if (roles.length === 0) return null;
+
+  return (
+    <div className="mb-5">
+      <button className="flex items-center gap-2 text-stone-700 text-xs uppercase tracking-wider mb-2" onClick={() => setExpanded(!expanded)}>
+        <Shield className="w-3.5 h-3.5" /> Roles & Permissions {expanded ? '▾' : '▸'}
+      </button>
+      {expanded && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {roles.map(r => {
+            const theme = ROLE_THEME[r.role_name] || ROLE_THEME.employee;
+            return (
+              <div key={r.role_name} className={`rounded-2xl border ${theme.border} ${theme.bg} p-3`}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className={`${theme.chip} text-white text-[11px] font-bold px-2 py-0.5 rounded-full`}>{theme.label}</span>
+                  <span className="text-stone-700 text-[11px] font-medium">{staffCountByRole[r.role_name] || 0} staff</span>
+                </div>
+                <p className={`${theme.text} text-xs font-semibold`}>{summarizePermissions(r.permissions)}</p>
+                {r.description && <p className="text-stone-700 text-[11px] mt-1">{r.description}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segment[]; openSignal?: number; focusStaffId?: string }) {
   const [users, setUsers] = useState<AccessUser[]>([]);
   const [editing, setEditing] = useState<AccessUser | null>(null);
@@ -867,6 +944,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
 
   const owners = users.filter(u => u.role === 'super_admin');
   const staffOnly = users.filter(u => u.role !== 'super_admin');
+  const staffCountByRole = users.reduce<Record<string, number>>((acc, u) => { acc[u.role] = (acc[u.role] || 0) + 1; return acc; }, {});
   useEffect(() => { load(); }, []);
 
   // Open the Manage Access editor for a staff member arriving from global search.
@@ -945,6 +1023,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
           <button className={btnCls} onClick={() => setShowOnboard(true)}>+ Onboard Employee</button>
         </div>
       </div>
+      <RolesOverview staffCountByRole={staffCountByRole} />
       {/* Owner account shown separately — you are the account holder, not a
           managed employee. Mixing it into the staff list reads as if you're
           one of your own employees. */}

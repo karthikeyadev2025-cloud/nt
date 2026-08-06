@@ -429,6 +429,9 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   const [newRemark, setNewRemark] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field', sourced_by_user_id: '' });
+  // Follow-up count badge (Aadya pattern) — one batched RPC call per lead
+  // list load rather than a query per card. See migration 20260806000004.
+  const [followupCounts, setFollowupCounts] = useState<Record<string, number>>({});
 
   // Bulk action state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -591,6 +594,14 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   }, [segFilter, stageFilter]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
+    if (leads.length === 0) { setFollowupCounts({}); return; }
+    const rpc = supabase.rpc as unknown as (fn: 'get_lead_remark_counts', args: { p_lead_ids: string[] }) =>
+      Promise<{ data: { lead_id: string; remark_count: number }[] | null; error: { message: string } | null }>;
+    rpc('get_lead_remark_counts', { p_lead_ids: leads.map(l => l.id) }).then(({ data }) => {
+      if (data) setFollowupCounts(Object.fromEntries(data.map(r => [r.lead_id, r.remark_count])));
+    }).catch(() => { /* badge is a nice-to-have; ignore failures silently */ });
+  }, [leads]);
+  useEffect(() => {
     if (!focusLeadId) return;
     const l = leads.find(x => x.id === focusLeadId);
     if (l) { setOpenLead(l); loadRemarks(l.id); }
@@ -615,6 +626,15 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
     invalidateRpcCache('get_dashboard_counts');
     load();
     if (openLead?.id === id) setOpenLead({ ...openLead, ...patch } as Lead);
+  }
+
+  // One-click status change from the lead card itself (Aadya pattern) —
+  // same underlying update() as the stage dropdown in the lead modal, just
+  // reachable without opening it. No note is required here; staff who want
+  // to record why can still use "Log Outcome".
+  function quickSetStage(l: Lead, stage: Lead['stage']) {
+    if (stage === l.stage) return;
+    update(l.id, { stage });
   }
 
   async function loadRemarks(id: string) {
@@ -849,10 +869,48 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
                   {l.priority === 'high' && <span className="text-red-700 font-medium">● High </span>}
                   {l.priority === 'low' && <span className="text-stone-700">● Low </span>}
                   {l.interested_in && `${l.interested_in} • `}Created {new Date(l.created_at ?? '').toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}
+                  {followupCounts[l.id] > 0 && (
+                    <span className="ml-2 px-1.5 py-0.5 rounded bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200">
+                      📞 {followupCounts[l.id]} follow-up{followupCounts[l.id] === 1 ? '' : 's'}
+                    </span>
+                  )}
                 </p>
-                {/* Primary action: log what happened. Only shown to whoever
-                    can actually work the lead (owner or a manage_leads holder)
-                    and only while the deal is still open. */}
+                {/* Richer location display (Aadya pattern) — full address text
+                    plus a separate Maps link underneath, instead of a bare pill. */}
+                {(l.address || (l.latitude && l.longitude)) && (
+                  <div className="mt-1 flex flex-col gap-0.5">
+                    {l.address && <p className="text-stone-700 text-xs">📍 {l.address}</p>}
+                    {l.latitude && l.longitude && (
+                      <a href={`https://www.google.com/maps?q=${l.latitude},${l.longitude}`} target="_blank" rel="noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="text-teal-700 hover:text-teal-900 text-xs font-medium inline-flex items-center gap-1 w-fit">
+                        <MapPin className="w-3 h-3" /> Open in Google Maps ↗
+                      </a>
+                    )}
+                  </div>
+                )}
+                {/* One-click status buttons (Aadya pattern) — change stage
+                    right from the card, no modal. "Log Outcome" (below)
+                    stays available for whoever wants to leave a note too. */}
+                {hasPermission('manage_leads') && (l.assigned_to === user?.id || hasPermission('full_leads_view')) && (
+                  <div className="mt-2 flex flex-wrap gap-1" onClick={e => e.stopPropagation()}>
+                    {stages.map(s => (
+                      <button
+                        key={s}
+                        onClick={() => quickSetStage(l, s)}
+                        className={`px-2 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
+                          l.stage === s
+                            ? `${stageColors[s]} border-transparent`
+                            : 'bg-white text-stone-600 border-stone-300 hover:border-teal-400 hover:text-teal-700'
+                        }`}>
+                        {stageLabel(s)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* Primary action: log what happened (with a note). Only shown
+                    to whoever can actually work the lead and only while the
+                    deal is still open. */}
                 {hasPermission('manage_leads') && (l.assigned_to === user?.id || hasPermission('full_leads_view')) && !['won', 'lost'].includes(l.stage) && (
                   <div className="mt-2 flex gap-2">
                     <button

@@ -1518,16 +1518,26 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-stone-900 text-sm font-medium">{l.customer_name}</p>
-                <p className="text-stone-700 text-xs mt-0.5">{l.phone} • {l.address || l.interested_in || 'No address captured yet'}</p>
+                <p className="text-stone-700 text-xs mt-0.5">{l.phone}{l.interested_in ? ` • ${l.interested_in}` : ''}</p>
               </div>
-              {l.latitude && l.longitude && (
-                <a href={`https://www.google.com/maps?q=${l.latitude},${l.longitude}`} target="_blank" rel="noreferrer"
-                  onClick={e => e.stopPropagation()}
-                  className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1 border border-teal-100 shrink-0">
-                  <MapPin className="w-3 h-3" /> Map
-                </a>
-              )}
             </div>
+            {/* Richer location display (Aadya pattern) — full address text
+                plus a separate Maps link underneath, instead of a bare pill. */}
+            {(l.address || (l.latitude && l.longitude)) && (
+              <div className="mt-1 flex flex-col gap-0.5">
+                {l.address && <p className="text-stone-700 text-xs">📍 {l.address}</p>}
+                {l.latitude && l.longitude && (
+                  <a href={`https://www.google.com/maps?q=${l.latitude},${l.longitude}`} target="_blank" rel="noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="text-teal-700 hover:text-teal-900 text-xs font-medium inline-flex items-center gap-1 w-fit">
+                    <MapPin className="w-3 h-3" /> Open in Google Maps ↗
+                  </a>
+                )}
+              </div>
+            )}
+            {!l.address && !(l.latitude && l.longitude) && (
+              <p className="text-stone-700 text-xs mt-1">No address captured yet</p>
+            )}
             {l.next_followup_at && !l.appointment_at && (
               <p className={`text-xs mt-1 ${new Date(l.next_followup_at) < new Date() ? 'text-red-700 font-medium' : 'text-stone-700'}`}>
                 {new Date(l.next_followup_at) < new Date() ? '⚠ Follow-up overdue: ' : '↻ Follow-up: '}
