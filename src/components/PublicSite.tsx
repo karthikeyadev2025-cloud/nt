@@ -10,6 +10,7 @@ import { useSegments, useSiteContent } from '../lib/useSegments';
 import type { Segment, Product, ProductFeature } from '../lib/database.types';
 import WhatsAppButton from './WhatsAppButton';
 import SEOHead from './SEOHead';
+import { jobPostingSchema } from '../config/seo';
 import Reveal from './Reveal';
 import { KiteTailLogo } from './KiteTailLogo';
 
@@ -764,6 +765,7 @@ function Testimonials() {
 interface JobPosting {
   id: string; segment_slug: string | null; title: string; employment_type: string;
   location: string; description: string; requirements: string; questions: string[]; positions_open: number;
+  created_at?: string | null;
 }
 
 function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segments: Segment[]; onClose: () => void }) {
@@ -891,44 +893,93 @@ function Careers({ segments }: { segments: Segment[] }) {
       .then(({ data }) => { if (data) setJobs(data as JobPosting[]); });
   }, []);
 
+  // JobPosting JSON-LD per open role, so Google For Jobs can index each
+  // opening as a rich-card result. Cleaned up on unmount / when jobs change
+  // so stale schemas don't accumulate as the list updates.
+  useEffect(() => {
+    document.querySelectorAll('script[data-job-posting]').forEach(el => el.remove());
+    jobs.forEach(job => {
+      const schema = jobPostingSchema({
+        id: job.id,
+        title: job.title,
+        description: job.description || null,
+        requirements: job.requirements || null,
+        location: job.location || null,
+        employment_type: job.employment_type || null,
+        segment_slug: job.segment_slug || null,
+        posted_at: job.created_at ? job.created_at.slice(0, 10) : null,
+        positions_open: job.positions_open || null,
+      });
+      const el = document.createElement('script');
+      el.type = 'application/ld+json';
+      el.setAttribute('data-job-posting', job.id);
+      el.textContent = JSON.stringify(schema);
+      document.head.appendChild(el);
+    });
+    return () => {
+      document.querySelectorAll('script[data-job-posting]').forEach(el => el.remove());
+    };
+  }, [jobs]);
+
   return (
-    <section id="careers" className="py-20 px-4 bg-stone-50">
+    <section id="careers" className="py-20 px-4 bg-stone-50" aria-labelledby="careers-heading">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-14">
-          <Briefcase className="w-10 h-10 text-orange-700 mx-auto mb-3" />
-          <h2 className="font-display text-4xl md:text-5xl font-extrabold text-stone-900 mb-3 tracking-tight">Careers at Nikki Technologies</h2>
+        <header className="text-center mb-14">
+          <Briefcase className="w-10 h-10 text-orange-700 mx-auto mb-3" aria-hidden="true" />
+          <h2 id="careers-heading" className="font-display text-4xl md:text-5xl font-extrabold text-stone-900 mb-3 tracking-tight">Careers at Nikki Technologies</h2>
           <p className="text-stone-700 max-w-2xl mx-auto font-medium">
             {`We're hiring across ${segments.map(s => s.name).join(', ') || 'our divisions'}. Don't see a role that fits? Send us a general application.`}
           </p>
-        </div>
+        </header>
 
         {jobs.length === 0 && (
           <p className="text-stone-700 text-center mb-10 font-medium">No open positions right now — check back soon, or apply generally below.</p>
         )}
 
-        <div className="space-y-3 mb-10">
+        <ul className="space-y-3 mb-10 list-none pl-0">
           {jobs.map(job => {
             const seg = segments.find(s => s.slug === job.segment_slug);
+            // Fix: seg.color could be null. Old code did
+            // `seg.color ?? undefined + '15'` which evaluates the
+            // `undefined + '15'` half FIRST due to operator precedence,
+            // producing the literal string "undefined15" — invalid CSS —
+            // whenever a segment had no color set.
+            const badgeStyle = seg?.color
+              ? { backgroundColor: `${seg.color}15`, color: seg.color }
+              : undefined;
             return (
-              <div key={job.id} className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-white border border-stone-200 shadow-md hover:border-orange-500 transition-all">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-stone-900 font-bold">{job.title}</h3>
-                    {seg && <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={{ backgroundColor: seg.color ?? undefined + '15', color: seg.color ?? undefined }}>{seg.name}</span>}
+              <li key={job.id}>
+                <article className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-white border border-stone-200 shadow-md hover:border-orange-500 transition-all">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-stone-900 font-bold">{job.title}</h3>
+                      {seg && (
+                        <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={badgeStyle}>
+                          {seg.name}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-stone-700 text-sm font-medium">
+                      {job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}
+                    </p>
                   </div>
-                  <p className="text-stone-700 text-sm font-medium">{job.location} • {job.employment_type.replace('_', ' ')} {job.positions_open > 1 && `• ${job.positions_open} openings`}</p>
-                </div>
-                <button onClick={() => setApplyJob(job)}
-                  className="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-md shadow-orange-700/20 shrink-0">
-                  Apply Now
-                </button>
-              </div>
+                  <button
+                    onClick={() => setApplyJob(job)}
+                    className="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-md shadow-orange-700/20 shrink-0"
+                    aria-label={`Apply for ${job.title}`}>
+                    Apply Now
+                  </button>
+                </article>
+              </li>
             );
           })}
-        </div>
+        </ul>
 
         <div className="text-center">
-          <button onClick={() => setApplyJob('general')} className="text-orange-700 text-sm font-semibold underline hover:text-orange-800">
+          <button
+            onClick={() => setApplyJob('general')}
+            className="text-orange-700 text-sm font-semibold underline hover:text-orange-800"
+            aria-label="Submit a general career application">
             Don't see your role? Submit a general application
           </button>
         </div>
