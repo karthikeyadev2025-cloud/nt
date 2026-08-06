@@ -803,7 +803,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
-          {hasPermission('create_leads') || hasPermission('manage_leads') ? (
+          {hasPermission('create_leads') ? (
             <button className={btnCls + ' shrink-0'} onClick={() => { setDupWarning(null); setForm(f => ({ ...f, sourced_by_user_id: f.sourced_by_user_id || user?.id || '' })); setShowAdd(true); }}>+ Add Lead</button>
           ) : null}
         </div>
