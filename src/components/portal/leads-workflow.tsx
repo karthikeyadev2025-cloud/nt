@@ -58,7 +58,7 @@ export function TelecallerStatsDashboard() {
   if (!stats) return null;
   const cards = [
     { label: 'Leads in my queue', value: stats.assigned, color: 'text-teal-700' },
-    { label: 'Calls made today', value: stats.calledToday, color: 'text-white' },
+    { label: 'Calls made today', value: stats.calledToday, color: 'text-stone-900' },
     { label: 'Callbacks pending', value: stats.callbacks, color: 'text-amber-700' },
     { label: 'Converted this month', value: stats.convertedMonth, color: 'text-emerald-700' },
     { label: 'Transfers awaiting approval', value: stats.transfersPending, color: 'text-purple-700' },

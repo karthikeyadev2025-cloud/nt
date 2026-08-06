@@ -153,7 +153,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = (user?.full_name || '').split(' ')[0];
 
-  const Tile = ({ label, value, tone = 'text-white', onClick }: { label: string; value: ReactNode; tone?: string; onClick?: () => void }) => (
+  const Tile = ({ label, value, tone = 'text-stone-900', onClick }: { label: string; value: ReactNode; tone?: string; onClick?: () => void }) => (
     <button onClick={onClick} disabled={!onClick}
       className={`${cardCls} text-left ${onClick ? 'hover:border-stone-300 cursor-pointer' : ''}`}>
       <p className="text-stone-700 text-xs">{label}</p>
@@ -242,21 +242,27 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
       {/* Role-specific tiles */}
       {(isCaller || isExec) && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Tile label={isExec ? 'My leads' : 'In my queue'} value={stats.myLeads} onClick={() => onNavigate('leads')} />
-          <Tile label={isExec ? 'Visits logged today' : 'Calls logged today'} value={stats.callsToday} />
-          <Tile label="Callbacks due" value={stats.callbacksDue}
-            tone={(stats.callbacksDue ?? 0) > 0 ? 'text-amber-700' : 'text-white'} onClick={() => onNavigate('leads')} />
-          <Tile label="Upcoming appointments" value={(stats.appointments || []).length}
-            tone={(stats.appointments || []).length > 0 ? 'text-teal-700' : 'text-white'} onClick={() => onNavigate('leads')} />
+        <div>
+          <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-2">My Numbers</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Tile label={isExec ? 'My leads' : 'In my queue'} value={stats.myLeads} onClick={() => onNavigate('leads')} />
+            <Tile label={isExec ? 'Visits logged today' : 'Calls logged today'} value={stats.callsToday} />
+            <Tile label="Callbacks due" value={stats.callbacksDue}
+              tone={(stats.callbacksDue ?? 0) > 0 ? 'text-amber-700' : 'text-stone-900'} onClick={() => onNavigate('leads')} />
+            <Tile label="Upcoming appointments" value={(stats.appointments || []).length}
+              tone={(stats.appointments || []).length > 0 ? 'text-teal-700' : 'text-stone-900'} onClick={() => onNavigate('leads')} />
+          </div>
         </div>
       )}
 
       {isSupport && (
-        <div className="grid grid-cols-2 gap-3">
-          <Tile label="Assigned to me" value={stats.myTickets}
-            tone={(stats.myTickets ?? 0) > 0 ? 'text-teal-700' : 'text-white'} onClick={() => onNavigate('tickets')} />
-          <Tile label="Open in my segment" value={stats.openTickets} onClick={() => onNavigate('tickets')} />
+        <div>
+          <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-2">My Numbers</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Tile label="Assigned to me" value={stats.myTickets}
+              tone={(stats.myTickets ?? 0) > 0 ? 'text-teal-700' : 'text-stone-900'} onClick={() => onNavigate('tickets')} />
+            <Tile label="Open in my segment" value={stats.openTickets} onClick={() => onNavigate('tickets')} />
+          </div>
         </div>
       )}
 
