@@ -37,7 +37,7 @@ import { SourcingFunnelWidget } from './performance';
 import { ShiftsManager, PayslipManager, AttendanceSummaryTable } from './payroll';
 import { RegularizationApprovals, HolidayManager, OffboardStaff, DanglingCheckins, OverdueTickets } from './lifecycle';
 import { MyAttendance, MyRequests, MyDocuments, MyProfile } from './StaffPortal';
-import { SecurityLogsViewer, TodayAtAGlance, SetupChecklist, QuickSearch, ExportStaffButton } from './admin-extras';
+import { SecurityLogsViewer, SetupChecklist, QuickSearch, ExportStaffButton } from './admin-extras';
 import SessionDevices from '../SessionDevices';
 import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useToast } from '../../lib/toast';
@@ -82,42 +82,25 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
   const canTickets = isSA || hasPermission('view_tickets') || hasPermission('manage_tickets');
   const canAttendance = isSA || hasPermission('view_attendance');
   const canStaff = isSA || hasPermission('manage_staff');
-  // "Approvals" tab groups salary advances + staff/attendance approvals — mirror the
-  // navigation gate at line 1622 so both stay in lock-step.
   const canApprovals = isSA || hasPermission('approve_advances') || hasPermission('manage_staff');
 
   useEffect(() => {
     (async () => {
-      // Consolidated into one RPC call — verified extensively: matches
-      // hand-calculated expected values, RLS scoping confirmed correct
-      // (segment-restricted managers only see their segment's counts, not
-      // everyone's), and routed through the shared cachedRpc helper so
-      // ActionCentre and TodayAtAGlance (which call the same RPC) share one
-      // real network request instead of firing duplicates.
-      //
-      // This function previously called 8 separate hand-written queries —
-      // including one against a table (`employee_tasks`) that doesn't exist
-      // in this schema and one against a column (`is_overdue`) that also
-      // doesn't exist. Since those ran inside Promise.all() with no error
-      // handling, the guaranteed failure of those two queries rejected the
-      // entire batch, and — because there was no try/catch — setLoading(false)
-      // never ran, leaving this component's `loading` stuck true forever.
-      // ActionCentre sits at the very top of the Overview tab, so this was a
-      // real, verified, likely-dominant contributor to "the dashboard never
-      // finishes loading" reports throughout today.
       try {
         const result = await cachedRpc(
           `get_dashboard_counts:${user?.id}`,
           () => supabase.rpc('get_dashboard_counts', { p_user_id: user?.id }),
-          15_000,   // timeout — RPC does 17 sub-counts, needs breathing room
-          30_000    // TTL — 30s means closing a ticket updates the counter
-                    //       within half a minute at worst, no hunt for a
-                    //       manual refresh button.
+          15_000,
+          30_000
         ) as { data?: Record<string, number>; error?: { message: string } | null };
         if (result.error) {
           console.error('get_dashboard_counts RPC error:', result.error.message);
         } else if (result.data) {
-          setC({ ...result.data, pendingApprovals: (result.data.leaves || 0) + (result.data.advances || 0) });
+          setC({
+            ...result.data,
+            pendingApprovals: (result.data.leaves || 0) + (result.data.advances || 0)
+              + (result.data.bankChangeReq || 0) + (result.data.photoChangeReq || 0) + (result.data.transfers || 0),
+          });
         }
       } catch (err) {
         console.error('get_dashboard_counts failed:', err);
@@ -129,7 +112,10 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
 
   if (loading) return null;
 
-  const items = [
+  // "Attention" items — click-through, dim when zero, only render if the
+  // viewer's role can act on them. "Snapshot" items are always-visible
+  // context (not urgent, just informational) — no dimming.
+  const attentionItems = [
     { key: 'leaves', label: 'Leave requests to review', tab: 'hr', tone: 'text-amber-700 font-bold', show: canLeaves },
     { key: 'advances', label: 'Advance requests to review', tab: 'hr', tone: 'text-amber-700 font-bold', show: canAdvances },
     { key: 'transfers', label: 'Lead transfers to approve', tab: 'crm', tone: 'text-amber-700 font-bold', show: canTransfers },
@@ -138,13 +124,16 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
     { key: 'unassignedLeads', label: 'Unassigned leads waiting', tab: 'crm', tone: 'text-amber-700 font-extrabold', show: canLeads },
     { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-teal-700 font-extrabold', show: true },
     { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-700 font-extrabold', show: canStaff || canLeads },
+  ].filter(i => i.show);
+
+  const snapshotItems = [
+    { key: 'checkedInToday', label: 'Checked in today', tab: 'hr', tone: 'text-emerald-700 font-extrabold', show: canAttendance },
+    { key: 'newLeadsToday', label: 'New leads today', tab: 'crm', tone: 'text-orange-700 font-extrabold', show: canLeads },
     { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-stone-900 font-extrabold', show: canTickets },
   ].filter(i => i.show);
-  // Every applicable item now renders regardless of count. Cards with a
-  // zero count get a dimmed style — they're still CLICKABLE so users can
-  // drill in to see "nothing here, all clear" instead of the card just
-  // vanishing (which was making people wonder if the feature was broken).
-  const nonZeroCount = items.reduce((n, i) => n + ((c[i.key] ?? 0) > 0 ? 1 : 0), 0);
+
+  const items = [...attentionItems, ...snapshotItems];
+  const nonZeroCount = attentionItems.reduce((n, i) => n + ((c[i.key] ?? 0) > 0 ? 1 : 0), 0);
 
   return (
     <div className="mb-6">
@@ -160,7 +149,8 @@ function ActionCentre({ onGo }: { onGo: (tab: string) => void }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {items.map(i => {
           const n = c[i.key] ?? 0;
-          const dim = n === 0;
+          const isSnapshot = snapshotItems.some(s => s.key === i.key);
+          const dim = !isSnapshot && n === 0;
           return (
             <button key={i.key} onClick={() => onGo(i.tab)}
               className={cardCls + ` text-left transition-all cursor-pointer ` + (dim ? 'opacity-50 hover:opacity-100 hover:border-stone-300' : 'hover:border-orange-400')}>
@@ -235,7 +225,7 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
           <button onClick={onAddStaff} className="self-start sm:self-auto shrink-0 px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold shadow-md shadow-orange-700/20 whitespace-nowrap">+ Onboard Employee</button>
         </div>
       )}
-      <TodayAtAGlance />
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {segments.map(seg => {
         const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
@@ -255,21 +245,43 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
         );
       })}
       </div>
+
       {showSecondary && (
         <>
-          <SetupChecklist segments={segments} />
-          <div className="grid md:grid-cols-2 gap-5">
-            <BirthdaysWidget />
-            <PunctualityLeaderboard segments={segments} />
+          {/* Leaderboards — same avatar-card visual language, side by side.
+              This is the "who's performing well" section, deliberately
+              grouped as one unit instead of scattered among charts. */}
+          <div>
+            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2">TEAM PERFORMANCE</h3>
+            <div className="grid md:grid-cols-2 gap-5">
+              <PunctualityLeaderboard segments={segments} />
+              {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
+                <SourcingFunnelWidget segments={segments} />
+              )}
+            </div>
           </div>
-          <div className="grid md:grid-cols-2 gap-5">
-            <Suspense fallback={<ChartPlaceholder />}><AttendanceTrendChart /></Suspense>
-            <Suspense fallback={<ChartPlaceholder />}><TicketStatusChart /></Suspense>
+
+          {/* Trends — historical charts, demoted below the actionable/
+              performance sections since they're context, not urgency. */}
+          <div>
+            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2">TRENDS</h3>
+            <div className="space-y-5">
+              <div className="grid md:grid-cols-2 gap-5">
+                <Suspense fallback={<ChartPlaceholder />}><AttendanceTrendChart /></Suspense>
+                <Suspense fallback={<ChartPlaceholder />}><TicketStatusChart /></Suspense>
+              </div>
+              <Suspense fallback={<ChartPlaceholder />}><LeadsFunnelChart segments={segments} /></Suspense>
+            </div>
           </div>
-          <Suspense fallback={<ChartPlaceholder />}><LeadsFunnelChart segments={segments} /></Suspense>
-          {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
-            <SourcingFunnelWidget segments={segments} />
-          )}
+
+          {/* Housekeeping — least time-sensitive, bottom of the page. */}
+          <div>
+            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2">HOUSEKEEPING</h3>
+            <div className="space-y-5">
+              <SetupChecklist segments={segments} />
+              <BirthdaysWidget />
+            </div>
+          </div>
         </>
       )}
     </div>

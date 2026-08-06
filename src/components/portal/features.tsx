@@ -520,7 +520,7 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
         const mine = records.filter(r => r.staff_user_id === s.id && (r.status === 'present' || r.status === 'half_day'));
         const onTime = mine.filter(r => r.check_in_at && !r.is_late).length;
         return { name: s.full_name, presentDays: mine.length, punctuality: mine.length ? Math.round((onTime / mine.length) * 100) : 0 };
-      }).filter(r => r.presentDays > 0).sort((a, b) => b.punctuality - a.punctuality).slice(0, 10);
+      }).filter(r => r.presentDays > 0).sort((a, b) => b.punctuality - a.punctuality).slice(0, 6);
     }).then(computed => {
       if (computed) setRows(computed);
     }).catch(() => {});
@@ -531,12 +531,20 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
       <h3 className="text-stone-900 font-semibold text-sm mb-4">Punctuality Leaderboard (30 days)</h3>
       <div className="space-y-2">
         {rows.map((r, i) => (
-          <div key={r.name} className="flex items-center justify-between text-sm">
-            <span className="text-stone-700">#{i + 1} {r.name}</span>
-            <span className="text-emerald-700 font-medium">{r.punctuality}%</span>
+          <div key={r.name} className="flex items-center gap-3 p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-amber-100 text-amber-800' : 'bg-stone-200 text-stone-700'}`}>
+              {r.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-stone-900 text-sm font-medium truncate">{r.name}</p>
+              <p className="text-stone-500 text-xs">{r.presentDays} day{r.presentDays === 1 ? '' : 's'} present</p>
+            </div>
+            <p className={`text-sm font-bold shrink-0 ${r.punctuality >= 80 ? 'text-emerald-700' : r.punctuality >= 50 ? 'text-amber-700' : 'text-red-700'}`}>
+              {r.punctuality}%
+            </p>
           </div>
         ))}
-        {rows.length === 0 && <p className="text-stone-700 text-sm">No attendance data yet.</p>}
+        {rows.length === 0 && <p className="text-stone-700 text-sm text-center py-6">No attendance data yet.</p>}
       </div>
     </div>
   );

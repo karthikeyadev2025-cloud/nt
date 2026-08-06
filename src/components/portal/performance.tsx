@@ -310,50 +310,24 @@ export function SourcingFunnelWidget({ segments }: { segments: Segment[] }) {
           <p className="text-stone-400 text-xs mt-1">Add "Who sourced this lead" when creating leads to build this report.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-stone-700 text-xs font-semibold border-b border-stone-100">
-                <th className="text-left py-2 pr-2">Sourcer</th>
-                <th className="text-right py-2 px-2">Sourced</th>
-                <th className="text-right py-2 px-2">In Progress</th>
-                <th className="text-right py-2 px-2">Won</th>
-                <th className="text-right py-2 px-2">Lost</th>
-                <th className="text-right py-2 pl-2">Win Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={r.sourcer_id} className="border-b border-stone-50 last:border-0 hover:bg-stone-50">
-                  <td className="py-2 pr-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-bold w-5 ${i === 0 ? 'text-amber-600' : 'text-stone-500'}`}>#{i + 1}</span>
-                      <div className="min-w-0">
-                        <p className="text-stone-900 font-medium truncate">{r.sourcer_name}</p>
-                        <p className="text-stone-500 text-[10px]">{r.sourcer_role}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="text-right py-2 px-2 text-stone-900 font-semibold">{r.total_leads}</td>
-                  <td className="text-right py-2 px-2 text-stone-700">{r.in_progress_leads}</td>
-                  <td className="text-right py-2 px-2 text-emerald-700 font-semibold">{r.won_leads}</td>
-                  <td className="text-right py-2 px-2 text-stone-500">{r.lost_leads}</td>
-                  <td className="text-right py-2 pl-2 font-bold">
-                    {r.win_rate_pct === null ? (
-                      <span className="text-stone-400">—</span>
-                    ) : r.win_rate_pct >= 40 ? (
-                      <span className="text-emerald-700">{r.win_rate_pct}%</span>
-                    ) : r.win_rate_pct >= 20 ? (
-                      <span className="text-amber-700">{r.win_rate_pct}%</span>
-                    ) : (
-                      <span className="text-red-700">{r.win_rate_pct}%</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="text-stone-400 text-[10px] mt-2 italic">Win rate excludes in-progress leads. — means no decided leads yet.</p>
+        <div className="space-y-2">
+          {rows.slice(0, 6).map((r, i) => (
+            <div key={r.sourcer_id} className="flex items-center gap-3 p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-amber-100 text-amber-800' : 'bg-stone-200 text-stone-700'}`}>
+                {r.sourcer_name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-stone-900 text-sm font-medium truncate">{r.sourcer_name}</p>
+                <p className="text-stone-500 text-xs">{r.total_leads} sourced • {r.won_leads} won</p>
+              </div>
+              <p className={`text-sm font-bold shrink-0 ${
+                r.win_rate_pct === null ? 'text-stone-400' : r.win_rate_pct >= 40 ? 'text-emerald-700' : r.win_rate_pct >= 20 ? 'text-amber-700' : 'text-red-700'
+              }`}>
+                {r.win_rate_pct === null ? '—' : `${r.win_rate_pct}%`}
+              </p>
+            </div>
+          ))}
+          <p className="text-stone-400 text-[10px] pt-1 italic">Win rate excludes in-progress leads. — means no decided leads yet.</p>
         </div>
       )}
     </div>

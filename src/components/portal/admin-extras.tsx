@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Search, X, Shield, Download, CheckCircle2, Circle, Sparkles } from 'lucide-react';
+import { Search, X, Shield, Download, CheckCircle2, Circle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { cachedRpc } from '../../lib/cachedRpc';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
-import { useAuth } from '../../contexts/AuthContext';
 import type { Segment, Database } from '../../lib/database.types';
 
 type SecurityAuditLog = Database['public']['Tables']['security_audit_logs']['Row'];
@@ -58,60 +56,6 @@ export function SecurityLogsViewer() {
           {filtered.length === 0 && <p className="text-stone-700 text-sm text-center py-10 font-semibold">No events recorded yet.</p>}
         </div>
       )}
-    </div>
-  );
-}
-
-// ─────────────────────────── Today at a Glance (Overview widget)
-export function TodayAtAGlance() {
-  const { user } = useAuth();
-  const [stats, setStats] = useState<{ checkedIn: number; newLeads: number; openTickets: number; pendingApprovals: number } | null>(null);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    (async () => {
-      let counts: Record<string, number> | null = null;
-      try {
-        const res = await cachedRpc(
-          `get_dashboard_counts:${user.id}`,
-          () => supabase.rpc('get_dashboard_counts', { p_user_id: user.id })
-        );
-        counts = ((res as unknown as { data?: Record<string, number> })?.data) || (res as unknown as Record<string, number>);
-      } catch {
-        counts = null;
-      }
-
-      if (counts && typeof counts === 'object') {
-        setStats({
-          checkedIn: counts.checkedInToday || 0,
-          newLeads: counts.newLeadsToday || 0,
-          openTickets: counts.openTickets || 0,
-          pendingApprovals: (counts.leaves || 0) + (counts.advances || 0) + (counts.bankChangeReq || 0) + (counts.photoChangeReq || 0) + (counts.transfers || 0),
-        });
-      } else {
-        setStats({ checkedIn: 0, newLeads: 0, openTickets: 0, pendingApprovals: 0 });
-      }
-    })();
-  }, [user?.id]);
-
-  if (!stats) return null;
-  const cards = [
-    { label: 'Checked in today', value: stats.checkedIn, color: 'text-emerald-700' },
-    { label: 'New leads today', value: stats.newLeads, color: 'text-orange-700' },
-    { label: 'Open tickets', value: stats.openTickets, color: 'text-amber-700' },
-    { label: 'Pending approvals', value: stats.pendingApprovals, color: 'text-purple-700' },
-  ];
-  return (
-    <div className={cardCls}>
-      <h3 className="text-stone-900 font-bold text-sm mb-4 flex items-center gap-2"><Sparkles className="w-4 h-4 text-orange-700" /> Today at a Glance</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {cards.map(c => (
-          <div key={c.label} className="text-center">
-            <p className={`text-3xl font-black ${c.color}`}>{c.value}</p>
-            <p className="text-stone-800 text-xs font-semibold mt-1">{c.label}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
