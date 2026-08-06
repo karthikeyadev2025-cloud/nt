@@ -50,10 +50,12 @@ function ExecutiveHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
       let todaysMeetings: Stats['todaysMeetings'] = [];
       try {
-        const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: Stats['todaysMeetings'] | null }>;
+        // Call supabase.rpc(...) directly — a detached local reference
+        // loses `this` and throws inside the library, which this try/catch
+        // was silently swallowing every time.
         const dayStart = new Date(`${todayStr}T00:00:00+05:30`).toISOString();
         const dayEnd = new Date(`${todayStr}T23:59:59+05:30`).toISOString();
-        const { data } = await rpc('list_meetings', { p_from: dayStart, p_to: dayEnd, p_scope: 'mine' });
+        const { data } = await (supabase.rpc('list_meetings' as never, { p_from: dayStart, p_to: dayEnd, p_scope: 'mine' } as never) as unknown as Promise<{ data: Stats['todaysMeetings'] | null }>);
         if (Array.isArray(data)) todaysMeetings = data.slice(0, 3);
       } catch { /* non-fatal */ }
 

@@ -264,14 +264,15 @@ export function SourcingFunnelWidget({ segments }: { segments: Segment[] }) {
     const to = new Date(now); to.setDate(now.getDate() + 1);
 
     cachedQuery(`sourcing_funnel:${range}:${segment}`, async () => {
-      // Not in database.types.ts yet — narrow at call boundary.
-      const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) =>
-        Promise<{ data: FunnelRow[] | null; error: { message: string } | null }>;
-      const { data, error } = await rpc('sourcing_funnel_report', {
+      // Not in database.types.ts yet — narrow at call boundary. Call
+      // supabase.rpc(...) directly rather than extracting it to a local
+      // variable first — detaching it loses `this` and throws inside the
+      // library (this.rest.rpc(...)).
+      const { data, error } = await (supabase.rpc('sourcing_funnel_report' as never, {
         p_from: from.toISOString(),
         p_to: to.toISOString(),
         p_segment_slug: segment || null,
-      });
+      } as never) as unknown as Promise<{ data: FunnelRow[] | null; error: { message: string } | null }>);
       if (error) throw error;
       return data || [];
     })

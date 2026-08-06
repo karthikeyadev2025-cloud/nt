@@ -595,9 +595,16 @@ export function LeadsBoard({ segments, focusLeadId }: { segments: Segment[]; foc
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (leads.length === 0) { setFollowupCounts({}); return; }
-    const rpc = supabase.rpc as unknown as (fn: 'get_lead_remark_counts', args: { p_lead_ids: string[] }) =>
-      Promise<{ data: { lead_id: string; remark_count: number }[] | null; error: { message: string } | null }>;
-    rpc('get_lead_remark_counts', { p_lead_ids: leads.map(l => l.id) }).then(({ data }) => {
+    // Call supabase.rpc(...) directly rather than extracting it to a local
+    // reference first — doing that detaches the method from its `this`
+    // (the client instance), which throws "Cannot read properties of
+    // undefined (reading 'rest')" inside the library. The database.types.ts
+    // narrowing still applies to the *args*, just not by pulling the
+    // function reference off the object.
+    type GetLeadRemarkCountsRow = { lead_id: string; remark_count: number };
+    (supabase.rpc('get_lead_remark_counts' as never, { p_lead_ids: leads.map(l => l.id) } as never) as unknown as
+      Promise<{ data: GetLeadRemarkCountsRow[] | null; error: { message: string } | null }>
+    ).then(({ data }) => {
       if (data) setFollowupCounts(Object.fromEntries(data.map(r => [r.lead_id, r.remark_count])));
     }).catch(() => { /* badge is a nice-to-have; ignore failures silently */ });
   }, [leads]);
@@ -1243,14 +1250,17 @@ function LogOutcomeDialog({
       p_lead_id: string; p_new_stage: string; p_call_type: string;
       p_remark: string; p_next_followup_at: string | null;
     };
-    const rpc = supabase.rpc as unknown as (fn: 'log_lead_outcome', args: LogLeadOutcomeArgs) => Promise<{ error: { message: string } | null }>;
-    const { error } = await rpc('log_lead_outcome', {
+    // Call supabase.rpc(...) directly — extracting it to a local variable
+    // first (as this used to do) detaches it from the client instance's
+    // `this` and throws "Cannot read properties of undefined (reading
+    // 'rest')" inside the library the moment it's invoked.
+    const { error } = await (supabase.rpc('log_lead_outcome' as never, {
       p_lead_id: lead.id,
       p_new_stage: outcome.stage,
       p_call_type: outcome.callType,
       p_remark: remark,
       p_next_followup_at: nextFollowup,
-    });
+    } as LogLeadOutcomeArgs as never) as unknown as Promise<{ error: { message: string } | null }>);
     setBusy(false);
     if (error) {
       toast.error(`Could not save: ${error.message}`);

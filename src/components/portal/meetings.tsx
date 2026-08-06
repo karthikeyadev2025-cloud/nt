@@ -34,8 +34,14 @@ type StaffLite = { id: string; full_name: string; role: string };
 type RpcResult = { ok: boolean; meeting_id?: string; conflict?: string; message?: string };
 
 async function rpcCall<T = RpcResult>(fn: string, args: Record<string, unknown>): Promise<{ data: T | null; error: { message: string } | null }> {
-  const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: T | null; error: { message: string } | null }>;
-  return rpc(fn, args);
+  // Call supabase.rpc(...) directly — extracting it to a local variable
+  // first detaches it from the client instance's `this` and throws
+  // "Cannot read properties of undefined (reading 'rest')" inside the
+  // library (this.rest.rpc(...) with this === undefined). Every call
+  // through this helper was silently failing because of that, swallowed
+  // by the async-function wrapper turning the synchronous throw into a
+  // rejected promise that callers' .catch() then quietly ate.
+  return supabase.rpc(fn as never, args as never) as unknown as Promise<{ data: T | null; error: { message: string } | null }>;
 }
 
 const IST_TZ = 'Asia/Kolkata';

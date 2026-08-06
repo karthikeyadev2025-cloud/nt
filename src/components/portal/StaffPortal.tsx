@@ -73,11 +73,13 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       // Surfaces the new meetings feature right where people actually look
       // first thing in the morning, instead of leaving it buried in its own tab.
       try {
-        const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) =>
-          Promise<{ data: TodayMeeting[] | null; error: unknown }>;
+        // Call supabase.rpc(...) directly — a detached local reference
+        // loses `this` and throws inside the library, which this try/catch
+        // was silently swallowing every time (today's meetings never
+        // actually loaded for anyone, regardless of role).
         const dayStart = new Date(`${todayStr}T00:00:00+05:30`).toISOString();
         const dayEnd = new Date(`${todayStr}T23:59:59+05:30`).toISOString();
-        const { data: meetings } = await rpc('list_meetings', { p_from: dayStart, p_to: dayEnd, p_scope: 'mine' });
+        const { data: meetings } = await (supabase.rpc('list_meetings' as never, { p_from: dayStart, p_to: dayEnd, p_scope: 'mine' } as never) as unknown as Promise<{ data: TodayMeeting[] | null; error: unknown }>);
         if (Array.isArray(meetings)) {
           s.todaysMeetings = meetings
             .filter((m) => (m as { status?: string }).status === 'scheduled')
