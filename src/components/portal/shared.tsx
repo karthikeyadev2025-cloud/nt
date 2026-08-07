@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapPin, Eye, X } from 'lucide-react';
+import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -447,75 +447,253 @@ export const VISIT_OUTCOMES: Outcome[] = [
   { key: 'visit_won',         label: 'Closed deal on site 🎉', stage: 'won',      callType: 'visit', followupDays: null, requiresNote: true },
 ];
 
-// Standalone, reusable "add a lead" modal — same dup-check + insert logic
-// as LeadsBoard's built-in one, but self-contained (own state, no
-// dependency on LeadsBoard's `staff` list or `load()`) so it can be
-// dropped into portals that don't render the full Leads Management board
-// at all, like TelecallerQueue. Telecaller's portal only ever showed
-// their assigned-lead call queue — there was never an Add Lead entry
-// point there, which is what this fixes.
-export function AddLeadModal({ segments, defaultSource = 'telecall', onClose, onCreated }: { segments: Segment[]; defaultSource?: string; onClose: () => void; onCreated?: () => void }) {
-  const { user } = useAuth();
+// Standalone, reusable "add a lead" modal — same underlying dup-check +
+// insert as before, rebuilt with the actual capabilities the DB already
+// had but the old bare form never exposed (priority, alternate phone),
+// live duplicate checking as you type instead of only on submit, and an
+// "Add Another" flow for back-to-back entry (a trade-show booth or a
+// cold-call list is many leads in one sitting, not one). Self-contained
+// (no dependency on LeadsBoard's internals) so it drops into any panel —
+// LeadsBoard, TelecallerQueue, wherever "+ Add Lead" needs to live.
+export function AddLeadModal({ segments, defaultSource = 'field', staffList, onClose, onCreated }: { segments: Segment[]; defaultSource?: string; staffList?: { id: string; full_name: string }[]; onClose: () => void; onCreated?: () => void }) {
+  const { user, hasPermission } = useAuth();
   const toast = useToast();
-  const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: defaultSource });
+  const canChooseAssignment = hasPermission('full_leads_view') || hasPermission('bulk_assign_leads');
+  const defaultSegment = (!user?.segments.includes('all') && user?.segments.length === 1 && segments.some(s => s.slug === user.segments[0]))
+    ? user.segments[0] : '';
+
+  const blankForm = {
+    segment_slug: defaultSegment, customer_name: '', phone: '', alternate_phone: '',
+    email: '', interested_in: '', source: defaultSource, priority: 'medium' as 'low' | 'medium' | 'high',
+    sourced_by_user_id: '', assignToMe: true,
+  };
+  const [form, setForm] = useState(blankForm);
+  const [showAltPhone, setShowAltPhone] = useState(false);
   type DupWarning = { id: string; customer_name: string; stage: string; assignee_name: string };
   const [dupWarning, setDupWarning] = useState<DupWarning[] | null>(null);
+  const [dupChecking, setDupChecking] = useState(false);
+  const [dupClean, setDupClean] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [justCreated, setJustCreated] = useState<string | null>(null);
+
+  // Live duplicate check as you type (debounced), instead of only at
+  // submit time — you find out about a clash while you're still talking
+  // to the customer, not after you've typed everything else too.
+  useEffect(() => {
+    setDupWarning(null);
+    setDupClean(false);
+    const phone = form.phone.trim();
+    if (phone.length < 10 || !form.segment_slug) return;
+    setDupChecking(true);
+    const t = setTimeout(async () => {
+      const normalized = normalizePhone(phone);
+      try {
+        const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: normalized, _segment_slug: form.segment_slug });
+        if (dupes && dupes.length > 0) { setDupWarning(dupes); return; }
+        const { data: exists } = await supabase.rpc('lead_phone_exists', { _phone: normalized, _segment_slug: form.segment_slug });
+        if (exists) { setDupWarning([{ id: 'exists', customer_name: 'An active lead with this number already exists', stage: '', assignee_name: '' }]); return; }
+        setDupClean(true);
+      } finally {
+        setDupChecking(false);
+      }
+    }, 450);
+    return () => clearTimeout(t);
+  }, [form.phone, form.segment_slug]);
 
   async function createLead() {
     if (!form.segment_slug || !form.customer_name || !user) { toast.error('Segment and name are required'); return; }
     const phone = form.phone ? normalizePhone(form.phone) : 'Pending Collection';
     setBusy(true);
     try {
-      if (phone !== 'Pending Collection' && !dupWarning) {
+      if (phone !== 'Pending Collection' && dupWarning === null && !dupClean) {
+        // A check is still in flight or hasn't run (short phone) — run it
+        // once more synchronously rather than let a race let a dupe through.
         const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: phone, _segment_slug: form.segment_slug });
         if (dupes && dupes.length > 0) { setDupWarning(dupes); return; }
-        const { data: exists } = await supabase.rpc('lead_phone_exists', { _phone: phone, _segment_slug: form.segment_slug });
-        if (exists) { setDupWarning([{ id: 'exists', customer_name: 'An active lead with this number already exists', stage: '', assignee_name: '' }]); return; }
       }
-      // Self-assign — a telecaller (or anyone else using this quick-add)
-      // adding a lead almost always means "and I'll work it", not "add it
-      // to the unassigned pool for someone else to pick up".
       const { error } = await supabase.from('marketing_leads').insert({
-        ...form, phone, created_by: user.id, assigned_to: user.id, sourced_by_user_id: user.id,
+        segment_slug: form.segment_slug,
+        customer_name: form.customer_name,
+        phone, alternate_phone: form.alternate_phone || '',
+        email: form.email, interested_in: form.interested_in,
+        source: form.source, priority: form.priority,
+        created_by: user.id,
+        assigned_to: canChooseAssignment ? (form.assignToMe ? user.id : null) : user.id,
+        sourced_by_user_id: form.sourced_by_user_id || user.id,
       } as never);
       if (error) { toast.error(`Couldn't create lead: ${describeDbError(error)}`); return; }
-      toast.success('Lead created and assigned to you');
       onCreated?.();
-      onClose();
+      setJustCreated(form.customer_name);
     } finally {
       setBusy(false);
     }
   }
 
+  function addAnother() {
+    // Keep segment/source/assignment prefs — you're almost always adding
+    // the next lead from the same context (same booth, same call list).
+    setForm(f => ({ ...blankForm, segment_slug: f.segment_slug, source: f.source, sourced_by_user_id: f.sourced_by_user_id, assignToMe: f.assignToMe }));
+    setShowAltPhone(false);
+    setDupWarning(null);
+    setDupClean(false);
+    setJustCreated(null);
+  }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const priorityStyle: Record<string, string> = {
+    low: 'bg-stone-100 text-stone-700 border-stone-300',
+    medium: 'bg-amber-50 text-amber-800 border-amber-300',
+    high: 'bg-red-50 text-red-700 border-red-300',
+  };
+  const priorityActive: Record<string, string> = {
+    low: 'bg-stone-700 text-white border-stone-700',
+    medium: 'bg-amber-600 text-white border-amber-600',
+    high: 'bg-red-600 text-white border-red-600',
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-        <h3 className="text-stone-900 font-semibold text-lg">New Lead</h3>
-        <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
-          <option value="">Segment *</option>
-          {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
-        </select>
-        <input className={inputCls} placeholder="Customer Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
-        <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); setDupWarning(null); }} />
-        <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-        <input className={inputCls} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
-        <select className={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
-          {['field', 'telecall', 'referral', 'whatsapp', 'website', 'other'].map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        {dupWarning && (
-          <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-600/40 text-xs">
-            <p className="text-amber-700 font-medium mb-1">⚠ This phone number already exists:</p>
-            {dupWarning.map(d => (
-              <p key={d.id} className="text-amber-800/80">{d.customer_name} — {d.stage} {d.assignee_name ? `• with ${d.assignee_name}` : '• unassigned'}</p>
-            ))}
-            <p className="text-stone-700 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
+      <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+
+        {justCreated ? (
+          // Success state — offers "Add Another" front and center, since
+          // the whole point of this rebuild is fast back-to-back entry.
+          <div className="p-8 text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+              <Check className="w-7 h-7" strokeWidth={2.5} />
+            </div>
+            <div>
+              <p className="text-stone-900 font-bold text-lg">Lead created</p>
+              <p className="text-stone-700 text-sm mt-0.5">{justCreated} has been added{form.assignToMe || !canChooseAssignment ? ' and assigned to you' : ' to the unassigned pool'}.</p>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 text-sm font-semibold">Done</button>
+              <button onClick={addAnother} className={btnCls + ' flex-1 flex items-center justify-center gap-1.5'}><Plus className="w-4 h-4" /> Add Another</button>
+            </div>
           </div>
+        ) : (
+        <form onSubmit={e => { e.preventDefault(); if (!busy) createLead(); }}>
+          {/* Header band */}
+          <div className="flex items-center gap-3 px-6 py-4 bg-teal-50 border-b border-teal-100">
+            <div className="w-10 h-10 rounded-xl bg-teal-700 text-white flex items-center justify-center shrink-0">
+              <UserCheck className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-stone-900 font-bold text-base leading-tight">New Lead</h3>
+              <p className="text-stone-700 text-xs">Capture an enquiry — takes about 20 seconds</p>
+            </div>
+            <button type="button" onClick={onClose} className="ml-auto p-1.5 rounded-lg hover:bg-teal-100 text-stone-700 shrink-0"><X className="w-4 h-4" /></button>
+          </div>
+
+          <div className="p-6 space-y-5">
+            {/* Contact */}
+            <div className="space-y-2.5">
+              <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Contact</p>
+              <div className="relative">
+                <User className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input autoFocus className={inputCls + ' pl-9'} placeholder="Customer Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
+              </div>
+              <div className="relative">
+                <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input className={inputCls + ' pl-9 pr-9'} placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {dupChecking && <Loader2 className="w-4 h-4 text-stone-400 animate-spin" />}
+                  {!dupChecking && dupClean && <Check className="w-4 h-4 text-emerald-600" />}
+                  {!dupChecking && dupWarning && <AlertTriangle className="w-4 h-4 text-amber-600" />}
+                </div>
+              </div>
+              {!showAltPhone ? (
+                <button type="button" onClick={() => setShowAltPhone(true)} className="text-teal-700 text-xs font-medium">+ Add alternate number</button>
+              ) : (
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input className={inputCls + ' pl-9'} placeholder="Alternate Phone" value={form.alternate_phone} onChange={e => setForm({ ...form, alternate_phone: e.target.value })} />
+                </div>
+              )}
+              <div className="relative">
+                <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input className={inputCls + ' pl-9'} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+              </div>
+              {dupWarning && (
+                <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-300 text-xs">
+                  <p className="text-amber-800 font-semibold mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> This phone number already exists</p>
+                  {dupWarning.map(d => (
+                    <p key={d.id} className="text-amber-800/80">{d.customer_name} {d.stage && `— ${d.stage}`} {d.assignee_name ? `• with ${d.assignee_name}` : d.stage ? '• unassigned' : ''}</p>
+                  ))}
+                  <p className="text-stone-600 mt-1">Submitting again will add it anyway — use this if it's genuinely a new enquiry.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Lead details */}
+            <div className="space-y-2.5">
+              <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Lead Details</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+                  <option value="">Segment *</option>
+                  {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+                </select>
+                <div className="relative">
+                  <Radio className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <select className={inputCls + ' pl-9'} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
+                    {['field', 'telecall', 'referral', 'whatsapp', 'website', 'other'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="relative">
+                <Tag className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input className={inputCls + ' pl-9'} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
+              </div>
+              <div>
+                <p className="text-stone-700 text-xs font-medium mb-1.5">Priority</p>
+                <div className="flex gap-1.5">
+                  {(['low', 'medium', 'high'] as const).map(p => (
+                    <button type="button" key={p} onClick={() => setForm({ ...form, priority: p })}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border capitalize transition-colors ${form.priority === p ? priorityActive[p] : priorityStyle[p]}`}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Assignment — only shown to roles who could plausibly choose
+                otherwise; a telecaller/marketing_executive quick-adding a
+                lead always means "and I'll work it", no toggle needed. */}
+            {canChooseAssignment && (
+              <div className="space-y-2.5">
+                <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Assignment</p>
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => setForm({ ...form, assignToMe: true })}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors ${form.assignToMe ? 'bg-teal-700 text-white border-teal-700' : 'bg-white text-stone-700 border-stone-300'}`}>
+                    <UserCheck className="w-3.5 h-3.5" /> Assign to me
+                  </button>
+                  <button type="button" onClick={() => setForm({ ...form, assignToMe: false })}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors ${!form.assignToMe ? 'bg-orange-700 text-white border-orange-700' : 'bg-white text-stone-700 border-stone-300'}`}>
+                    <Users className="w-3.5 h-3.5" /> Unassigned pool
+                  </button>
+                </div>
+                {staffList && staffList.length > 0 && (
+                  <select className={inputCls} value={form.sourced_by_user_id} onChange={e => setForm({ ...form, sourced_by_user_id: e.target.value })}>
+                    <option value="">Sourced by — not tracked</option>
+                    {staffList.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+                  </select>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 px-6 py-4 border-t border-stone-100 bg-stone-50 rounded-b-2xl">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-white border border-stone-300 text-stone-800 text-sm font-semibold">Cancel</button>
+            <button type="submit" disabled={busy} className={btnCls + ' flex-1'}>{busy ? 'Saving...' : dupWarning ? 'Add Anyway' : 'Create Lead'}</button>
+          </div>
+        </form>
         )}
-        <div className="flex gap-2">
-          <button className="flex-1 py-2.5 rounded-lg bg-stone-100 text-stone-800 text-sm font-semibold" onClick={onClose}>Cancel</button>
-          <button className={btnCls + ' flex-1'} disabled={busy} onClick={createLead}>{busy ? 'Saving...' : dupWarning ? 'Add Anyway' : 'Create Lead'}</button>
-        </div>
       </div>
     </div>
   );
@@ -533,7 +711,6 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   const [previewLeadPhoto, setPreviewLeadPhoto] = useState<string | null>(null);
   const [newRemark, setNewRemark] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field', sourced_by_user_id: '' });
   // Follow-up count badge (Aadya pattern) — one batched RPC call per lead
   // list load rather than a query per card. See migration 20260806000004.
   const [followupCounts, setFollowupCounts] = useState<Record<string, number>>({});
@@ -804,34 +981,6 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     loadRemarks(openLead.id);
   }
 
-  type DupWarning = { id: string; customer_name: string; stage: string; assignee_name: string };
-  const [dupWarning, setDupWarning] = useState<DupWarning[] | null>(null);
-
-  async function createLead() {
-    if (!form.segment_slug || !form.customer_name || !user) { toast.error('Segment and name are required'); return; }
-    const phone = form.phone ? normalizePhone(form.phone) : 'Pending Collection';
-
-    if (phone !== 'Pending Collection' && !dupWarning) {
-      const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: phone, _segment_slug: form.segment_slug });
-      if (dupes && dupes.length > 0) { setDupWarning(dupes); return; }
-      const { data: exists } = await supabase.rpc('lead_phone_exists', { _phone: phone, _segment_slug: form.segment_slug });
-      if (exists) { setDupWarning([{ id: 'exists', customer_name: 'An active lead with this number already exists', stage: '', assignee_name: '' }]); return; }
-    }
-
-    const { error } = await supabase.from('marketing_leads').insert({
-      ...form, phone, created_by: user.id,
-      sourced_by_user_id: form.sourced_by_user_id || null,
-    } as never);
-    if (error) { toast.error(`Couldn't create lead: ${describeDbError(error)}`); return; }
-    toast.success('Lead created');
-    setShowAdd(false);
-    setDupWarning(null);
-    setForm({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: 'field', sourced_by_user_id: '' });
-    invalidateQueryCache('leads:');
-    invalidateRpcCache('get_dashboard_counts');
-    load();
-  }
-
   const staffById = useMemo(() => Object.fromEntries(staff.map(s => [s.id, s.full_name])), [staff]);
 
   const filteredLeads = useMemo(() => {
@@ -878,7 +1027,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
             onChange={e => setSearchQuery(e.target.value)}
           />
           {hasPermission('create_leads') ? (
-            <button className={btnCls + ' shrink-0'} onClick={() => { setDupWarning(null); setForm(f => ({ ...f, sourced_by_user_id: f.sourced_by_user_id || user?.id || '' })); setShowAdd(true); }}>+ Add Lead</button>
+            <button className={btnCls + ' shrink-0'} onClick={() => setShowAdd(true)}>+ Add Lead</button>
           ) : null}
         </div>
       </div>
@@ -1133,39 +1282,13 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       )}
 
       {showAdd && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold text-lg">New Lead</h3>
-            <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
-              <option value="">Segment *</option>
-              {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
-            </select>
-            <input className={inputCls} placeholder="Customer Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
-            <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); setDupWarning(null); }} />
-            <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-            <input className={inputCls} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
-            <select className={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
-              {['field', 'telecall', 'referral', 'whatsapp', 'website', 'other'].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <div>
-              <label className="text-stone-700 text-xs font-medium mb-1 block">Who sourced this lead? (Sales attribution)</label>
-              <select className={inputCls} value={form.sourced_by_user_id} onChange={e => setForm({ ...form, sourced_by_user_id: e.target.value })}>
-                <option value="">— Not tracked —</option>
-                {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
-              </select>
-            </div>
-            {dupWarning && (
-              <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-600/40 text-xs">
-                <p className="text-amber-700 font-medium mb-1">⚠ This phone number already exists:</p>
-                {dupWarning.map(d => (
-                  <p key={d.id} className="text-amber-200/80">{d.customer_name} — {d.stage} {d.assignee_name ? `• with ${d.assignee_name}` : '• unassigned'}</p>
-                ))}
-                <p className="text-stone-700 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
-              </div>
-            )}
-            <button className={btnCls + ' w-full'} onClick={createLead}>{dupWarning ? 'Add Anyway' : 'Create Lead'}</button>
-          </div>
-        </div>
+        <AddLeadModal
+          segments={segments}
+          defaultSource="field"
+          staffList={staff}
+          onClose={() => setShowAdd(false)}
+          onCreated={() => { invalidateQueryCache('leads:'); invalidateRpcCache('get_dashboard_counts'); load(); }}
+        />
       )}
 
       {openLead && (
