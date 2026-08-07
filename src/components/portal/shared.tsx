@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock, MessageCircle, Download } from 'lucide-react';
+import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock, MessageCircle, Download, ScanLine } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -11,6 +11,7 @@ type SalaryAdvance = Database['public']['Tables']['salary_advance_requests']['Ro
 import { istDateStr } from '../../lib/dates';
 import { normalizePhone, waLink } from '../../lib/phone';
 import { getPosition, reverseGeocode } from '../../lib/geo';
+import { scanBusinessCard, type CardExtract } from '../../lib/cardScan';
 import { exportLeadsToExcel } from '../../lib/exportLeads';
 import CameraCapture from '../CameraCapture';
 import { AttendanceDetailsModal } from './payroll';
@@ -677,11 +678,16 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
   const canChooseAssignment = hasPermission('full_leads_view') || hasPermission('bulk_assign_leads');
   const defaultSegment = (!user?.segments.includes('all') && user?.segments.length === 1 && segments.some(s => s.slug === user.segments[0]))
     ? user.segments[0] : '';
+  // Field staff physically visit the customer, so GPS + business-card scan
+  // are theirs. A telecaller or a manager sitting in the office isn't at
+  // the location — for them the address field is manual-only, and there's
+  // no card to scan.
+  const isFieldRole = user?.role === 'marketing_executive';
 
   const blankForm = {
     segment_slug: defaultSegment, customer_name: '', phone: '', alternate_phone: '',
     email: '', interested_in: '', address: '', source: defaultSource, priority: 'medium' as 'low' | 'medium' | 'high',
-    sourced_by_user_id: '', assignToMe: true,
+    sourced_by_user_id: '', assignToMe: true, tags: [] as string[],
   };
   const [form, setForm] = useState(blankForm);
   const [showAltPhone, setShowAltPhone] = useState(false);
@@ -691,11 +697,29 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
   const [dupClean, setDupClean] = useState(false);
   const [busy, setBusy] = useState(false);
   const [justCreated, setJustCreated] = useState<string | null>(null);
+  // Tapped Save at least once — turns on inline red-border validation
+  // instead of only a toast, so missing fields are visible right on the
+  // form instead of a message you have to go re-read.
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  // Quick Add: just the 3 fields needed to not lose the lead, everything
+  // else filled in later. Full form is the default — this is opt-in.
+  const [quickMode, setQuickMode] = useState(false);
+  const [tagInput, setTagInput] = useState('');
 
-  // Client photo — captured at add-lead time (not just later, during a
-  // visit remark, which is all the old field flow supported).
-  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  // Client photos — captured at add-lead time (not just later, during a
+  // visit remark, which is all the old field flow supported). More than
+  // one: the first becomes the lead's main photo_url, the rest attach as
+  // history entries so nothing about a multi-shot visit is lost.
+  const [photos, setPhotos] = useState<string[]>([]);
   const [capturingPhoto, setCapturingPhoto] = useState(false);
+
+  // Business card scan (field staff only) — OCR the card, then let the
+  // person confirm/edit before anything touches the form. Never applies
+  // silently: heuristic extraction from a photographed card is often
+  // right but never guaranteed.
+  const [capturingCard, setCapturingCard] = useState(false);
+  const [scanningCard, setScanningCard] = useState(false);
+  const [cardExtract, setCardExtract] = useState<CardExtract | null>(null);
 
   // GPS location — same silent-if-already-granted pattern as the field
   // visit flow: capture automatically in the background if the browser
@@ -717,7 +741,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
     if (!silent) setLocating(false);
   }
   useEffect(() => {
-    if (!navigator.geolocation || !('permissions' in navigator)) return;
+    if (!isFieldRole || !navigator.geolocation || !('permissions' in navigator)) return;
     let cancelled = false;
     navigator.permissions.query({ name: 'geolocation' as PermissionName }).then(result => {
       if (cancelled) return;
@@ -757,6 +781,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
   }, [form.phone, form.segment_slug]);
 
   async function createLead() {
+    setAttemptedSubmit(true);
     if (!form.segment_slug || !form.customer_name || !user) { toast.error('Segment and name are required'); return; }
     const phone = form.phone ? normalizePhone(form.phone) : 'Pending Collection';
     setBusy(true);
@@ -773,6 +798,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
         phone, alternate_phone: form.alternate_phone || '',
         email: form.email, interested_in: form.interested_in,
         source: form.source, priority: form.priority,
+        tags: form.tags,
         created_by: user.id,
         assigned_to: canChooseAssignment ? (form.assignToMe ? user.id : null) : user.id,
         sourced_by_user_id: form.sourced_by_user_id || user.id,
@@ -783,22 +809,29 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
       } as never).select('id').single();
       if (error) { toast.error(`Couldn't create lead: ${describeDbError(error)}`); return; }
 
-      // Photo is uploaded after the insert so the storage path can be
-      // keyed by the new lead's id — a failed photo upload should never
-      // block the lead itself from being saved, so this is best-effort.
-      if (photoDataUrl && inserted?.id) {
-        try {
-          const res = await fetch(photoDataUrl);
-          const blob = await res.blob();
-          const path = `${inserted.id}/${Date.now()}.jpg`;
-          const { error: upErr } = await supabase.storage.from('lead-photos').upload(path, blob, { contentType: 'image/jpeg' });
-          if (upErr) {
-            toast.error(`Lead saved, but the photo failed to upload: ${upErr.message}`);
-          } else {
-            await supabase.from('marketing_leads').update({ photo_url: path } as never).eq('id', inserted.id);
+      // Photos are uploaded after the insert so the storage path can be
+      // keyed by the new lead's id — a failed upload should never block
+      // the lead itself from being saved, so this is best-effort. First
+      // photo becomes the lead's main photo_url; any additional ones
+      // attach as history entries so a multi-shot visit isn't lossy.
+      if (photos.length > 0 && inserted?.id) {
+        for (let i = 0; i < photos.length; i++) {
+          try {
+            const res = await fetch(photos[i]);
+            const blob = await res.blob();
+            const path = `${inserted.id}/${Date.now()}-${i}.jpg`;
+            const { error: upErr } = await supabase.storage.from('lead-photos').upload(path, blob, { contentType: 'image/jpeg' });
+            if (upErr) { toast.error(`Lead saved, but a photo failed to upload: ${upErr.message}`); continue; }
+            if (i === 0) {
+              await supabase.from('marketing_leads').update({ photo_url: path } as never).eq('id', inserted.id);
+            } else {
+              await supabase.from('lead_remarks').insert({
+                lead_id: inserted.id, user_id: user.id, call_type: 'note', remark: 'Additional photo attached', photo_url: path,
+              } as never);
+            }
+          } catch {
+            toast.error('Lead saved, but a photo failed to upload.');
           }
-        } catch {
-          toast.error('Lead saved, but the photo failed to upload.');
         }
       }
 
@@ -812,17 +845,43 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
   function addAnother() {
     // Keep segment/source/assignment prefs, AND location — you're almost
     // always adding the next lead from the same context (same booth, same
-    // call list, same spot). Photo and appointment are per-lead, so those
-    // reset.
+    // call list, same spot). Photos, tags, and appointment are per-lead,
+    // so those reset.
     setForm(f => ({ ...blankForm, segment_slug: f.segment_slug, source: f.source, sourced_by_user_id: f.sourced_by_user_id, assignToMe: f.assignToMe, address: location?.address || '' }));
     setShowAltPhone(false);
     setDupWarning(null);
     setDupClean(false);
     setJustCreated(null);
-    setPhotoDataUrl(null);
+    setPhotos([]);
     setShowAppointment(false);
     setAppointmentAt('');
     setAppointmentNote('');
+    setAttemptedSubmit(false);
+    setTagInput('');
+    setCardExtract(null);
+  }
+
+  async function handleCardCapture(dataUrl: string) {
+    setCapturingCard(false);
+    setScanningCard(true);
+    try {
+      const extract = await scanBusinessCard(dataUrl);
+      setCardExtract(extract);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't read the card");
+    } finally {
+      setScanningCard(false);
+    }
+  }
+  function applyCardExtract() {
+    if (!cardExtract) return;
+    setForm(f => ({
+      ...f,
+      customer_name: f.customer_name || cardExtract.name,
+      phone: f.phone || cardExtract.phone,
+      email: f.email || cardExtract.email,
+    }));
+    setCardExtract(null);
   }
 
   useEffect(() => {
@@ -871,18 +930,46 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
             </div>
             <div className="min-w-0">
               <h3 className="text-stone-900 font-bold text-base leading-tight">New Lead</h3>
-              <p className="text-stone-700 text-xs">Capture an enquiry — takes about 20 seconds</p>
+              <p className="text-stone-700 text-xs">{quickMode ? 'Quick add — just the essentials' : 'Capture an enquiry — takes about 20 seconds'}</p>
             </div>
-            <button type="button" onClick={onClose} className="ml-auto p-1.5 rounded-lg hover:bg-teal-100 text-stone-700 shrink-0"><X className="w-4 h-4" /></button>
+            <button type="button" onClick={() => setQuickMode(m => !m)} className="ml-auto shrink-0 px-2.5 py-1 rounded-lg bg-white border border-teal-200 text-teal-700 text-[11px] font-bold hover:bg-teal-100">
+              {quickMode ? 'Full form' : 'Quick add'}
+            </button>
+            <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-teal-100 text-stone-700 shrink-0"><X className="w-4 h-4" /></button>
           </div>
 
           <div className="p-6 space-y-5">
+            {/* Business card scan — field staff only. Never applies OCR
+                results silently; always shown for confirm/edit first. */}
+            {isFieldRole && !quickMode && (
+              <div>
+                <button type="button" onClick={() => setCapturingCard(true)} disabled={scanningCard}
+                  className="w-full py-2.5 rounded-lg border-2 border-dashed border-indigo-300 text-indigo-700 hover:border-indigo-400 hover:bg-indigo-50 flex items-center justify-center gap-2 text-xs font-bold transition-colors">
+                  {scanningCard ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
+                  {scanningCard ? 'Reading card...' : 'Scan Business Card'}
+                </button>
+                {cardExtract && (
+                  <div className="mt-2 px-3 py-2.5 rounded-lg bg-indigo-50 border border-indigo-200 text-xs space-y-1.5">
+                    <p className="text-indigo-800 font-semibold">Found on the card — review before using:</p>
+                    <p className="text-stone-700">Name: <span className="font-medium">{cardExtract.name || '—'}</span></p>
+                    <p className="text-stone-700">Phone: <span className="font-medium">{cardExtract.phone || '—'}</span></p>
+                    <p className="text-stone-700">Email: <span className="font-medium">{cardExtract.email || '—'}</span></p>
+                    <div className="flex gap-2 pt-1">
+                      <button type="button" onClick={() => setCardExtract(null)} className="flex-1 py-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 font-semibold">Discard</button>
+                      <button type="button" onClick={applyCardExtract} className="flex-1 py-1.5 rounded-lg bg-indigo-700 text-white font-semibold">Use this</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Contact */}
             <div className="space-y-2.5">
               <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Contact</p>
               <div className="relative">
                 <User className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input autoFocus className={inputCls + ' pl-9'} placeholder="Customer Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
+                <input autoFocus className={inputCls + ` pl-9 ${attemptedSubmit && !form.customer_name ? 'border-red-400 bg-red-50' : ''}`} placeholder="Customer Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
+                {attemptedSubmit && !form.customer_name && <p className="text-red-600 text-[11px] mt-1">Name is required</p>}
               </div>
               <div className="relative">
                 <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -893,18 +980,20 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
                   {!dupChecking && dupWarning && <AlertTriangle className="w-4 h-4 text-amber-600" />}
                 </div>
               </div>
-              {!showAltPhone ? (
+              {!quickMode && (!showAltPhone ? (
                 <button type="button" onClick={() => setShowAltPhone(true)} className="text-teal-700 text-xs font-medium">+ Add alternate number</button>
               ) : (
                 <div className="relative">
                   <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input className={inputCls + ' pl-9'} placeholder="Alternate Phone" value={form.alternate_phone} onChange={e => setForm({ ...form, alternate_phone: e.target.value })} />
                 </div>
+              ))}
+              {!quickMode && (
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input className={inputCls + ' pl-9'} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                </div>
               )}
-              <div className="relative">
-                <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input className={inputCls + ' pl-9'} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-              </div>
               {dupWarning && (
                 <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-300 text-xs">
                   <p className="text-amber-800 font-semibold mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> This phone number already exists</p>
@@ -920,73 +1009,117 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
             <div className="space-y-2.5">
               <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Lead Details</p>
               <div className="grid grid-cols-2 gap-2.5">
-                <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
-                  <option value="">Segment *</option>
-                  {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
-                </select>
-                <div className="relative">
-                  <Radio className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <select className={inputCls + ' pl-9'} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
-                    {['field', 'telecall', 'referral', 'whatsapp', 'website', 'other'].map(s => <option key={s} value={s}>{s}</option>)}
+                <div>
+                  <select className={inputCls + (attemptedSubmit && !form.segment_slug ? ' border-red-400 bg-red-50' : '')} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+                    <option value="">Segment *</option>
+                    {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
                   </select>
+                  {attemptedSubmit && !form.segment_slug && <p className="text-red-600 text-[11px] mt-1">Segment is required</p>}
                 </div>
+                {!quickMode && (
+                  <div className="relative">
+                    <Radio className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <select className={inputCls + ' pl-9'} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
+                      {['field', 'telecall', 'referral', 'whatsapp', 'website', 'other'].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
-              <div className="relative">
-                <Tag className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input className={inputCls + ' pl-9'} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
-              </div>
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input className={inputCls + ' pl-9'} placeholder="Address (street, area, city)" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
-              </div>
-              <div>
-                <p className="text-stone-700 text-xs font-medium mb-1.5">Priority</p>
-                <div className="flex gap-1.5">
-                  {(['low', 'medium', 'high'] as const).map(p => (
-                    <button type="button" key={p} onClick={() => setForm({ ...form, priority: p })}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border capitalize transition-colors ${form.priority === p ? priorityActive[p] : priorityStyle[p]}`}>
-                      {p}
-                    </button>
-                  ))}
+              {!quickMode && <>
+                <div className="relative">
+                  <Tag className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input className={inputCls + ' pl-9'} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
                 </div>
-              </div>
+                <div className="relative">
+                  <MapPin className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input className={inputCls + ' pl-9'} placeholder="Address (street, area, city)" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+                </div>
+                <div>
+                  <p className="text-stone-700 text-xs font-medium mb-1.5">Priority</p>
+                  <div className="flex gap-1.5">
+                    {(['low', 'medium', 'high'] as const).map(p => (
+                      <button type="button" key={p} onClick={() => setForm({ ...form, priority: p })}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border capitalize transition-colors ${form.priority === p ? priorityActive[p] : priorityStyle[p]}`}>
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-stone-700 text-xs font-medium mb-1.5">Tags</p>
+                  <div className="flex flex-wrap gap-1.5 mb-1.5">
+                    {['Hot Lead', 'Referral', 'VIP', 'Repeat Customer'].filter(t => !form.tags.includes(t)).map(t => (
+                      <button type="button" key={t} onClick={() => setForm({ ...form, tags: [...form.tags, t] })} className="px-2 py-1 rounded-full bg-stone-100 text-stone-600 text-[11px] font-medium hover:bg-stone-200">+ {t}</button>
+                    ))}
+                  </div>
+                  {form.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-1.5">
+                      {form.tags.map(t => (
+                        <span key={t} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-teal-100 text-teal-800 text-[11px] font-bold">
+                          {t}
+                          <button type="button" onClick={() => setForm({ ...form, tags: form.tags.filter(x => x !== t) })}><X className="w-3 h-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <input className={inputCls} placeholder="Type a custom tag and press Enter"
+                    value={tagInput} onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && tagInput.trim()) {
+                        e.preventDefault();
+                        if (!form.tags.includes(tagInput.trim())) setForm({ ...form, tags: [...form.tags, tagInput.trim()] });
+                        setTagInput('');
+                      }
+                    }} />
+                </div>
+              </>}
             </div>
 
-            {/* Capture — client photo + GPS location, right at add-lead
-                time instead of only later during a visit log. */}
+            {/* Capture — client photos + GPS location, right at add-lead
+                time instead of only later during a visit log. GPS is
+                field-staff only — a telecaller or manager isn't at the
+                location, so there's nothing for it to capture. */}
+            {!quickMode && (
             <div className="space-y-2.5">
               <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Capture</p>
-              <div className="flex gap-2.5">
-                <div className="flex-1">
-                  {photoDataUrl ? (
-                    <div className="relative rounded-lg overflow-hidden border border-stone-200 h-24">
-                      <img src={photoDataUrl} alt="Client" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setPhotoDataUrl(null)} className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white"><X className="w-3 h-3" /></button>
+              <div className={isFieldRole ? 'flex gap-2.5' : ''}>
+                <div className="flex-1 space-y-2">
+                  {photos.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {photos.map((p, i) => (
+                        <div key={i} className="relative rounded-lg overflow-hidden border border-stone-200 w-16 h-16">
+                          <img src={p} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => setPhotos(ps => ps.filter((_, j) => j !== i))} className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-black/60 text-white"><X className="w-2.5 h-2.5" /></button>
+                        </div>
+                      ))}
                     </div>
-                  ) : (
-                    <button type="button" onClick={() => setCapturingPhoto(true)} className="w-full h-24 rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-teal-400 hover:text-teal-700 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors">
-                      <Camera className="w-5 h-5" /> Add photo
-                    </button>
                   )}
+                  <button type="button" onClick={() => setCapturingPhoto(true)} className={`w-full ${photos.length > 0 ? 'h-10' : 'h-24'} rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-teal-400 hover:text-teal-700 flex items-center justify-center gap-1.5 text-xs font-medium transition-colors`}>
+                    <Camera className="w-4 h-4" /> {photos.length > 0 ? 'Add another photo' : 'Add photo'}
+                  </button>
                 </div>
-                <div className="flex-1">
-                  {location ? (
-                    <div className="w-full h-24 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 flex flex-col justify-center">
-                      <p className="text-emerald-700 text-xs font-bold flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Location captured</p>
-                      <p className="text-emerald-800/70 text-[11px] mt-1 line-clamp-2">{location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
-                    </div>
-                  ) : (
-                    <button type="button" onClick={() => captureLocation(false)} disabled={locating} className="w-full h-24 rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-teal-400 hover:text-teal-700 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors">
-                      {locating ? <Loader2 className="w-5 h-5 animate-spin" /> : <MapPin className="w-5 h-5" />}
-                      {locating ? 'Locating...' : 'Add location'}
-                    </button>
-                  )}
-                </div>
+                {isFieldRole && (
+                  <div className="flex-1">
+                    {location ? (
+                      <div className="w-full h-24 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 flex flex-col justify-center">
+                        <p className="text-emerald-700 text-xs font-bold flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Location captured</p>
+                        <p className="text-emerald-800/70 text-[11px] mt-1 line-clamp-2">{location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => captureLocation(false)} disabled={locating} className="w-full h-24 rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-teal-400 hover:text-teal-700 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors">
+                        {locating ? <Loader2 className="w-5 h-5 animate-spin" /> : <MapPin className="w-5 h-5" />}
+                        {locating ? 'Locating...' : 'Add location'}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
+            )}
 
             {/* Appointment — book the first appointment right now instead
                 of as a separate step after the lead already exists. */}
+            {!quickMode && (
             <div className="space-y-2.5">
               <button type="button" onClick={() => setShowAppointment(s => !s)} className="flex items-center gap-1.5 text-stone-500 text-[11px] font-bold uppercase tracking-wider">
                 <CalendarClock className="w-3.5 h-3.5" /> Schedule Appointment {showAppointment ? '▾' : '▸'}
@@ -998,11 +1131,12 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
                 </div>
               )}
             </div>
+            )}
 
             {/* Assignment — only shown to roles who could plausibly choose
                 otherwise; a telecaller/marketing_executive quick-adding a
                 lead always means "and I'll work it", no toggle needed. */}
-            {canChooseAssignment && (
+            {!quickMode && canChooseAssignment && (
               <div className="space-y-2.5">
                 <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Assignment</p>
                 <div className="flex gap-1.5">
@@ -1036,8 +1170,15 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
       {capturingPhoto && (
         <CameraCapture
           title="Client Photo"
-          onCapture={dataUrl => { setPhotoDataUrl(dataUrl); setCapturingPhoto(false); }}
+          onCapture={dataUrl => { setPhotos(ps => [...ps, dataUrl]); setCapturingPhoto(false); }}
           onCancel={() => setCapturingPhoto(false)}
+        />
+      )}
+      {capturingCard && (
+        <CameraCapture
+          title="Business Card"
+          onCapture={dataUrl => handleCardCapture(dataUrl)}
+          onCancel={() => setCapturingCard(false)}
         />
       )}
     </div>
