@@ -456,7 +456,7 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     id: 'srv-6',
     segment_slug: 'software-development',
     title: 'Business Process Automation',
-    description: 'Custom ERPs, CRMs, retail POS billing platforms (MyStore OS), attendance software (Punchly), and AI voice bots (Jovio AI).',
+    description: 'Custom ERPs, CRMs, retail POS billing platforms (MyStore OS), attendance software (Punchly), and AI voice bots (Hey Nikki).',
     icon: 'Cpu',
   },
 ];
@@ -572,15 +572,15 @@ const DEFAULT_FALLBACK_PRODUCTS: Product[] = [
   {
     id: 'prod-3',
     segment_slug: 'software',
-    slug: 'jovio-ai',
-    name: 'Jovio AI',
+    slug: 'hey-nikki',
+    name: 'Hey Nikki',
     tagline: 'AI Voice & Chatbot Agent',
     description: 'Autonomous AI voice call bots and WhatsApp conversational agents for automated lead qualification and appointment booking.',
     logo_url: null, created_at: null, updated_at: null,
     screenshots: [],
     status: 'active',
-    external_url: 'https://jovio.ai',
-    demo_cta: 'Explore Jovio AI',
+    external_url: 'https://heynikki.in',
+    demo_cta: 'Explore Hey Nikki',
     order_index: 3,
     features: [
       { title: 'AI Voice Calling', description: '24/7 automated outbound calls', icon: 'Bot' },

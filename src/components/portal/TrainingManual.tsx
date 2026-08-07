@@ -140,7 +140,7 @@ function buildSections(role: Role): Section[] {
         <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mt-4 mb-2 flex items-center gap-1.5"><Code2 className="w-3.5 h-3.5" /> Software Solutions — products</p>
         <Field name="MyStore OS — Retail POS & Billing ERP">Cloud billing, barcode inventory, GST invoicing, multi-store management. Fast GST billing, real-time stock sync. Best fit: retail shops and supermarkets.</Field>
         <Field name="Punchly — Face & Geo Attendance ERP">Selfie + GPS attendance verification, leave approvals, automated payroll. Best fit: businesses with field staff or multiple locations.</Field>
-        <Field name="Jovio AI — AI Voice & Chatbot Agent">24/7 automated voice calls and WhatsApp replies for lead qualification and appointment booking. Best fit: businesses where enquiries outpace callback capacity.</Field>
+        <Field name="Hey Nikki — AI Voice & Chatbot Agent">24/7 automated voice calls and WhatsApp replies for lead qualification and appointment booking. Best fit: businesses where enquiries outpace callback capacity.</Field>
         <Field name="Custom Software">Web apps, mobile apps, internal business systems built to spec. 100% on-time delivery track record.</Field>
       </>,
     },
@@ -195,8 +195,8 @@ function buildSections(role: Role): Section[] {
       <Script>MyStore OS is our retail billing and inventory system — GST invoices print in seconds, and stock updates in real time. If you've got more than one store, it all syncs together. How are you currently handling billing?</Script>
       <ScriptLabel>Pitching Punchly</ScriptLabel>
       <Script>Punchly handles attendance and payroll — staff check in with a selfie and their GPS location, so there's no buddy-punching, and payroll runs off that data automatically. How are you tracking attendance right now?</Script>
-      <ScriptLabel>Pitching Jovio AI</ScriptLabel>
-      <Script>Jovio AI is an AI voice and WhatsApp agent that answers calls and chats 24/7 — qualifying leads and booking appointments even when your team's not available. Are enquiries ever slipping through because nobody could call back in time?</Script>
+      <ScriptLabel>Pitching Hey Nikki</ScriptLabel>
+      <Script>Hey Nikki is an AI voice and WhatsApp agent that answers calls and chats 24/7 — qualifying leads and booking appointments even when your team's not available. Are enquiries ever slipping through because nobody could call back in time?</Script>
       <ScriptLabel>Objection: "I need to think about it"</ScriptLabel>
       <Script>Totally fair — what specifically would help you decide? If it's price, timeline, or fit, I'm happy to walk through that now.</Script>
       <ScriptLabel>Objection: "It's too expensive"</ScriptLabel>

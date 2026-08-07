@@ -242,7 +242,7 @@ export const FAQ_SCHEMA = {
         '@type': 'Answer',
         text: 'Two divisions: Kite & Tail Digital handles performance marketing (Meta and Google ads, SEO, social ' +
               'content, video production). The software studio ships custom web and mobile applications, SaaS products, ' +
-              'and business automation tools including MyStoreOS (retail billing), Punchly (attendance & payroll), and Jovio AI ' +
+              'and business automation tools including MyStoreOS (retail billing), Punchly (attendance & payroll), and Hey Nikki ' +
               '(Telugu voice receptionist).',
       },
     },
@@ -287,12 +287,12 @@ export const PAGE_CONFIGS: Record<string, PageConfig> = {
     breadcrumbs: [{ name: 'Home', path: '/' }, { name: 'Software Development', path: '/#software' }],
   },
   products: {
-    title: `SaaS Products — MyStoreOS, Punchly, Jovio AI | ${SITE_NAME}`,
+    title: `SaaS Products — MyStoreOS, Punchly, Hey Nikki | ${SITE_NAME}`,
     description:
       'Ready-to-use SaaS products from Nikki Technologies. MyStoreOS: GST retail billing and inventory. ' +
-      'Punchly: selfie & GPS attendance with automated payroll. Jovio AI: Telugu voice receptionist. Ideal for SMBs across India and GCC.',
+      'Punchly: selfie & GPS attendance with automated payroll. Hey Nikki: Telugu voice receptionist. Ideal for SMBs across India and GCC.',
     path: '/#products',
-    keywords: ['MyStoreOS', 'Punchly attendance', 'Jovio AI', 'retail billing software', 'attendance payroll software', 'AI voice receptionist Telugu', 'GST billing software India'],
+    keywords: ['MyStoreOS', 'Punchly attendance', 'Hey Nikki', 'retail billing software', 'attendance payroll software', 'AI voice receptionist Telugu', 'GST billing software India'],
     breadcrumbs: [{ name: 'Home', path: '/' }, { name: 'Products', path: '/#products' }],
   },
   careers: {
