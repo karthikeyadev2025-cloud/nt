@@ -68,21 +68,23 @@ const SECTIONS: Section[] = [
     body: <>
       <p className="text-sm text-stone-700 mb-4">The "+ Add Lead" button opens the same form everywhere — the Leads board, the Telecaller call queue, and as a home-screen quick action.</p>
       <Step n={1} title="Open the form">Tap "+ Add Lead" from wherever you're working.</Step>
-      <Step n={2} title="Customer's name">Required — how the lead is identified everywhere.</Step>
+      <Step n={2} title="Customer's name">Required — how the lead is identified everywhere. If it's missing when you tap Save, the field turns red with a message right under it.</Step>
       <Step n={3} title="Phone number">As you finish a 10-digit number, the system checks for an existing lead with that number in the same segment. If found, you'll see a warning with the existing lead's name, stage, and owner — you can still "Add Anyway" if it's genuinely different.</Step>
       <Step n={4} title="Alternate phone (optional)">Tap "+ Add alternate number" if they gave a second number.</Step>
       <Step n={5} title="Email (optional)" >If they gave one.</Step>
-      <Step n={6} title="Segment">Which part of the business this is for. Required — pre-filled if you only work one segment.</Step>
+      <Step n={6} title="Segment">Digital Media or Software Solutions. Required (turns red if left blank) — pre-filled if you only work one segment.</Step>
       <Step n={7} title="Source">Where this lead came from: field, telecall, referral, whatsapp, website, or other.</Step>
-      <Step n={8} title="Interested In">A short line, e.g. "4-camera CCTV setup".</Step>
-      <Step n={9} title="Address (optional)">Type it directly, or capture GPS (next step) and it fills in — still editable by hand.</Step>
-      <Step n={10} title="Photo (optional)">Tap "Add photo" for a picture of the customer, shop, or site.</Step>
-      <Step n={11} title="Location (optional)">Tap "Add location" to capture GPS + address. If permission was already granted before, this happens silently in the background.</Step>
-      <Step n={12} title="Priority">Low, Medium, or High — defaults to Medium.</Step>
-      <Step n={13} title="Appointment (optional)">Tap "Schedule Appointment" to book the first appointment right now instead of as a separate step later.</Step>
-      <Step n={14} title="Assignment (managers only)">"Assign to me" or "Unassigned pool". Telecallers/Executives don't see this — their own leads auto-assign to themselves.</Step>
-      <Step n={15} title="Save">Tap "Create Lead".</Step>
-      <Note>After saving, "Add Another" opens a fresh form with segment, source, and location already filled in — built for adding several leads back to back, like at a trade show.</Note>
+      <Step n={8} title="Interested In">A short line, e.g. "MyStoreOS billing setup" or "Instagram ads package".</Step>
+      <Step n={9} title="Address">Type it directly — always available on every role. Marketing Executives also get it auto-filled from GPS (next step), still editable by hand.</Step>
+      <Step n={10} title="Photos (optional)">Tap "Add photo" for a picture of the customer, shop, or site — you can add more than one, each shown as its own removable thumbnail.</Step>
+      <Step n={11} title="Location — Marketing Executives only">Tap "Add location" to capture GPS + address. If permission was already granted before, this happens silently in the background. Telecallers and Managers don't see this button — you're not physically where the customer is, so GPS has nothing to capture.</Step>
+      <Step n={12} title="Scan a business card — Marketing Executives only">Photograph a card and the system reads off the name, phone, and email for you to review — tap "Use this" to fill the form or "Discard" if it misread something. Never fills the form without you confirming first.</Step>
+      <Step n={13} title="Priority">Low, Medium, or High — defaults to Medium.</Step>
+      <Step n={14} title="Tags (optional)">Tap a suggestion (Hot Lead, Referral, VIP, Repeat Customer) or type your own and press Enter — free-form labels, not a fixed list.</Step>
+      <Step n={15} title="Appointment (optional)">Tap "Schedule Appointment" to book the first appointment right now instead of as a separate step later.</Step>
+      <Step n={16} title="Assignment (managers only)">"Assign to me" or "Unassigned pool". Telecallers/Executives don't see this — their own leads auto-assign to themselves.</Step>
+      <Step n={17} title="Save">Tap "Create Lead".</Step>
+      <Note>Quick Add: tap "Quick add" at the top of the form to collapse it to just Name, Phone, and Segment — fill in the rest later from the lead's own screen. After saving, "Add Another" opens a fresh form with segment, source, and location already filled in for fast back-to-back entry.</Note>
     </>,
   },
   {
