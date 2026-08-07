@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
   Landmark, Megaphone, Briefcase, Image as ImageIcon, Shield,
-  Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key, Bell, BellOff,
+  Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key, Bell, BellOff, TrendingUp, PartyPopper,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -124,6 +124,9 @@ function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: str
     { key: 'regularizations', label: 'Attendance corrections to review', tab: 'hr', tone: 'text-amber-700 font-bold', show: canAttendance || canApprovals },
     { key: 'overdueTickets', label: 'Overdue tickets (SLA missed)', tab: 'tickets', tone: 'text-red-700 font-extrabold', show: canTickets },
     { key: 'unassignedLeads', label: 'Unassigned leads waiting', tab: 'crm', tone: 'text-amber-700 font-extrabold', show: canLeads },
+    { key: 'overdueFollowups', label: 'Follow-ups overdue', tab: 'crm', tone: 'text-red-700 font-extrabold', show: canLeads },
+    { key: 'overdueCallbacksAppts', label: 'Callbacks/appointments overdue', tab: 'crm', tone: 'text-red-700 font-extrabold', show: canLeads },
+    { key: 'duplicateLeadGroups', label: 'Duplicate leads to merge', tab: 'crm', tone: 'text-amber-700 font-bold', show: canLeads },
     { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-teal-700 font-extrabold', show: true },
     { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-700 font-extrabold', show: canStaff || canLeads },
   ].filter(i => i.show);
@@ -266,9 +269,11 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
         ))}
       </div>
 
+      <h3 className="text-stone-900 text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> SEGMENTS</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {segments.map(seg => {
         const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
+        const winRate = st.leads > 0 ? Math.round((st.won / st.leads) * 100) : 0;
         // Each number is a drill-down button — Aadya-style click-to-see-
         // the-records-behind-it instead of a static stat you have to go
         // re-find manually in another tab.
@@ -279,16 +284,30 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
           </button>
         );
         return (
-          <div key={seg.slug} className={cardCls}>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color ?? undefined }} />
-              <h3 className="text-stone-900 font-bold">{seg.name}</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {numBtn(st.openTickets, 'Open tickets', 'text-stone-900', () => onGo('tickets', { segFilter: seg.slug, ticketStatus: 'open' }))}
-              {numBtn(st.leads, 'Total leads', 'text-stone-900', () => onGo('crm', { segFilter: seg.slug }))}
-              {numBtn(st.won, 'Won deals', 'text-emerald-700', () => onGo('crm', { segFilter: seg.slug, stageFilter: 'won' }))}
-              {numBtn(st.staff, 'Staff', 'text-stone-900', () => onGo('access'))}
+          <div key={seg.slug} className="rounded-2xl bg-white border border-stone-200/90 shadow-md shadow-stone-200/50 overflow-hidden">
+            <div className="h-1.5" style={{ backgroundColor: seg.color ?? '#78716c' }} />
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-stone-900 font-bold">{seg.name}</h3>
+                {st.leads > 0 && (
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${winRate >= 20 ? 'bg-emerald-50 text-emerald-700' : winRate >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-stone-100 text-stone-600'}`}>
+                    {winRate}% win rate
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {numBtn(st.openTickets, 'Open tickets', 'text-stone-900', () => onGo('tickets', { segFilter: seg.slug, ticketStatus: 'open' }))}
+                {numBtn(st.leads, 'Total leads', 'text-stone-900', () => onGo('crm', { segFilter: seg.slug }))}
+                {numBtn(st.won, 'Won deals', 'text-emerald-700', () => onGo('crm', { segFilter: seg.slug, stageFilter: 'won' }))}
+                {numBtn(st.staff, 'Staff', 'text-stone-900', () => onGo('access'))}
+              </div>
+              {st.leads > 0 && (
+                <div className="mt-4 pt-3 border-t border-stone-100">
+                  <div className="h-1.5 rounded-full bg-stone-100 overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${winRate}%`, backgroundColor: seg.color ?? '#78716c' }} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -301,7 +320,7 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
               This is the "who's performing well" section, deliberately
               grouped as one unit instead of scattered among charts. */}
           <div>
-            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2">TEAM PERFORMANCE</h3>
+            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2 flex items-center gap-1.5"><Users2 className="w-3.5 h-3.5" /> TEAM PERFORMANCE</h3>
             <div className="grid md:grid-cols-2 gap-5">
               <PunctualityLeaderboard segments={segments} />
               {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
@@ -313,7 +332,7 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
           {/* Trends — historical charts, demoted below the actionable/
               performance sections since they're context, not urgency. */}
           <div>
-            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2">TRENDS</h3>
+            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> TRENDS</h3>
             <div className="space-y-5">
               <div className="grid md:grid-cols-2 gap-5">
                 <Suspense fallback={<ChartPlaceholder />}><AttendanceTrendChart /></Suspense>
@@ -327,7 +346,7 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
 
           {/* Housekeeping — least time-sensitive, bottom of the page. */}
           <div>
-            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2">HOUSEKEEPING</h3>
+            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2 flex items-center gap-1.5"><PartyPopper className="w-3.5 h-3.5" /> HOUSEKEEPING</h3>
             <div className="space-y-5">
               <SetupChecklist segments={segments} />
               <BirthdaysWidget />
