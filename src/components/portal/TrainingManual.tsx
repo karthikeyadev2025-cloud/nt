@@ -3,7 +3,7 @@ import {
   BookOpen, UserPlus, GitBranch, PhoneCall, MousePointerClick, LayoutGrid,
   CalendarClock, Repeat, ListChecks, Bell, MessageCircle, Download,
   Combine, ArrowLeftRight, Upload, Users, History, ShieldCheck,
-  Layers, Megaphone, Code2, MessagesSquare,
+  Layers, Megaphone, Code2, MessagesSquare, CreditCard, PenLine,
   type LucideIcon,
 } from 'lucide-react';
 import { cardCls } from './shared';
@@ -326,6 +326,34 @@ function buildSections(role: Role): Section[] {
       </>,
     },
   );
+
+  sections.push({
+    id: 'my-profile', label: 'My Profile & Documents', icon: CreditCard,
+    body: <>
+      <p className="text-sm text-stone-700 mb-4">Everyone has these in My Profile, regardless of role.</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1">ID Card</p>
+      <p className="text-sm text-stone-700 mb-3">Auto-generated from your profile — name, designation, staff code, phone, email, blood group. Nothing to upload; it updates itself whenever your profile does. A Print button opens a print-ready version.</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1">ID Proof Documents</p>
+      <p className="text-sm text-stone-700 mb-3">Upload your Aadhaar, PAN, passport, driving license, or voter ID as a photo or PDF. Pick the document type, tap Upload. HR/Admin can also upload on your behalf and mark a document "Verified" — you'll see that badge once they do. Files are private — only you and HR/Admin can ever view them.</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1">My Documents</p>
+      <p className="text-sm text-stone-700 mb-3">Offer letters, NDAs, policies, and other paperwork HR/Admin issues to you show up here. Open one and either draw a signature or type your name to sign it, or just acknowledge it if no signature's required. If it's already marked "Company signed," that means Nikki Technologies countersigned it before it was even sent to you.</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1">Session Devices</p>
+      <p className="text-sm text-stone-700">Shows every browser you're currently signed into. Revoke any device with one click, or "Sign out all other devices" at once — useful if you signed in somewhere you shouldn't have, like a shared computer. A revoked device is signed out within about two minutes, since it needs two consecutive failed checks (not just one network blip) before it's forced out.</p>
+    </>,
+  });
+
+  if (isManagerish) {
+    sections.push({
+      id: 'my-signature', label: 'My Signature', icon: PenLine,
+      body: <>
+        <p className="text-sm text-stone-700 mb-3">Draw and save your signature once in My Profile — after that, it's stamped automatically onto every document you issue (offer letters, NDAs, policies), before the employee ever opens it. No need to sign each one by hand.</p>
+        <Step n={1} title="Open My Profile">Find "My Signature."</Step>
+        <Step n={2} title="Draw your signature">On the pad, using your mouse or finger on a touchscreen.</Step>
+        <Step n={3} title="Save">That's it — every document you issue from now on carries it automatically.</Step>
+        <Note>You can replace your saved signature any time — it only affects documents issued after the change, not ones already sent.</Note>
+      </>,
+    });
+  }
 
   const managerOnlyIds = new Set(['merge', 'bulk', 'admin']);
   return isManagerish ? sections : sections.filter(s => !managerOnlyIds.has(s.id));
