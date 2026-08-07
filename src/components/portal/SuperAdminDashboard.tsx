@@ -141,7 +141,7 @@ function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: str
   const nonZeroCount = attentionItems.reduce((n, i) => n + ((c[i.key] ?? 0) > 0 ? 1 : 0), 0);
 
   return (
-    <div className="mb-6">
+    <div className="mb-5">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-stone-900 text-xs font-extrabold tracking-wider">NEEDS YOUR ATTENTION</h3>
         {nonZeroCount === 0 && (
@@ -151,16 +151,16 @@ function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: str
           </p>
         )}
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {items.map(i => {
           const n = c[i.key] ?? 0;
           const isSnapshot = snapshotItems.some(s => s.key === i.key);
           const dim = !isSnapshot && n === 0;
           return (
             <button key={i.key} onClick={() => onGo(i.tab)}
-              className={cardCls + ` text-left transition-all cursor-pointer ` + (dim ? 'opacity-50 hover:opacity-100 hover:border-stone-300' : 'hover:border-orange-400')}>
-              <p className={`text-3xl ${dim ? 'text-stone-400 font-bold' : i.tone}`}>{n}</p>
-              <p className="text-stone-700 text-xs font-semibold mt-1">{i.label}</p>
+              className={`text-left rounded-xl border bg-white px-3 py-2 transition-all cursor-pointer ${dim ? 'border-stone-200 opacity-60 hover:opacity-100 hover:border-stone-300' : 'border-stone-200 hover:border-orange-400 hover:shadow-sm'}`}>
+              <p className={`text-lg leading-tight ${dim ? 'text-stone-400 font-bold' : i.tone}`}>{n}</p>
+              <p className="text-stone-700 text-[11px] font-semibold leading-tight mt-0.5">{i.label}</p>
             </button>
           );
         })}
@@ -199,6 +199,19 @@ function rangeToDates(key: string): { from: string | null; to: string | null } {
     return { from: from.toISOString(), to: to.toISOString() };
   }
   return { from: null, to: null }; // 'all'
+}
+
+function CollapsibleSection({ title, icon: Icon, defaultOpen = false, children }: { title: string; icon: LucideIcon; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-stone-50 transition-colors">
+        <h3 className="text-stone-900 text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" /> {title}</h3>
+        <ChevronRight className={`w-4 h-4 text-stone-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+      </button>
+      {open && <div className="px-4 pb-4 pt-1 border-t border-stone-100">{children}</div>}
+    </div>
+  );
 }
 
 function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddStaff: () => void; onGo: (tab: string, filter?: { segFilter?: string; stageFilter?: string; ticketStatus?: string }) => void }) {
@@ -247,96 +260,77 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
   }, [segments, range]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <ActionCentre onGo={onGo} />
       {/* Leads assigned directly to a manager/super-admin (not every super
           admin works leads, but managers often do) — same auto-tracked
           to-do the other portals get. */}
       {hasPermission('manage_leads') && <MyLeadsToDoList />}
       {canOnboard && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-5 py-4 rounded-2xl bg-orange-50 border border-orange-200 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 rounded-xl bg-orange-50 border border-orange-200">
           <p className="text-orange-950 font-bold text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
-          <button onClick={onAddStaff} className="self-start sm:self-auto shrink-0 px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold shadow-md shadow-orange-700/20 whitespace-nowrap">+ Onboard Employee</button>
+          <button onClick={onAddStaff} className="self-start sm:self-auto shrink-0 px-4 py-1.5 rounded-lg bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold shadow-sm whitespace-nowrap">+ Onboard Employee</button>
         </div>
       )}
 
-      {/* Date-range filter — scopes the segment cards (and, via drill-down,
-          what you land on in Leads/Tickets) to a window instead of always
-          showing all-time totals. */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-stone-700 text-xs font-semibold">Show:</span>
-        {OVERVIEW_RANGES.map(r => (
-          <button key={r.key} onClick={() => setRange(r.key)}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${range === r.key ? 'bg-orange-700 text-white shadow-sm' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
-            {r.label}
-          </button>
-        ))}
-      </div>
-
-      <h3 className="text-stone-900 text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> SEGMENTS</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-      {segments.map(seg => {
-        const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
-        const winRate = st.leads > 0 ? Math.round((st.won / st.leads) * 100) : 0;
-        // Each number is a drill-down button — Aadya-style click-to-see-
-        // the-records-behind-it instead of a static stat you have to go
-        // re-find manually in another tab.
-        const numBtn = (value: number, label: string, tone: string, onClick: () => void) => (
-          <button onClick={onClick} className="text-left rounded-lg -m-1 p-1 hover:bg-stone-50 transition-colors">
-            <p className={`text-2xl font-extrabold ${tone} hover:underline`}>{value}</p>
-            <p className="text-stone-700 text-xs">{label}</p>
-          </button>
-        );
-        return (
-          <div key={seg.slug} className="rounded-2xl bg-white border border-stone-200/90 shadow-md shadow-stone-200/50 overflow-hidden">
-            <div className="h-1.5" style={{ backgroundColor: seg.color ?? '#78716c' }} />
-            <div className="p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-stone-900 font-bold">{seg.name}</h3>
+      {/* Segments — compact single-row-per-segment, colored left border
+          instead of a tall header bar, all four stats inline. Date-range
+          chips sit right on this header since they only affect these
+          numbers. */}
+      <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 flex-wrap gap-2 border-b border-stone-100">
+          <h3 className="text-stone-900 text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> SEGMENTS</h3>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {OVERVIEW_RANGES.map(r => (
+              <button key={r.key} onClick={() => setRange(r.key)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${range === r.key ? 'bg-orange-700 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
+                {r.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="divide-y divide-stone-100">
+          {segments.map(seg => {
+            const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
+            const winRate = st.leads > 0 ? Math.round((st.won / st.leads) * 100) : 0;
+            const statBtn = (value: number, label: string, tone: string, onClick: () => void) => (
+              <button onClick={onClick} className="text-left rounded-md px-2 py-1 hover:bg-stone-50 transition-colors">
+                <span className={`text-base font-extrabold ${tone}`}>{value}</span>
+                <span className="text-stone-500 text-[11px] ml-1">{label}</span>
+              </button>
+            );
+            return (
+              <div key={seg.slug} className="flex items-center gap-3 px-4 py-2 flex-wrap" style={{ borderLeft: `3px solid ${seg.color ?? '#78716c'}` }}>
+                <span className="text-stone-900 font-bold text-sm w-28 shrink-0 truncate">{seg.name}</span>
+                <div className="flex items-center flex-wrap flex-1">
+                  {statBtn(st.openTickets, 'open tickets', 'text-stone-900', () => onGo('tickets', { segFilter: seg.slug, ticketStatus: 'open' }))}
+                  {statBtn(st.leads, 'leads', 'text-stone-900', () => onGo('crm', { segFilter: seg.slug }))}
+                  {statBtn(st.won, 'won', 'text-emerald-700', () => onGo('crm', { segFilter: seg.slug, stageFilter: 'won' }))}
+                  {statBtn(st.staff, 'staff', 'text-stone-900', () => onGo('access'))}
+                </div>
                 {st.leads > 0 && (
-                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${winRate >= 20 ? 'bg-emerald-50 text-emerald-700' : winRate >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-stone-100 text-stone-600'}`}>
-                    {winRate}% win rate
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${winRate >= 20 ? 'bg-emerald-50 text-emerald-700' : winRate >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-stone-100 text-stone-600'}`}>
+                    {winRate}% win
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {numBtn(st.openTickets, 'Open tickets', 'text-stone-900', () => onGo('tickets', { segFilter: seg.slug, ticketStatus: 'open' }))}
-                {numBtn(st.leads, 'Total leads', 'text-stone-900', () => onGo('crm', { segFilter: seg.slug }))}
-                {numBtn(st.won, 'Won deals', 'text-emerald-700', () => onGo('crm', { segFilter: seg.slug, stageFilter: 'won' }))}
-                {numBtn(st.staff, 'Staff', 'text-stone-900', () => onGo('access'))}
-              </div>
-              {st.leads > 0 && (
-                <div className="mt-4 pt-3 border-t border-stone-100">
-                  <div className="h-1.5 rounded-full bg-stone-100 overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${winRate}%`, backgroundColor: seg.color ?? '#78716c' }} />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
       </div>
 
       {showSecondary && (
         <>
-          {/* Leaderboards — same avatar-card visual language, side by side.
-              This is the "who's performing well" section, deliberately
-              grouped as one unit instead of scattered among charts. */}
-          <div>
-            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2 flex items-center gap-1.5"><Users2 className="w-3.5 h-3.5" /> TEAM PERFORMANCE</h3>
+          <CollapsibleSection title="TEAM PERFORMANCE" icon={Users2}>
             <div className="grid md:grid-cols-2 gap-5">
               <PunctualityLeaderboard segments={segments} />
               {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
                 <SourcingFunnelWidget segments={segments} />
               )}
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Trends — historical charts, demoted below the actionable/
-              performance sections since they're context, not urgency. */}
-          <div>
-            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> TRENDS</h3>
+          <CollapsibleSection title="TRENDS" icon={TrendingUp}>
             <div className="space-y-5">
               <div className="grid md:grid-cols-2 gap-5">
                 <Suspense fallback={<ChartPlaceholder />}><AttendanceTrendChart /></Suspense>
@@ -346,16 +340,14 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
                 <LeadsFunnelChart segments={segments} onSegmentClick={slug => onGo('crm', { segFilter: slug })} />
               </Suspense>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Housekeeping — least time-sensitive, bottom of the page. */}
-          <div>
-            <h3 className="text-stone-900 text-xs font-extrabold tracking-wider mb-2 flex items-center gap-1.5"><PartyPopper className="w-3.5 h-3.5" /> HOUSEKEEPING</h3>
+          <CollapsibleSection title="HOUSEKEEPING" icon={PartyPopper}>
             <div className="space-y-5">
               <SetupChecklist segments={segments} />
               <BirthdaysWidget />
             </div>
-          </div>
+          </CollapsibleSection>
         </>
       )}
     </div>
