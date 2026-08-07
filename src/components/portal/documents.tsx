@@ -5,6 +5,7 @@ import type { Database } from '../../lib/database.types';
 
 type EmployeeDoc = Database['public']['Tables']['employee_documents']['Row'];
 import { useToast } from '../../lib/toast';
+import { useAuth } from '../../contexts/AuthContext';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls } from './shared';
 import { IdProofUploader } from './IdProofUploader';
@@ -64,7 +65,70 @@ export function buildOnboardingVars(user: {
 }
 
 // ─────────────────────────── Signature Pad (draw on canvas, mobile + desktop)
-function SignaturePad({ onCapture }: { onCapture: (dataUrl: string) => void }) {
+// ─────────────────────────── My Signature (saved once, auto-stamped onto
+// every document issued afterward — see issueDocuments() below).
+export function MySignature() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [saved, setSaved] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { data } = await supabase.from('app_users').select('signature_data_url').eq('id', user.id).maybeSingle();
+        setSaved((data as { signature_data_url?: string } | null)?.signature_data_url || null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  async function save(dataUrl: string) {
+    if (!user) return;
+    const { error } = await supabase.from('app_users').update({ signature_data_url: dataUrl } as never).eq('id', user.id);
+    if (error) { toast.error(`Couldn't save signature: ${error.message}`); return; }
+    setSaved(dataUrl);
+    setEditing(false);
+    toast.success('Signature saved — it will be stamped automatically on documents you issue from now on.');
+  }
+
+  if (loading) return null;
+  return (
+    <div className={cardCls}>
+      <h3 className="text-stone-900 font-bold text-sm mb-1">My Signature</h3>
+      <p className="text-stone-700 text-xs mb-3">Saved once, then stamped automatically as the company signature on every document you issue — offer letters, NDAs, and policies go out already signed.</p>
+      {saved && !editing ? (
+        <div>
+          <div className="border border-stone-200 rounded-lg p-3 bg-white mb-2">
+            <img src={saved} alt="Your saved signature" className="h-14 object-contain" />
+          </div>
+          <button onClick={() => setEditing(true)} className="text-teal-700 text-xs font-medium">Replace signature</button>
+        </div>
+      ) : (
+        <SignaturePad onCapture={save} />
+      )}
+    </div>
+  );
+}
+
+// Stamp the issuing user's saved signature onto a batch of newly-issued
+// document rows, if they have one saved. Best-effort — a document still
+// issues fine without a saved signature, just without the auto-stamp.
+export async function stampCompanySignature(userId: string, docIds: string[]) {
+  if (docIds.length === 0) return;
+  const { data } = await supabase.from('app_users').select('signature_data_url').eq('id', userId).maybeSingle();
+  const sig = (data as { signature_data_url?: string } | null)?.signature_data_url;
+  if (!sig) return;
+  await supabase.from('employee_documents').update({
+    company_signature_data_url: sig, company_signed_by: userId, company_signed_at: new Date().toISOString(),
+  } as never).in('id', docIds);
+}
+
+// ─────────────────────────── Signature Pad (draw on canvas, mobile + desktop)
+export function SignaturePad({ onCapture }: { onCapture: (dataUrl: string) => void }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
   const [empty, setEmpty] = useState(true);
@@ -305,9 +369,14 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
               <p className="text-stone-700 text-xs">{DOC_TYPE_LABELS[d.doc_type]} • issued {new Date(d.issued_at ?? '').toLocaleDateString()}</p>
             </div>
           </div>
-          {d.acknowledged_at
-            ? <span className="text-xs text-emerald-700 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> {d.requires_signature ? 'Signed' : 'Acknowledged'}</span>
-            : <span className="text-xs text-amber-700">{d.requires_signature ? 'Needs signature' : 'Needs review'}</span>}
+          <div className="flex items-center gap-3">
+            {(d as unknown as { company_signature_data_url?: string }).company_signature_data_url && (
+              <span className="text-xs text-teal-700 flex items-center gap-1" title="Countersigned by Nikki Technologies"><ShieldCheck className="w-3.5 h-3.5" /> Company signed</span>
+            )}
+            {d.acknowledged_at
+              ? <span className="text-xs text-emerald-700 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> {d.requires_signature ? 'Signed' : 'Acknowledged'}</span>
+              : <span className="text-xs text-amber-700">{d.requires_signature ? 'Needs signature' : 'Needs review'}</span>}
+          </div>
         </div>
       ))}
       {open && (
@@ -418,6 +487,16 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
                       <span className="text-xs bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium">{DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}</span>
                     </div>
                     <p className="text-sm text-stone-500 mb-4">Issued on {new Date(doc.issued_at ?? '').toLocaleDateString()}</p>
+
+                    {(doc as unknown as { company_signature_data_url?: string }).company_signature_data_url && (
+                      <div className="bg-teal-50 p-3 rounded-lg border border-teal-100 mb-3 flex items-center gap-3">
+                        <img src={(doc as unknown as { company_signature_data_url?: string }).company_signature_data_url} alt="Company signature" className="h-10 object-contain bg-white rounded border border-stone-200 px-2" />
+                        <div>
+                          <p className="text-xs font-bold text-teal-800">Signed for Nikki Technologies</p>
+                          <p className="text-[11px] text-teal-700/80">{new Date((doc as unknown as { company_signed_at?: string }).company_signed_at ?? '').toLocaleString()}</p>
+                        </div>
+                      </div>
+                    )}
                     
                     {doc.acknowledged_at ? (
                       <div className="bg-stone-50 p-4 rounded-lg border border-stone-100 mb-4">

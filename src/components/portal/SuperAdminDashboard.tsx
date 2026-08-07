@@ -14,7 +14,7 @@ import { useSegments } from '../../lib/useSegments';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
 import type { Segment, Product, ProductFeature, Tables } from '../../lib/database.types';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs, MyLeadsToDoList } from './shared';
-import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge, EmployeeDocumentsModal } from './documents';
+import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge, EmployeeDocumentsModal, stampCompanySignature } from './documents';
 import { ImageUpload } from './ImageUpload';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals, ShiftSwapBoard } from './features';
 import { TasksBoard } from './tasks';
@@ -517,13 +517,20 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
     const docsToIssue = availableTemplates.filter(t => form.doc_types.includes(t.doc_type));
     if (docsToIssue.length) {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error: docError } = await supabase.from('employee_documents').insert(
+      const { data: inserted, error: docError } = await supabase.from('employee_documents').insert(
         docsToIssue.map(t => ({
           staff_user_id: userId, doc_type: t.doc_type, title: t.title,
           content: renderTemplate(t.body, vars), issued_by: user?.id, requires_signature: t.requires_signature,
         }))
-      );
+      ).select('id');
       if (docError) failures.push(`Document issuance: ${docError.message}`);
+      // Auto-stamp the issuing admin's saved signature (My Profile > My
+      // Signature) onto every document just issued, before the employee
+      // ever sees it. Best-effort — no saved signature just means no
+      // stamp, the documents still issue fine either way.
+      else if (user?.id && inserted) {
+        stampCompanySignature(user.id, inserted.map(d => d.id)).catch(() => {});
+      }
     }
 
     // The account itself always exists at this point — but don't tell the
@@ -1969,16 +1976,21 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
     });
     const { data: { user } } = await supabase.auth.getUser();
     const docs = templates.filter(t => issueDocs.includes(t.id));
-    const { error } = await supabase.from('employee_documents').upsert(
+    const { data: upserted, error } = await supabase.from('employee_documents').upsert(
       docs.map(t => ({
         staff_user_id: issueFor.id, doc_type: t.doc_type, title: t.title,
         content: renderTemplate(t.body, vars), issued_by: user?.id, issued_at: new Date().toISOString(),
         requires_signature: t.requires_signature,
       })),
       { onConflict: 'staff_user_id,doc_type,title' }
-    );
+    ).select('id');
     setBusy(false);
     if (error) { toast.error(`Couldn't issue documents: ${error.message}`); return; }
+    // Same auto-stamp as onboarding — the issuing admin's saved signature
+    // (My Profile > My Signature), applied before the employee sees it.
+    if (user?.id && upserted) {
+      stampCompanySignature(user.id, upserted.map(d => d.id)).catch(() => {});
+    }
     toast.success(`${docs.length} document(s) issued to ${issueFor.full_name}`);
     setIssueFor(null); load();
   }

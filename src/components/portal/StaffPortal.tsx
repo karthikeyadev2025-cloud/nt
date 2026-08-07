@@ -12,7 +12,7 @@ import { istDateStr } from '../../lib/dates';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, MyLeadsToDoList } from './shared';
 import { IdProofUploader } from './IdProofUploader';
 import { TasksBoard } from './tasks';
-import { MyDocumentsList, MySalaryCard } from './documents';
+import { MyDocumentsList, MySalaryCard, MySignature } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard, MyPhotoRequest, MyPromotionHistory } from './features';
 import TrainingManual from './TrainingManual';
 import { MyRegularizations } from './lifecycle';
@@ -785,7 +785,8 @@ export function MyDocuments() {
 // ─────────────────────────── My Profile: ID card + bank details
 export function MyProfile() {
   const [showModal, setShowModal] = useState(false);
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const issuesDocuments = user?.role === 'super_admin' || hasPermission('manage_staff');
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
@@ -802,6 +803,7 @@ export function MyProfile() {
         <div className="space-y-6">
           <MyBankDetails />
           <MyPromotionHistory />
+          {issuesDocuments && <MySignature />}
         </div>
       </div>
       {user?.role === 'super_admin' && <SessionDevices />}
