@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react';
-import { LogOut, Menu, X, Bell, BellOff, type LucideIcon } from 'lucide-react';
+import { LogOut, Menu, X, Bell, BellOff, MessageCircle, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationBell } from './features';
 import { KiteTailLogo } from '../KiteTailLogo';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
+import { waLink } from '../../lib/phone';
 
 export type PortalTab = { id: string; label: string; icon: LucideIcon; show: boolean };
 
@@ -19,19 +20,29 @@ const ALERT_TYPE_META: Record<string, { label: string; icon: string }> = {
   appointment: { label: 'Appointment due', icon: '📅' },
 };
 
-function DueAlertBanner({ alerts, onDismiss }: { alerts: ReturnType<typeof useDueLeadAlerts>['activeAlerts']; onDismiss: (key: string) => void }) {
+function DueAlertBanner({ alerts, onDismiss, onSnooze }: { alerts: ReturnType<typeof useDueLeadAlerts>['activeAlerts']; onDismiss: (key: string) => void; onSnooze: (key: string, minutes?: number) => void }) {
   if (alerts.length === 0) return null;
   return (
     <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-1.5rem)] max-w-sm space-y-2">
       {alerts.map(a => (
-        <div key={a.key} className="bg-white border-2 border-teal-500 rounded-2xl shadow-2xl p-3.5 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-          <span className="text-2xl shrink-0">{ALERT_TYPE_META[a.type]?.icon}</span>
-          <div className="min-w-0 flex-1">
-            <p className="text-stone-900 text-sm font-bold truncate">{ALERT_TYPE_META[a.type]?.label}: {a.customerName}</p>
-            <p className="text-stone-700 text-xs">{a.phone}</p>
+        <div key={a.key} className="bg-white border-2 border-teal-500 rounded-2xl shadow-2xl p-3.5 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl shrink-0">{ALERT_TYPE_META[a.type]?.icon}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-stone-900 text-sm font-bold truncate">{ALERT_TYPE_META[a.type]?.label}: {a.customerName}</p>
+              <p className="text-stone-700 text-xs">{a.phone}</p>
+            </div>
+            <button onClick={() => onDismiss(a.key)} className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500 shrink-0"><X className="w-4 h-4" /></button>
           </div>
-          <a href={`tel:${a.phone}`} onClick={() => onDismiss(a.key)} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shrink-0">Call</a>
-          <button onClick={() => onDismiss(a.key)} className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500 shrink-0"><X className="w-4 h-4" /></button>
+          <div className="flex items-center gap-1.5">
+            <a href={`tel:${a.phone}`} onClick={() => onDismiss(a.key)} className="flex-1 text-center px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">Call</a>
+            {waLink(a.phone) && (
+              <a href={waLink(a.phone) ?? undefined} target="_blank" rel="noreferrer" onClick={() => onDismiss(a.key)} className="p-1.5 rounded-lg bg-[#25D366] text-white shrink-0" title="WhatsApp">
+                <MessageCircle className="w-4 h-4" />
+              </a>
+            )}
+            <button onClick={() => onSnooze(a.key, 60)} className="px-2.5 py-1.5 rounded-lg bg-stone-100 text-stone-700 text-xs font-semibold shrink-0">Snooze 1h</button>
+          </div>
         </div>
       ))}
     </div>
@@ -63,11 +74,11 @@ export function PortalShell({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const visibleTabs = tabs.filter(t => t.show);
-  const { activeAlerts, dismiss, soundEnabled, setSoundEnabled, requestNotificationPermission, notifPermission } = useDueLeadAlerts();
+  const { activeAlerts, dismiss, snooze, soundEnabled, setSoundEnabled, requestNotificationPermission, notifPermission } = useDueLeadAlerts();
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row text-stone-900">
-      <DueAlertBanner alerts={activeAlerts} onDismiss={dismiss} />
+      <DueAlertBanner alerts={activeAlerts} onDismiss={dismiss} onSnooze={snooze} />
       {/* ── Desktop Collapsible Sidebar ── */}
       <aside className={`hidden md:flex flex-col border-r border-stone-200 bg-white backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 shadow-sm ${collapsed ? 'w-20' : 'w-64'}`}>
         <div className="p-4 border-b border-stone-200 flex items-center justify-between">

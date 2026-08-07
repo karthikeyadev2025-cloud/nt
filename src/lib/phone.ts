@@ -9,3 +9,15 @@ export function normalizePhone(raw: string): string {
   if (digits.length >= 10) return digits.slice(-10);
   return digits;
 }
+
+// wa.me needs the full international number with no + or leading 0 — this
+// business is India-only, so the country code is always 91. Returns null
+// for anything that isn't a real 10-digit number (e.g. the "Pending
+// Collection" placeholder) so callers can hide the button instead of
+// linking to a broken chat.
+export function waLink(phone: string, message?: string): string | null {
+  const normalized = normalizePhone(phone);
+  if (normalized.length !== 10) return null;
+  const base = `https://wa.me/91${normalized}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}

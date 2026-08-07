@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock } from 'lucide-react';
+import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock, MessageCircle, Download } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -9,8 +9,9 @@ type LeaveRequest = Database['public']['Tables']['leave_requests']['Row'];
 type AttendanceRow = Database['public']['Tables']['attendance_records']['Row'];
 type SalaryAdvance = Database['public']['Tables']['salary_advance_requests']['Row'];
 import { istDateStr } from '../../lib/dates';
-import { normalizePhone } from '../../lib/phone';
+import { normalizePhone, waLink } from '../../lib/phone';
 import { getPosition, reverseGeocode } from '../../lib/geo';
+import { exportLeadsToExcel } from '../../lib/exportLeads';
 import CameraCapture from '../CameraCapture';
 import { AttendanceDetailsModal } from './payroll';
 import { LeadMeetingsTab } from './meetings';
@@ -548,7 +549,12 @@ export function MyLeadsToDoList() {
           {item.note ? ` — ${item.note}` : ''}
         </p>
       </div>
-      <a href={`tel:${item.phone}`} className="p-1.5 rounded-lg bg-emerald-600 text-white shrink-0"><Phone className="w-3.5 h-3.5" /></a>
+      <a href={`tel:${item.phone}`} className="p-1.5 rounded-lg bg-emerald-600 text-white shrink-0" title="Call"><Phone className="w-3.5 h-3.5" /></a>
+      {waLink(item.phone) && (
+        <a href={waLink(item.phone, `Hi ${item.customerName}, this is regarding your enquiry with us.`) ?? undefined} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-[#25D366] text-white shrink-0" title="WhatsApp">
+          <MessageCircle className="w-3.5 h-3.5" />
+        </a>
+      )}
       {item.type === 'appointment' ? (
         <button onClick={() => setRescheduleFor({ id: item.leadId, appointment_at: item.dueAt, appointment_note: item.note || '', customer_name: item.customerName } as Lead)} className="p-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 shrink-0" title="Reschedule">
           <CalendarClock className="w-3.5 h-3.5" />
@@ -1358,6 +1364,11 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
+          <button
+            className="px-3 py-2 rounded-lg bg-white border border-stone-300 hover:border-teal-400 text-stone-700 text-xs font-semibold shrink-0 inline-flex items-center gap-1.5"
+            onClick={() => exportLeadsToExcel(filteredLeads, `leads-${segFilter || 'all'}-${new Date().toISOString().slice(0, 10)}.xlsx`, staffById)}>
+            <Download className="w-3.5 h-3.5" /> Export
+          </button>
           {hasPermission('create_leads') ? (
             <button className={btnCls + ' shrink-0'} onClick={() => setShowAdd(true)}>+ Add Lead</button>
           ) : null}
@@ -1492,6 +1503,12 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                     </span>
                   ) : (
                     <span className="text-xs text-stone-700 font-semibold">📞 {l.phone}</span>
+                  )}
+                  {waLink(l.phone) && (
+                    <a href={waLink(l.phone, `Hi ${l.customer_name}, this is regarding your enquiry with us.`) ?? undefined} target="_blank" rel="noreferrer"
+                      onClick={e => e.stopPropagation()} className="p-1 rounded bg-[#25D366] text-white shrink-0" title="WhatsApp">
+                      <MessageCircle className="w-3 h-3" />
+                    </a>
                   )}
                   <span className="text-xs text-stone-700 ml-auto">{l.source}</span>
                 </div>

@@ -112,5 +112,13 @@ export function useDueLeadAlerts() {
     setActiveAlerts(prev => prev.filter(a => a.key !== key));
   }
 
-  return { activeAlerts, dismiss, soundEnabled, setSoundEnabled, requestNotificationPermission, notifPermission };
+  // Snooze: hide it now, but let it alert again after the delay instead of
+  // marking it seen forever (dismiss stays permanent-for-this-item;
+  // snooze is "remind me again shortly").
+  function snooze(key: string, minutes = 60) {
+    setActiveAlerts(prev => prev.filter(a => a.key !== key));
+    setTimeout(() => { seenRef.current.delete(key); }, minutes * 60000);
+  }
+
+  return { activeAlerts, dismiss, snooze, soundEnabled, setSoundEnabled, requestNotificationPermission, notifPermission };
 }

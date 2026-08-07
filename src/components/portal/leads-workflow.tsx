@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin } from 'lucide-react';
+import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin, MessageCircle, Download } from 'lucide-react';
 import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
 import { invalidateQueryCache } from '../../lib/cachedQuery';
@@ -8,7 +8,7 @@ import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
-import { normalizePhone } from '../../lib/phone';
+import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
 import { MyCallsChart } from './performance';
@@ -124,6 +124,9 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     }
   }, [user]);
   useEffect(() => { load(); }, [load]);
+  // Fallback when pg_cron isn't enabled — sweeping here means overdue
+  // callbacks still notify whenever a telecaller opens their queue.
+  useEffect(() => { supabase.rpc('remind_overdue_callbacks_and_appointments'); }, []);
   useEffect(() => {
     if (!user) return;
     cachedQuery('marketing_executives', async () => {
@@ -227,9 +230,17 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       <MyCallsChart />
       <div className="flex items-center justify-between mt-6 mb-3">
         <h3 className="text-stone-900 font-semibold text-sm">My Call Queue ({leads.length})</h3>
-        {hasPermission('create_leads') && (
-          <button onClick={() => setShowAddLead(true)} className="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold shadow-sm">+ Add Lead</button>
-        )}
+        <div className="flex items-center gap-2">
+          {leads.length > 0 && (
+            <button onClick={() => exportLeadsToExcel(leads, `my-leads-${new Date().toISOString().slice(0, 10)}.xlsx`)}
+              className="px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:border-teal-400 text-stone-700 text-xs font-semibold inline-flex items-center gap-1.5">
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
+          )}
+          {hasPermission('create_leads') && (
+            <button onClick={() => setShowAddLead(true)} className="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold shadow-sm">+ Add Lead</button>
+          )}
+        </div>
       </div>
       <div className="space-y-2">
         {leads.map(l => (
@@ -279,11 +290,18 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       {active && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
           <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-stone-900 font-semibold">{active.customer_name}</h3>
-              <button onClick={() => call(active.phone)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm">
-                <PhoneCall className="w-4 h-4" /> {active.phone}
-              </button>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-stone-900 font-semibold truncate">{active.customer_name}</h3>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button onClick={() => call(active.phone)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm">
+                  <PhoneCall className="w-4 h-4" /> {active.phone}
+                </button>
+                {waLink(active.phone) && (
+                  <a href={waLink(active.phone, `Hi ${active.customer_name}, this is regarding your enquiry with us.`) ?? undefined} target="_blank" rel="noreferrer" className="p-2 rounded-lg bg-[#25D366] text-white" title="WhatsApp">
+                    <MessageCircle className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
             </div>
             {active.appointment_at && (
               <p className={`text-xs font-medium flex items-center gap-1 ${new Date(active.appointment_at) < new Date() ? 'text-amber-700' : 'text-teal-700'}`}>
@@ -1287,7 +1305,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   useEffect(() => { load(); }, [load]);
   // Fallback when pg_cron isn't enabled: sweeping here means due follow-ups
   // still notify whenever field staff open their queue. Idempotent.
-  useEffect(() => { supabase.rpc('remind_due_followups'); }, []);
+  useEffect(() => { supabase.rpc('remind_due_followups'); supabase.rpc('remind_overdue_callbacks_and_appointments'); }, []);
 
   // Offline queue: keep the pending count live, flush automatically on
   // reconnect / focus / timer, and refresh the lead list once things land.
