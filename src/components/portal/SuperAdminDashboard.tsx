@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
   Landmark, Megaphone, Briefcase, Image as ImageIcon, Shield,
-  Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key, Bell, BellOff, TrendingUp, PartyPopper,
+  Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key, Bell, BellOff, TrendingUp, PartyPopper, BookOpen,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -19,6 +19,7 @@ import { ImageUpload } from './ImageUpload';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals, ShiftSwapBoard } from './features';
 import { TasksBoard } from './tasks';
 import { LeadsWorkspace } from './leads-workflow';
+import TrainingManual from './TrainingManual';
 import { TeamCalendar, MeetingTypesManager } from './meetings';
 import { DueAlertBanner } from './portal-shell';
 // Charts pull in recharts, which alone accounts for ~380KB of JavaScript —
@@ -2076,7 +2077,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
   );
 }
 
-type Tab = 'overview' | 'tasks' | 'tickets' | 'crm' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content' | 'security' | 'calendar' | 'meeting_types'
+type Tab = 'overview' | 'tasks' | 'tickets' | 'crm' | 'training' | 'hr' | 'access' | 'segments' | 'products' | 'catalog' | 'documents' | 'approvals' | 'announcements' | 'careers' | 'media' | 'content' | 'security' | 'calendar' | 'meeting_types'
   | 'my_attendance' | 'my_documents' | 'my_requests' | 'my_profile' | 'my_swap' | 'my_sessions';
 
 export default function SuperAdminDashboard() {
@@ -2146,6 +2147,7 @@ export default function SuperAdminDashboard() {
         { id: 'tickets', label: 'Tickets', icon: Ticket, show: isSuperAdmin || hasPermission('view_tickets') || hasPermission('manage_tickets') },
         { id: 'tasks', label: 'Tasks', icon: ClipboardList, show: true },
         { id: 'crm', label: 'CRM / Leads', icon: ClipboardList, show: isSuperAdmin || hasPermission('view_leads') || hasPermission('manage_leads') },
+        { id: 'training', label: 'Training Manual', icon: BookOpen, show: isSuperAdmin || hasPermission('view_leads') || hasPermission('manage_leads') },
         { id: 'hr', label: 'HR / Payroll', icon: Users2, show: isSuperAdmin || hasPermission('view_staff') || hasPermission('manage_staff') || hasPermission('view_attendance') || hasPermission('manage_payroll') },
       ],
     },
@@ -2293,6 +2295,7 @@ export default function SuperAdminDashboard() {
         {tab === 'tasks' && <TasksBoard segments={segments} />}
         {tab === 'tickets' && <TicketsSection segments={segments} focusId={focus?.kind === 'ticket' ? focus.id : undefined} initialSegFilter={ticketsFilter?.segFilter} initialStatus={ticketsFilter?.status} filterNonce={ticketsFilter?.nonce} />}
         {tab === 'crm' && <LeadsWorkspace segments={segments} focusLeadId={focus?.kind === 'lead' ? focus.id : undefined} initialSegFilter={leadsFilter?.segFilter} initialStageFilter={leadsFilter?.stageFilter} filterNonce={leadsFilter?.nonce} />}
+        {tab === 'training' && <TrainingManual />}
         {tab === 'hr' && <HRSection segments={segments} />}
         {tab === 'access' && <AccessControl segments={segments} openSignal={onboardSignal} focusStaffId={focus?.kind === 'staff' ? focus.id : undefined} />}
         {tab === 'segments' && <SegmentsManager onChanged={() => setRefreshKey(k => k + 1)} />}

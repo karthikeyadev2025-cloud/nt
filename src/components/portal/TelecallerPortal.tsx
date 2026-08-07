@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard, Clock, Calendar, ClipboardList, FileText, CalendarDays,
-  CreditCard, Repeat, PhoneCall, UserPlus,
+  CreditCard, Repeat, PhoneCall, UserPlus, BookOpen,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,6 +14,7 @@ import { TelecallerQueue } from './leads-workflow';
 import { TasksBoard } from './tasks';
 import { AnnouncementsFeed, ShiftSwapBoard } from './features';
 import { MyMeetings } from './meetings';
+import TrainingManual from './TrainingManual';
 import {
   MyAttendance, MyDocuments, MyRequests, MyProfile,
 } from './StaffPortal';
@@ -190,6 +191,7 @@ export default function TelecallerPortal() {
     { id: 'attendance', label: 'My Attendance', icon: Clock, show: true },
     { id: 'requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
     { id: 'documents', label: 'My Documents', icon: FileText, show: true },
+    { id: 'training', label: 'Training Manual', icon: BookOpen, show: true },
     { id: 'profile', label: 'My Profile', icon: CreditCard, show: true },
     { id: 'swap', label: 'Shift Swap', icon: Repeat, show: true },
   ];
@@ -225,6 +227,7 @@ export default function TelecallerPortal() {
       {tab === 'documents' && <MyDocuments />}
       {tab === 'profile' && <MyProfile />}
       {tab === 'swap' && <ShiftSwapBoard />}
+      {tab === 'training' && <TrainingManual />}
     </PortalShell>
   );
 }

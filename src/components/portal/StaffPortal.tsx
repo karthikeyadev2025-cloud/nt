@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { LogOut, LayoutDashboard, Clock, CalendarDays, Calendar, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu, Key } from 'lucide-react';
+import { LogOut, LayoutDashboard, Clock, CalendarDays, Calendar, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu, Key, BookOpen } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Database, Tables } from '../../lib/database.types';
 
@@ -13,6 +13,7 @@ import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, MyLeadsToDoList } fro
 import { TasksBoard } from './tasks';
 import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard, MyPhotoRequest, MyPromotionHistory } from './features';
+import TrainingManual from './TrainingManual';
 import { MyRegularizations } from './lifecycle';
 import { TelecallerQueue, LeadsWorkspace, ExecutiveFieldVisits } from './leads-workflow';
 import { MyPerformanceChart } from './performance';
@@ -835,6 +836,7 @@ export default function StaffPortal() {
     { id: 'requests', label: 'Leaves & Advances', icon: CalendarDays, show: true },
     { id: 'profile', label: 'My Profile', icon: CreditCard, show: true },
     { id: 'swap', label: 'Shift Swap', icon: Repeat, show: true },
+    { id: 'training', label: 'Training Manual', icon: BookOpen, show: hasPermission('view_leads') },
     // Catch-all: leads/tickets/team for roles not already covered above
     // (e.g. a support agent who ALSO has view_leads but isn't a field role).
     { id: 'leads', label: hasPermission('full_leads_view') ? 'Leads / CRM' : 'My Call Queue', icon: ClipboardList, show: hasPermission('view_leads') && !isFieldRole },
@@ -1012,6 +1014,7 @@ export default function StaffPortal() {
           {tab === 'tasks' && <TasksBoard segments={segments} mineOnly />}
           {tab === 'profile' && <MyProfile />}
           {tab === 'swap' && <ShiftSwapBoard />}
+          {tab === 'training' && <TrainingManual />}
           {tab === 'tickets' && <TicketsBoard segments={segments} />}
           {tab === 'leads' && (
             hasPermission('full_leads_view')
