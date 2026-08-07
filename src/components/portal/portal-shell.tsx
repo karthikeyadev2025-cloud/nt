@@ -20,7 +20,7 @@ const ALERT_TYPE_META: Record<string, { label: string; icon: string }> = {
   appointment: { label: 'Appointment due', icon: '📅' },
 };
 
-function DueAlertBanner({ alerts, onDismiss, onSnooze }: { alerts: ReturnType<typeof useDueLeadAlerts>['activeAlerts']; onDismiss: (key: string) => void; onSnooze: (key: string, minutes?: number) => void }) {
+export function DueAlertBanner({ alerts, onDismiss, onSnooze }: { alerts: ReturnType<typeof useDueLeadAlerts>['activeAlerts']; onDismiss: (key: string) => void; onSnooze: (key: string, minutes?: number) => void }) {
   if (alerts.length === 0) return null;
   return (
     <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-1.5rem)] max-w-sm space-y-2">

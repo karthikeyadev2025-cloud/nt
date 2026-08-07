@@ -1730,32 +1730,68 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   title="Saves as a review and notifies whoever owns this lead"
                   onClick={() => addRemark(true)}>Send as Review</button>
               </div>
-              <p className="text-stone-700 text-xs font-medium mb-1">Full History</p>
-              {remarks.map(r => {
-                const isSystem = r.remark.startsWith('Stage changed:') || r.remark.startsWith('Reassigned:');
+
+              {/* What's Next — the soonest upcoming (or overdue) action on
+                  this lead, pulled to the top instead of buried in the
+                  history below. */}
+              {(() => {
+                const candidates = [
+                  openLead.next_followup_at && { type: 'Follow-up', at: openLead.next_followup_at, icon: '📞' },
+                  openLead.callback_at && { type: 'Callback', at: openLead.callback_at, icon: '☎️' },
+                  openLead.appointment_at && { type: 'Appointment', at: openLead.appointment_at, icon: '📅' },
+                ].filter(Boolean) as { type: string; at: string; icon: string }[];
+                if (candidates.length === 0) {
+                  return (
+                    <div className="px-3 py-2 rounded-lg bg-stone-50 border border-stone-200 text-xs text-stone-700 flex items-center gap-2">
+                      <span>⚪</span> Nothing scheduled next — no follow-up, callback, or appointment set.
+                    </div>
+                  );
+                }
+                candidates.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+                const next = candidates[0];
+                const overdue = new Date(next.at) < new Date();
                 return (
-                  <div key={r.id} className={`text-sm ${isSystem ? 'pl-2 border-l-2 border-stone-800' : ''}`}>
-                    <span className="text-stone-700 text-xs">
-                      {new Date(r.created_at ?? '').toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''}{!isSystem && ` • ${r.call_type}`}
-                    </span>
-                    <p className={isSystem ? 'text-stone-700 text-xs italic' : 'text-stone-700'}>{r.remark}</p>
-                    {(r.address || r.photo_url) && (
-                      <div className="flex items-center gap-3 mt-1 text-xs">
-                        {r.address && <span className="text-stone-700">📍 {r.address}</span>}
-                        {r.photo_url && (
-                          leadPhotoUrls[r.photo_url] ? (
-                            <button onClick={() => setPreviewLeadPhoto(leadPhotoUrls[r.photo_url as string])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
-                              <img src={leadPhotoUrls[r.photo_url]} alt="Visit proof" className="w-full h-full object-cover" />
-                            </button>
-                          ) : (
-                            <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
-                          )
-                        )}
-                      </div>
-                    )}
+                  <div className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-2 ${overdue ? 'bg-red-50 border-red-200 text-red-700' : 'bg-teal-50 border-teal-200 text-teal-800'}`}>
+                    <span className="text-base">{next.icon}</span>
+                    <span>Next: {next.type} — {new Date(next.at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}{overdue ? ' (overdue)' : ''}</span>
                   </div>
                 );
-              })}
+              })()}
+
+              <p className="text-stone-700 text-xs font-medium mb-1 mt-3">Full History</p>
+              <div className="relative pl-5">
+                {remarks.length > 1 && <div className="absolute left-[7px] top-2 bottom-2 w-px bg-stone-200" />}
+                {remarks.map(r => {
+                  const isStage = r.remark.startsWith('Stage changed:');
+                  const isReassign = r.remark.startsWith('Reassigned:');
+                  const isAppt = r.remark.startsWith('Appointment');
+                  const isSystem = isStage || isReassign || isAppt;
+                  const icon = isStage ? '🔄' : isReassign ? '👤' : isAppt ? '📅' : r.call_type === 'review' ? '👀' : r.call_type === 'visit' ? '📍' : r.call_type === 'whatsapp' ? '💬' : r.call_type === 'email' ? '✉️' : r.call_type === 'note' ? '📝' : '📞';
+                  return (
+                    <div key={r.id} className="relative mb-3">
+                      <span className="absolute -left-5 top-0.5 w-3.5 h-3.5 rounded-full bg-white border-2 border-stone-300 flex items-center justify-center text-[8px] leading-none">{icon}</span>
+                      <span className="text-stone-700 text-xs">
+                        {new Date(r.created_at ?? '').toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''}{!isSystem && ` • ${r.call_type}`}
+                      </span>
+                      <p className={isSystem ? 'text-stone-700 text-xs italic' : 'text-stone-700 text-sm'}>{r.remark}</p>
+                      {(r.address || r.photo_url) && (
+                        <div className="flex items-center gap-3 mt-1 text-xs">
+                          {r.address && <span className="text-stone-700">📍 {r.address}</span>}
+                          {r.photo_url && (
+                            leadPhotoUrls[r.photo_url] ? (
+                              <button onClick={() => setPreviewLeadPhoto(leadPhotoUrls[r.photo_url as string])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                                <img src={leadPhotoUrls[r.photo_url]} alt="Visit proof" className="w-full h-full object-cover" />
+                              </button>
+                            ) : (
+                              <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <div className="border-t border-stone-200 pt-4 mt-4">
               <p className="text-stone-900 text-sm font-bold mb-2">Meetings</p>

@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
   Landmark, Megaphone, Briefcase, Image as ImageIcon, Shield,
-  Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key,
+  Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key, Bell, BellOff,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -11,14 +11,16 @@ import { cachedRpc } from '../../lib/cachedRpc';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
+import { useDueLeadAlerts } from '../../lib/dueAlerts';
 import type { Segment, Product, ProductFeature, Tables } from '../../lib/database.types';
-import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs } from './shared';
+import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs, MyLeadsToDoList } from './shared';
 import { DOC_TYPE_LABELS, renderTemplate, buildOnboardingVars, DocumentViewer, OnboardingStatusBadge, EmployeeDocumentsModal } from './documents';
 import { ImageUpload } from './ImageUpload';
 import { NotificationBell, AnnouncementsManager, BankChangeApprovals, PunctualityLeaderboard, BirthdaysWidget, CareersManager, PhotoChangeApprovals, ShiftSwapBoard } from './features';
 import { TasksBoard } from './tasks';
 import { LeadsWorkspace } from './leads-workflow';
 import { TeamCalendar, MeetingTypesManager } from './meetings';
+import { DueAlertBanner } from './portal-shell';
 // Charts pull in recharts, which alone accounts for ~380KB of JavaScript —
 // by far the single heaviest chunk in the whole app. A direct static import
 // here forced that entire library to download and parse before ANY part of
@@ -240,6 +242,10 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
   return (
     <div className="space-y-5">
       <ActionCentre onGo={onGo} />
+      {/* Leads assigned directly to a manager/super-admin (not every super
+          admin works leads, but managers often do) — same auto-tracked
+          to-do the other portals get. */}
+      {hasPermission('manage_leads') && <MyLeadsToDoList />}
       {canOnboard && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-5 py-4 rounded-2xl bg-orange-50 border border-orange-200 shadow-sm">
           <p className="text-orange-950 font-bold text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
@@ -2071,6 +2077,10 @@ export default function SuperAdminDashboard() {
   // the effect that applies it inside LeadsBoard/TicketsBoard.
   const [leadsFilter, setLeadsFilter] = useState<{ segFilter?: string; stageFilter?: string; nonce: number } | null>(null);
   const [ticketsFilter, setTicketsFilter] = useState<{ segFilter?: string; status?: string; nonce: number } | null>(null);
+  // Same due-alert system (sound + banner + Call/WhatsApp/Snooze) the other
+  // three portals already have via PortalShell — this dashboard has its own
+  // header instead of PortalShell, so it needs its own mount.
+  const { activeAlerts, dismiss: dismissAlert, snooze: snoozeAlert, soundEnabled, setSoundEnabled, requestNotificationPermission, notifPermission } = useDueLeadAlerts();
 
   function navigateWithFocus(t: string, f?: { kind: 'staff' | 'lead' | 'ticket'; id: string }) {
     setTab(t as Tab);
@@ -2197,6 +2207,7 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="min-h-screen bg-stone-50 flex text-stone-900" key={refreshKey}>
+      <DueAlertBanner alerts={activeAlerts} onDismiss={dismissAlert} onSnooze={snoozeAlert} />
       <aside className="w-60 shrink-0 border-r border-stone-200 bg-white p-4 hidden md:flex flex-col shadow-sm sticky top-0 h-screen">
         <div className="flex items-center gap-2.5 mb-8 px-2">
           <KiteTailLogo className="w-8 h-8 shrink-0" />
@@ -2243,6 +2254,12 @@ export default function SuperAdminDashboard() {
           </div>
           <div className="flex items-center gap-3">
             <QuickSearch onNavigate={navigateWithFocus} />
+            <button
+              onClick={() => { setSoundEnabled(!soundEnabled); if (notifPermission === 'default') requestNotificationPermission(); }}
+              title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}
+              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-teal-700 hover:bg-teal-50' : 'text-stone-400 hover:bg-stone-100'}`}>
+              {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+            </button>
             <NotificationBell onNavigate={(t) => setTab(t as Tab)} />
             <button onClick={() => setShowHeaderPwModal(true)} title="Click to Change Password" className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 hover:bg-orange-50 border border-stone-200 hover:border-orange-200 text-stone-800 hover:text-orange-900 rounded-xl text-xs font-bold transition-all">
               <Key className="w-3.5 h-3.5 text-orange-700" />
