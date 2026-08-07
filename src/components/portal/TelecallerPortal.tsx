@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { istDateStr } from '../../lib/dates';
-import { cardCls, btnCls } from './shared';
+import { cardCls, btnCls, MyLeadsToDoList } from './shared';
 import { PortalShell, type PortalTab } from './portal-shell';
 import { TelecallerQueue } from './leads-workflow';
 import { TasksBoard } from './tasks';
@@ -124,6 +124,11 @@ function TelecallerHome({ onNavigate }: { onNavigate: (tab: string, openAddLead?
           </div>
         </div>
       </div>
+
+      {/* Auto-tracked to-do — every follow-up, callback, and appointment
+          due, across all your leads, without having to go hunt for them
+          on the call queue. */}
+      <MyLeadsToDoList />
 
       {/* Today's meetings, if any. */}
       {stats.todaysMeetings.length > 0 && (

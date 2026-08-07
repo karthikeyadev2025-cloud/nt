@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { useSegments } from '../../lib/useSegments';
 import { istDateStr } from '../../lib/dates';
-import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls } from './shared';
+import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, MyLeadsToDoList } from './shared';
 import { TasksBoard } from './tasks';
 import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard, MyPhotoRequest, MyPromotionHistory } from './features';
@@ -202,6 +202,11 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
           </div>
         )}
       </div>
+
+      {/* Auto-tracked to-do — every follow-up, callback, and appointment
+          due, for whoever has leads assigned to them (manager, HR-with-
+          leads, etc.) — hidden entirely for roles with no lead access. */}
+      {hasPermission('view_leads') && <MyLeadsToDoList />}
 
       {/* Interactive Quick Shortcuts & Actions */}
       <div className={cardCls + ' space-y-3'}>

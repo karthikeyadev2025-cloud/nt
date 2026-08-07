@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSegments } from '../../lib/useSegments';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { istDateStr } from '../../lib/dates';
-import { cardCls, btnCls } from './shared';
+import { cardCls, btnCls, MyLeadsToDoList } from './shared';
 import { PortalShell, type PortalTab } from './portal-shell';
 import { ExecutiveFieldVisits } from './leads-workflow';
 import { TasksBoard } from './tasks';
@@ -105,6 +105,10 @@ function ExecutiveHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
           </div>
         )}
       </div>
+
+      {/* Auto-tracked to-do — every follow-up, callback, and appointment
+          due, across all your field leads. */}
+      <MyLeadsToDoList />
 
       {/* Field numbers — visits and pipeline, the actual job. */}
       <div>

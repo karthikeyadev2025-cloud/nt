@@ -464,6 +464,134 @@ export const VISIT_OUTCOMES: Outcome[] = [
 // assignee + segment managers automatically on any appointment_at
 // change, so this component only needs to write the columns and log an
 // audit-trail remark — no notification code needed here.
+// Auto-tracked to-do list — every lead assigned to the signed-in staff
+// member with a follow-up, callback, or appointment due, in one place
+// instead of scattered across lead cards you'd have to go find. Reads
+// directly off marketing_leads (no new table) since next_followup_at,
+// callback_at, and appointment_at already existed; this is a view over
+// data that was already there, not a new tracking mechanism.
+type TodoItemType = 'followup' | 'callback' | 'appointment';
+type TodoItem = { key: string; leadId: string; customerName: string; phone: string; type: TodoItemType; dueAt: string; note?: string };
+
+const TODO_TYPE_META: Record<TodoItemType, { label: string; icon: string }> = {
+  followup: { label: 'Follow-up', icon: '📞' },
+  callback: { label: 'Callback', icon: '☎️' },
+  appointment: { label: 'Appointment', icon: '📅' },
+};
+
+export function MyLeadsToDoList() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [items, setItems] = useState<TodoItem[] | null>(null);
+  const [rescheduleFor, setRescheduleFor] = useState<Lead | null>(null);
+
+  const load = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await cachedQuery(`my_todo:${user.id}`, async () => {
+        const { data, error } = await supabase.from('marketing_leads')
+          .select('id, customer_name, phone, next_followup_at, callback_at, appointment_at, appointment_note, stage')
+          .eq('assigned_to', user.id)
+          .not('stage', 'in', '(won,lost)')
+          .or('next_followup_at.not.is.null,callback_at.not.is.null,appointment_at.not.is.null')
+          .limit(200);
+        if (error) throw error;
+        return data;
+      });
+      if (!data) return;
+      const rows: TodoItem[] = [];
+      data.forEach((l) => {
+        if (l.next_followup_at) rows.push({ key: `${l.id}-f`, leadId: l.id, customerName: l.customer_name, phone: l.phone, type: 'followup', dueAt: l.next_followup_at });
+        if (l.callback_at) rows.push({ key: `${l.id}-c`, leadId: l.id, customerName: l.customer_name, phone: l.phone, type: 'callback', dueAt: l.callback_at });
+        if (l.appointment_at) rows.push({ key: `${l.id}-a`, leadId: l.id, customerName: l.customer_name, phone: l.phone, type: 'appointment', dueAt: l.appointment_at, note: l.appointment_note || undefined });
+      });
+      rows.sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
+      setItems(rows);
+    } catch (err) {
+      toast.error(`Couldn't load your to-do list: ${(err instanceof Error ? err.message : String(err))}`);
+    }
+  }, [user]);
+  useEffect(() => { load(); }, [load]);
+
+  async function markDone(item: TodoItem) {
+    if (item.type === 'appointment') return; // appointments are rescheduled or logged, not silently cleared
+    const column = item.type === 'followup' ? 'next_followup_at' : 'callback_at';
+    const { error } = await supabase.from('marketing_leads').update({ [column]: null } as never).eq('id', item.leadId);
+    if (error) { toast.error(`Couldn't clear it: ${describeDbError(error)}`); return; }
+    invalidateQueryCache('my_todo:');
+    setItems(prev => prev?.filter(i => i.key !== item.key) ?? null);
+  }
+
+  if (items === null) return null;
+  if (items.length === 0) {
+    return (
+      <div className={cardCls}>
+        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-1">My To-Do</p>
+        <p className="text-stone-700 text-sm">Nothing due — you're caught up.</p>
+      </div>
+    );
+  }
+
+  const now = new Date();
+  const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
+  const overdue = items.filter(i => new Date(i.dueAt) < now);
+  const today = items.filter(i => new Date(i.dueAt) >= now && new Date(i.dueAt) <= endOfToday);
+  const upcoming = items.filter(i => new Date(i.dueAt) > endOfToday);
+
+  const row = (item: TodoItem, tone: 'overdue' | 'today' | 'upcoming') => (
+    <div key={item.key} className={`flex items-center gap-2.5 py-2 px-2.5 rounded-lg ${tone === 'overdue' ? 'bg-red-50' : tone === 'today' ? 'bg-amber-50' : 'bg-stone-50'}`}>
+      <span className="text-base shrink-0">{TODO_TYPE_META[item.type].icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-stone-900 text-sm font-semibold truncate">{item.customerName}</p>
+        <p className="text-stone-700 text-xs">
+          {TODO_TYPE_META[item.type].label} • {new Date(item.dueAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+          {item.note ? ` — ${item.note}` : ''}
+        </p>
+      </div>
+      <a href={`tel:${item.phone}`} className="p-1.5 rounded-lg bg-emerald-600 text-white shrink-0"><Phone className="w-3.5 h-3.5" /></a>
+      {item.type === 'appointment' ? (
+        <button onClick={() => setRescheduleFor({ id: item.leadId, appointment_at: item.dueAt, appointment_note: item.note || '', customer_name: item.customerName } as Lead)} className="p-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 shrink-0" title="Reschedule">
+          <CalendarClock className="w-3.5 h-3.5" />
+        </button>
+      ) : (
+        <button onClick={() => markDone(item)} className="p-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 shrink-0" title="Mark done">
+          <Check className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className={cardCls + ' space-y-3'}>
+      <div className="flex items-center justify-between">
+        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider">My To-Do</p>
+        <span className="text-stone-500 text-xs">{items.length} due</span>
+      </div>
+      {overdue.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-red-700 text-[11px] font-bold uppercase tracking-wider">Overdue ({overdue.length})</p>
+          {overdue.map(i => row(i, 'overdue'))}
+        </div>
+      )}
+      {today.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-amber-700 text-[11px] font-bold uppercase tracking-wider">Today ({today.length})</p>
+          {today.map(i => row(i, 'today'))}
+        </div>
+      )}
+      {upcoming.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Upcoming ({upcoming.length})</p>
+          {upcoming.map(i => row(i, 'upcoming'))}
+        </div>
+      )}
+      {rescheduleFor && (
+        <RescheduleModal lead={rescheduleFor} onClose={() => setRescheduleFor(null)} onRescheduled={() => { invalidateQueryCache('my_todo:'); load(); }} />
+      )}
+    </div>
+  );
+}
+
 export function RescheduleModal({ lead, onClose, onRescheduled }: { lead: Lead; onClose: () => void; onRescheduled?: () => void }) {
   const { user } = useAuth();
   const toast = useToast();
