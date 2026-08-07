@@ -457,6 +457,86 @@ export const VISIT_OUTCOMES: Outcome[] = [
 // cold-call list is many leads in one sitting, not one). Self-contained
 // (no dependency on LeadsBoard's internals) so it drops into any panel —
 // LeadsBoard, TelecallerQueue, wherever "+ Add Lead" needs to live.
+// Standalone reschedule action — a lead already has an appointment (or
+// doesn't yet) and this is the fast path to set/move it without going
+// through a full outcome-logging flow. The DB trigger
+// tg_lead_appointment_notify (20260727000004) already notifies the
+// assignee + segment managers automatically on any appointment_at
+// change, so this component only needs to write the columns and log an
+// audit-trail remark — no notification code needed here.
+export function RescheduleModal({ lead, onClose, onRescheduled }: { lead: Lead; onClose: () => void; onRescheduled?: () => void }) {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [at, setAt] = useState(lead.appointment_at ? new Date(lead.appointment_at).toISOString().slice(0, 16) : '');
+  const [note, setNote] = useState(lead.appointment_note || '');
+  const [busy, setBusy] = useState(false);
+  const hadAppointment = !!lead.appointment_at;
+
+  async function save() {
+    if (!at) { toast.error('Pick a date and time'); return; }
+    if (!user) return;
+    setBusy(true);
+    try {
+      const iso = new Date(at).toISOString();
+      const { error } = await supabase.from('marketing_leads').update({
+        appointment_at: iso, appointment_note: note, appointment_set_by: user.id,
+      } as never).eq('id', lead.id);
+      if (error) { toast.error(`Couldn't reschedule: ${describeDbError(error)}`); return; }
+      await supabase.from('lead_remarks').insert({
+        lead_id: lead.id, user_id: user.id, call_type: 'note',
+        remark: `Appointment ${hadAppointment ? 'rescheduled' : 'scheduled'} for ${new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}${note ? ` — ${note}` : ''}`,
+      } as never);
+      toast.success(hadAppointment ? 'Appointment rescheduled' : 'Appointment scheduled');
+      onRescheduled?.();
+      onClose();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeAppointment() {
+    if (!user) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.from('marketing_leads').update({
+        appointment_at: null, appointment_note: '',
+      } as never).eq('id', lead.id);
+      if (error) { toast.error(`Couldn't remove appointment: ${describeDbError(error)}`); return; }
+      await supabase.from('lead_remarks').insert({
+        lead_id: lead.id, user_id: user.id, call_type: 'note', remark: 'Appointment cancelled',
+      } as never);
+      toast.success('Appointment removed');
+      onRescheduled?.();
+      onClose();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-teal-700 text-white flex items-center justify-center shrink-0"><CalendarClock className="w-4.5 h-4.5" /></div>
+          <div>
+            <h3 className="text-stone-900 font-bold text-base leading-tight">{hadAppointment ? 'Reschedule Appointment' : 'Schedule Appointment'}</h3>
+            <p className="text-stone-700 text-xs">{lead.customer_name}</p>
+          </div>
+        </div>
+        <input type="datetime-local" className={inputCls} value={at} onChange={e => setAt(e.target.value)} />
+        <input className={inputCls} placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} />
+        <div className="flex gap-2 pt-1">
+          <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-stone-100 text-stone-800 text-sm font-semibold">Cancel</button>
+          <button type="button" disabled={busy} onClick={save} className={btnCls + ' flex-1'}>{busy ? 'Saving...' : hadAppointment ? 'Reschedule' : 'Schedule'}</button>
+        </div>
+        {hadAppointment && (
+          <button type="button" disabled={busy} onClick={removeAppointment} className="w-full text-center text-red-600 text-xs font-medium pt-1">Remove appointment</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AddLeadModal({ segments, defaultSource = 'field', staffList, onClose, onCreated }: { segments: Segment[]; defaultSource?: string; staffList?: { id: string; full_name: string }[]; onClose: () => void; onCreated?: () => void }) {
   const { user, hasPermission } = useAuth();
   const toast = useToast();
@@ -860,6 +940,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   // "Log Outcome" flow state — the primary action a staff member takes
   // after a call/visit. See LogOutcomeDialog at the bottom of this file.
   const [logOutcomeLead, setLogOutcomeLead] = useState<Lead | null>(null);
+  const [rescheduleLead, setRescheduleLead] = useState<Lead | null>(null);
 
   const [assignFilter, setAssignFilter] = useState<'all' | 'mine' | 'assigned' | 'unassigned'>('all');
   const [staffFilter, setStaffFilter] = useState<string>('');
@@ -1332,12 +1413,27 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 {/* Primary action: log what happened (with a note). Only shown
                     to whoever can actually work the lead and only while the
                     deal is still open. */}
+                {/* Appointment — show it on the card if one's booked, with
+                    a one-tap reschedule instead of burying this inside the
+                    full outcome-logging flow. */}
+                {l.appointment_at && (
+                  <p className={`text-xs mt-1.5 font-medium flex items-center gap-1 ${new Date(l.appointment_at) < new Date() ? 'text-amber-700' : 'text-teal-700'}`}>
+                    <CalendarClock className="w-3.5 h-3.5" />
+                    {new Date(l.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                    {new Date(l.appointment_at) < new Date() ? ' (date passed)' : ''}
+                  </p>
+                )}
                 {hasPermission('manage_leads') && (l.assigned_to === user?.id || hasPermission('full_leads_view')) && !['won', 'lost'].includes(l.stage) && (
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex gap-2 flex-wrap">
                     <button
                       onClick={(e) => { e.stopPropagation(); setLogOutcomeLead(l); }}
                       className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm inline-flex items-center gap-1.5">
                       📞 Log Outcome
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }}
+                      className="px-3 py-1.5 bg-white border border-stone-300 hover:border-teal-400 text-stone-800 text-xs font-semibold rounded-lg inline-flex items-center gap-1.5">
+                      <CalendarClock className="w-3.5 h-3.5" /> {l.appointment_at ? 'Reschedule' : 'Schedule'}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setOpenLead(l); loadRemarks(l.id); }}
@@ -1390,9 +1486,16 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                         className={`bg-white border border-stone-200 rounded-xl p-2.5 shadow-sm hover:border-stone-300 transition-colors ${canDragHere ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}>
                         <p className="text-stone-900 text-sm font-bold truncate">{l.customer_name}</p>
                         <p className="text-stone-700 text-xs mt-0.5 truncate">{assignedStaffName || 'Unassigned'} • {l.phone}</p>
-                        {followupCounts[l.id] > 0 && (
-                          <p className="text-stone-500 text-[11px] mt-1">📞 {followupCounts[l.id]} follow-up{followupCounts[l.id] === 1 ? '' : 's'}</p>
-                        )}
+                        <div className="flex items-center justify-between mt-1">
+                          {followupCounts[l.id] > 0 && (
+                            <p className="text-stone-500 text-[11px]">📞 {followupCounts[l.id]} follow-up{followupCounts[l.id] === 1 ? '' : 's'}</p>
+                          )}
+                          {canDragHere && (
+                            <button onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }} className={`ml-auto p-1 rounded ${l.appointment_at ? 'text-teal-700' : 'text-stone-400 hover:text-teal-700'}`} title={l.appointment_at ? 'Reschedule' : 'Schedule appointment'}>
+                              <CalendarClock className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -1531,6 +1634,14 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     invalidateRpcCache('get_dashboard_counts');
             load();
           }}
+        />
+      )}
+
+      {rescheduleLead && (
+        <RescheduleModal
+          lead={rescheduleLead}
+          onClose={() => setRescheduleLead(null)}
+          onRescheduled={() => { invalidateQueryCache('leads:'); load(); }}
         />
       )}
 

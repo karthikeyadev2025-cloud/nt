@@ -7,7 +7,7 @@ import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc'
 import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
-import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal } from './shared';
+import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
 import { normalizePhone } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
@@ -102,6 +102,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
   const [busy, setBusy] = useState(false);
   const [showPool, setShowPool] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
+  const [rescheduleActive, setRescheduleActive] = useState<Lead | null>(null);
   // Home dashboard's "+ Add Lead" quick action.
   useEffect(() => { if (openAddLeadSignal) setShowAddLead(true); }, [openAddLeadSignal]);
 
@@ -267,6 +268,14 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
         <AddLeadModal segments={segments} defaultSource="telecall" onClose={() => setShowAddLead(false)} onCreated={load} />
       )}
 
+      {rescheduleActive && (
+        <RescheduleModal
+          lead={rescheduleActive}
+          onClose={() => setRescheduleActive(null)}
+          onRescheduled={load}
+        />
+      )}
+
       {active && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
           <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
@@ -276,6 +285,15 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
                 <PhoneCall className="w-4 h-4" /> {active.phone}
               </button>
             </div>
+            {active.appointment_at && (
+              <p className={`text-xs font-medium flex items-center gap-1 ${new Date(active.appointment_at) < new Date() ? 'text-amber-700' : 'text-teal-700'}`}>
+                📅 {new Date(active.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                {new Date(active.appointment_at) < new Date() ? ' (date passed)' : ''}
+              </p>
+            )}
+            <button type="button" onClick={() => setRescheduleActive(active)} className="text-teal-700 text-xs font-medium self-start">
+              {active.appointment_at ? '📅 Reschedule appointment' : '📅 Schedule an appointment'}
+            </button>
             <p className="text-stone-700 text-xs">{active.interested_in}</p>
 
             <select className={inputCls} value={outcome} onChange={e => setOutcome(e.target.value)}>
