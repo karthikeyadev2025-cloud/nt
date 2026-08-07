@@ -10,6 +10,7 @@ import { useToast } from '../../lib/toast';
 import { useSegments } from '../../lib/useSegments';
 import { istDateStr } from '../../lib/dates';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, MyLeadsToDoList } from './shared';
+import { IdProofUploader } from './IdProofUploader';
 import { TasksBoard } from './tasks';
 import { MyDocumentsList, MySalaryCard } from './documents';
 import { NotificationBell, AnnouncementsFeed, ShiftSwapBoard, MyBankDetails, IDCard, MyStatsCard, MyPhotoRequest, MyPromotionHistory } from './features';
@@ -796,6 +797,7 @@ export function MyProfile() {
         <div className="space-y-6">
           <IDCard />
           <MyPhotoRequest />
+          {user && <IdProofUploader staffUserId={user.id} canManage={false} />}
         </div>
         <div className="space-y-6">
           <MyBankDetails />

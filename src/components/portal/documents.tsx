@@ -7,6 +7,7 @@ type EmployeeDoc = Database['public']['Tables']['employee_documents']['Row'];
 import { useToast } from '../../lib/toast';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls } from './shared';
+import { IdProofUploader } from './IdProofUploader';
 
 export const DOC_TYPE_LABELS: Record<string, string> = {
   offer_letter: 'Offer Letter',
@@ -460,6 +461,14 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
               ))}
             </div>
           )}
+
+          {/* ID proof — a real file upload, unlike everything above this
+              (which are text templates the system generates). HR/admin can
+              upload here for this employee, or the employee can upload
+              their own from My Profile — same component either way. */}
+          <div className="mt-4">
+            <IdProofUploader staffUserId={staffUserId} canManage />
+          </div>
         </div>
       </div>
       
