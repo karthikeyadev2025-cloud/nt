@@ -4,10 +4,32 @@ import { useAuth } from '../contexts/AuthContext';
 
 // Two-tone chime via the Web Audio API — no audio file to host or ship,
 // so there's nothing that can 404 or get blocked by a CDN hiccup.
+//
+// Browsers refuse to let audio play until the page has had at least one
+// user gesture (a click/tap/keypress) — an AudioContext created before
+// that happens starts 'suspended' and produces no sound at all, silently,
+// no error. Reusing one context (created lazily, resumed on first
+// interaction) instead of a fresh one per chime means that by the time
+// any alert could plausibly fire, it's already unlocked in the overwhelming
+// majority of real sessions — logging in itself is a click.
+let sharedAudioCtx: AudioContext | null = null;
+function getAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) return null;
+  if (!sharedAudioCtx) sharedAudioCtx = new Ctx();
+  return sharedAudioCtx;
+}
+if (typeof window !== 'undefined') {
+  const unlock = () => { getAudioContext()?.resume().catch(() => {}); };
+  ['click', 'touchstart', 'keydown'].forEach(evt => window.addEventListener(evt, unlock, { once: true, passive: true }));
+}
+
 function playChime() {
   try {
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new Ctx();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const tones = [880, 1108.73]; // A5, C#6 — a short, pleasant two-note "ding"
     tones.forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -22,7 +44,6 @@ function playChime() {
       osc.start(start);
       osc.stop(start + 0.55);
     });
-    setTimeout(() => ctx.close(), 1200);
   } catch {
     // Web Audio blocked or unsupported — the visual banner still fires.
   }
