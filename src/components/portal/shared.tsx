@@ -645,7 +645,7 @@ export function RescheduleModal({ lead, onClose, onRescheduled }: { lead: Lead; 
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-teal-700 text-white flex items-center justify-center shrink-0"><CalendarClock className="w-4.5 h-4.5" /></div>
+          <div className="w-9 h-9 rounded-xl bg-teal-700 text-white flex items-center justify-center shrink-0"><CalendarClock className="w-5 h-5" /></div>
           <div>
             <h3 className="text-stone-900 font-bold text-base leading-tight">{hadAppointment ? 'Reschedule Appointment' : 'Schedule Appointment'}</h3>
             <p className="text-stone-700 text-xs">{lead.customer_name}</p>
