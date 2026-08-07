@@ -447,6 +447,80 @@ export const VISIT_OUTCOMES: Outcome[] = [
   { key: 'visit_won',         label: 'Closed deal on site 🎉', stage: 'won',      callType: 'visit', followupDays: null, requiresNote: true },
 ];
 
+// Standalone, reusable "add a lead" modal — same dup-check + insert logic
+// as LeadsBoard's built-in one, but self-contained (own state, no
+// dependency on LeadsBoard's `staff` list or `load()`) so it can be
+// dropped into portals that don't render the full Leads Management board
+// at all, like TelecallerQueue. Telecaller's portal only ever showed
+// their assigned-lead call queue — there was never an Add Lead entry
+// point there, which is what this fixes.
+export function AddLeadModal({ segments, defaultSource = 'telecall', onClose, onCreated }: { segments: Segment[]; defaultSource?: string; onClose: () => void; onCreated?: () => void }) {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [form, setForm] = useState({ segment_slug: '', customer_name: '', phone: '', email: '', interested_in: '', source: defaultSource });
+  type DupWarning = { id: string; customer_name: string; stage: string; assignee_name: string };
+  const [dupWarning, setDupWarning] = useState<DupWarning[] | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function createLead() {
+    if (!form.segment_slug || !form.customer_name || !user) { toast.error('Segment and name are required'); return; }
+    const phone = form.phone ? normalizePhone(form.phone) : 'Pending Collection';
+    setBusy(true);
+    try {
+      if (phone !== 'Pending Collection' && !dupWarning) {
+        const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: phone, _segment_slug: form.segment_slug });
+        if (dupes && dupes.length > 0) { setDupWarning(dupes); return; }
+        const { data: exists } = await supabase.rpc('lead_phone_exists', { _phone: phone, _segment_slug: form.segment_slug });
+        if (exists) { setDupWarning([{ id: 'exists', customer_name: 'An active lead with this number already exists', stage: '', assignee_name: '' }]); return; }
+      }
+      // Self-assign — a telecaller (or anyone else using this quick-add)
+      // adding a lead almost always means "and I'll work it", not "add it
+      // to the unassigned pool for someone else to pick up".
+      const { error } = await supabase.from('marketing_leads').insert({
+        ...form, phone, created_by: user.id, assigned_to: user.id, sourced_by_user_id: user.id,
+      } as never);
+      if (error) { toast.error(`Couldn't create lead: ${describeDbError(error)}`); return; }
+      toast.success('Lead created and assigned to you');
+      onCreated?.();
+      onClose();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+        <h3 className="text-stone-900 font-semibold text-lg">New Lead</h3>
+        <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+          <option value="">Segment *</option>
+          {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+        </select>
+        <input className={inputCls} placeholder="Customer Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
+        <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); setDupWarning(null); }} />
+        <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+        <input className={inputCls} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
+        <select className={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
+          {['field', 'telecall', 'referral', 'whatsapp', 'website', 'other'].map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        {dupWarning && (
+          <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-600/40 text-xs">
+            <p className="text-amber-700 font-medium mb-1">⚠ This phone number already exists:</p>
+            {dupWarning.map(d => (
+              <p key={d.id} className="text-amber-800/80">{d.customer_name} — {d.stage} {d.assignee_name ? `• with ${d.assignee_name}` : '• unassigned'}</p>
+            ))}
+            <p className="text-stone-700 mt-1">Click "Add Anyway" if this is genuinely a new/different inquiry.</p>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <button className="flex-1 py-2.5 rounded-lg bg-stone-100 text-stone-800 text-sm font-semibold" onClick={onClose}>Cancel</button>
+          <button className={btnCls + ' flex-1'} disabled={busy} onClick={createLead}>{busy ? 'Saving...' : dupWarning ? 'Add Anyway' : 'Create Lead'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialStageFilter, filterNonce }: { segments: Segment[]; focusLeadId?: string; initialSegFilter?: string; initialStageFilter?: string; filterNonce?: number }) {
   const [segFilter, setSegFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');

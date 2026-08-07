@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard, Clock, Calendar, ClipboardList, FileText, CalendarDays,
-  CreditCard, Repeat, PhoneCall,
+  CreditCard, Repeat, PhoneCall, UserPlus,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,8 +19,8 @@ import {
 } from './StaffPortal';
 
 // ─────────────────────────── Telecaller Home — call-queue-first dashboard
-function TelecallerHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
-  const { user } = useAuth();
+function TelecallerHome({ onNavigate }: { onNavigate: (tab: string, openAddLead?: boolean) => void }) {
+  const { user, hasPermission } = useAuth();
   type Stats = {
     inQueue: number; callbacksDue: number; calledToday: number;
     todaysMeetings: { id: string; meeting_type_name: string; scheduled_at: string; customer_name: string | null; meet_link: string | null }[];
@@ -155,6 +155,11 @@ function TelecallerHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
           <button onClick={() => onNavigate('queue')} className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 font-bold text-xs transition-colors shadow-sm">
             <PhoneCall className="w-4 h-4" /> Call Queue
           </button>
+          {hasPermission('create_leads') && (
+            <button onClick={() => onNavigate('queue', true)} className="flex items-center gap-2 p-3 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-900 font-bold text-xs transition-colors shadow-sm">
+              <UserPlus className="w-4 h-4" /> Add Lead
+            </button>
+          )}
           <button onClick={() => onNavigate('meetings')} className="flex items-center gap-2 p-3 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-900 font-bold text-xs transition-colors shadow-sm">
             <Calendar className="w-4 h-4" /> Schedule Meeting
           </button>
@@ -185,11 +190,19 @@ export default function TelecallerPortal() {
   ];
 
   const [tab, setTab] = useState('home');
+  // Home's "+ Add Lead" quick action jumps to the queue tab AND opens the
+  // modal there in one tap — a nonce (not a boolean) so tapping it twice
+  // in a row, even after closing the modal, re-triggers the open.
+  const [addLeadSignal, setAddLeadSignal] = useState(0);
   const mySegNames = user?.segments.includes('all')
     ? 'All Segments'
     : segments.filter(s => user?.segments.includes(s.slug)).map(s => s.name).join(', ') || '—';
 
-  const navigate = useCallback((t: string) => { if (tabs.some(x => x.id === t)) setTab(t); }, [tabs]);
+  const navigate = useCallback((t: string, openAddLead?: boolean) => {
+    if (!tabs.some(x => x.id === t)) return;
+    setTab(t);
+    if (openAddLead) setAddLeadSignal(s => s + 1);
+  }, [tabs]);
 
   return (
     <PortalShell tabs={tabs} activeTab={tab} onTabChange={setTab} brandLabel="Telecaller Portal" subLabel={mySegNames}>
@@ -197,7 +210,7 @@ export default function TelecallerPortal() {
       {tab === 'queue' && (
         <>
           <AnnouncementsFeed />
-          <TelecallerQueue segments={segments} />
+          <TelecallerQueue segments={segments} openAddLeadSignal={addLeadSignal} />
         </>
       )}
       {tab === 'meetings' && <MyMeetings />}

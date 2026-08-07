@@ -7,7 +7,7 @@ import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc'
 import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
-import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs } from './shared';
+import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal } from './shared';
 import { normalizePhone } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { MyCallsChart } from './performance';
@@ -85,8 +85,8 @@ const OUTCOMES = [
   { value: 'won', label: 'Converted / Closed' },
 ];
 
-export function TelecallerQueue({ segments }: { segments: Segment[] }) {
-  const { user } = useAuth();
+export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Segment[]; openAddLeadSignal?: number }) {
+  const { user, hasPermission } = useAuth();
   const toast = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [executives, setExecutives] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);
@@ -100,6 +100,9 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
   const [transferTo, setTransferTo] = useState('');
   const [busy, setBusy] = useState(false);
   const [showPool, setShowPool] = useState(false);
+  const [showAddLead, setShowAddLead] = useState(false);
+  // Home dashboard's "+ Add Lead" quick action.
+  useEffect(() => { if (openAddLeadSignal) setShowAddLead(true); }, [openAddLeadSignal]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -220,7 +223,12 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
     <div>
       <TelecallerStatsDashboard />
       <MyCallsChart />
-      <h3 className="text-stone-900 font-semibold text-sm mb-3 mt-6">My Call Queue ({leads.length})</h3>
+      <div className="flex items-center justify-between mt-6 mb-3">
+        <h3 className="text-stone-900 font-semibold text-sm">My Call Queue ({leads.length})</h3>
+        {hasPermission('create_leads') && (
+          <button onClick={() => setShowAddLead(true)} className="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold shadow-sm">+ Add Lead</button>
+        )}
+      </div>
       <div className="space-y-2">
         {leads.map(l => (
           <div key={l.id} className={cardCls + ' flex items-center justify-between'}>
@@ -253,6 +261,10 @@ export function TelecallerQueue({ segments }: { segments: Segment[] }) {
         </button>
         {showPool && <div className="mt-4"><UnassignedLeadsPool segments={segments} onChanged={load} /></div>}
       </div>
+
+      {showAddLead && (
+        <AddLeadModal segments={segments} defaultSource="telecall" onClose={() => setShowAddLead(false)} onCreated={load} />
+      )}
 
       {active && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
