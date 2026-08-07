@@ -10,6 +10,7 @@ import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal } from './shared';
 import { normalizePhone } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
+import { getPosition, reverseGeocode } from '../../lib/geo';
 import { MyCallsChart } from './performance';
 import { cachedQuery } from '../../lib/cachedQuery';
 import type { Segment, Database } from '../../lib/database.types';
@@ -1217,29 +1218,6 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
 }
 
 // ─────────────────────────── Marketing Executive: field visits (photo + GPS + auto-address + notes)
-async function reverseGeocode(lat: number, lng: number): Promise<string> {
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`, {
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) return '';
-    const data = await res.json();
-    return data?.display_name || '';
-  } catch {
-    return '';
-  }
-}
-
-function getPosition(): Promise<{ lat: number; lng: number } | null> {
-  return new Promise(resolve => {
-    if (!navigator.geolocation) return resolve(null);
-    navigator.geolocation.getCurrentPosition(
-      p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  });
-}
 
 const VISIT_OUTCOMES = [
   { value: 'contacted', label: 'Follow-up needed' },

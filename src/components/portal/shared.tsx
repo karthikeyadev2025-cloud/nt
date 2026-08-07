@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus } from 'lucide-react';
+import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -10,6 +10,8 @@ type AttendanceRow = Database['public']['Tables']['attendance_records']['Row'];
 type SalaryAdvance = Database['public']['Tables']['salary_advance_requests']['Row'];
 import { istDateStr } from '../../lib/dates';
 import { normalizePhone } from '../../lib/phone';
+import { getPosition, reverseGeocode } from '../../lib/geo';
+import CameraCapture from '../CameraCapture';
 import { AttendanceDetailsModal } from './payroll';
 import { LeadMeetingsTab } from './meetings';
 import { cachedQuery, invalidateQueryCache } from '../../lib/cachedQuery';
@@ -476,6 +478,42 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
   const [busy, setBusy] = useState(false);
   const [justCreated, setJustCreated] = useState<string | null>(null);
 
+  // Client photo — captured at add-lead time (not just later, during a
+  // visit remark, which is all the old field flow supported).
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [capturingPhoto, setCapturingPhoto] = useState(false);
+
+  // GPS location — same silent-if-already-granted pattern as the field
+  // visit flow: capture automatically in the background if the browser
+  // already remembers permission as granted, otherwise leave it to the
+  // manual button so opening this modal never itself triggers a
+  // permission prompt.
+  const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [locating, setLocating] = useState(false);
+  async function captureLocation(silent = false) {
+    if (!silent) setLocating(true);
+    const pos = await getPosition();
+    if (!pos) { if (!silent) { toast.error("Couldn't get location — check GPS permission"); setLocating(false); } return; }
+    const address = await reverseGeocode(pos.lat, pos.lng);
+    setLocation({ ...pos, address });
+    if (!silent) setLocating(false);
+  }
+  useEffect(() => {
+    if (!navigator.geolocation || !('permissions' in navigator)) return;
+    let cancelled = false;
+    navigator.permissions.query({ name: 'geolocation' as PermissionName }).then(result => {
+      if (cancelled) return;
+      if (result.state === 'granted') captureLocation(true);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Book the first appointment right when the lead is created, instead of
+  // a separate step afterward.
+  const [showAppointment, setShowAppointment] = useState(false);
+  const [appointmentAt, setAppointmentAt] = useState('');
+  const [appointmentNote, setAppointmentNote] = useState('');
+
   // Live duplicate check as you type (debounced), instead of only at
   // submit time — you find out about a clash while you're still talking
   // to the customer, not after you've typed everything else too.
@@ -511,7 +549,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
         const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: phone, _segment_slug: form.segment_slug });
         if (dupes && dupes.length > 0) { setDupWarning(dupes); return; }
       }
-      const { error } = await supabase.from('marketing_leads').insert({
+      const { data: inserted, error } = await supabase.from('marketing_leads').insert({
         segment_slug: form.segment_slug,
         customer_name: form.customer_name,
         phone, alternate_phone: form.alternate_phone || '',
@@ -520,8 +558,32 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
         created_by: user.id,
         assigned_to: canChooseAssignment ? (form.assignToMe ? user.id : null) : user.id,
         sourced_by_user_id: form.sourced_by_user_id || user.id,
-      } as never);
+        latitude: location?.lat ?? null, longitude: location?.lng ?? null,
+        address: location?.address || '',
+        appointment_at: showAppointment && appointmentAt ? new Date(appointmentAt).toISOString() : null,
+        appointment_note: showAppointment ? appointmentNote : '',
+      } as never).select('id').single();
       if (error) { toast.error(`Couldn't create lead: ${describeDbError(error)}`); return; }
+
+      // Photo is uploaded after the insert so the storage path can be
+      // keyed by the new lead's id — a failed photo upload should never
+      // block the lead itself from being saved, so this is best-effort.
+      if (photoDataUrl && inserted?.id) {
+        try {
+          const res = await fetch(photoDataUrl);
+          const blob = await res.blob();
+          const path = `${inserted.id}/${Date.now()}.jpg`;
+          const { error: upErr } = await supabase.storage.from('lead-photos').upload(path, blob, { contentType: 'image/jpeg' });
+          if (upErr) {
+            toast.error(`Lead saved, but the photo failed to upload: ${upErr.message}`);
+          } else {
+            await supabase.from('marketing_leads').update({ photo_url: path } as never).eq('id', inserted.id);
+          }
+        } catch {
+          toast.error('Lead saved, but the photo failed to upload.');
+        }
+      }
+
       onCreated?.();
       setJustCreated(form.customer_name);
     } finally {
@@ -530,13 +592,19 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
   }
 
   function addAnother() {
-    // Keep segment/source/assignment prefs — you're almost always adding
-    // the next lead from the same context (same booth, same call list).
+    // Keep segment/source/assignment prefs, AND location — you're almost
+    // always adding the next lead from the same context (same booth, same
+    // call list, same spot). Photo and appointment are per-lead, so those
+    // reset.
     setForm(f => ({ ...blankForm, segment_slug: f.segment_slug, source: f.source, sourced_by_user_id: f.sourced_by_user_id, assignToMe: f.assignToMe }));
     setShowAltPhone(false);
     setDupWarning(null);
     setDupClean(false);
     setJustCreated(null);
+    setPhotoDataUrl(null);
+    setShowAppointment(false);
+    setAppointmentAt('');
+    setAppointmentNote('');
   }
 
   useEffect(() => {
@@ -662,6 +730,53 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
               </div>
             </div>
 
+            {/* Capture — client photo + GPS location, right at add-lead
+                time instead of only later during a visit log. */}
+            <div className="space-y-2.5">
+              <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Capture</p>
+              <div className="flex gap-2.5">
+                <div className="flex-1">
+                  {photoDataUrl ? (
+                    <div className="relative rounded-lg overflow-hidden border border-stone-200 h-24">
+                      <img src={photoDataUrl} alt="Client" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setPhotoDataUrl(null)} className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white"><X className="w-3 h-3" /></button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => setCapturingPhoto(true)} className="w-full h-24 rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-teal-400 hover:text-teal-700 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors">
+                      <Camera className="w-5 h-5" /> Add photo
+                    </button>
+                  )}
+                </div>
+                <div className="flex-1">
+                  {location ? (
+                    <div className="w-full h-24 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 flex flex-col justify-center">
+                      <p className="text-emerald-700 text-xs font-bold flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Location captured</p>
+                      <p className="text-emerald-800/70 text-[11px] mt-1 line-clamp-2">{location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => captureLocation(false)} disabled={locating} className="w-full h-24 rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-teal-400 hover:text-teal-700 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors">
+                      {locating ? <Loader2 className="w-5 h-5 animate-spin" /> : <MapPin className="w-5 h-5" />}
+                      {locating ? 'Locating...' : 'Add location'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Appointment — book the first appointment right now instead
+                of as a separate step after the lead already exists. */}
+            <div className="space-y-2.5">
+              <button type="button" onClick={() => setShowAppointment(s => !s)} className="flex items-center gap-1.5 text-stone-500 text-[11px] font-bold uppercase tracking-wider">
+                <CalendarClock className="w-3.5 h-3.5" /> Schedule Appointment {showAppointment ? '▾' : '▸'}
+              </button>
+              {showAppointment && (
+                <div className="space-y-2.5 pl-1">
+                  <input type="datetime-local" className={inputCls} value={appointmentAt} onChange={e => setAppointmentAt(e.target.value)} />
+                  <input className={inputCls} placeholder="Appointment note (optional)" value={appointmentNote} onChange={e => setAppointmentNote(e.target.value)} />
+                </div>
+              )}
+            </div>
+
             {/* Assignment — only shown to roles who could plausibly choose
                 otherwise; a telecaller/marketing_executive quick-adding a
                 lead always means "and I'll work it", no toggle needed. */}
@@ -695,6 +810,14 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
         </form>
         )}
       </div>
+
+      {capturingPhoto && (
+        <CameraCapture
+          title="Client Photo"
+          onCapture={dataUrl => { setPhotoDataUrl(dataUrl); setCapturingPhoto(false); }}
+          onCancel={() => setCapturingPhoto(false)}
+        />
+      )}
     </div>
   );
 }
