@@ -7,7 +7,7 @@ import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc'
 import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
-import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
+import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal, stageLabel, describeDbError } from './shared';
 import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
@@ -1180,7 +1180,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
 
 export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initialStageFilter, filterNonce }: { segments: Segment[]; focusLeadId?: string; initialSegFilter?: string; initialStageFilter?: string; filterNonce?: number }) {
   const { hasPermission } = useAuth();
-  const [sub, setSub] = useState<'board' | 'appointments' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity'>('board');
+  const [sub, setSub] = useState<'board' | 'appointments' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity' | 'duplicates'>('board');
   const [moreOpen, setMoreOpen] = useState(false);
   const showBulk = hasPermission('bulk_assign_leads');
   const showTransfers = hasPermission('approve_transfers');
@@ -1201,6 +1201,7 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
     { key: 'activity' as const,    label: 'Team Activity',   when: true },
     { key: 'bulk' as const,        label: 'Bulk Upload',     when: showBulk },
     { key: 'reassign' as const,    label: 'Reassign Leads',  when: showBulk },
+    { key: 'duplicates' as const,  label: 'Duplicate Leads', when: showBulk },
     { key: 'transfers' as const,   label: 'Handoff Approvals', when: showTransfers },
   ].filter(t => t.when);
 
@@ -1225,7 +1226,7 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
             <button
               onClick={() => setMoreOpen(v => !v)}
               onBlur={() => setTimeout(() => setMoreOpen(false), 150)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${['pool','activity','bulk','reassign','transfers'].includes(sub) ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
+              className={`px-3 py-1.5 rounded-lg text-sm border ${['pool','activity','bulk','reassign','duplicates','transfers'].includes(sub) ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
               More ▾
             </button>
             {moreOpen && (
@@ -1248,6 +1249,7 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
       {sub === 'activity' && <TeamActivityFeed />}
       {sub === 'bulk' && showBulk && <BulkLeadUpload segments={segments} />}
       {sub === 'reassign' && showBulk && <BulkReassignLeads segments={segments} />}
+      {sub === 'duplicates' && showBulk && <DuplicateLeadsManager />}
       {sub === 'transfers' && showTransfers && <TransferApprovals />}
     </div>
   );
@@ -1742,6 +1744,86 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 }
 
 // ─────────────────────────── Manager/Super Admin: Bulk Reassign (move all of X's active leads to Y in one action)
+// ─────────────────────────── Duplicate lead merge tool
+type DupGroupRow = { segment_slug: string; phone: string; id: string; customer_name: string; stage: string; assigned_to: string | null; assignee_name: string | null; remark_count: number; created_at: string };
+
+export function DuplicateLeadsManager() {
+  const toast = useToast();
+  const [rows, setRows] = useState<DupGroupRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [keepChoice, setKeepChoice] = useState<Record<string, string>>({}); // groupKey -> lead id to keep
+  const [busyGroup, setBusyGroup] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('find_duplicate_lead_groups' as never, {} as never) as unknown as { data: DupGroupRow[] | null; error: { message: string } | null };
+      if (error) throw error;
+      setRows(data || []);
+    } catch (err) {
+      toast.error(`Couldn't load duplicates: ${(err instanceof Error ? err.message : String(err))}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const groups = new Map<string, DupGroupRow[]>();
+  rows.forEach(r => {
+    const key = `${r.segment_slug}:${r.phone}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(r);
+  });
+
+  async function merge(groupKey: string, members: DupGroupRow[]) {
+    const keepId = keepChoice[groupKey] || members[0].id; // default: oldest (rows arrive created_at ASC)
+    const mergeIds = members.filter(m => m.id !== keepId).map(m => m.id);
+    if (mergeIds.length === 0) return;
+    if (!window.confirm(`Merge ${mergeIds.length} lead(s) into "${members.find(m => m.id === keepId)?.customer_name}"? Their call history moves over; the duplicate records are deleted. This can't be undone.`)) return;
+    setBusyGroup(groupKey);
+    try {
+      const { error } = await supabase.rpc('merge_leads' as never, { p_keep_id: keepId, p_merge_ids: mergeIds } as never) as unknown as { error: { message: string } | null };
+      if (error) { toast.error(`Couldn't merge: ${describeDbError(error)}`); return; }
+      toast.success('Merged — history combined onto the kept lead.');
+      load();
+    } finally {
+      setBusyGroup(null);
+    }
+  }
+
+  if (loading) return <p className="text-stone-700 text-sm text-center py-10">Loading…</p>;
+  if (groups.size === 0) return <p className="text-stone-700 text-sm text-center py-10">No duplicate leads found — same phone number within the same segment, appearing more than once.</p>;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-stone-700 text-sm">Same phone number, same segment, more than one lead record. Pick which one to keep — the others' call history moves onto it, then they're deleted.</p>
+      {Array.from(groups.entries()).map(([key, members]) => {
+        const defaultKeep = keepChoice[key] || members[0].id;
+        return (
+          <div key={key} className={cardCls}>
+            <p className="text-stone-900 text-sm font-bold mb-2">{members[0].phone} — {members.length} records</p>
+            <div className="space-y-1.5">
+              {members.map(m => (
+                <label key={m.id} className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer ${defaultKeep === m.id ? 'bg-teal-50 border border-teal-200' : 'bg-stone-50 border border-stone-200'}`}>
+                  <input type="radio" name={key} checked={defaultKeep === m.id} onChange={() => setKeepChoice(prev => ({ ...prev, [key]: m.id }))} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-stone-900 text-sm font-medium truncate">{m.customer_name} <span className="text-stone-500 font-normal">— {stageLabel(m.stage)}</span></p>
+                    <p className="text-stone-700 text-xs">{m.assignee_name || 'Unassigned'} • {m.remark_count} note{m.remark_count === 1 ? '' : 's'} • added {new Date(m.created_at).toLocaleDateString('en-IN')}</p>
+                  </div>
+                  {defaultKeep === m.id && <span className="text-teal-700 text-[11px] font-bold shrink-0">KEEP</span>}
+                </label>
+              ))}
+            </div>
+            <button onClick={() => merge(key, members)} disabled={busyGroup === key} className={btnCls + ' mt-3 w-full'}>
+              {busyGroup === key ? 'Merging…' : `Merge into "${members.find(m => m.id === defaultKeep)?.customer_name}"`}
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
   const toast = useToast();
   const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);

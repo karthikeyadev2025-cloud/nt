@@ -30,7 +30,7 @@ export const cardCls = 'p-5 rounded-2xl bg-white border border-stone-200/90 shad
 // uses this so a failure is instantly diagnosable from the screen, no
 // DevTools required. Also logs the full object to console for anyone who
 // does have DevTools open.
-function describeDbError(error: { message: string; code?: string; details?: string | null; hint?: string | null }): string {
+export function describeDbError(error: { message: string; code?: string; details?: string | null; hint?: string | null }): string {
   console.error('Supabase write error:', error);
   const parts = [error.message];
   if (error.code) parts.push(`[${error.code}]`);
