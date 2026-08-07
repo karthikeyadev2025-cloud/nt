@@ -680,7 +680,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
 
   const blankForm = {
     segment_slug: defaultSegment, customer_name: '', phone: '', alternate_phone: '',
-    email: '', interested_in: '', source: defaultSource, priority: 'medium' as 'low' | 'medium' | 'high',
+    email: '', interested_in: '', address: '', source: defaultSource, priority: 'medium' as 'low' | 'medium' | 'high',
     sourced_by_user_id: '', assignToMe: true,
   };
   const [form, setForm] = useState(blankForm);
@@ -710,6 +710,10 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
     if (!pos) { if (!silent) { toast.error("Couldn't get location — check GPS permission"); setLocating(false); } return; }
     const address = await reverseGeocode(pos.lat, pos.lng);
     setLocation({ ...pos, address });
+    // Pre-fill the address field from GPS, but never overwrite something
+    // the person already typed — GPS reverse-geocoding is a starting
+    // point, not an override of a manual correction.
+    setForm(f => f.address ? f : { ...f, address });
     if (!silent) setLocating(false);
   }
   useEffect(() => {
@@ -773,7 +777,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
         assigned_to: canChooseAssignment ? (form.assignToMe ? user.id : null) : user.id,
         sourced_by_user_id: form.sourced_by_user_id || user.id,
         latitude: location?.lat ?? null, longitude: location?.lng ?? null,
-        address: location?.address || '',
+        address: form.address || location?.address || '',
         appointment_at: showAppointment && appointmentAt ? new Date(appointmentAt).toISOString() : null,
         appointment_note: showAppointment ? appointmentNote : '',
       } as never).select('id').single();
@@ -810,7 +814,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
     // always adding the next lead from the same context (same booth, same
     // call list, same spot). Photo and appointment are per-lead, so those
     // reset.
-    setForm(f => ({ ...blankForm, segment_slug: f.segment_slug, source: f.source, sourced_by_user_id: f.sourced_by_user_id, assignToMe: f.assignToMe }));
+    setForm(f => ({ ...blankForm, segment_slug: f.segment_slug, source: f.source, sourced_by_user_id: f.sourced_by_user_id, assignToMe: f.assignToMe, address: location?.address || '' }));
     setShowAltPhone(false);
     setDupWarning(null);
     setDupClean(false);
@@ -930,6 +934,10 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
               <div className="relative">
                 <Tag className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input className={inputCls + ' pl-9'} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
+              </div>
+              <div className="relative">
+                <MapPin className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input className={inputCls + ' pl-9'} placeholder="Address (street, area, city)" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
               </div>
               <div>
                 <p className="text-stone-700 text-xs font-medium mb-1.5">Priority</p>
@@ -1197,6 +1205,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       email: editingLead.email || null,
       segment_slug: editingLead.segment_slug,
       interested_in: editingLead.interested_in || null,
+      address: editingLead.address || null,
       stage: editingLead.stage,
       priority: editingLead.priority || 'medium',
       assigned_to: editingLead.assigned_to || null,
@@ -1871,18 +1880,21 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Interested In</label>
-                  <input className={inputCls} value={editingLead.interested_in || ''} onChange={e => setEditingLead({ ...editingLead, interested_in: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Assign To Staff</label>
-                  <select className={inputCls} value={editingLead.assigned_to || ''} onChange={e => setEditingLead({ ...editingLead, assigned_to: e.target.value || null })}>
-                    <option value="">Unassigned</option>
-                    {staff.filter(s => s.segments.includes('all') || s.segments.includes(editingLead.segment_slug)).map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Interested In</label>
+                <input className={inputCls} value={editingLead.interested_in || ''} onChange={e => setEditingLead({ ...editingLead, interested_in: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Address</label>
+                <input className={inputCls} placeholder="Street, area, city — wherever GPS didn't fill in or got wrong"
+                  value={editingLead.address || ''} onChange={e => setEditingLead({ ...editingLead, address: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Assign To Staff</label>
+                <select className={inputCls} value={editingLead.assigned_to || ''} onChange={e => setEditingLead({ ...editingLead, assigned_to: e.target.value || null })}>
+                  <option value="">Unassigned</option>
+                  {staff.filter(s => s.segments.includes('all') || s.segments.includes(editingLead.segment_slug)).map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+                </select>
               </div>
               {editingLead.stage === 'won' && (
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-stone-100">
