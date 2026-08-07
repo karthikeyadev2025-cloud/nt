@@ -218,9 +218,13 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
       let summary: Record<string, Record<string, number>> | null = null;
       try {
         const { from, to } = rangeToDates(range);
+        // get_segment_summary's 2-arg (p_from/p_to) signature was added in
+        // 20260806000005 — database.types.ts still has the old 0-arg
+        // signature since it's generated and there's no live DB access to
+        // regenerate it. Cast the args at the call boundary.
         const res = await cachedRpc(
           `get_segment_summary:${range}`,
-          () => supabase.rpc('get_segment_summary', { p_from: from, p_to: to })
+          () => supabase.rpc('get_segment_summary', { p_from: from, p_to: to } as never)
         ) as { data?: Record<string, Record<string, number>>; error?: unknown };
         summary = res.data ?? null;
       } catch {

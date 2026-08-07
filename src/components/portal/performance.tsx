@@ -174,7 +174,7 @@ export function LeadsFunnelChart({ segments, onSegmentClick }: { segments: Segme
   }, [segments]);
 
   if (data.length === 0) return null;
-  const barClick = (point: { slug?: string }) => { if (point?.slug) onSegmentClick?.(point.slug); };
+  const barClick = (item: { payload?: { slug?: string } }) => { if (item?.payload?.slug) onSegmentClick?.(item.payload.slug); };
   return (
     <div className={cardCls}>
       <h3 className="text-stone-900 font-semibold text-sm mb-4">Leads Funnel by Segment</h3>

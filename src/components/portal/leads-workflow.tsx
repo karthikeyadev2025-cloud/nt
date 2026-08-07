@@ -11,6 +11,7 @@ import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, Resch
 import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
+import { exportLeadsToExcel } from '../../lib/exportLeads';
 import { MyCallsChart } from './performance';
 import { cachedQuery } from '../../lib/cachedQuery';
 import type { Segment, Database } from '../../lib/database.types';
@@ -126,7 +127,11 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
   useEffect(() => { load(); }, [load]);
   // Fallback when pg_cron isn't enabled — sweeping here means overdue
   // callbacks still notify whenever a telecaller opens their queue.
-  useEffect(() => { supabase.rpc('remind_overdue_callbacks_and_appointments'); }, []);
+  // remind_overdue_callbacks_and_appointments not in database.types.ts yet
+  // (added in 20260807000001, generated types weren't regenerated since —
+  // no live DB access to run `supabase gen types`) — cast at the call
+  // boundary rather than block on that.
+  useEffect(() => { supabase.rpc('remind_overdue_callbacks_and_appointments' as never); }, []);
   useEffect(() => {
     if (!user) return;
     cachedQuery('marketing_executives', async () => {
@@ -1307,7 +1312,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   useEffect(() => { load(); }, [load]);
   // Fallback when pg_cron isn't enabled: sweeping here means due follow-ups
   // still notify whenever field staff open their queue. Idempotent.
-  useEffect(() => { supabase.rpc('remind_due_followups'); supabase.rpc('remind_overdue_callbacks_and_appointments'); }, []);
+  useEffect(() => { supabase.rpc('remind_due_followups'); supabase.rpc('remind_overdue_callbacks_and_appointments' as never); }, []);
 
   // Offline queue: keep the pending count live, flush automatically on
   // reconnect / focus / timer, and refresh the lead list once things land.
