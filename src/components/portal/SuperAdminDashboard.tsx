@@ -872,7 +872,7 @@ type AccessUser = Pick<
   Tables<'app_users'>,
   'id' | 'email' | 'full_name' | 'role' | 'segments' | 'phone' | 'designation'
   | 'is_active' | 'must_change_password' | 'joining_date' | 'employment_type'
-  | 'reporting_time' | 'created_at' | 'exit_date' | 'exit_reason'
+  | 'reporting_time' | 'created_at' | 'exit_date' | 'exit_reason' | 'staff_code'
 > & {
   salary_structure: SalaryStructure | null;
   // permission_overrides is stored as jsonb — read as unknown shape and
@@ -1002,7 +1002,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
     // in the select list, editing.exit_date was always undefined, and the
     // ternary at the bottom of the edit modal always rendered "Offboard
     // this employee" even for staff who had already been offboarded.
-    const COLS = 'id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at, exit_date, exit_reason';
+    const COLS = 'id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at, exit_date, exit_reason, staff_code';
     try {
       const data = await cachedQuery('access_control_users', async () => {
         const { data, error } = await supabase.from('app_users').select(COLS).order('created_at', { ascending: false });
@@ -1039,6 +1039,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
       segments: editing.segments,
       permission_overrides: editing.permission_overrides || {},
       is_active: editing.is_active,
+      employment_status: (editing as unknown as { employment_status?: string }).employment_status || 'active',
       designation: editing.designation || '',
       employment_type: editing.employment_type || 'full_time',
       salary_structure: editing.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 },
@@ -1164,9 +1165,16 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
               <select className={inputCls} value={editing.role} onChange={e => setEditing({ ...editing, role: e.target.value })}>
                 {['manager', 'hr', 'marketing_executive', 'telecaller', 'support_agent', 'employee'].map(r => <option key={r} value={r}>{r}</option>)}
               </select>
-              <select className={inputCls} value={editing.is_active ? '1' : '0'} onChange={e => setEditing({ ...editing, is_active: e.target.value === '1' })}>
-                <option value="1">Active</option><option value="0">Disabled</option>
+              <select className={inputCls} value={(editing as unknown as { employment_status?: string }).employment_status || 'active'}
+                onChange={e => setEditing({ ...editing, employment_status: e.target.value } as never)}>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="dismissed">Dismissed</option>
+                <option value="retired">Retired</option>
               </select>
+              <p className="col-span-2 text-stone-500 text-[11px] -mt-2">
+                Anything other than Active signs them out, removes them from every assignment picker, and — for everyone except HR/Admin — shows their name as "Former Employee ({editing.staff_code || 'no code'})" wherever it appears. All their historical leads, tickets, and documents stay exactly as they are; nothing is deleted. Switch back to Active any time to fully restore.
+              </p>
               <input className={inputCls} placeholder="Designation" value={editing.designation || ''} onChange={e => setEditing({ ...editing, designation: e.target.value })} />
               <select className={inputCls} value={editing.employment_type || 'full_time'} onChange={e => setEditing({ ...editing, employment_type: e.target.value })}>
                 {['full_time', 'part_time', 'contract', 'intern'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}

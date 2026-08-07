@@ -31,6 +31,21 @@ export const cardCls = 'p-5 rounded-2xl bg-white border border-stone-200/90 shad
 // uses this so a failure is instantly diagnosable from the screen, no
 // DevTools required. Also logs the full object to console for anyone who
 // does have DevTools open.
+// Name shown for a staff member who might have left the company. Data is
+// never touched by this — full_name stays exactly what it always was in
+// the database; this only changes what's *displayed*, and only to
+// viewers without manage_staff/super_admin. HR/Admin always sees the
+// real name, since they're the ones who need it for audit purposes.
+export type StaffNameInfo = { full_name: string; staff_code?: string | null; employment_status?: string | null };
+export function displayStaffName(person: StaffNameInfo | null | undefined, viewerCanSeeReal: boolean): string {
+  if (!person) return 'Unknown';
+  const departed = person.employment_status && person.employment_status !== 'active';
+  if (departed && !viewerCanSeeReal) {
+    return `Former Employee${person.staff_code ? ` (${person.staff_code})` : ''}`;
+  }
+  return person.full_name;
+}
+
 export function describeDbError(error: { message: string; code?: string; details?: string | null; hint?: string | null }): string {
   console.error('Supabase write error:', error);
   const parts = [error.message];
@@ -1189,6 +1204,11 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   const [segFilter, setSegFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
+  // Separate from `staff` below (which is active-only, for the "who can
+  // I assign this to" picker) — this one is unfiltered, includes people
+  // who've left, and exists purely to resolve names for display, e.g. a
+  // lead still shows who it's assigned to even if that person is gone.
+  const [allStaffById, setAllStaffById] = useState<Record<string, StaffNameInfo>>({});
   const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[] }[]>([]);
   const [openLead, setOpenLead] = useState<Lead | null>(null);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -1411,6 +1431,16 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       if (error) throw error;
       return data;
     }).then(data => { if (data) setStaff(data); }).catch(() => {});
+    // employment_status/staff_code aren't in database.types.ts yet
+    // (generated file, no live DB access to regenerate it since those
+    // columns were added via raw SQL migration) — cast at the call
+    // boundary. Deliberately no is_active filter here — see comment on
+    // allStaffById above.
+    cachedQuery('all_staff_names_for_display', async () => {
+      const { data, error } = await supabase.from('app_users').select('id, full_name, staff_code, employment_status' as never);
+      if (error) throw error;
+      return data as unknown as (StaffNameInfo & { id: string })[];
+    }).then(data => { if (data) setAllStaffById(Object.fromEntries(data.map(s => [s.id, s]))); }).catch(() => {});
   }, []);
 
   async function update(id: string, patch: Partial<Lead>) {
@@ -1621,7 +1651,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
           const seg = segments.find(s => s.slug === l.segment_slug);
           const needsPhone = !l.phone || l.phone === 'Pending Collection';
           const isSelected = selectedIds.includes(l.id);
-          const assignedStaffName = l.assigned_to ? staffById[l.assigned_to] : null;
+          const assignedStaffName = l.assigned_to ? displayStaffName(allStaffById[l.assigned_to], user?.role === 'super_admin' || hasPermission('manage_staff')) : null;
           return (
             <div key={l.id} className={cardCls + ` cursor-pointer hover:border-stone-300 flex items-start gap-3 transition-colors ${isSelected ? 'bg-orange-50/50 border-orange-300' : ''}`}>
               {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
@@ -1770,7 +1800,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 </div>
                 <div className="space-y-2 min-h-[60px]">
                   {colLeads.map(l => {
-                    const assignedStaffName = l.assigned_to ? staffById[l.assigned_to] : null;
+                    const assignedStaffName = l.assigned_to ? displayStaffName(allStaffById[l.assigned_to], user?.role === 'super_admin' || hasPermission('manage_staff')) : null;
                     return (
                       <div
                         key={l.id}
@@ -1823,6 +1853,14 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <p className="text-stone-700 text-xs">
                     Created {new Date(openLead.created_at ?? '').toLocaleString()} • source: {openLead.source}
+                    {(() => {
+                      const lead = openLead as unknown as { created_by?: string; sourced_by_user_id?: string };
+                      const creatorId = lead.created_by || lead.sourced_by_user_id;
+                      if (!creatorId) return null;
+                      const creator = allStaffById[creatorId];
+                      const name = displayStaffName(creator, user?.role === 'super_admin' || hasPermission('manage_staff'));
+                      return <> • added by <span className="font-semibold">{name}</span>{creator?.staff_code && (!creator.employment_status || creator.employment_status === 'active') ? ` (${creator.staff_code})` : ''}</>;
+                    })()}
                   </p>
                   {openLead.latitude && openLead.longitude && (
                     <a href={`https://www.google.com/maps?q=${openLead.latitude},${openLead.longitude}`} target="_blank" rel="noreferrer"
