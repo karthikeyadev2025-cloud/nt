@@ -3,7 +3,7 @@ import {
   BookOpen, UserPlus, GitBranch, PhoneCall, MousePointerClick, LayoutGrid,
   CalendarClock, Repeat, ListChecks, Bell, MessageCircle, Download,
   Combine, ArrowLeftRight, Upload, Users, History, ShieldCheck,
-  Layers, Megaphone, Code2, MessagesSquare, CreditCard, PenLine,
+  Layers, Megaphone, Code2, MessagesSquare, CreditCard, PenLine, Clock, Ticket,
   type LucideIcon,
 } from 'lucide-react';
 import { cardCls } from './shared';
@@ -323,6 +323,56 @@ function buildSections(role: Role): Section[] {
         <p className="text-sm text-stone-700 mb-3">"Needs Your Attention" surfaces everything needing a decision — approvals, overdue follow-ups/callbacks/appointments, duplicate leads, unassigned leads. Grey numbers mean nothing's waiting; coloured numbers need action. Tap any tile to jump to it. The Segments panel shows each segment's key numbers with a date-range filter. Team Performance, Trends, and Housekeeping are collapsed by default — tap to expand.</p>
         <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1">Access Control</p>
         <p className="text-sm text-stone-700">Shows every role as a colour-coded card with a plain-English summary of what it can do, and how many staff hold it. Individual permissions can still be fine-tuned per person.</p>
+      </>,
+    },
+  );
+
+  sections.push(
+    {
+      id: 'attendance', label: 'Attendance', icon: Clock,
+      body: <>
+        <p className="text-sm text-stone-700 mb-4">Check in when you start work, check out when you finish — both from My Attendance.</p>
+        <Step n={1} title="Check In">Tap Check In, choose your work mode (Office, Work From Home, or Field Visit), and take a selfie when prompted. Your location is captured automatically alongside it.</Step>
+        <Step n={2} title="Check Out">Same idea, at the end of the day — tap Check Out and take a second selfie.</Step>
+        <Note>Whether you're marked late is decided by the server against your assigned shift, not by your phone's clock — so there's nothing to "adjust" on your end to avoid it. If a late mark looks wrong, raise it with HR rather than trying to fix the time yourself.</Note>
+        <p className="text-sm text-stone-700">Your last 14 days show below the check-in button, so you can spot a missed day before it becomes a problem.</p>
+      </>,
+    },
+    {
+      id: 'leaves-advances', label: 'Leaves & Advances', icon: CalendarClock,
+      body: <>
+        <p className="text-sm text-stone-700 mb-4">Request time off or a salary advance from Leaves & Advances — both need approval before they're final.</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1">Requesting Leave</p>
+        <Step n={1} title="Pick your dates">From date, to date.</Step>
+        <Step n={2} title="Choose the leave type">Casual, sick, etc. — whatever your company's policy defines.</Step>
+        <Step n={3} title="Add a reason">Short is fine.</Step>
+        <Step n={4} title="Submit">It goes to your manager/HR for approval — you'll see it move from Pending to Approved (or Rejected) once they act on it.</Step>
+        <Note>Your leave balance (entitled, used, remaining per type) shows right on this page — check it before you request, so you're not caught out by a type that's already used up.</Note>
+        <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mb-1">Requesting a Salary Advance</p>
+        <p className="text-sm text-stone-700">Same idea — enter an amount and a reason, submit, and it goes to approval. You can see the status of every request you've made, past and pending, on the same page.</p>
+      </>,
+    },
+    {
+      id: 'tasks-module', label: 'Tasks', icon: ListChecks,
+      body: <>
+        <p className="text-sm text-stone-700 mb-4">Anything assigned to you — by a manager, or as part of a workflow — shows up in My Tasks.</p>
+        <Field name="Pending">Not started yet.</Field>
+        <Field name="In Progress">You've started it — mark it this way so others can see it's moving.</Field>
+        <Field name="Completed">Done — tap the checkmark to mark it complete.</Field>
+        <Field name="Cancelled">No longer needed — a manager can mark a task this way if plans changed.</Field>
+        <Note>A task past its due date and not yet completed is flagged as overdue right on the card — no separate place to check for that.</Note>
+      </>,
+    },
+    {
+      id: 'tickets-module', label: 'Support Tickets', icon: Ticket,
+      body: <>
+        <p className="text-sm text-stone-700 mb-4">Customer support requests move through five stages.</p>
+        <Field name="Open">Just came in — nobody's picked it up yet.</Field>
+        <Field name="In Progress">Someone's actively working it.</Field>
+        <Field name="Waiting on Customer">You're blocked on a reply from them — the clock is effectively paused on your end.</Field>
+        <Field name="Resolved">Fixed, waiting to be confirmed closed.</Field>
+        <Field name="Closed">Done.</Field>
+        <Note>Every ticket has an SLA — a resolution-time target based on its priority. One that's blown past that target is flagged as overdue on the Overview dashboard's "Needs Your Attention" panel, so it doesn't just quietly sit there.</Note>
       </>,
     },
   );
