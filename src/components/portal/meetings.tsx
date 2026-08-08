@@ -642,6 +642,9 @@ export function TeamCalendar() {
   const [scope, setScope] = useState<'mine' | 'team' | 'all'>('team');
   const [open, setOpen] = useState<MeetingRow | null>(null);
   const [showSchedule, setShowSchedule] = useState<string | null>(null);
+  // Which day's agenda is showing — defaults to today's position in the
+  // current week (0 = Sunday), same index the day-picker chips use.
+  const [selectedDay, setSelectedDay] = useState(() => new Date().getDay());
 
   const canScopeAll = hasPermission('manage_leads');
 
@@ -665,9 +668,9 @@ export function TeamCalendar() {
     return { offset, date: d, label: d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) };
   });
 
-  function prev() { const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(d); }
-  function next() { const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(d); }
-  function today() { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay()); setWeekStart(d); }
+  function prev() { const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(d); setSelectedDay(0); }
+  function next() { const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(d); setSelectedDay(0); }
+  function today() { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay()); setWeekStart(d); setSelectedDay(new Date().getDay()); }
 
   return (
     <div>
@@ -693,26 +696,56 @@ export function TeamCalendar() {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
-        {days.map(d => (
-          <div key={d.offset} className="border border-stone-200 rounded-xl bg-white min-h-[220px]">
-            <div className="px-2 py-1.5 border-b border-stone-100 flex items-center justify-between bg-stone-50 rounded-t-xl">
-              <p className="text-stone-900 text-xs font-bold">{d.label}</p>
-              <button onClick={() => { const start = new Date(d.date); start.setHours(10, 0, 0, 0); setShowSchedule(start.toISOString()); }}
-                className="text-stone-500 hover:text-teal-700 text-xs">+</button>
-            </div>
-            <div className="p-1.5 space-y-1">
-              {byDay[d.offset].length === 0 && <p className="text-stone-400 text-[10px] text-center py-4">No meetings</p>}
-              {byDay[d.offset].map(m => (
-                <button key={m.id} onClick={() => setOpen(m)}
-                  className={`w-full text-left rounded-lg p-1.5 border text-xs ${statusStyle[m.status]} hover:brightness-95`}>
-                  <p className="font-semibold truncate">{fmtTime(m.scheduled_at)} {m.meeting_type_name}</p>
-                  <p className="text-[10px] truncate opacity-80">{m.customer_name || m.organizer_name}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+      {/* Day picker — horizontally scrollable chips, each showing a small
+          count dot if that day has meetings. Replaces the old 7-column
+          grid, which had no mobile breakpoint at all: on a phone-width
+          screen it squeezed into unreadable slivers, wrapped, and each
+          min-h-[220px] column stretched even taller — a long vertical
+          scroll for what should be a quick glance. One agenda list below,
+          for whichever day is selected, works the same on every screen
+          size instead of needing a separate mobile layout. */}
+      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3">
+        {days.map(d => {
+          const count = byDay[d.offset].length;
+          const isToday = d.date.toDateString() === new Date().toDateString();
+          const isSelected = d.offset === selectedDay;
+          return (
+            <button key={d.offset} onClick={() => setSelectedDay(d.offset)}
+              className={`shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-xl border transition-colors min-w-[64px] ${
+                isSelected ? 'bg-teal-700 border-teal-700 text-white' : isToday ? 'bg-teal-50 border-teal-200 text-teal-800' : 'bg-white border-stone-200 text-stone-700 hover:border-stone-300'
+              }`}>
+              <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">{d.date.toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+              <span className="text-base font-bold leading-none">{d.date.getDate()}</span>
+              {count > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 rounded-full ${isSelected ? 'bg-white/20' : 'bg-teal-100 text-teal-800'}`}>{count}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="border border-stone-200 rounded-2xl bg-white">
+        <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between bg-stone-50 rounded-t-2xl">
+          <p className="text-stone-900 text-sm font-bold">{days[selectedDay].date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <button onClick={() => { const start = new Date(days[selectedDay].date); start.setHours(10, 0, 0, 0); setShowSchedule(start.toISOString()); }}
+            className="text-teal-700 hover:text-teal-900 text-xs font-bold flex items-center gap-1">
+            <Plus className="w-3.5 h-3.5" /> Add
+          </button>
+        </div>
+        <div className="p-3 space-y-2 max-h-[60vh] overflow-y-auto">
+          {byDay[selectedDay].length === 0 && <p className="text-stone-500 text-sm text-center py-10">No meetings this day.</p>}
+          {byDay[selectedDay].map(m => (
+            <button key={m.id} onClick={() => setOpen(m)}
+              className={`w-full text-left rounded-xl p-3 border ${statusStyle[m.status]} hover:brightness-95 transition-all`}>
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-sm">{fmtTime(m.scheduled_at)}</p>
+                <span className="text-[10px] font-semibold uppercase tracking-wide opacity-70">{m.status}</span>
+              </div>
+              <p className="text-sm font-semibold mt-0.5">{m.meeting_type_name}</p>
+              <p className="text-xs opacity-80 truncate">{m.customer_name || m.organizer_name}</p>
+            </button>
+          ))}
+        </div>
       </div>
 
       {open && <MeetingDetailModal meeting={open} onClose={() => setOpen(null)} onChanged={load} />}
