@@ -18,6 +18,7 @@ const ALERT_TYPE_META: Record<string, { label: string; icon: string }> = {
   followup: { label: 'Follow-up in 15 min', icon: '📞' },
   callback: { label: 'Callback in 15 min', icon: '☎️' },
   appointment: { label: 'Appointment in 15 min', icon: '📅' },
+  meeting: { label: 'Meeting in 15 min', icon: '🗓️' },
 };
 
 export function DueAlertBanner({ alerts, onDismiss, onSnooze }: { alerts: ReturnType<typeof useDueLeadAlerts>['activeAlerts']; onDismiss: (key: string) => void; onSnooze: (key: string, minutes?: number) => void }) {

@@ -33,7 +33,7 @@ type StaffLite = { id: string; full_name: string; role: string };
 
 type RpcResult = { ok: boolean; meeting_id?: string; conflict?: string; message?: string };
 
-async function rpcCall<T = RpcResult>(fn: string, args: Record<string, unknown>): Promise<{ data: T | null; error: { message: string } | null }> {
+export async function rpcCall<T = RpcResult>(fn: string, args: Record<string, unknown>): Promise<{ data: T | null; error: { message: string } | null }> {
   // Call supabase.rpc(...) directly — extracting it to a local variable
   // first detaches it from the client instance's `this` and throws
   // "Cannot read properties of undefined (reading 'rest')" inside the
@@ -632,6 +632,52 @@ export function LeadMeetingsTab({ leadId, leadName, leadPhone }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Compact "today's schedule" widget for Overview — managers get a glance
+// at the day without opening the full Team Calendar tab. Deliberately
+// team-scoped (not "everyone in the company") to match what a manager
+// actually cares about day to day; a super_admin sees their own team's
+// scope the same way, same as everywhere else meetings show up.
+export function TodayMeetingsWidget() {
+  const [rows, setRows] = useState<MeetingRow[]>([]);
+  const [open, setOpen] = useState<MeetingRow | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const from = new Date(); from.setHours(0, 0, 0, 0);
+    const to = new Date(); to.setHours(23, 59, 59, 999);
+    const { data } = await rpcCall<MeetingRow[]>('list_meetings', { p_from: from.toISOString(), p_to: to.toISOString(), p_scope: 'team' });
+    setRows(Array.isArray(data) ? data.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()) : []);
+    setLoading(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return null;
+  return (
+    <div className={cardCls}>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-stone-900 font-bold text-sm flex items-center gap-1.5"><Calendar className="w-4 h-4 text-teal-700" /> Today's Meetings</h3>
+        <span className="text-stone-500 text-xs">{rows.length}</span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-stone-500 text-sm py-3">Nothing scheduled today.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {rows.map(m => (
+            <button key={m.id} onClick={() => setOpen(m)} className={`w-full text-left flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-stone-50 transition-colors ${new Date(m.scheduled_at) < new Date() && m.status === 'scheduled' ? 'opacity-60' : ''}`}>
+              <span className="text-stone-700 text-xs font-bold w-14 shrink-0">{fmtTime(m.scheduled_at)}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-stone-900 text-xs font-semibold truncate">{m.meeting_type_name} — {m.customer_name || m.organizer_name}</p>
+              </div>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded border capitalize shrink-0 ${statusStyle[m.status]}`}>{m.status.replace('_', ' ')}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {open && <MeetingDetailModal meeting={open} onClose={() => setOpen(null)} onChanged={load} />}
+    </div>
+  );
+}
+
 export function TeamCalendar() {
   const { hasPermission } = useAuth();
   const [rows, setRows] = useState<MeetingRow[]>([]);

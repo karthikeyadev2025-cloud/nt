@@ -51,7 +51,7 @@ function playChime() {
 
 export type DueAlert = {
   key: string; leadId: string; customerName: string; phone: string;
-  type: 'followup' | 'callback' | 'appointment'; dueAt: string;
+  type: 'followup' | 'callback' | 'appointment' | 'meeting'; dueAt: string;
 };
 
 const SOUND_PREF_KEY = 'nt_due_alert_sound_enabled';
@@ -94,6 +94,7 @@ export function useDueLeadAlerts() {
     if (error || !data) return;
 
     const now = Date.now();
+    const isFirstPoll = firstPollRef.current;
     const newlyDue: DueAlert[] = [];
     data.forEach(l => {
       const candidates: { key: string; type: DueAlert['type']; dueAt: string | null }[] = [
@@ -110,10 +111,32 @@ export function useDueLeadAlerts() {
         // 15-minute window (or overdue) predates this session — silently
         // acknowledge it (it's already visible in the to-do list) instead
         // of firing an alert storm.
-        if (firstPollRef.current) return;
+        if (isFirstPoll) return;
         newlyDue.push({ key: c.key, leadId: l.id, customerName: l.customer_name, phone: l.phone, type: c.type, dueAt: c.dueAt });
       });
     });
+
+    // Meetings — a different table (the Team Calendar system), same
+    // 15-minute-before threshold. list_meetings via supabase.rpc(...)
+    // directly (never extracted to a local variable first — that
+    // detaches it from the client's `this` and throws inside the
+    // library, a bug fixed elsewhere in this codebase already).
+    try {
+      const from = new Date(now - 24 * 60 * 60 * 1000).toISOString(); // small back-window covers anything just inside its 15-min mark
+      const to = new Date(now + ALERT_LEAD_MS + 5 * 60000).toISOString();
+      const { data: meetings } = await supabase.rpc('list_meetings' as never, { p_from: from, p_to: to, p_scope: 'mine' } as never) as unknown as {
+        data: { id: string; lead_id: string | null; customer_name: string | null; customer_phone: string | null; meeting_type_name: string; scheduled_at: string; status: string }[] | null;
+      };
+      (Array.isArray(meetings) ? meetings : []).forEach(m => {
+        const key = `mtg-${m.id}`;
+        if (m.status !== 'scheduled' || seenRef.current.has(key)) return;
+        const due = new Date(m.scheduled_at).getTime();
+        if (due - ALERT_LEAD_MS > now) return;
+        seenRef.current.add(key);
+        if (isFirstPoll) return;
+        newlyDue.push({ key, leadId: m.lead_id || '', customerName: m.customer_name || m.meeting_type_name, phone: m.customer_phone || '', type: 'meeting', dueAt: m.scheduled_at });
+      });
+    } catch { /* meetings are a bonus on this alert stream, not load-bearing */ }
     firstPollRef.current = false;
 
     if (newlyDue.length > 0) {
@@ -121,7 +144,7 @@ export function useDueLeadAlerts() {
       if (soundEnabled) playChime();
       if (notifPermission === 'granted') {
         newlyDue.forEach(a => {
-          const label = a.type === 'appointment' ? 'Appointment' : a.type === 'callback' ? 'Callback' : 'Follow-up';
+          const label = a.type === 'appointment' ? 'Appointment' : a.type === 'callback' ? 'Callback' : a.type === 'meeting' ? 'Meeting' : 'Follow-up';
           new Notification(`${label} in 15 min: ${a.customerName}`, { body: a.phone, tag: a.key });
         });
       }

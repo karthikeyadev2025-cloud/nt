@@ -20,7 +20,7 @@ import { NotificationBell, AnnouncementsManager, BankChangeApprovals, Punctualit
 import { TasksBoard } from './tasks';
 import { LeadsWorkspace } from './leads-workflow';
 import TrainingManual from './TrainingManual';
-import { TeamCalendar, MeetingTypesManager } from './meetings';
+import { TeamCalendar, MeetingTypesManager, TodayMeetingsWidget } from './meetings';
 import { DueAlertBanner } from './portal-shell';
 // Charts pull in recharts, which alone accounts for ~380KB of JavaScript —
 // by far the single heaviest chunk in the whole app. A direct static import
@@ -267,6 +267,7 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
           admin works leads, but managers often do) — same auto-tracked
           to-do the other portals get. */}
       {hasPermission('manage_leads') && <MyLeadsToDoList />}
+      {hasPermission('manage_leads') && <TodayMeetingsWidget />}
       {canOnboard && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 rounded-xl bg-orange-50 border border-orange-200">
           <p className="text-orange-950 font-bold text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>

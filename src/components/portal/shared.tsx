@@ -15,7 +15,7 @@ import { scanBusinessCard, type CardExtract } from '../../lib/cardScan';
 import { exportLeadsToExcel } from '../../lib/exportLeads';
 import CameraCapture from '../CameraCapture';
 import { AttendanceDetailsModal } from './payroll';
-import { LeadMeetingsTab } from './meetings';
+import { LeadMeetingsTab, rpcCall, type MeetingRow } from './meetings';
 import { cachedQuery, invalidateQueryCache } from '../../lib/cachedQuery';
 import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
 
@@ -487,13 +487,14 @@ export const VISIT_OUTCOMES: Outcome[] = [
 // directly off marketing_leads (no new table) since next_followup_at,
 // callback_at, and appointment_at already existed; this is a view over
 // data that was already there, not a new tracking mechanism.
-type TodoItemType = 'followup' | 'callback' | 'appointment';
+type TodoItemType = 'followup' | 'callback' | 'appointment' | 'meeting';
 type TodoItem = { key: string; leadId: string; customerName: string; phone: string; type: TodoItemType; dueAt: string; note?: string };
 
 const TODO_TYPE_META: Record<TodoItemType, { label: string; icon: string }> = {
   followup: { label: 'Follow-up', icon: '📞' },
   callback: { label: 'Callback', icon: '☎️' },
   appointment: { label: 'Appointment', icon: '📅' },
+  meeting: { label: 'Meeting', icon: '🗓️' },
 };
 
 export function MyLeadsToDoList() {
@@ -522,6 +523,22 @@ export function MyLeadsToDoList() {
         if (l.callback_at) rows.push({ key: `${l.id}-c`, leadId: l.id, customerName: l.customer_name, phone: l.phone, type: 'callback', dueAt: l.callback_at });
         if (l.appointment_at) rows.push({ key: `${l.id}-a`, leadId: l.id, customerName: l.customer_name, phone: l.phone, type: 'appointment', dueAt: l.appointment_at, note: l.appointment_note || undefined });
       });
+      // Meetings — a different table entirely (the Team Calendar system),
+      // scope='mine' so this is exactly the set the person is actually
+      // organizing or attending, not every meeting in the company.
+      try {
+        const from = new Date();
+        const to = new Date(); to.setDate(to.getDate() + 30);
+        const { data: meetings } = await rpcCall<MeetingRow[]>('list_meetings', { p_from: from.toISOString(), p_to: to.toISOString(), p_scope: 'mine' });
+        (Array.isArray(meetings) ? meetings : [])
+          .filter(m => m.status === 'scheduled')
+          .forEach(m => {
+            rows.push({
+              key: `mtg-${m.id}`, leadId: m.lead_id || '', customerName: m.customer_name || m.meeting_type_name,
+              phone: m.customer_phone || '', type: 'meeting', dueAt: m.scheduled_at, note: m.meeting_type_name,
+            });
+          });
+      } catch { /* meetings are a bonus on this list, not load-bearing */ }
       rows.sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
       setItems(rows);
     } catch (err) {
@@ -531,7 +548,7 @@ export function MyLeadsToDoList() {
   useEffect(() => { load(); }, [load]);
 
   async function markDone(item: TodoItem) {
-    if (item.type === 'appointment') return; // appointments are rescheduled or logged, not silently cleared
+    if (item.type === 'appointment' || item.type === 'meeting') return; // rescheduled/logged/managed elsewhere, not silently cleared here
     const column = item.type === 'followup' ? 'next_followup_at' : 'callback_at';
     const { error } = await supabase.from('marketing_leads').update({ [column]: null } as never).eq('id', item.leadId);
     if (error) { toast.error(`Couldn't clear it: ${describeDbError(error)}`); return; }
@@ -575,7 +592,7 @@ export function MyLeadsToDoList() {
         <button onClick={() => setRescheduleFor({ id: item.leadId, appointment_at: item.dueAt, appointment_note: item.note || '', customer_name: item.customerName } as Lead)} className="p-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 shrink-0" title="Reschedule">
           <CalendarClock className="w-3.5 h-3.5" />
         </button>
-      ) : (
+      ) : item.type === 'meeting' ? null : (
         <button onClick={() => markDone(item)} className="p-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 shrink-0" title="Mark done">
           <Check className="w-3.5 h-3.5" />
         </button>
@@ -1220,6 +1237,10 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   // click-to-see-everything gallery pulling in every photo attached to
   // that lead's remarks too, not just the primary one.
   const [cardPhotoUrls, setCardPhotoUrls] = useState<Record<string, string>>({});
+  // Which visible leads have an upcoming scheduled meeting — one batched
+  // fetch for the whole board, not a query per card, same approach as
+  // cardPhotoUrls above.
+  const [leadsWithMeeting, setLeadsWithMeeting] = useState<Set<string>>(new Set());
   const [galleryLead, setGalleryLead] = useState<Lead | null>(null);
   const [galleryPhotos, setGalleryPhotos] = useState<{ url: string; caption: string }[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
@@ -1497,6 +1518,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     update(l.id, { stage });
   }
 
+  const [nextMeeting, setNextMeeting] = useState<{ scheduled_at: string; meeting_type_name: string } | null>(null);
   async function loadRemarks(id: string) {
     const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', id).order('occurred_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
     if (!data) return;
@@ -1516,6 +1538,18 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
         setLeadPhotoUrls(map);
       }
     }
+    // Soonest upcoming scheduled meeting for this lead — merged into the
+    // "What's Next" summary below alongside follow-up/callback/appointment,
+    // since a booked meeting is just as much "what's next" as those three.
+    setNextMeeting(null);
+    const from = new Date().toISOString();
+    const to = new Date(); to.setFullYear(to.getFullYear() + 1);
+    rpcCall<MeetingRow[]>('list_meetings', { p_from: from, p_to: to.toISOString(), p_scope: 'team' }).then(({ data: meetings }) => {
+      const upcoming = (Array.isArray(meetings) ? meetings : [])
+        .filter(m => m.lead_id === id && m.status === 'scheduled')
+        .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+      if (upcoming[0]) setNextMeeting({ scheduled_at: upcoming[0].scheduled_at, meeting_type_name: upcoming[0].meeting_type_name });
+    }).catch(() => {});
   }
 
   // One batched signed-URL request for every visible lead's primary
@@ -1529,6 +1563,25 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       const map: Record<string, string> = {};
       signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
       setCardPhotoUrls(map);
+    }).catch(() => {});
+  }, [leads]);
+
+  // Which of the currently-loaded leads have an upcoming scheduled
+  // meeting — one fetch per leads-list change, not per card. Window
+  // capped at 60 days out; a meeting further away than that doesn't
+  // need a badge cluttering the board yet.
+  useEffect(() => {
+    if (leads.length === 0) { setLeadsWithMeeting(new Set()); return; }
+    const from = new Date().toISOString();
+    const to = new Date(); to.setDate(to.getDate() + 60);
+    rpcCall<MeetingRow[]>('list_meetings', { p_from: from, p_to: to.toISOString(), p_scope: 'team' }).then(({ data: meetings }) => {
+      const leadIds = new Set(leads.map(l => l.id));
+      const withMeeting = new Set(
+        (Array.isArray(meetings) ? meetings : [])
+          .filter(m => m.status === 'scheduled' && m.lead_id && leadIds.has(m.lead_id))
+          .map(m => m.lead_id as string)
+      );
+      setLeadsWithMeeting(withMeeting);
     }).catch(() => {});
   }, [leads]);
 
@@ -1835,6 +1888,11 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                     {new Date(l.appointment_at) < new Date() ? ' (date passed)' : ''}
                   </p>
                 )}
+                {leadsWithMeeting.has(l.id) && (
+                  <p className="text-xs mt-1.5 font-medium flex items-center gap-1 text-indigo-700">
+                    🗓️ Meeting scheduled
+                  </p>
+                )}
                 {hasPermission('manage_leads') && (l.assigned_to === user?.id || hasPermission('full_leads_view')) && !['won', 'lost'].includes(l.stage) && (
                   <div className="mt-2 flex gap-2 flex-wrap">
                     <button
@@ -1908,9 +1966,12 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-1">
-                          {followupCounts[l.id] > 0 && (
-                            <p className="text-stone-500 text-[11px]">📞 {followupCounts[l.id]} follow-up{followupCounts[l.id] === 1 ? '' : 's'}</p>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {followupCounts[l.id] > 0 && (
+                              <p className="text-stone-500 text-[11px]">📞 {followupCounts[l.id]} follow-up{followupCounts[l.id] === 1 ? '' : 's'}</p>
+                            )}
+                            {leadsWithMeeting.has(l.id) && <span className="text-[11px]" title="Meeting scheduled">🗓️</span>}
+                          </div>
                           {canDragHere && (
                             <button onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }} className={`ml-auto p-1 rounded ${l.appointment_at ? 'text-teal-700' : 'text-stone-400 hover:text-teal-700'}`} title={l.appointment_at ? 'Reschedule' : 'Schedule appointment'}>
                               <CalendarClock className="w-3.5 h-3.5" />
@@ -2023,6 +2084,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   openLead.next_followup_at && { type: 'Follow-up', at: openLead.next_followup_at, icon: '📞' },
                   openLead.callback_at && { type: 'Callback', at: openLead.callback_at, icon: '☎️' },
                   openLead.appointment_at && { type: 'Appointment', at: openLead.appointment_at, icon: '📅' },
+                  nextMeeting && { type: nextMeeting.meeting_type_name || 'Meeting', at: nextMeeting.scheduled_at, icon: '🗓️' },
                 ].filter(Boolean) as { type: string; at: string; icon: string }[];
                 if (candidates.length === 0) {
                   return (
