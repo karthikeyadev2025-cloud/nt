@@ -258,7 +258,7 @@ function buildSections(role: Role): Section[] {
     {
       id: 'alerts', label: 'Sound Alerts', icon: Bell,
       body: <>
-        <p className="text-sm text-stone-700 mb-3">The bell icon in the header turns sound alerts on or off. When on, and something's time actually arrives while you have the app open, a banner pops up with a chime — you don't have to be watching the To-Do list.</p>
+        <p className="text-sm text-stone-700 mb-3">The bell icon in the header turns sound alerts on or off. When on, a banner pops up with a chime 15 minutes before a follow-up, callback, or appointment's scheduled time — while you have the app open — so you get an actual heads-up, not a notice after the moment's already passed.</p>
         <ul className="list-disc pl-5 mb-3">
           <Bul><b>Call</b> — opens your dialer.</Bul>
           <Bul><b>WhatsApp</b> — opens a chat, if a real number is on file.</Bul>

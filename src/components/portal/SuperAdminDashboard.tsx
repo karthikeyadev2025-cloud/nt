@@ -1018,7 +1018,12 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
 
   const owners = users.filter(u => u.role === 'super_admin');
   const staffOnly = users.filter(u => u.role !== 'super_admin');
-  const staffCountByRole = users.reduce<Record<string, number>>((acc, u) => { acc[u.role] = (acc[u.role] || 0) + 1; return acc; }, {});
+  // Only counts active staff — a retired/dismissed/suspended person
+  // shouldn't inflate a role's headcount just because their historical
+  // row still exists (users itself deliberately includes everyone,
+  // active or not, since the staff list below needs to show departed
+  // staff too so they can be found and reactivated if needed).
+  const staffCountByRole = users.reduce<Record<string, number>>((acc, u) => { if (u.is_active) acc[u.role] = (acc[u.role] || 0) + 1; return acc; }, {});
   useEffect(() => { load(); }, []);
 
   // Open the Manage Access editor for a staff member arriving from global search.

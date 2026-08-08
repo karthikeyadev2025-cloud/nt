@@ -8,16 +8,16 @@ import { waLink } from '../../lib/phone';
 
 export type PortalTab = { id: string; label: string; icon: LucideIcon; show: boolean };
 
-// Fixed-position stack of "this is due right now" cards — sound + visual,
-// separate from the ephemeral 4-second toast system since these need to
-// actually get someone's attention, not flash and vanish. Deliberately
-// minimal: Call + Dismiss only. The full to-do list (My To-Do on Home)
-// is where Mark Done / Reschedule live — this banner's job is just to
-// interrupt at the right moment, not duplicate that UI.
+// Fixed-position stack of "coming up in ~15 minutes" cards — sound +
+// visual, separate from the ephemeral 4-second toast system since these
+// need to actually get someone's attention, not flash and vanish.
+// Deliberately minimal: Call + Dismiss only. The full to-do list (My
+// To-Do on Home) is where Mark Done / Reschedule live — this banner's
+// job is just to interrupt at the right moment, not duplicate that UI.
 const ALERT_TYPE_META: Record<string, { label: string; icon: string }> = {
-  followup: { label: 'Follow-up due', icon: '📞' },
-  callback: { label: 'Callback due', icon: '☎️' },
-  appointment: { label: 'Appointment due', icon: '📅' },
+  followup: { label: 'Follow-up in 15 min', icon: '📞' },
+  callback: { label: 'Callback in 15 min', icon: '☎️' },
+  appointment: { label: 'Appointment in 15 min', icon: '📅' },
 };
 
 export function DueAlertBanner({ alerts, onDismiss, onSnooze }: { alerts: ReturnType<typeof useDueLeadAlerts>['activeAlerts']; onDismiss: (key: string) => void; onSnooze: (key: string, minutes?: number) => void }) {

@@ -55,6 +55,10 @@ export type DueAlert = {
 };
 
 const SOUND_PREF_KEY = 'nt_due_alert_sound_enabled';
+// Fires 15 minutes before the scheduled time, not at it — an actual
+// heads-up you can act on ("call in 15 min") rather than a notice that
+// the moment has already arrived and passed.
+const ALERT_LEAD_MS = 15 * 60 * 1000;
 
 export function useDueLeadAlerts() {
   const { user } = useAuth();
@@ -100,11 +104,12 @@ export function useDueLeadAlerts() {
       candidates.forEach(c => {
         if (!c.dueAt || seenRef.current.has(c.key)) return;
         const due = new Date(c.dueAt).getTime();
-        if (due > now) return; // not due yet
+        if (due - ALERT_LEAD_MS > now) return; // more than 15 min away, not due yet
         seenRef.current.add(c.key);
-        // On the very first poll after mount, anything already overdue
-        // predates this session — silently acknowledge it (it's already
-        // visible in the to-do list) instead of firing an alert storm.
+        // On the very first poll after mount, anything already inside its
+        // 15-minute window (or overdue) predates this session — silently
+        // acknowledge it (it's already visible in the to-do list) instead
+        // of firing an alert storm.
         if (firstPollRef.current) return;
         newlyDue.push({ key: c.key, leadId: l.id, customerName: l.customer_name, phone: l.phone, type: c.type, dueAt: c.dueAt });
       });
@@ -117,7 +122,7 @@ export function useDueLeadAlerts() {
       if (notifPermission === 'granted') {
         newlyDue.forEach(a => {
           const label = a.type === 'appointment' ? 'Appointment' : a.type === 'callback' ? 'Callback' : 'Follow-up';
-          new Notification(`${label} due: ${a.customerName}`, { body: a.phone, tag: a.key });
+          new Notification(`${label} in 15 min: ${a.customerName}`, { body: a.phone, tag: a.key });
         });
       }
     }
