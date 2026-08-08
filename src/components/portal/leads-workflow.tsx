@@ -440,6 +440,107 @@ export function TransferApprovals() {
   );
 }
 
+// ─────────────────────────── Super Admin: approve/reject manager edit &
+// delete requests. Managers have full read/work access to leads — this
+// is specifically the gate on the Edit Lead form and Delete, which now
+// go through here instead of applying instantly for anyone but
+// super_admin. See migration 20260807000009.
+type LeadChangeRequest = {
+  id: string; lead_id: string | null; action: 'edit' | 'delete';
+  proposed_data: Record<string, unknown> | null; original_data: Record<string, unknown>;
+  requested_by: string | null; created_at: string;
+};
+const EDIT_FIELD_LABELS: Record<string, string> = {
+  customer_name: 'Name', phone: 'Phone', email: 'Email', segment_slug: 'Segment',
+  interested_in: 'Interested In', address: 'Address', stage: 'Stage', priority: 'Priority',
+  assigned_to: 'Assigned To', invoice_no: 'Invoice No.', invoice_amount: 'Invoice Amount',
+};
+
+export function LeadChangeApprovals() {
+  const toast = useToast();
+  const [items, setItems] = useState<LeadChangeRequest[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
+
+  const load = useCallback(async () => {
+    // lead_change_requests isn't in database.types.ts yet (raw SQL
+    // migration, no live DB access to regenerate the generated file) —
+    // cast at the call boundary.
+    const { data } = await supabase.from('lead_change_requests' as never).select('*').eq('status', 'pending').order('created_at', { ascending: false }) as unknown as { data: LeadChangeRequest[] | null };
+    if (data) setItems(data);
+    const { data: users } = await supabase.from('app_users').select('id, full_name');
+    if (users) setNames(Object.fromEntries(users.map(u => [u.id, u.full_name])));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  async function resolve(id: string, approve: boolean) {
+    setBusyId(id);
+    try {
+      const { error } = await supabase.rpc('approve_lead_change_request' as never, {
+        p_request_id: id, p_approve: approve, p_note: noteDraft[id] || '',
+      } as never);
+      if (error) { toast.error(`Couldn't resolve: ${(error as { message: string }).message}`); return; }
+      toast.success(approve ? 'Approved and applied' : 'Rejected');
+      load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  if (items.length === 0) return <p className="text-stone-700 text-sm text-center py-10">No pending lead change requests.</p>;
+
+  return (
+    <div className="space-y-3">
+      {items.map(r => {
+        const orig = r.original_data || {};
+        const changedFields = r.action === 'edit' && r.proposed_data
+          ? Object.keys(EDIT_FIELD_LABELS).filter(k => (r.proposed_data?.[k] ?? '') !== (orig[k] ?? ''))
+          : [];
+        return (
+          <div key={r.id} className={cardCls}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-stone-900 text-sm font-bold">{(orig.customer_name as string) || 'Unknown lead'}</p>
+              <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${r.action === 'delete' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                {r.action === 'delete' ? 'Deletion requested' : 'Edit requested'}
+              </span>
+            </div>
+            <p className="text-stone-700 text-xs mb-2">Requested by <span className="font-semibold">{names[r.requested_by ?? ''] || '—'}</span> on {new Date(r.created_at).toLocaleString('en-IN')}</p>
+            {r.action === 'edit' && (
+              changedFields.length === 0 ? (
+                <p className="text-stone-500 text-xs italic mb-2">No field changes detected.</p>
+              ) : (
+                <div className="space-y-1 mb-2 bg-stone-50 rounded-lg p-2.5">
+                  {changedFields.map(k => (
+                    <p key={k} className="text-xs">
+                      <span className="font-semibold text-stone-700">{EDIT_FIELD_LABELS[k]}: </span>
+                      <span className="text-red-700 line-through">{String(orig[k] ?? '—')}</span>
+                      {' → '}
+                      <span className="text-emerald-700 font-semibold">{String(r.proposed_data?.[k] ?? '—')}</span>
+                    </p>
+                  ))}
+                </div>
+              )
+            )}
+            {r.action === 'delete' && (
+              <p className="text-stone-700 text-xs mb-2">{(orig.phone as string) || ''} {orig.segment_slug ? `• ${orig.segment_slug}` : ''}</p>
+            )}
+            <input className={inputCls + ' text-xs mb-2'} placeholder="Note (optional, shown in the audit trail)" value={noteDraft[r.id] || ''} onChange={e => setNoteDraft(prev => ({ ...prev, [r.id]: e.target.value }))} />
+            <div className="flex gap-2">
+              <button disabled={busyId === r.id} className="px-3 py-1 rounded bg-emerald-600 text-white text-xs flex items-center gap-1" onClick={() => resolve(r.id, true)}>
+                <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+              </button>
+              <button disabled={busyId === r.id} className="px-3 py-1 rounded bg-red-600 text-white text-xs flex items-center gap-1" onClick={() => resolve(r.id, false)}>
+                <XCircle className="w-3.5 h-3.5" /> Reject
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─────────────────────────── Manager/Super Admin: Excel bulk upload + assign
 export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
@@ -1184,11 +1285,12 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
 }
 
 export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initialStageFilter, filterNonce }: { segments: Segment[]; focusLeadId?: string; initialSegFilter?: string; initialStageFilter?: string; filterNonce?: number }) {
-  const { hasPermission } = useAuth();
-  const [sub, setSub] = useState<'board' | 'appointments' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity' | 'duplicates'>('board');
+  const { hasPermission, user } = useAuth();
+  const [sub, setSub] = useState<'board' | 'appointments' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity' | 'duplicates' | 'change_requests'>('board');
   const [moreOpen, setMoreOpen] = useState(false);
   const showBulk = hasPermission('bulk_assign_leads');
   const showTransfers = hasPermission('approve_transfers');
+  const isSuperAdmin = user?.role === 'super_admin';
   // A staff member without any admin-ish permission is a "restricted" user
   // in this context — they should see only the two views they actually
   // work in (their board, their appointments) and everything else is
@@ -1208,6 +1310,7 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
     { key: 'reassign' as const,    label: 'Reassign Leads',  when: showBulk },
     { key: 'duplicates' as const,  label: 'Duplicate Leads', when: showBulk },
     { key: 'transfers' as const,   label: 'Handoff Approvals', when: showTransfers },
+    { key: 'change_requests' as const, label: 'Edit/Delete Approvals', when: isSuperAdmin },
   ].filter(t => t.when);
 
   const primaryBtn = (k: typeof sub, label: string) => (
@@ -1255,6 +1358,7 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
       {sub === 'bulk' && showBulk && <BulkLeadUpload segments={segments} />}
       {sub === 'reassign' && showBulk && <BulkReassignLeads segments={segments} />}
       {sub === 'duplicates' && showBulk && <DuplicateLeadsManager />}
+      {sub === 'change_requests' && isSuperAdmin && <LeadChangeApprovals />}
       {sub === 'transfers' && showTransfers && <TransferApprovals />}
     </div>
   );

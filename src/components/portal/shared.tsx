@@ -1215,6 +1215,14 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   const [remarks, setRemarks] = useState<{ id: string; remark: string; call_type: string; created_at: string; address?: string; photo_url?: string; author_name?: string; author_staff_code?: string }[]>([]);
   const [leadPhotoUrls, setLeadPhotoUrls] = useState<Record<string, string>>({});
   const [previewLeadPhoto, setPreviewLeadPhoto] = useState<string | null>(null);
+  // Card-level photo thumbnail — a batched fetch (one call for every
+  // visible lead's primary photo, not one query per card) plus a
+  // click-to-see-everything gallery pulling in every photo attached to
+  // that lead's remarks too, not just the primary one.
+  const [cardPhotoUrls, setCardPhotoUrls] = useState<Record<string, string>>({});
+  const [galleryLead, setGalleryLead] = useState<Lead | null>(null);
+  const [galleryPhotos, setGalleryPhotos] = useState<{ url: string; caption: string }[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
   const [newRemark, setNewRemark] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   // Follow-up count badge (Aadya pattern) — one batched RPC call per lead
@@ -1346,6 +1354,18 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   }
 
   async function deleteLead(id: string) {
+    const lead = leads.find(l => l.id === id) || openLead;
+    if (user?.role !== 'super_admin') {
+      if (!window.confirm('Request deletion of this lead? A Super Admin will need to approve it before it\'s actually removed.')) return;
+      const { error } = await supabase.from('lead_change_requests' as never).insert({
+        lead_id: id, action: 'delete', proposed_data: null, original_data: lead || {}, requested_by: user?.id,
+      } as never);
+      if (error) { toast.error(`Couldn't submit the request: ${describeDbError(error)}`); return; }
+      toast.success('Deletion request sent to Super Admin for approval.');
+      setOpenLead(null);
+      setEditingLead(null);
+      return;
+    }
     if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) return;
     const { error } = await supabase.from('marketing_leads').delete().eq('id', id);
     if (error) { toast.error(`Couldn't delete lead: ${error.message}`); return; }
@@ -1360,7 +1380,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   async function saveEditedLead(e: React.FormEvent) {
     e.preventDefault();
     if (!editingLead) return;
-    const { error } = await supabase.from('marketing_leads').update({
+    const proposed = {
       customer_name: editingLead.customer_name,
       phone: editingLead.phone,
       email: editingLead.email || null,
@@ -1372,6 +1392,21 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       assigned_to: editingLead.assigned_to || null,
       invoice_no: editingLead.invoice_no || null,
       invoice_amount: editingLead.invoice_amount || null,
+    };
+
+    if (user?.role !== 'super_admin') {
+      const original = leads.find(l => l.id === editingLead.id) || openLead;
+      const { error } = await supabase.from('lead_change_requests' as never).insert({
+        lead_id: editingLead.id, action: 'edit', proposed_data: proposed, original_data: original || {}, requested_by: user?.id,
+      } as never);
+      if (error) { toast.error(`Couldn't submit the request: ${describeDbError(error)}`); return; }
+      toast.success('Changes sent to Super Admin for approval.');
+      setEditingLead(null);
+      return;
+    }
+
+    const { error } = await supabase.from('marketing_leads').update({
+      ...proposed,
       updated_at: new Date().toISOString(),
     } as never).eq('id', editingLead.id);
 
@@ -1480,6 +1515,49 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
         signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
         setLeadPhotoUrls(map);
       }
+    }
+  }
+
+  // One batched signed-URL request for every visible lead's primary
+  // photo, instead of a query per card — same approach as loadRemarks
+  // above, just scoped to the card grid rather than one lead's history.
+  useEffect(() => {
+    const paths = Array.from(new Set(leads.map(l => l.photo_url).filter(Boolean))) as string[];
+    if (paths.length === 0) { setCardPhotoUrls({}); return; }
+    supabase.storage.from('lead-photos').createSignedUrls(paths, 3600).then(({ data: signed }) => {
+      if (!signed) return;
+      const map: Record<string, string> = {};
+      signed.forEach(s => { if (s.signedUrl && s.path) map[s.path] = s.signedUrl; });
+      setCardPhotoUrls(map);
+    }).catch(() => {});
+  }, [leads]);
+
+  // Gallery — every photo for one lead: its own primary photo plus every
+  // photo attached to any of its remarks (multi-shot visits, additional
+  // photos added at creation, etc.), not just the one shown on the card.
+  async function openGallery(lead: Lead) {
+    setGalleryLead(lead);
+    setGalleryLoading(true);
+    setGalleryPhotos([]);
+    try {
+      const { data: remarksWithPhotos } = await supabase.from('lead_remarks')
+        .select('photo_url, created_at, call_type').eq('lead_id', lead.id).not('photo_url', 'is', null)
+        .order('created_at', { ascending: false });
+      const paths = Array.from(new Set([lead.photo_url, ...(remarksWithPhotos || []).map(r => r.photo_url)].filter(Boolean))) as string[];
+      if (paths.length === 0) return;
+      const { data: signed } = await supabase.storage.from('lead-photos').createSignedUrls(paths, 3600);
+      if (!signed) return;
+      const urlByPath = Object.fromEntries(signed.filter(s => s.signedUrl).map(s => [s.path, s.signedUrl]));
+      const photos: { url: string; caption: string }[] = [];
+      if (lead.photo_url && urlByPath[lead.photo_url]) photos.push({ url: urlByPath[lead.photo_url], caption: 'Added with lead' });
+      (remarksWithPhotos || []).forEach(r => {
+        if (r.photo_url && urlByPath[r.photo_url]) {
+          photos.push({ url: urlByPath[r.photo_url], caption: new Date(r.created_at ?? '').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) });
+        }
+      });
+      setGalleryPhotos(photos);
+    } finally {
+      setGalleryLoading(false);
     }
   }
 
@@ -1663,6 +1741,15 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   className="mt-1 w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0"
                 />
               )}
+              {l.photo_url && (
+                <button onClick={(e) => { e.stopPropagation(); openGallery(l); }} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm hover:border-teal-400 transition-colors" title="View photos">
+                  {cardPhotoUrls[l.photo_url] ? (
+                    <img src={cardPhotoUrls[l.photo_url]} alt={`${l.customer_name} — photo`} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-stone-200 animate-pulse" />
+                  )}
+                </button>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2.5" onClick={() => { setOpenLead(l); loadRemarks(l.id); }} style={{ cursor: 'pointer' }}>
                   <span className="text-stone-900 font-bold">{l.customer_name}</span>
@@ -1809,8 +1896,17 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                         onDragEnd={() => { setDragLeadId(null); setDragOverStage(null); }}
                         onClick={() => { setOpenLead(l); loadRemarks(l.id); }}
                         className={`bg-white border border-stone-200 rounded-xl p-2.5 shadow-sm hover:border-stone-300 transition-colors ${canDragHere ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}>
-                        <p className="text-stone-900 text-sm font-bold truncate">{l.customer_name}</p>
-                        <p className="text-stone-700 text-xs mt-0.5 truncate">{assignedStaffName || 'Unassigned'} • {l.phone}</p>
+                        <div className="flex items-start gap-2">
+                          {l.photo_url && (
+                            <button onClick={(e) => { e.stopPropagation(); openGallery(l); }} className="shrink-0 w-9 h-9 rounded-lg overflow-hidden border border-stone-200">
+                              {cardPhotoUrls[l.photo_url] ? <img src={cardPhotoUrls[l.photo_url]} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-200 animate-pulse" />}
+                            </button>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-stone-900 text-sm font-bold truncate">{l.customer_name}</p>
+                            <p className="text-stone-700 text-xs mt-0.5 truncate">{assignedStaffName || 'Unassigned'} • {l.phone}</p>
+                          </div>
+                        </div>
                         <div className="flex items-center justify-between mt-1">
                           {followupCounts[l.id] > 0 && (
                             <p className="text-stone-500 text-[11px]">📞 {followupCounts[l.id]} follow-up{followupCounts[l.id] === 1 ? '' : 's'}</p>
@@ -1877,7 +1973,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                       Edit Lead
                     </button>
                     <button onClick={() => deleteLead(openLead.id)} className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 shadow-sm transition-colors">
-                      Delete
+                      {user?.role === 'super_admin' ? 'Delete' : 'Request Deletion'}
                     </button>
                   </>
                 )}
@@ -2015,11 +2111,36 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       )}
 
       {previewLeadPhoto && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewLeadPhoto(null)}>
+        <div className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewLeadPhoto(null)}>
           <button onClick={() => setPreviewLeadPhoto(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
             <X className="w-6 h-6" />
           </button>
           <img src={previewLeadPhoto} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
+      {galleryLead && (
+        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4" onClick={() => setGalleryLead(null)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-stone-900 font-bold text-sm">{galleryLead.customer_name} — Photos</h3>
+              <button onClick={() => setGalleryLead(null)} className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500"><X className="w-4 h-4" /></button>
+            </div>
+            {galleryLoading ? (
+              <p className="text-stone-500 text-xs text-center py-8">Loading photos...</p>
+            ) : galleryPhotos.length === 0 ? (
+              <p className="text-stone-500 text-xs text-center py-8">No photos found.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {galleryPhotos.map((p, i) => (
+                  <button key={i} onClick={() => setPreviewLeadPhoto(p.url)} className="relative rounded-lg overflow-hidden border border-stone-200 aspect-square group">
+                    <img src={p.url} alt={p.caption} className="w-full h-full object-cover" />
+                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 truncate">{p.caption}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -2089,13 +2210,16 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
               )}
               <div className="flex justify-between items-center pt-3 border-t border-stone-100">
                 <button type="button" onClick={() => deleteLead(editingLead.id)} className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200">
-                  Delete Lead
+                  {user?.role === 'super_admin' ? 'Delete Lead' : 'Request Deletion'}
                 </button>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setEditingLead(null)} className="px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-xl">Cancel</button>
-                  <button type="submit" className="px-4 py-2 text-xs font-bold text-white bg-orange-700 hover:bg-orange-600 rounded-xl shadow-md">Save Changes</button>
+                  <button type="submit" className="px-4 py-2 text-xs font-bold text-white bg-orange-700 hover:bg-orange-600 rounded-xl shadow-md">{user?.role === 'super_admin' ? 'Save Changes' : 'Submit for Approval'}</button>
                 </div>
               </div>
+              {user?.role !== 'super_admin' && (
+                <p className="text-stone-500 text-[11px] text-center -mt-1">Changes and deletions go to a Super Admin for approval before they apply — you can still change stage, log outcomes, and reschedule directly.</p>
+              )}
             </form>
           </div>
         </div>
