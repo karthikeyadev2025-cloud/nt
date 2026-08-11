@@ -418,13 +418,29 @@ export function MyAttendance() {
     return path;
   }
 
-  async function finishCheckIn(photoDataUrl: string | null) {
+  async function finishCheckIn(photoDataUrl: string) {
     if (!user) return;
     setBusy(true); setShowCamera(null);
-    const [{ lat, lng }, selfiePath] = await Promise.all([
-      getPosition(),
-      photoDataUrl ? uploadSelfie(photoDataUrl) : Promise.resolve(null),
-    ]);
+
+    // Both photo and location are mandatory for check-in — previously
+    // neither actually was: a Skip button bypassed the photo entirely,
+    // and a failed photo upload (or an unavailable/denied location)
+    // still let the check-in through with the field just left null. Now
+    // both are checked before the record is ever written, and a failure
+    // on either one stops the check-in with a clear reason instead of
+    // silently recording an incomplete one.
+    const pos = await getPosition();
+    if (!pos) {
+      setBusy(false);
+      toast.error("Couldn't get your location. Location access is required to check in — please enable it in your browser/device settings and try again.");
+      return;
+    }
+    const selfiePath = await uploadSelfie(photoDataUrl);
+    if (!selfiePath) {
+      setBusy(false);
+      toast.error("Photo upload failed — please try again before checking in.");
+      return;
+    }
 
     // Late detection is computed server-side by a BEFORE INSERT trigger against
     // the assigned shift, so a tampered device clock can't defeat it. We just
@@ -439,7 +455,7 @@ export function MyAttendance() {
     const { data: inserted, error } = await supabase.from('attendance_records')
       .upsert({
         staff_user_id: user.id, attendance_date: dateStr,
-        check_in_at: new Date().toISOString(), check_in_lat: lat, check_in_lng: lng,
+        check_in_at: new Date().toISOString(), check_in_lat: pos.lat, check_in_lng: pos.lng,
         check_in_selfie_url: selfiePath, status: 'present', work_mode: workMode,
       }, { onConflict: 'staff_user_id,attendance_date', ignoreDuplicates: true })
       .select('is_late, minutes_late').maybeSingle();
@@ -456,15 +472,23 @@ export function MyAttendance() {
     load();
   }
 
-  async function finishCheckOut(photoDataUrl: string | null) {
+  async function finishCheckOut(photoDataUrl: string) {
     if (!user || !today) return;
     setBusy(true); setShowCamera(null);
-    const [{ lat, lng }, selfiePath] = await Promise.all([
-      getPosition(),
-      photoDataUrl ? uploadSelfie(photoDataUrl) : Promise.resolve(null),
-    ]);
+    const pos = await getPosition();
+    if (!pos) {
+      setBusy(false);
+      toast.error("Couldn't get your location. Location access is required to check out — please enable it in your browser/device settings and try again.");
+      return;
+    }
+    const selfiePath = await uploadSelfie(photoDataUrl);
+    if (!selfiePath) {
+      setBusy(false);
+      toast.error("Photo upload failed — please try again before checking out.");
+      return;
+    }
     const { error } = await supabase.from('attendance_records').update({
-      check_out_at: new Date().toISOString(), check_out_lat: lat, check_out_lng: lng,
+      check_out_at: new Date().toISOString(), check_out_lat: pos.lat, check_out_lng: pos.lng,
       check_out_selfie_url: selfiePath,
     } as never).eq('id', today.id);
     setBusy(false);
@@ -614,7 +638,6 @@ export function MyAttendance() {
         <CameraCapture
           title={showCamera === 'in' ? 'Check-In Selfie' : 'Check-Out Selfie'}
           onCapture={dataUrl => showCamera === 'in' ? finishCheckIn(dataUrl) : finishCheckOut(dataUrl)}
-          onSkip={() => showCamera === 'in' ? finishCheckIn(null) : finishCheckOut(null)}
           onCancel={() => setShowCamera(null)}
         />
       )}
