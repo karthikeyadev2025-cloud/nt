@@ -2225,19 +2225,29 @@ export default function SuperAdminDashboard() {
       ],
     },
     {
-      label: 'Administration',
+      label: 'People & HR',
       items: [
         { id: 'access', label: 'Access Control', icon: UserCog, show: isSuperAdmin || hasPermission('manage_staff') },
+        { id: 'documents', label: 'Documents & Onboarding', icon: FileText, show: isSuperAdmin || hasPermission('manage_staff') },
+        { id: 'approvals', label: 'Approvals', icon: Landmark, show: isSuperAdmin || hasPermission('approve_advances') || hasPermission('manage_staff') },
+        { id: 'announcements', label: 'Announcements', icon: Megaphone, show: isSuperAdmin || hasPermission('manage_staff') },
+      ],
+    },
+    {
+      label: 'Website & Catalog',
+      items: [
         { id: 'segments', label: 'Segments', icon: Layers, show: isSuperAdmin },
         { id: 'products', label: 'Products', icon: Boxes, show: isSuperAdmin || hasPermission('manage_content') },
         { id: 'catalog', label: 'Services & Ticket Types', icon: Wrench, show: isSuperAdmin || hasPermission('manage_content') },
         { id: 'meeting_types', label: 'Meeting Types', icon: CalendarDays, show: isSuperAdmin || hasPermission('manage_content') },
-        { id: 'documents', label: 'Documents & Onboarding', icon: FileText, show: isSuperAdmin || hasPermission('manage_staff') },
-        { id: 'approvals', label: 'Approvals', icon: Landmark, show: isSuperAdmin || hasPermission('approve_advances') || hasPermission('manage_staff') },
-        { id: 'announcements', label: 'Announcements', icon: Megaphone, show: isSuperAdmin || hasPermission('manage_staff') },
         { id: 'careers', label: 'Careers / Hiring', icon: Briefcase, show: isSuperAdmin || hasPermission('view_careers') || hasPermission('manage_careers') },
         { id: 'media', label: 'Gallery / Team / Reviews', icon: ImageIcon, show: isSuperAdmin || hasPermission('manage_content') },
         { id: 'content', label: 'Website Content', icon: FileText, show: isSuperAdmin || hasPermission('manage_content') },
+      ],
+    },
+    {
+      label: 'Security',
+      items: [
         { id: 'security', label: 'Security Logs', icon: Shield, show: isSuperAdmin },
       ],
     },
