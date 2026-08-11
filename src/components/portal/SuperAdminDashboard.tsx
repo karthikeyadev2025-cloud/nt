@@ -128,6 +128,7 @@ function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: str
     { key: 'overdueFollowups', label: 'Follow-ups overdue', tab: 'crm', tone: 'text-red-700 font-extrabold', show: canLeads },
     { key: 'overdueCallbacksAppts', label: 'Callbacks/appointments overdue', tab: 'crm', tone: 'text-red-700 font-extrabold', show: canLeads },
     { key: 'duplicateLeadGroups', label: 'Duplicate leads to merge', tab: 'crm', tone: 'text-amber-700 font-bold', show: canLeads },
+    { key: 'leadChangeRequests', label: 'Lead edits/deletes to approve', tab: 'crm', tone: 'text-amber-700 font-extrabold', show: isSA },
     { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-teal-700 font-extrabold', show: true },
     { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-700 font-extrabold', show: canStaff || canLeads },
   ].filter(i => i.show);

@@ -552,6 +552,21 @@ export function MyLeadsToDoList() {
     const column = item.type === 'followup' ? 'next_followup_at' : 'callback_at';
     const { error } = await supabase.from('marketing_leads').update({ [column]: null } as never).eq('id', item.leadId);
     if (error) { toast.error(`Couldn't clear it: ${describeDbError(error)}`); return; }
+    // A tick on the to-do list used to just null the column and vanish —
+    // zero record anywhere that it ever happened, let alone that it was
+    // actually done rather than just dismissed. Log it the same way any
+    // other logged action is (a lead_remarks row), so it shows up in
+    // Team Activity and this lead's own history automatically — no new
+    // admin-facing UI needed, it plugs into what already reads from
+    // lead_remarks. Best-effort: the column is already cleared above, so
+    // a failed log here shouldn't undo that or block the person from
+    // moving on to their next item.
+    if (user) {
+      supabase.from('lead_remarks').insert({
+        lead_id: item.leadId, user_id: user.id, call_type: 'note',
+        remark: `${TODO_TYPE_META[item.type].label} marked done from To-Do list.`,
+      } as never).then(() => {}, () => {});
+    }
     invalidateQueryCache('my_todo:');
     setItems(prev => prev?.filter(i => i.key !== item.key) ?? null);
   }
