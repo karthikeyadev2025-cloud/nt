@@ -556,7 +556,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
     if (i === 0) {
       if (!form.full_name.trim()) return 'Full name is required';
       if (!form.email.trim() || !form.email.includes('@')) return 'A valid email is required';
-      if ((form.password || '').length < 6) return 'Temporary password must be at least 6 characters';
+      if ((form.password || '').length < 8) return 'Temporary password must be at least 8 characters';
     }
     if (i === 1 && form.segments.length === 0) return 'Select at least one segment';
     return null;
