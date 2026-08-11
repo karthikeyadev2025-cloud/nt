@@ -1539,20 +1539,66 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
         <p className="text-stone-700 text-sm">Add any new software product without code — it appears on the website instantly.</p>
         <button className={btnCls} onClick={() => setEditing({ segment_slug: 'software', slug: '', name: '', tagline: '', description: '', external_url: '', demo_cta: 'Visit Website', status: 'active', order_index: rows.length + 1, features: [] })}>+ Add Product</button>
       </div>
-      <div className="space-y-2">
-        {rows.map(p => (
-          <div key={p.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
-            <div>
-              <p className="text-stone-900 font-bold">{p.name} <span className="text-stone-700 text-xs">/{p.slug}</span></p>
-              <p className="text-stone-700 text-xs">{p.tagline} {p.external_url && `• ${p.external_url}`}</p>
+      <div className="space-y-6">
+        {segments.map(seg => {
+          const segRows = rows.filter(p => p.segment_slug === seg.slug);
+          if (segRows.length === 0) return null;
+          return (
+            <div key={seg.slug}>
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color ?? '#78716c' }} />
+                <h4 className="text-stone-900 text-xs font-extrabold uppercase tracking-wider">{seg.name}</h4>
+                <span className="text-stone-400 text-xs">({segRows.length})</span>
+              </div>
+              <div className="space-y-2">
+                {segRows.map(p => {
+                  const features = (p.features as ProductFeature[] | null) || [];
+                  return (
+                    <div key={p.id} className="rounded-xl bg-white border border-stone-200/90 shadow-sm p-4" style={{ borderLeftWidth: 3, borderLeftColor: seg.color ?? '#78716c' }}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-stone-900 font-bold">{p.name} <span className="text-stone-500 text-xs font-normal">/{p.slug}</span></p>
+                          <p className="text-stone-700 text-xs">{p.tagline} {p.external_url && `• ${p.external_url}`}</p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className={`text-xs px-2 py-0.5 rounded ${p.status === 'active' ? 'bg-emerald-100 text-emerald-700' : p.status === 'coming_soon' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'}`}>{p.status}</span>
+                          <button className="text-teal-700 text-sm font-medium" onClick={() => setEditing({ ...p, features })}>Edit</button>
+                          <button className="text-red-700 text-sm font-medium" onClick={() => remove(p.id)}>Delete</button>
+                        </div>
+                      </div>
+                      {features.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-stone-100">
+                          {features.map((f, i) => (
+                            <span key={i} className="text-[11px] px-2 py-1 rounded-full bg-stone-50 text-stone-700 border border-stone-200" title={f.description}>{f.title}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs px-2 py-0.5 rounded ${p.status === 'active' ? 'bg-emerald-100 text-emerald-700' : p.status === 'coming_soon' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'}`}>{p.status}</span>
-              <button className="text-teal-700 text-sm" onClick={() => setEditing({ ...p, features: (p.features as ProductFeature[] | null) || [] })}>Edit</button>
-              <button className="text-red-700 text-sm" onClick={() => remove(p.id)}>Delete</button>
+          );
+        })}
+        {rows.filter(p => !segments.some(s => s.slug === p.segment_slug)).length > 0 && (
+          <div>
+            <h4 className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-2.5">Unassigned Segment</h4>
+            <div className="space-y-2">
+              {rows.filter(p => !segments.some(s => s.slug === p.segment_slug)).map(p => (
+                <div key={p.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
+                  <div>
+                    <p className="text-stone-900 font-bold">{p.name} <span className="text-stone-700 text-xs">/{p.slug}</span></p>
+                    <p className="text-stone-700 text-xs">{p.tagline}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button className="text-teal-700 text-sm" onClick={() => setEditing({ ...p, features: (p.features as ProductFeature[] | null) || [] })}>Edit</button>
+                    <button className="text-red-700 text-sm" onClick={() => remove(p.id)}>Delete</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
+        )}
       </div>
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
