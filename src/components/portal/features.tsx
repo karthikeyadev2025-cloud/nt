@@ -405,38 +405,33 @@ export function IDCard() {
     });
   }, [user]);
 
+  // Prints the actual on-screen card via the browser's normal print flow
+  // instead of a popup window. The old approach (window.open + document.write
+  // + an immediate .print() call) had two real problems: it silently did
+  // nothing if the popup was blocked — no error, no explanation, "print has
+  // issue" with zero clue why — and mobile browsers block or mishandle that
+  // pattern far more often than desktop, which matters a lot for a portal
+  // used mostly on phones. This way there's no popup to block at all, and
+  // it's the same reliable window.print() every browser already supports.
+  // A dedicated #id-card-print-area, hidden on screen and shown only under
+  // @media print (with everything else hidden), also fixes the printed
+  // card silently missing the profile photo, which the popup HTML never
+  // included at all.
   function print() {
-    const w = window.open('', '_blank');
-    if (!w || !user) return;
-    w.document.write(`
-      <html><head><title>ID Card - ${user.full_name}</title>
-      <style>
-        body{font-family:Arial,sans-serif;display:flex;justify-content:center;padding:60px;background:#f1f5f9}
-        .card{width:320px;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15);border:1px solid #e2e8f0}
-        .head{background:${seg?.color || '#0ea5e9'};color:#fff;padding:16px;text-align:center}
-        .body{padding:20px;text-align:center;background:#fff}
-        .row{display:flex;justify-content:space-between;font-size:12px;color:#475569;border-top:1px solid #e2e8f0;padding:8px 0}
-      </style></head>
-      <body><div class="card">
-        <div class="head"><strong>NIKKI TECHNOLOGIES</strong><div style="font-size:11px">${seg?.name || 'Staff'}</div></div>
-        <div class="body">
-          <h2 style="margin:8px 0 2px">${user.full_name}</h2>
-          <p style="color:#64748b;font-size:13px;margin:0">${user.designation || user.role}</p>
-          <div class="row"><span>ID</span><span>${user.staff_code || '—'}</span></div>
-          <div class="row"><span>Phone</span><span>${user.phone || '—'}</span></div>
-          ${user.blood_group ? `<div class="row"><span>Blood Group</span><span>${user.blood_group}</span></div>` : ''}
-          <div class="row"><span>Email</span><span>${user.email}</span></div>
-        </div>
-      </div></body></html>
-    `);
-    w.document.close();
-    w.print();
+    window.print();
   }
 
   if (!user) return null;
   return (
     <div className={cardCls + ' max-w-sm'}>
-      <div className="rounded-xl overflow-hidden border border-stone-800">
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #id-card-print-area, #id-card-print-area * { visibility: visible; }
+          #id-card-print-area { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: center; padding: 40px; }
+        }
+      `}</style>
+      <div id="id-card-print-area" className="rounded-xl overflow-hidden border border-stone-800 print:border-stone-300 print:shadow-none print:w-80">
         <div className="p-4 text-center text-stone-950 font-bold" style={{ backgroundColor: seg?.color || '#0ea5e9' }}>
           NIKKI TECHNOLOGIES
           <div className="text-xs font-normal">{seg?.name || 'Staff'}</div>
@@ -451,10 +446,11 @@ export function IDCard() {
             <p>ID: {user.staff_code || '—'}</p>
             <p>Phone: {user.phone || '—'}</p>
             {user.blood_group && <p>Blood Group: {user.blood_group}</p>}
+            <p>Email: {user.email}</p>
           </div>
         </div>
       </div>
-      <button onClick={print} className="flex items-center gap-1.5 text-teal-700 text-sm mt-3"><Printer className="w-4 h-4" /> Print ID Card</button>
+      <button onClick={print} className="flex items-center gap-1.5 text-teal-700 text-sm mt-3 print:hidden"><Printer className="w-4 h-4" /> Print ID Card</button>
     </div>
   );
 }
