@@ -1651,7 +1651,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
   const [seg, setSeg] = useState(segments[0]?.slug || '');
   const [services, setServices] = useState<Tables<'services'>[]>([]);
   const [types, setTypes] = useState<Tables<'ticket_types'>[]>([]);
-  const [newService, setNewService] = useState({ title: '', description: '', icon: 'Settings', highlights: '' });
+  const [newService, setNewService] = useState({ title: '', description: '', icon: 'Settings', highlights: '', best_for: '' });
   const [newType, setNewType] = useState('');
   const toast = useToast();
 
@@ -1669,12 +1669,13 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
     if (!newService.title || !seg) { toast.error('Enter a service title'); return; }
     const highlights = newService.highlights.split(',').map(h => h.trim()).filter(Boolean);
     const { error } = await supabase.from('services').insert({
-      title: newService.title, description: newService.description, icon: newService.icon, highlights,
+      title: newService.title, description: newService.description, icon: newService.icon,
+      highlights, best_for: newService.best_for,
       segment_slug: seg, order_index: services.filter(x => x.segment_slug === seg).length + 1,
     } as never);
     if (error) { toast.error(`Couldn't add: ${error.message}`); return; }
     toast.success('Service added');
-    setNewService({ title: '', description: '', icon: 'Settings', highlights: '' });
+    setNewService({ title: '', description: '', icon: 'Settings', highlights: '', best_for: '' });
     load();
   }
   async function addType() {
@@ -1712,11 +1713,15 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
                 {(s as unknown as { highlights?: string[] }).highlights && (s as unknown as { highlights?: string[] }).highlights!.length > 0 && (
                   <p className="text-stone-500 text-xs mt-0.5">{(s as unknown as { highlights?: string[] }).highlights!.join(' • ')}</p>
                 )}
+                {(s as unknown as { best_for?: string }).best_for && (
+                  <p className="text-orange-700 text-xs mt-0.5 italic">Best for: {(s as unknown as { best_for?: string }).best_for}</p>
+                )}
               </div>
             ))}
           </div>
           <input className={inputCls + ' mb-2'} placeholder="Service title" value={newService.title} onChange={e => setNewService({ ...newService, title: e.target.value })} />
           <input className={inputCls + ' mb-2'} placeholder="Description" value={newService.description} onChange={e => setNewService({ ...newService, description: e.target.value })} />
+          <input className={inputCls + ' mb-2'} placeholder="Best for (who this is for)" value={newService.best_for} onChange={e => setNewService({ ...newService, best_for: e.target.value })} />
           <input className={inputCls + ' mb-2'} placeholder="What's included (comma-separated)" value={newService.highlights} onChange={e => setNewService({ ...newService, highlights: e.target.value })} />
           <button className={btnCls} onClick={addService}>Add Service</button>
         </div>

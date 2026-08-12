@@ -413,7 +413,7 @@ function Hero({ segments }: { segments: Segment[] }) {
 }
 
 // ─────────────────────────────────────────────── Segments + Services
-interface Service { id: string; segment_slug: string; title: string; description: string; icon: string; highlights?: string[] | null; }
+interface Service { id: string; segment_slug: string; title: string; description: string; icon: string; highlights?: string[] | null; best_for?: string | null; }
 
 const DEFAULT_FALLBACK_SERVICES: Service[] = [
   // Digital Media / Kite & Tail — mirrors the live-seeded services
@@ -426,6 +426,7 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     description: 'Instagram, Facebook, and YouTube growth built on a content calendar and paid promotion, not just posting and hoping.',
     icon: 'Megaphone',
     highlights: ['Monthly content calendar', 'Community management & replies', 'Organic + boosted reach strategy', 'Monthly performance report'],
+    best_for: 'Businesses with little to no social presence, or pages that have gone quiet and need consistent posting again.',
   },
   {
     id: 'srv-2',
@@ -434,6 +435,7 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     description: 'Logos, brand kits, posters, reels, and video production — a consistent visual identity across everywhere your business shows up.',
     icon: 'Palette',
     highlights: ['Logo & brand identity kit', 'Social media templates', 'Reels & short-form video', 'Print-ready posters & banners'],
+    best_for: 'New businesses without a logo yet, or established ones whose branding looks different on every platform.',
   },
   {
     id: 'srv-3',
@@ -442,6 +444,7 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     description: 'Google & Meta ad campaigns with tracked ROI and lead funnels — every rupee spent tied back to an actual result, not just impressions.',
     icon: 'TrendingUp',
     highlights: ['Google Search & Display ads', 'Meta (Instagram/Facebook) ads', 'Landing page & funnel setup', 'Weekly spend & ROI tracking'],
+    best_for: 'Businesses that want measurable leads or sales now, not just brand awareness over time.',
   },
   // Software Solutions / Nikki Software Studio
   {
@@ -451,6 +454,7 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     description: 'Our own ready-to-use products — retail billing, staff attendance and payroll, and an AI voice receptionist — live and already serving businesses today.',
     icon: 'Boxes',
     highlights: ['MyStore OS — retail billing & inventory', 'Punchly — attendance & payroll', 'Hey Nikki — AI voice receptionist', 'No custom build required to start'],
+    best_for: 'Businesses that want a working tool today, not a months-long custom build.',
   },
   {
     id: 'srv-5',
@@ -459,6 +463,7 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     description: 'Web apps, mobile apps, and business automation built to order when an off-the-shelf product doesn\u2019t fit what you actually need.',
     icon: 'Code2',
     highlights: ['Web apps (React, TypeScript)', 'Android & iOS mobile apps', 'Custom business automation', '100% on-time delivery track record'],
+    best_for: 'Businesses with a workflow specific enough that no existing product quite fits it.',
   },
   {
     id: 'srv-6',
@@ -467,6 +472,7 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     description: 'AI voice bots, chatbots, and workflow automation for businesses whose enquiries are outpacing what their team can personally answer.',
     icon: 'Bot',
     highlights: ['AI voice calling agents', 'WhatsApp chatbot integration', '24/7 lead qualification', 'Appointment booking automation'],
+    best_for: 'Businesses missing calls or messages after hours, or a team that can\u2019t keep up with enquiry volume.',
   },
 ];
 
@@ -558,7 +564,12 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
                       >
                         <Icon name={s.icon ?? ''} className="w-8 h-8 mb-4 text-orange-700" />
                         <h4 className="text-lg font-bold text-stone-900 mb-2">{s.title}</h4>
-                        <p className="text-stone-700 text-sm leading-relaxed font-medium mb-4">{s.description}</p>
+                        <p className="text-stone-700 text-sm leading-relaxed font-medium mb-3">{s.description}</p>
+                        {s.best_for && (
+                          <p className="text-xs font-medium text-orange-800 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 mb-4">
+                            <span className="font-bold">Best for:</span> {s.best_for}
+                          </p>
+                        )}
                         {s.highlights && s.highlights.length > 0 && (
                           <ul className="mt-auto space-y-1.5 pt-4 border-t border-stone-100">
                             {s.highlights.map((h, i) => (
