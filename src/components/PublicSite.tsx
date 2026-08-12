@@ -24,7 +24,7 @@ export function hasRealPhone(v?: string) {
 
 const iconMap: Record<string, LucideIcon> = {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette,
-  TrendingUp, Boxes, Bot, Layers,
+  TrendingUp, Boxes, Bot, Layers, CheckCircle2,
 };
 const Icon = ({ name, className }: { name: string; className?: string }) => {
   const C = iconMap[name] || Layers;
@@ -412,52 +412,60 @@ function Hero({ segments }: { segments: Segment[] }) {
 }
 
 // ─────────────────────────────────────────────── Segments + Services
-interface Service { id: string; segment_slug: string; title: string; description: string; icon: string; }
+interface Service { id: string; segment_slug: string; title: string; description: string; icon: string; highlights?: string[] | null; }
 
 const DEFAULT_FALLBACK_SERVICES: Service[] = [
-  // Digital Marketing / Kite & Tail Media
+  // Digital Media / Kite & Tail — mirrors the live-seeded services
+  // exactly (same titles, same order) so the fallback and the CMS-
+  // managed version never drift into showing different things.
   {
     id: 'srv-1',
-    segment_slug: 'digital-marketing',
-    title: 'Meta & Google PPC Ads',
-    description: 'High-ROAS lead generation & sales conversion funnels across Instagram, Facebook, and Google Search Ads.',
+    segment_slug: 'digital_media',
+    title: 'Social Media Marketing',
+    description: 'Instagram, Facebook, and YouTube growth built on a content calendar and paid promotion, not just posting and hoping.',
     icon: 'Megaphone',
+    highlights: ['Monthly content calendar', 'Community management & replies', 'Organic + boosted reach strategy', 'Monthly performance report'],
   },
   {
     id: 'srv-2',
-    segment_slug: 'digital-marketing',
-    title: 'Viral Reels & Media Production',
-    description: 'High-converting ad video production, Instagram reels, YouTube shorts, and creative brand story assets.',
-    icon: 'Video',
+    segment_slug: 'digital_media',
+    title: 'Branding & Design',
+    description: 'Logos, brand kits, posters, reels, and video production — a consistent visual identity across everywhere your business shows up.',
+    icon: 'Palette',
+    highlights: ['Logo & brand identity kit', 'Social media templates', 'Reels & short-form video', 'Print-ready posters & banners'],
   },
   {
     id: 'srv-3',
-    segment_slug: 'digital-marketing',
-    title: 'SEO & Brand Identity',
-    description: 'Top-tier Google search engine optimization, local map pack ranking, logo design, and complete brand identity.',
+    segment_slug: 'digital_media',
+    title: 'Performance Ads',
+    description: 'Google & Meta ad campaigns with tracked ROI and lead funnels — every rupee spent tied back to an actual result, not just impressions.',
     icon: 'TrendingUp',
+    highlights: ['Google Search & Display ads', 'Meta (Instagram/Facebook) ads', 'Landing page & funnel setup', 'Weekly spend & ROI tracking'],
   },
-  // Software Development / Nikki Software Studio
+  // Software Solutions / Nikki Software Studio
   {
     id: 'srv-4',
-    segment_slug: 'software-development',
-    title: 'Custom Web & Mobile Development',
-    description: 'High-performance React, TypeScript, Android, and iOS mobile applications engineered for scale.',
-    icon: 'Code2',
+    segment_slug: 'software',
+    title: 'SaaS Products',
+    description: 'Our own ready-to-use products — retail billing, staff attendance and payroll, and an AI voice receptionist — live and already serving businesses today.',
+    icon: 'Boxes',
+    highlights: ['MyStore OS — retail billing & inventory', 'Punchly — attendance & payroll', 'Hey Nikki — AI voice receptionist', 'No custom build required to start'],
   },
   {
     id: 'srv-5',
-    segment_slug: 'software-development',
-    title: 'SaaS & Enterprise Systems',
-    description: 'Bespoke B2B SaaS platforms, cloud infrastructure, multi-tenant architectures, and custom web apps.',
-    icon: 'Boxes',
+    segment_slug: 'software',
+    title: 'Custom Software',
+    description: 'Web apps, mobile apps, and business automation built to order when an off-the-shelf product doesn\u2019t fit what you actually need.',
+    icon: 'Code2',
+    highlights: ['Web apps (React, TypeScript)', 'Android & iOS mobile apps', 'Custom business automation', '100% on-time delivery track record'],
   },
   {
     id: 'srv-6',
-    segment_slug: 'software-development',
-    title: 'Business Process Automation',
-    description: 'Custom ERPs, CRMs, retail POS billing platforms (MyStore OS), attendance software (Punchly), and AI voice bots (Hey Nikki).',
-    icon: 'Cpu',
+    segment_slug: 'software',
+    title: 'AI Solutions',
+    description: 'AI voice bots, chatbots, and workflow automation for businesses whose enquiries are outpacing what their team can personally answer.',
+    icon: 'Bot',
+    highlights: ['AI voice calling agents', 'WhatsApp chatbot integration', '24/7 lead qualification', 'Appointment booking automation'],
   },
 ];
 
@@ -489,7 +497,7 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
             const displayServices = matchedServices.length > 0
               ? matchedServices
               : DEFAULT_FALLBACK_SERVICES.filter(s =>
-                  isMarketingSeg ? s.segment_slug === 'digital-marketing' : isSoftwareSeg ? s.segment_slug === 'software-development' : true
+                  isMarketingSeg ? s.segment_slug === 'digital_media' : isSoftwareSeg ? s.segment_slug === 'software' : true
                 );
 
             return (
@@ -511,13 +519,21 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
                       <motion.div
                         whileHover={{ y: -6, scale: 1.01 }}
                         transition={{ duration: 0.2 }}
-                        className="p-6 rounded-2xl bg-white border border-stone-200/90 shadow-md hover:shadow-xl hover:border-orange-300 transition-all h-full flex flex-col justify-between"
+                        className="p-6 rounded-2xl bg-white border border-stone-200/90 shadow-md hover:shadow-xl hover:border-orange-300 transition-all h-full flex flex-col"
                       >
-                        <div>
-                          <Icon name={s.icon ?? ''} className="w-8 h-8 mb-4 text-orange-700" />
-                          <h4 className="text-lg font-bold text-stone-900 mb-2">{s.title}</h4>
-                          <p className="text-stone-700 text-sm leading-relaxed font-medium">{s.description}</p>
-                        </div>
+                        <Icon name={s.icon ?? ''} className="w-8 h-8 mb-4 text-orange-700" />
+                        <h4 className="text-lg font-bold text-stone-900 mb-2">{s.title}</h4>
+                        <p className="text-stone-700 text-sm leading-relaxed font-medium mb-4">{s.description}</p>
+                        {s.highlights && s.highlights.length > 0 && (
+                          <ul className="mt-auto space-y-1.5 pt-4 border-t border-stone-100">
+                            {s.highlights.map((h, i) => (
+                              <li key={i} className="flex items-start gap-2 text-stone-700 text-xs font-medium">
+                                <Icon name="CheckCircle2" className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                                {h}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </motion.div>
                     </Reveal>
                   ))}

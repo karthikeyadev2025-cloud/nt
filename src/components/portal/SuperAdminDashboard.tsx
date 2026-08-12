@@ -1651,7 +1651,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
   const [seg, setSeg] = useState(segments[0]?.slug || '');
   const [services, setServices] = useState<Tables<'services'>[]>([]);
   const [types, setTypes] = useState<Tables<'ticket_types'>[]>([]);
-  const [newService, setNewService] = useState({ title: '', description: '', icon: 'Settings' });
+  const [newService, setNewService] = useState({ title: '', description: '', icon: 'Settings', highlights: '' });
   const [newType, setNewType] = useState('');
   const toast = useToast();
 
@@ -1667,10 +1667,14 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
 
   async function addService() {
     if (!newService.title || !seg) { toast.error('Enter a service title'); return; }
-    const { error } = await supabase.from('services').insert({ ...newService, segment_slug: seg, order_index: services.filter(x => x.segment_slug === seg).length + 1 } as never);
+    const highlights = newService.highlights.split(',').map(h => h.trim()).filter(Boolean);
+    const { error } = await supabase.from('services').insert({
+      title: newService.title, description: newService.description, icon: newService.icon, highlights,
+      segment_slug: seg, order_index: services.filter(x => x.segment_slug === seg).length + 1,
+    } as never);
     if (error) { toast.error(`Couldn't add: ${error.message}`); return; }
     toast.success('Service added');
-    setNewService({ title: '', description: '', icon: 'Settings' });
+    setNewService({ title: '', description: '', icon: 'Settings', highlights: '' });
     load();
   }
   async function addType() {
@@ -1700,14 +1704,20 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
           <h3 className="text-stone-900 font-bold mb-3">Services on Website</h3>
           <div className="space-y-2 mb-4">
             {services.filter(s => s.segment_slug === seg).map(s => (
-              <div key={s.id} className="flex justify-between items-center text-sm">
-                <span className="text-stone-800 font-medium">{s.title}</span>
-                <button className="text-red-700 text-xs font-semibold" onClick={() => removeService(s.id)}>Remove</button>
+              <div key={s.id} className="text-sm border-b border-stone-100 pb-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-stone-800 font-medium">{s.title}</span>
+                  <button className="text-red-700 text-xs font-semibold" onClick={() => removeService(s.id)}>Remove</button>
+                </div>
+                {(s as unknown as { highlights?: string[] }).highlights && (s as unknown as { highlights?: string[] }).highlights!.length > 0 && (
+                  <p className="text-stone-500 text-xs mt-0.5">{(s as unknown as { highlights?: string[] }).highlights!.join(' • ')}</p>
+                )}
               </div>
             ))}
           </div>
           <input className={inputCls + ' mb-2'} placeholder="Service title" value={newService.title} onChange={e => setNewService({ ...newService, title: e.target.value })} />
           <input className={inputCls + ' mb-2'} placeholder="Description" value={newService.description} onChange={e => setNewService({ ...newService, description: e.target.value })} />
+          <input className={inputCls + ' mb-2'} placeholder="What's included (comma-separated)" value={newService.highlights} onChange={e => setNewService({ ...newService, highlights: e.target.value })} />
           <button className={btnCls} onClick={addService}>Add Service</button>
         </div>
         <div className={cardCls}>
