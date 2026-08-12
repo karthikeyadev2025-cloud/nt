@@ -160,12 +160,12 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
   const contentMap = {
     kite_tail: {
       title: 'Kite & Tail • Digital Media Marketing & Performance Growth',
-      desc: 'Data-driven marketing campaigns, viral reels production, targeted Google & Meta PPC ads, brand identity, and SEO lead generation by Kite & Tail Media.',
+      desc: 'Data-driven marketing campaigns, targeted Google & Meta PPC ads, brand identity, and SEO lead generation by Kite & Tail Media.',
       badge: 'Kite & Tail Digital Marketing',
       icon: Megaphone,
       highlights: [
         'Targeted Meta (Instagram/FB) & Google PPC Campaigns',
-        'Social Media Management & Creative Reels Production',
+        'Social Media Management & Content Strategy',
         'Search Engine Optimization (SEO) & Brand Identity Design',
         'High-Converting Lead Funnel Strategy & Analytics',
       ],
@@ -432,9 +432,9 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     id: 'srv-2',
     segment_slug: 'digital_media',
     title: 'Branding & Design',
-    description: 'Logos, brand kits, posters, reels, and video production — a consistent visual identity across everywhere your business shows up.',
+    description: 'Logos, brand kits, and posters — a consistent visual identity across everywhere your business shows up.',
     icon: 'Palette',
-    highlights: ['Logo & brand identity kit', 'Social media templates', 'Reels & short-form video', 'Print-ready posters & banners'],
+    highlights: ['Logo & brand identity kit', 'Social media templates', 'Print-ready posters & banners', 'Brand colour & typography guide'],
     best_for: 'New businesses without a logo yet, or established ones whose branding looks different on every platform.',
   },
   {
@@ -742,7 +742,7 @@ function GallerySection() {
 const DEFAULT_FALLBACK_TEAM = [
   { id: 'tm-1', name: 'Karthikeya', designation: 'Founder & Managing Director', photo_url: '' },
   { id: 'tm-2', name: 'Engineering Team', designation: 'Software & Cloud Architecture', photo_url: '' },
-  { id: 'tm-3', name: 'Media Team', designation: 'Performance Marketing & Creative Reels', photo_url: '' },
+  { id: 'tm-3', name: 'Media Team', designation: 'Performance Marketing & Design', photo_url: '' },
 ];
 
 function TeamSection() {
@@ -789,7 +789,7 @@ const DEFAULT_FALLBACK_TESTIMONIALS = [
   {
     id: 't-3',
     customer_name: 'Priya Sharma',
-    content: 'Professional, fast, and dedicated team. Their viral reels production and SEO strategies brought us consistent high-quality leads.',
+    content: 'Professional, fast, and dedicated team. Their social media strategy and SEO work brought us consistent high-quality leads.',
     rating: 5,
   },
 ];

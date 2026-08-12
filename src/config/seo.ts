@@ -38,7 +38,7 @@ export const KEYWORDS = {
     'best digital marketing agency in India', 'social media marketing agency India',
     'performance marketing agency India', 'Google Ads agency India',
     'Meta ads agency India', 'SEO services India', 'SEO company India',
-    'branding agency India', 'video production India', 'reels production agency India',
+    'branding agency India', 'brand identity design India',
     'digital marketing agency Hyderabad', 'digital marketing agency Bangalore',
     'digital marketing agency Chennai', 'digital marketing agency Mumbai',
     'digital marketing agency Delhi', 'digital marketing agency Guntur',
@@ -175,7 +175,7 @@ export const ORGANIZATION_SCHEMA = {
   knowsLanguage: ['en', 'ar', 'hi', 'te'],
   knowsAbout: [
     'Digital Marketing', 'Performance Advertising', 'Search Engine Optimization',
-    'Social Media Marketing', 'Meta Ads', 'Google Ads', 'Reels Production',
+    'Social Media Marketing', 'Meta Ads', 'Google Ads', 'Brand Identity Design',
     'Custom Software Development', 'Web Application Development', 'Mobile App Development',
     'SaaS', 'Business Automation', 'AI Chatbots', 'Offshore Development',
     'Startup MVP Development', 'Ecommerce Development',
@@ -241,7 +241,7 @@ export const FAQ_SCHEMA = {
       acceptedAnswer: {
         '@type': 'Answer',
         text: 'Two divisions: Kite & Tail Digital handles performance marketing (Meta and Google ads, SEO, social ' +
-              'content, video production). The software studio ships custom web and mobile applications, SaaS products, ' +
+              'media management, brand identity design). The software studio ships custom web and mobile applications, SaaS products, ' +
               'and business automation tools including MyStoreOS (retail billing), Punchly (attendance & payroll), and Hey Nikki ' +
               '(Telugu voice receptionist).',
       },
@@ -271,7 +271,7 @@ export const PAGE_CONFIGS: Record<string, PageConfig> = {
     title: `Digital Marketing Agency — Meta & Google Ads, SEO, Social | ${SITE_NAME}`,
     description:
       'ROI-focused digital marketing for businesses in Dubai, London, the US, and India. Meta and Google ad campaigns, ' +
-      'SEO, social media growth, viral reels, brand identity. Transparent reporting and India-based delivery for global rates.',
+      'SEO, social media growth, brand identity. Transparent reporting and India-based delivery for global rates.',
     path: '/#digital-media',
     keywords: [...KEYWORDS.uae_digital_marketing, ...KEYWORDS.uk_digital_marketing, ...KEYWORDS.us_digital_marketing.slice(0, 6), ...KEYWORDS.india_digital_marketing.slice(0, 8)],
     breadcrumbs: [{ name: 'Home', path: '/' }, { name: 'Digital Marketing', path: '/#digital-media' }],

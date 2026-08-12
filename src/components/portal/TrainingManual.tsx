@@ -131,7 +131,7 @@ function buildSections(role: Role): Section[] {
         <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mt-4 mb-2 flex items-center gap-1.5"><Megaphone className="w-3.5 h-3.5" /> Digital Media — what we offer</p>
         <ul className="list-disc pl-5 mb-2">
           <Bul>Targeted Meta (Instagram/Facebook) & Google PPC campaigns</Bul>
-          <Bul>Social media management & creative reels production</Bul>
+          <Bul>Social media management & content strategy</Bul>
           <Bul>SEO & brand identity design</Bul>
           <Bul>High-converting lead funnel strategy & analytics</Bul>
         </ul>
