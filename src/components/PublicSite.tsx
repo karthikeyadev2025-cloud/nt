@@ -3,6 +3,7 @@ import {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette, TrendingUp,
   Boxes, Bot, Layers, Phone, Mail, MapPin, ExternalLink, Star, Menu, X,
   Ticket, Send, CheckCircle2, ChevronRight, Briefcase, Upload, User,
+  FileText, MessageCircle, Globe, ShoppingCart, Plug, BarChart3, LifeBuoy,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -25,6 +26,7 @@ export function hasRealPhone(v?: string) {
 const iconMap: Record<string, LucideIcon> = {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette,
   TrendingUp, Boxes, Bot, Layers, CheckCircle2,
+  FileText, MessageCircle, Globe, ShoppingCart, Plug, BarChart3, LifeBuoy, MapPin,
 };
 const Icon = ({ name, className }: { name: string; className?: string }) => {
   const C = iconMap[name] || Layers;
@@ -446,6 +448,42 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     highlights: ['Google Search & Display ads', 'Meta (Instagram/Facebook) ads', 'Landing page & funnel setup', 'Weekly spend & ROI tracking'],
     best_for: 'Businesses that want measurable leads or sales now, not just brand awareness over time.',
   },
+  {
+    id: 'srv-7',
+    segment_slug: 'digital_media',
+    title: 'Content Writing & Copywriting',
+    description: 'Website copy, blog articles, ad copy, and product descriptions written to actually convert, not just fill space.',
+    icon: 'FileText',
+    highlights: ['Website & landing page copy', 'Blog articles & SEO content', 'Ad copy & product descriptions', 'Email & WhatsApp message copy'],
+    best_for: 'Businesses whose website reads like a brochure instead of speaking to the customer, or that need fresh content regularly and don\u2019t have time to write it.',
+  },
+  {
+    id: 'srv-8',
+    segment_slug: 'digital_media',
+    title: 'Local SEO / Google Business',
+    description: 'Getting your business to actually show up when someone nearby searches for what you do — Google Business Profile setup, reviews, and local map pack ranking.',
+    icon: 'MapPin',
+    highlights: ['Google Business Profile setup', 'Local map pack ranking', 'Review generation & management', 'Local citation building'],
+    best_for: 'Local shops, clinics, and service businesses that depend on nearby customers finding them on Google Maps and search.',
+  },
+  {
+    id: 'srv-9',
+    segment_slug: 'digital_media',
+    title: 'WhatsApp Marketing',
+    description: 'Reaching customers directly on WhatsApp — broadcast campaigns, catalog sharing, and automated replies for enquiries.',
+    icon: 'MessageCircle',
+    highlights: ['Broadcast campaigns to customer lists', 'WhatsApp catalog setup', 'Automated quick replies', 'Order & appointment updates'],
+    best_for: 'Businesses whose customers already prefer messaging over calling, or that want a direct line for offers and updates.',
+  },
+  {
+    id: 'srv-10',
+    segment_slug: 'digital_media',
+    title: 'Website Design & Landing Pages',
+    description: 'A website or landing page built to convert visitors into enquiries, not just look good — fast, mobile-friendly, and tied into your ad campaigns.',
+    icon: 'Globe',
+    highlights: ['Mobile-first responsive design', 'Landing pages built for ad campaigns', 'Fast load times', 'Enquiry forms wired to your team'],
+    best_for: 'Businesses without a website yet, or whose current one is slow, outdated, or doesn\u2019t convert visitors into enquiries.',
+  },
   // Software Solutions / Nikki Software Studio
   {
     id: 'srv-4',
@@ -473,6 +511,42 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     icon: 'Bot',
     highlights: ['AI voice calling agents', 'WhatsApp chatbot integration', '24/7 lead qualification', 'Appointment booking automation'],
     best_for: 'Businesses missing calls or messages after hours, or a team that can\u2019t keep up with enquiry volume.',
+  },
+  {
+    id: 'srv-11',
+    segment_slug: 'software',
+    title: 'E-commerce Store Development',
+    description: 'Online stores built to actually sell — product catalog, cart, checkout, and payment gateway integration.',
+    icon: 'ShoppingCart',
+    highlights: ['Product catalog & inventory', 'Cart & checkout flow', 'Payment gateway integration', 'Order management dashboard'],
+    best_for: 'Businesses ready to sell online, not just list products on social media and take orders manually.',
+  },
+  {
+    id: 'srv-12',
+    segment_slug: 'software',
+    title: 'API Integrations',
+    description: 'Connecting your existing tools together — payment gateways, SMS/WhatsApp providers, accounting software, and other systems that need to talk to each other.',
+    icon: 'Plug',
+    highlights: ['Payment gateway integration', 'SMS/WhatsApp API connections', 'Accounting software sync', 'Custom third-party integrations'],
+    best_for: 'Businesses juggling several separate tools that don\u2019t talk to each other, creating manual double-entry work.',
+  },
+  {
+    id: 'srv-13',
+    segment_slug: 'software',
+    title: 'Maintenance & Support Plans',
+    description: 'Keeping a live product running — bug fixes, updates, and a direct line to us instead of starting from scratch with someone new every time something breaks.',
+    icon: 'LifeBuoy',
+    highlights: ['Bug fixes & updates', 'Security patches', 'Priority support response', 'Direct access to the team that built it'],
+    best_for: 'Businesses running a live product who want it maintained by the people who actually built it.',
+  },
+  {
+    id: 'srv-14',
+    segment_slug: 'software',
+    title: 'Data Dashboards & Analytics',
+    description: 'Turning your business data into a dashboard you can actually read — sales, attendance, leads, or whatever numbers you check daily, in one place.',
+    icon: 'BarChart3',
+    highlights: ['Custom dashboard build', 'Real-time data views', 'Exportable reports', 'Connects to your existing systems'],
+    best_for: 'Businesses making decisions off scattered spreadsheets or gut feeling instead of numbers they can see at a glance.',
   },
 ];
 
