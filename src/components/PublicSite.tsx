@@ -114,6 +114,7 @@ function ClientLogos() {
 function Navigation() {
   const [open, setOpen] = useState(false);
   const links = [
+    { href: '#about', label: 'About' },
     { href: '#services', label: 'Services' },
     { href: '#products', label: 'Products' },
     { href: '#careers', label: 'Careers' },
@@ -468,6 +469,40 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     highlights: ['AI voice calling agents', 'WhatsApp chatbot integration', '24/7 lead qualification', 'Appointment booking automation'],
   },
 ];
+
+// ─────────────────────────────────────────────── About (who we are, before what we do)
+function AboutSection({ segments }: { segments: Segment[] }) {
+  return (
+    <section id="about" className="py-20 px-4 bg-white">
+      <div className="max-w-5xl mx-auto">
+        <Reveal>
+          <h2 className="font-display text-4xl md:text-5xl font-extrabold text-center text-stone-900 mb-5 tracking-tight">About Us</h2>
+          <p className="text-center text-stone-700 max-w-3xl mx-auto font-medium leading-relaxed mb-14">
+            Nikki Technologies is a digital marketing and custom software engineering firm, serving clients across
+            the UAE, UK, USA, Singapore, Australia, and India. We run two specialized divisions under one roof —
+            one grows your brand online, the other builds the software that runs your business — so a client never
+            has to juggle separate vendors for marketing and technology. India-based delivery keeps costs
+            competitive without sacrificing craft.
+          </p>
+        </Reveal>
+        <div className="grid md:grid-cols-2 gap-6">
+          {segments.map((seg, i) => (
+            <Reveal key={seg.slug} delay={i * 100}>
+              <div className="h-full p-7 rounded-2xl border border-stone-200 bg-stone-50/60 hover:bg-white hover:shadow-lg transition-all">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: (seg.color ?? '#c2410c') + '18', color: seg.color ?? '#c2410c' }}>
+                  <Icon name={seg.icon ?? ''} className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold text-stone-900 mb-1">{seg.name}</h3>
+                <p className="text-orange-700 text-xs font-semibold mb-3">{seg.tagline}</p>
+                <p className="text-stone-700 text-sm leading-relaxed font-medium">{seg.description}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function SegmentSections({ segments }: { segments: Segment[] }) {
   const [services, setServices] = useState<Service[]>([]);
@@ -1355,6 +1390,7 @@ export default function PublicSite() {
       <Hero segments={segments} />
       <ClientLogos />
       <AnimatedStats />
+      <AboutSection segments={segments} />
       <SegmentSections segments={segments} />
       <Products />
       <Careers segments={segments} />
