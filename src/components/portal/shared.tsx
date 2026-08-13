@@ -20,10 +20,10 @@ import { cachedQuery, invalidateQueryCache } from '../../lib/cachedQuery';
 import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
 
 export const inputCls =
-  'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-600 focus:ring-2 focus:ring-orange-600/20 focus:outline-none transition-all placeholder-stone-500';
+  'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-royal focus:ring-2 focus:ring-nikki-royal/20 focus:outline-none transition-all placeholder-stone-500';
 export const btnCls =
-  'px-4 py-2.5 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-semibold shadow-md shadow-orange-700/20 border border-orange-600/30 transition-all active:scale-[0.98]';
-export const cardCls = 'p-5 rounded-2xl bg-white border border-stone-200/90 shadow-md shadow-stone-200/50 backdrop-blur-md';
+  'px-4 py-2.5 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-50 text-white text-sm font-semibold shadow-md shadow-nikki-blue/20 border border-nikki-royal/30 transition-all active:scale-[0.98]';
+export const cardCls = 'p-5 rounded-2xl bg-white border border-nikki-border/90 shadow-md shadow-nikki-border/50 backdrop-blur-md';
 
 // Postgres/PostgREST errors carry far more than .message — .code (e.g.
 // 23514 for a check violation) and .details name the exact constraint,
@@ -65,13 +65,13 @@ export function SegmentTabs({
     <div className="flex flex-wrap gap-2 mb-5">
       {showAll && (
         <button onClick={() => onChange('')}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === '' ? 'bg-orange-700 text-white border-orange-200 shadow-md shadow-orange-700/20' : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50'}`}>
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === '' ? 'bg-nikki-blue text-white border-nikki-border shadow-md shadow-nikki-blue/20' : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50'}`}>
           All Segments
         </button>
       )}
       {visible.map(s => (
         <button key={s.slug} onClick={() => onChange(s.slug)}
-          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === s.slug ? 'text-stone-900 border-orange-200 shadow-md' : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50'} ${s.active === false ? 'opacity-70' : ''}`}
+          className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${value === s.slug ? 'text-nikki-navy border-nikki-border shadow-md' : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50'} ${s.active === false ? 'opacity-70' : ''}`}
           style={value === s.slug ? { backgroundColor: s.color || '#1d4ed8' } : {}}
           title={s.active === false ? 'Retired — hidden from the website, existing work still manageable' : undefined}>
           {s.name}{s.active === false && <span className="ml-1.5 text-[10px] opacity-80">(retired)</span>}
@@ -82,7 +82,7 @@ export function SegmentTabs({
 }
 
 const ticketStatusColors: Record<string, string> = {
-  open: 'bg-teal-100 text-teal-700',
+  open: 'bg-nikki-surface-blue text-nikki-blue',
   in_progress: 'bg-amber-100 text-amber-700',
   waiting_customer: 'bg-purple-100 text-purple-700',
   resolved: 'bg-emerald-100 text-emerald-700',
@@ -244,28 +244,28 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
           Support agents default to Mine; managers see All. */}
       <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl mb-3 w-fit">
         <button onClick={() => setAssignFilter('mine')}
-          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'mine' ? 'bg-teal-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'mine' ? 'bg-nikki-blue text-white shadow-sm' : 'text-stone-700 hover:text-nikki-navy'}`}>
           My Tickets ({tickets.filter(t => t.assigned_to === user?.id).length})
         </button>
         <button onClick={() => setAssignFilter('all')}
-          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'all' ? 'bg-orange-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'all' ? 'bg-nikki-blue text-white shadow-sm' : 'text-stone-700 hover:text-nikki-navy'}`}>
           All ({tickets.length})
         </button>
         <button onClick={() => setAssignFilter('unassigned')}
-          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'unassigned' ? 'bg-amber-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'unassigned' ? 'bg-amber-700 text-white shadow-sm' : 'text-stone-700 hover:text-nikki-navy'}`}>
           Unassigned ({tickets.filter(t => !t.assigned_to).length})
         </button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-5">
         {statusFilter === '_open_active' && (
-          <button onClick={() => setStatusFilter('_open_active')} className="px-3 py-1 rounded-lg text-xs font-bold border border-teal-500 text-teal-700 bg-teal-50">
+          <button onClick={() => setStatusFilter('_open_active')} className="px-3 py-1 rounded-lg text-xs font-bold border border-nikki-royal text-nikki-blue bg-nikki-surface-blue">
             Open + In Progress ({filteredTickets.length})
           </button>
         )}
         {['', 'open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1 rounded-lg text-xs font-medium border ${statusFilter === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
+            className={`px-3 py-1 rounded-lg text-xs font-medium border ${statusFilter === s ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
             {s === '' ? `All (${filteredTickets.length})` : `${ticketStatusLabel(s)} (${counts[s] || 0})`}
           </button>
         ))}
@@ -283,7 +283,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
             <div key={t.id} className={cardCls + ' hover:border-stone-300'}>
               <div className="flex flex-wrap items-center gap-3 cursor-pointer"
                 onClick={() => { setOpenTicket(t); loadReplies(t.id); }}>
-                <span className="font-mono text-teal-700 text-sm">{t.ticket_no}</span>
+                <span className="font-mono text-nikki-blue text-sm">{t.ticket_no}</span>
                 <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color ?? undefined }}>{seg?.name}</span>
                 <span className={`px-2 py-0.5 rounded text-xs ${ticketStatusColors[t.status]}`}>{ticketStatusLabel(t.status)}</span>
                 <span className="text-xs text-stone-700">{t.ticket_type}</span>
@@ -310,7 +310,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
                   </span>
                 )}
               </div>
-              <p className="text-stone-900 font-medium mt-1.5 cursor-pointer"
+              <p className="text-nikki-navy font-medium mt-1.5 cursor-pointer"
                 onClick={() => { setOpenTicket(t); loadReplies(t.id); }}>{t.subject}</p>
               <p className="text-stone-700 text-xs mt-0.5">{t.customer_name} • {t.customer_phone} • {new Date(t.created_at ?? '').toLocaleString()}</p>
               {/* Primary actions — one-click on the card, no drilling into
@@ -323,13 +323,13 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
                 <div className="mt-2 flex flex-wrap gap-2">
                   {!t.assigned_to && user && (
                     <button onClick={(e) => { e.stopPropagation(); update(t.id, { assigned_to: user.id, status: 'in_progress' }); }}
-                      className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm">
+                      className="px-3 py-1.5 bg-nikki-blue hover:bg-nikki-navy text-white text-xs font-bold rounded-lg shadow-sm">
                       ✋ Take This
                     </button>
                   )}
                   {t.assigned_to && !isMine && hasPermission('assign_tickets') && user && (
                     <button onClick={(e) => { e.stopPropagation(); update(t.id, { assigned_to: user.id }); }}
-                      className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-lg">
+                      className="px-3 py-1.5 bg-stone-100 hover:bg-nikki-border text-stone-800 text-xs font-semibold rounded-lg">
                       Take Over
                     </button>
                   )}
@@ -361,14 +361,14 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
 
       {openTicket && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenTicket(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3">
               <div>
-                <p className="font-mono text-teal-700 text-sm">{openTicket.ticket_no}</p>
-                <h3 className="text-stone-900 text-lg font-semibold">{openTicket.subject}</h3>
+                <p className="font-mono text-nikki-blue text-sm">{openTicket.ticket_no}</p>
+                <h3 className="text-nikki-navy text-lg font-semibold">{openTicket.subject}</h3>
                 <p className="text-stone-700 text-sm">{openTicket.customer_name} • {openTicket.customer_phone} {openTicket.customer_email && `• ${openTicket.customer_email}`}</p>
               </div>
-              <button className="text-stone-700 hover:text-stone-900" onClick={() => setOpenTicket(null)}>✕</button>
+              <button className="text-stone-700 hover:text-nikki-navy" onClick={() => setOpenTicket(null)}>✕</button>
             </div>
             <p className="text-stone-700 text-sm mb-4 whitespace-pre-wrap">{openTicket.description}</p>
             {hasPermission('manage_tickets') && (
@@ -388,7 +388,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
             <div className="border-t border-stone-800 pt-4 space-y-3">
               {replies.map(r => (
                 <div key={r.id} className="text-sm">
-                  <span className="text-teal-700 font-medium">{r.author_name}</span>
+                  <span className="text-nikki-blue font-medium">{r.author_name}</span>
                   <span className="text-stone-700 text-xs ml-2">{new Date(r.created_at ?? '').toLocaleString()}</span>
                   <p className="text-stone-700 mt-0.5">{r.message}</p>
                 </div>
@@ -409,7 +409,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
 
 const stages: Lead['stage'][] = ['new', 'contacted', 'qualified', 'quoted', 'won', 'lost', 'not_answered'];
 const stageColors: Record<string, string> = {
-  new: 'bg-teal-100 text-teal-700', contacted: 'bg-indigo-100 text-indigo-700',
+  new: 'bg-nikki-surface-blue text-nikki-blue', contacted: 'bg-indigo-100 text-indigo-700',
   qualified: 'bg-purple-100 text-purple-700', quoted: 'bg-amber-100 text-amber-700',
   won: 'bg-emerald-100 text-emerald-700', lost: 'bg-red-100 text-red-700',
   not_answered: 'bg-stone-100 text-stone-700',
@@ -575,7 +575,7 @@ export function MyLeadsToDoList() {
   if (items.length === 0) {
     return (
       <div className={cardCls}>
-        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-1">My To-Do</p>
+        <p className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider mb-1">My To-Do</p>
         <p className="text-stone-700 text-sm">Nothing due — you're caught up.</p>
       </div>
     );
@@ -591,7 +591,7 @@ export function MyLeadsToDoList() {
     <div key={item.key} className={`flex items-center gap-2.5 py-2 px-2.5 rounded-lg ${tone === 'overdue' ? 'bg-red-50' : tone === 'today' ? 'bg-amber-50' : 'bg-stone-50'}`}>
       <span className="text-base shrink-0">{TODO_TYPE_META[item.type].icon}</span>
       <div className="min-w-0 flex-1">
-        <p className="text-stone-900 text-sm font-semibold truncate">{item.customerName}</p>
+        <p className="text-nikki-navy text-sm font-semibold truncate">{item.customerName}</p>
         <p className="text-stone-700 text-xs">
           {TODO_TYPE_META[item.type].label} • {new Date(item.dueAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
           {item.note ? ` — ${item.note}` : ''}
@@ -618,7 +618,7 @@ export function MyLeadsToDoList() {
   return (
     <div className={cardCls + ' space-y-3'}>
       <div className="flex items-center justify-between">
-        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider">My To-Do</p>
+        <p className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider">My To-Do</p>
         <span className="text-stone-500 text-xs">{items.length} due</span>
       </div>
       {overdue.length > 0 && (
@@ -697,11 +697,11 @@ export function RescheduleModal({ lead, onClose, onRescheduled }: { lead: Lead; 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+      <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-teal-700 text-white flex items-center justify-center shrink-0"><CalendarClock className="w-5 h-5" /></div>
+          <div className="w-9 h-9 rounded-xl bg-nikki-blue text-white flex items-center justify-center shrink-0"><CalendarClock className="w-5 h-5" /></div>
           <div>
-            <h3 className="text-stone-900 font-bold text-base leading-tight">{hadAppointment ? 'Reschedule Appointment' : 'Schedule Appointment'}</h3>
+            <h3 className="text-nikki-navy font-bold text-base leading-tight">{hadAppointment ? 'Reschedule Appointment' : 'Schedule Appointment'}</h3>
             <p className="text-stone-700 text-xs">{lead.customer_name}</p>
           </div>
         </div>
@@ -950,7 +950,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
 
         {justCreated ? (
           // Success state — offers "Add Another" front and center, since
@@ -960,29 +960,29 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
               <Check className="w-7 h-7" strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-stone-900 font-bold text-lg">Lead created</p>
+              <p className="text-nikki-navy font-bold text-lg">Lead created</p>
               <p className="text-stone-700 text-sm mt-0.5">{justCreated} has been added{form.assignToMe || !canChooseAssignment ? ' and assigned to you' : ' to the unassigned pool'}.</p>
             </div>
             <div className="flex gap-2 pt-2">
-              <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 text-sm font-semibold">Done</button>
+              <button onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-stone-100 hover:bg-nikki-border text-stone-800 text-sm font-semibold">Done</button>
               <button onClick={addAnother} className={btnCls + ' flex-1 flex items-center justify-center gap-1.5'}><Plus className="w-4 h-4" /> Add Another</button>
             </div>
           </div>
         ) : (
         <form onSubmit={e => { e.preventDefault(); if (!busy) createLead(); }}>
           {/* Header band */}
-          <div className="flex items-center gap-3 px-6 py-4 bg-teal-50 border-b border-teal-100">
-            <div className="w-10 h-10 rounded-xl bg-teal-700 text-white flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-3 px-6 py-4 bg-nikki-surface-blue border-b border-nikki-surface-blue">
+            <div className="w-10 h-10 rounded-xl bg-nikki-blue text-white flex items-center justify-center shrink-0">
               <UserCheck className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-stone-900 font-bold text-base leading-tight">New Lead</h3>
+              <h3 className="text-nikki-navy font-bold text-base leading-tight">New Lead</h3>
               <p className="text-stone-700 text-xs">{quickMode ? 'Quick add — just the essentials' : 'Capture an enquiry — takes about 20 seconds'}</p>
             </div>
-            <button type="button" onClick={() => setQuickMode(m => !m)} className="ml-auto shrink-0 px-2.5 py-1 rounded-lg bg-white border border-teal-200 text-teal-700 text-[11px] font-bold hover:bg-teal-100">
+            <button type="button" onClick={() => setQuickMode(m => !m)} className="ml-auto shrink-0 px-2.5 py-1 rounded-lg bg-white border border-nikki-border text-nikki-blue text-[11px] font-bold hover:bg-nikki-surface-blue">
               {quickMode ? 'Full form' : 'Quick add'}
             </button>
-            <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-teal-100 text-stone-700 shrink-0"><X className="w-4 h-4" /></button>
+            <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-nikki-surface-blue text-stone-700 shrink-0"><X className="w-4 h-4" /></button>
           </div>
 
           <div className="p-6 space-y-5">
@@ -1028,7 +1028,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
                 </div>
               </div>
               {!quickMode && (!showAltPhone ? (
-                <button type="button" onClick={() => setShowAltPhone(true)} className="text-teal-700 text-xs font-medium">+ Add alternate number</button>
+                <button type="button" onClick={() => setShowAltPhone(true)} className="text-nikki-blue text-xs font-medium">+ Add alternate number</button>
               ) : (
                 <div className="relative">
                   <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1096,13 +1096,13 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
                   <p className="text-stone-700 text-xs font-medium mb-1.5">Tags</p>
                   <div className="flex flex-wrap gap-1.5 mb-1.5">
                     {['Hot Lead', 'Referral', 'VIP', 'Repeat Customer'].filter(t => !form.tags.includes(t)).map(t => (
-                      <button type="button" key={t} onClick={() => setForm({ ...form, tags: [...form.tags, t] })} className="px-2 py-1 rounded-full bg-stone-100 text-stone-600 text-[11px] font-medium hover:bg-stone-200">+ {t}</button>
+                      <button type="button" key={t} onClick={() => setForm({ ...form, tags: [...form.tags, t] })} className="px-2 py-1 rounded-full bg-stone-100 text-stone-600 text-[11px] font-medium hover:bg-nikki-border">+ {t}</button>
                     ))}
                   </div>
                   {form.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-1.5">
                       {form.tags.map(t => (
-                        <span key={t} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-teal-100 text-teal-800 text-[11px] font-bold">
+                        <span key={t} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-nikki-surface-blue text-nikki-navy text-[11px] font-bold">
                           {t}
                           <button type="button" onClick={() => setForm({ ...form, tags: form.tags.filter(x => x !== t) })}><X className="w-3 h-3" /></button>
                         </span>
@@ -1134,14 +1134,14 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
                   {photos.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {photos.map((p, i) => (
-                        <div key={i} className="relative rounded-lg overflow-hidden border border-stone-200 w-16 h-16">
+                        <div key={i} className="relative rounded-lg overflow-hidden border border-nikki-border w-16 h-16">
                           <img src={p} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
                           <button type="button" onClick={() => setPhotos(ps => ps.filter((_, j) => j !== i))} className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-black/60 text-white"><X className="w-2.5 h-2.5" /></button>
                         </div>
                       ))}
                     </div>
                   )}
-                  <button type="button" onClick={() => setCapturingPhoto(true)} className={`w-full ${photos.length > 0 ? 'h-10' : 'h-24'} rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-teal-400 hover:text-teal-700 flex items-center justify-center gap-1.5 text-xs font-medium transition-colors`}>
+                  <button type="button" onClick={() => setCapturingPhoto(true)} className={`w-full ${photos.length > 0 ? 'h-10' : 'h-24'} rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-nikki-sky hover:text-nikki-blue flex items-center justify-center gap-1.5 text-xs font-medium transition-colors`}>
                     <Camera className="w-4 h-4" /> {photos.length > 0 ? 'Add another photo' : 'Add photo'}
                   </button>
                 </div>
@@ -1153,7 +1153,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
                         <p className="text-emerald-800/70 text-[11px] mt-1 line-clamp-2">{location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => captureLocation(false)} disabled={locating} className="w-full h-24 rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-teal-400 hover:text-teal-700 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors">
+                      <button type="button" onClick={() => captureLocation(false)} disabled={locating} className="w-full h-24 rounded-lg border-2 border-dashed border-stone-300 text-stone-500 hover:border-nikki-sky hover:text-nikki-blue flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors">
                         {locating ? <Loader2 className="w-5 h-5 animate-spin" /> : <MapPin className="w-5 h-5" />}
                         {locating ? 'Locating...' : 'Add location'}
                       </button>
@@ -1188,11 +1188,11 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
                 <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Assignment</p>
                 <div className="flex gap-1.5">
                   <button type="button" onClick={() => setForm({ ...form, assignToMe: true })}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors ${form.assignToMe ? 'bg-teal-700 text-white border-teal-700' : 'bg-white text-stone-700 border-stone-300'}`}>
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors ${form.assignToMe ? 'bg-nikki-blue text-white border-nikki-blue' : 'bg-white text-stone-700 border-stone-300'}`}>
                     <UserCheck className="w-3.5 h-3.5" /> Assign to me
                   </button>
                   <button type="button" onClick={() => setForm({ ...form, assignToMe: false })}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors ${!form.assignToMe ? 'bg-orange-700 text-white border-orange-700' : 'bg-white text-stone-700 border-stone-300'}`}>
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-colors ${!form.assignToMe ? 'bg-nikki-blue text-white border-nikki-blue' : 'bg-white text-stone-700 border-stone-300'}`}>
                     <Users className="w-3.5 h-3.5" /> Unassigned pool
                   </button>
                 </div>
@@ -1680,8 +1680,8 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
         <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
           {/* List / Kanban toggle */}
           <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl shrink-0">
-            <button onClick={() => setViewMode('list')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-700'}`}>☰ List</button>
-            <button onClick={() => setViewMode('kanban')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'kanban' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-700'}`}>▦ Kanban</button>
+            <button onClick={() => setViewMode('list')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>☰ List</button>
+            <button onClick={() => setViewMode('kanban')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'kanban' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>▦ Kanban</button>
           </div>
           <input
             type="text"
@@ -1691,7 +1691,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
             onChange={e => setSearchQuery(e.target.value)}
           />
           <button
-            className="px-3 py-2 rounded-lg bg-white border border-stone-300 hover:border-teal-400 text-stone-700 text-xs font-semibold shrink-0 inline-flex items-center gap-1.5"
+            className="px-3 py-2 rounded-lg bg-white border border-stone-300 hover:border-nikki-sky text-stone-700 text-xs font-semibold shrink-0 inline-flex items-center gap-1.5"
             onClick={() => exportLeadsToExcel(filteredLeads, `leads-${segFilter || 'all'}-${new Date().toISOString().slice(0, 10)}.xlsx`, staffById)}>
             <Download className="w-3.5 h-3.5" /> Export
           </button>
@@ -1702,20 +1702,20 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       </div>
 
       {/* Simplified Unified Filter Bar */}
-      <div className="p-3 bg-white border border-stone-200 rounded-2xl shadow-sm mb-4 space-y-2.5">
+      <div className="p-3 bg-white border border-nikki-border rounded-2xl shadow-sm mb-4 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-2">
           {/* Assignment Switcher */}
           <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl flex-wrap">
-            <button onClick={() => { setAssignFilter('mine'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'mine' && !staffFilter ? 'bg-teal-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+            <button onClick={() => { setAssignFilter('mine'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'mine' && !staffFilter ? 'bg-nikki-blue text-white shadow-sm' : 'text-stone-700 hover:text-nikki-navy'}`}>
               My Leads ({leads.filter(l => l.assigned_to === user?.id).length})
             </button>
-            <button onClick={() => { setAssignFilter('all'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'all' && !staffFilter ? 'bg-orange-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+            <button onClick={() => { setAssignFilter('all'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'all' && !staffFilter ? 'bg-nikki-blue text-white shadow-sm' : 'text-stone-700 hover:text-nikki-navy'}`}>
               All ({leads.length})
             </button>
-            <button onClick={() => { setAssignFilter('assigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'assigned' && !staffFilter ? 'bg-indigo-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+            <button onClick={() => { setAssignFilter('assigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'assigned' && !staffFilter ? 'bg-indigo-700 text-white shadow-sm' : 'text-stone-700 hover:text-nikki-navy'}`}>
               Assigned ({leads.filter(l => l.assigned_to).length})
             </button>
-            <button onClick={() => { setAssignFilter('unassigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'unassigned' && !staffFilter ? 'bg-amber-700 text-white shadow-sm' : 'text-stone-700 hover:text-stone-900'}`}>
+            <button onClick={() => { setAssignFilter('unassigned'); setStaffFilter(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${assignFilter === 'unassigned' && !staffFilter ? 'bg-amber-700 text-white shadow-sm' : 'text-stone-700 hover:text-nikki-navy'}`}>
               Unassigned ({leads.filter(l => !l.assigned_to).length})
             </button>
           </div>
@@ -1723,14 +1723,14 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
           <div className="flex items-center gap-2 flex-wrap">
             {/* Date range filter */}
             <div className="flex items-center gap-1">
-              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-stone-200'} value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
+              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border'} value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
               <span className="text-stone-500 text-xs">–</span>
-              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-stone-200'} value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" />
+              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border'} value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" />
               {(dateFrom || dateTo) && (
                 <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-stone-500 hover:text-stone-800 text-xs px-1" title="Clear date range">✕</button>
               )}
             </div>
-            <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-stone-200 font-semibold'} value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
+            <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border font-semibold'} value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
               <option value="">Filter by Staff Member...</option>
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
             </select>
@@ -1739,9 +1739,9 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
 
         {/* Stage Filter Chips */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <button onClick={() => setStageFilter('')} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === '' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>All Stages</button>
+          <button onClick={() => setStageFilter('')} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === '' ? 'bg-nikki-navy text-white' : 'bg-stone-100 text-stone-700 hover:bg-nikki-border'}`}>All Stages</button>
           {stages.map(s => (
-            <button key={s} onClick={() => setStageFilter(s)} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === s ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
+            <button key={s} onClick={() => setStageFilter(s)} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === s ? 'bg-nikki-navy text-white' : 'bg-stone-100 text-stone-700 hover:bg-nikki-border'}`}>
               {stageLabel(s)} ({funnel[s] || 0})
             </button>
           ))}
@@ -1749,11 +1749,11 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       </div>
 
       {viewMode === 'list' && (user?.role === 'super_admin' || hasPermission('manage_leads')) && (
-        <div className="mb-4 flex items-center justify-between gap-3 p-3 bg-stone-100/90 border border-stone-200 rounded-2xl flex-wrap shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3 p-3 bg-stone-100/90 border border-nikki-border rounded-2xl flex-wrap shadow-sm">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              className="w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+              className="w-4 h-4 rounded border-stone-300 text-nikki-royal focus:ring-nikki-surface-blue0 cursor-pointer"
               checked={filteredLeads.length > 0 && selectedIds.length === filteredLeads.length}
               onChange={toggleSelectAll}
             />
@@ -1769,7 +1769,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 <option value="">Unassigned Pool</option>
                 {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
               </select>
-              <button disabled={bulkBusy} onClick={handleBulkAssign} className="px-3 py-1.5 bg-orange-700 hover:bg-orange-800 text-white text-xs font-bold rounded-xl shadow-sm">
+              <button disabled={bulkBusy} onClick={handleBulkAssign} className="px-3 py-1.5 bg-nikki-blue hover:bg-nikki-navy text-white text-xs font-bold rounded-xl shadow-sm">
                 Assign ({selectedIds.length})
               </button>
 
@@ -1777,7 +1777,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 <option value="">Change Stage...</option>
                 {stages.map(s => <option key={s} value={s}>{stageLabel(s)}</option>)}
               </select>
-              <button disabled={bulkBusy || !bulkStage} onClick={handleBulkStage} className="px-3 py-1.5 bg-stone-800 hover:bg-stone-900 text-white text-xs font-bold rounded-xl shadow-sm">
+              <button disabled={bulkBusy || !bulkStage} onClick={handleBulkStage} className="px-3 py-1.5 bg-stone-800 hover:bg-nikki-navy text-white text-xs font-bold rounded-xl shadow-sm">
                 Apply Stage
               </button>
 
@@ -1799,28 +1799,28 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
           const isSelected = selectedIds.includes(l.id);
           const assignedStaffName = l.assigned_to ? displayStaffName(allStaffById[l.assigned_to], user?.role === 'super_admin' || hasPermission('manage_staff')) : null;
           return (
-            <div key={l.id} className={cardCls + ` cursor-pointer hover:border-stone-300 flex items-start gap-3 transition-colors ${isSelected ? 'bg-orange-50/50 border-orange-300' : ''}`}>
+            <div key={l.id} className={cardCls + ` cursor-pointer hover:border-stone-300 flex items-start gap-3 transition-colors ${isSelected ? 'bg-nikki-surface-blue/50 border-nikki-sky' : ''}`}>
               {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
                 <input
                   type="checkbox"
                   checked={isSelected}
                   onChange={e => { e.stopPropagation(); toggleSelect(l.id); }}
                   onClick={e => e.stopPropagation()}
-                  className="mt-1 w-4 h-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0"
+                  className="mt-1 w-4 h-4 rounded border-stone-300 text-nikki-royal focus:ring-nikki-surface-blue0 cursor-pointer shrink-0"
                 />
               )}
               {l.photo_url && (
-                <button onClick={(e) => { e.stopPropagation(); openGallery(l); }} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm hover:border-teal-400 transition-colors" title="View photos">
+                <button onClick={(e) => { e.stopPropagation(); openGallery(l); }} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-nikki-border shadow-sm hover:border-nikki-sky transition-colors" title="View photos">
                   {cardPhotoUrls[l.photo_url] ? (
                     <img src={cardPhotoUrls[l.photo_url]} alt={`${l.customer_name} — photo`} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-stone-200 animate-pulse" />
+                    <div className="w-full h-full bg-nikki-border animate-pulse" />
                   )}
                 </button>
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2.5" onClick={() => { setOpenLead(l); loadRemarks(l.id); }} style={{ cursor: 'pointer' }}>
-                  <span className="text-stone-900 font-bold">{l.customer_name}</span>
+                  <span className="text-nikki-navy font-bold">{l.customer_name}</span>
                   <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color ?? undefined }}>{seg?.name}</span>
                   <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{stageLabel(l.stage)}</span>
                   {assignedStaffName ? (
@@ -1852,7 +1852,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   {l.priority === 'low' && <span className="text-stone-700">● Low </span>}
                   {l.interested_in && `${l.interested_in} • `}Created {new Date(l.created_at ?? '').toLocaleDateString()} {l.stage === 'won' && l.invoice_amount && <span className="text-emerald-700">• ₹{Number(l.invoice_amount).toLocaleString('en-IN')}</span>}
                   {followupCounts[l.id] > 0 && (
-                    <span className="ml-2 px-1.5 py-0.5 rounded bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200">
+                    <span className="ml-2 px-1.5 py-0.5 rounded bg-stone-100 text-stone-700 text-[11px] font-medium border border-nikki-border">
                       📞 {followupCounts[l.id]} follow-up{followupCounts[l.id] === 1 ? '' : 's'}
                     </span>
                   )}
@@ -1865,7 +1865,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                     {l.latitude && l.longitude && (
                       <a href={`https://www.google.com/maps?q=${l.latitude},${l.longitude}`} target="_blank" rel="noreferrer"
                         onClick={e => e.stopPropagation()}
-                        className="text-teal-700 hover:text-teal-900 text-xs font-medium inline-flex items-center gap-1 w-fit">
+                        className="text-nikki-blue hover:text-nikki-navy text-xs font-medium inline-flex items-center gap-1 w-fit">
                         <MapPin className="w-3 h-3" /> Open in Google Maps ↗
                       </a>
                     )}
@@ -1883,7 +1883,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                         className={`px-2 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
                           l.stage === s
                             ? `${stageColors[s]} border-transparent`
-                            : 'bg-white text-stone-600 border-stone-300 hover:border-teal-400 hover:text-teal-700'
+                            : 'bg-white text-stone-600 border-stone-300 hover:border-nikki-sky hover:text-nikki-blue'
                         }`}>
                         {stageLabel(s)}
                       </button>
@@ -1897,7 +1897,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                     a one-tap reschedule instead of burying this inside the
                     full outcome-logging flow. */}
                 {l.appointment_at && (
-                  <p className={`text-xs mt-1.5 font-medium flex items-center gap-1 ${new Date(l.appointment_at) < new Date() ? 'text-amber-700' : 'text-teal-700'}`}>
+                  <p className={`text-xs mt-1.5 font-medium flex items-center gap-1 ${new Date(l.appointment_at) < new Date() ? 'text-amber-700' : 'text-nikki-blue'}`}>
                     <CalendarClock className="w-3.5 h-3.5" />
                     {new Date(l.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                     {new Date(l.appointment_at) < new Date() ? ' (date passed)' : ''}
@@ -1912,17 +1912,17 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   <div className="mt-2 flex gap-2 flex-wrap">
                     <button
                       onClick={(e) => { e.stopPropagation(); setLogOutcomeLead(l); }}
-                      className="px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-sm inline-flex items-center gap-1.5">
+                      className="px-3 py-1.5 bg-nikki-blue hover:bg-nikki-navy text-white text-xs font-bold rounded-lg shadow-sm inline-flex items-center gap-1.5">
                       📞 Log Outcome
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }}
-                      className="px-3 py-1.5 bg-white border border-stone-300 hover:border-teal-400 text-stone-800 text-xs font-semibold rounded-lg inline-flex items-center gap-1.5">
+                      className="px-3 py-1.5 bg-white border border-stone-300 hover:border-nikki-sky text-stone-800 text-xs font-semibold rounded-lg inline-flex items-center gap-1.5">
                       <CalendarClock className="w-3.5 h-3.5" /> {l.appointment_at ? 'Reschedule' : 'Schedule'}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setOpenLead(l); loadRemarks(l.id); }}
-                      className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-lg">
+                      className="px-3 py-1.5 bg-stone-100 hover:bg-nikki-border text-stone-800 text-xs font-semibold rounded-lg">
                       View history
                     </button>
                   </div>
@@ -1953,7 +1953,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   if (lead && lead.stage !== s) quickSetStage(lead, s);
                   setDragLeadId(null);
                 }}
-                className={`shrink-0 w-72 rounded-2xl border p-2.5 transition-colors ${dragOverStage === s ? 'border-teal-400 bg-teal-50/50' : 'border-stone-200 bg-stone-50'}`}>
+                className={`shrink-0 w-72 rounded-2xl border p-2.5 transition-colors ${dragOverStage === s ? 'border-nikki-sky bg-nikki-surface-blue/50' : 'border-nikki-border bg-stone-50'}`}>
                 <div className="flex items-center justify-between mb-2 px-1">
                   <span className={`px-2 py-0.5 rounded text-xs font-bold ${stageColors[s]}`}>{stageLabel(s)}</span>
                   <span className="text-stone-500 text-xs font-semibold">{colLeads.length}</span>
@@ -1968,15 +1968,15 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                         onDragStart={() => setDragLeadId(l.id)}
                         onDragEnd={() => { setDragLeadId(null); setDragOverStage(null); }}
                         onClick={() => { setOpenLead(l); loadRemarks(l.id); }}
-                        className={`bg-white border border-stone-200 rounded-xl p-2.5 shadow-sm hover:border-stone-300 transition-colors ${canDragHere ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}>
+                        className={`bg-white border border-nikki-border rounded-xl p-2.5 shadow-sm hover:border-stone-300 transition-colors ${canDragHere ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}>
                         <div className="flex items-start gap-2">
                           {l.photo_url && (
-                            <button onClick={(e) => { e.stopPropagation(); openGallery(l); }} className="shrink-0 w-9 h-9 rounded-lg overflow-hidden border border-stone-200">
-                              {cardPhotoUrls[l.photo_url] ? <img src={cardPhotoUrls[l.photo_url]} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-stone-200 animate-pulse" />}
+                            <button onClick={(e) => { e.stopPropagation(); openGallery(l); }} className="shrink-0 w-9 h-9 rounded-lg overflow-hidden border border-nikki-border">
+                              {cardPhotoUrls[l.photo_url] ? <img src={cardPhotoUrls[l.photo_url]} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-nikki-border animate-pulse" />}
                             </button>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="text-stone-900 text-sm font-bold truncate">{l.customer_name}</p>
+                            <p className="text-nikki-navy text-sm font-bold truncate">{l.customer_name}</p>
                             <p className="text-stone-700 text-xs mt-0.5 truncate">{assignedStaffName || 'Unassigned'} • {l.phone}</p>
                           </div>
                         </div>
@@ -1988,7 +1988,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                             {leadsWithMeeting.has(l.id) && <span className="text-[11px]" title="Meeting scheduled">🗓️</span>}
                           </div>
                           {canDragHere && (
-                            <button onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }} className={`ml-auto p-1 rounded ${l.appointment_at ? 'text-teal-700' : 'text-stone-400 hover:text-teal-700'}`} title={l.appointment_at ? 'Reschedule' : 'Schedule appointment'}>
+                            <button onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }} className={`ml-auto p-1 rounded ${l.appointment_at ? 'text-nikki-blue' : 'text-stone-400 hover:text-nikki-blue'}`} title={l.appointment_at ? 'Reschedule' : 'Schedule appointment'}>
                               <CalendarClock className="w-3.5 h-3.5" />
                             </button>
                           )}
@@ -2016,10 +2016,10 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
 
       {openLead && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenLead(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3 gap-3">
               <div>
-                <h3 className="text-stone-900 text-lg font-bold">{openLead.customer_name}</h3>
+                <h3 className="text-nikki-navy text-lg font-bold">{openLead.customer_name}</h3>
                 <p className="text-stone-700 text-sm">{openLead.phone} {openLead.email && `• ${openLead.email}`}</p>
                 {openLead.interested_in && <p className="text-stone-700 text-sm mt-1">Interested in: {openLead.interested_in}</p>}
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -2036,7 +2036,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   </p>
                   {openLead.latitude && openLead.longitude && (
                     <a href={`https://www.google.com/maps?q=${openLead.latitude},${openLead.longitude}`} target="_blank" rel="noreferrer"
-                      className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1 border border-teal-100">
+                      className="text-nikki-blue hover:text-nikki-navy bg-nikki-surface-blue px-2 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1 border border-nikki-surface-blue">
                       <MapPin className="w-3 h-3" /> Location captured
                     </a>
                   )}
@@ -2045,7 +2045,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
               <div className="flex items-center gap-2">
                 {(user?.role === 'super_admin' || hasPermission('manage_leads')) && (
                   <>
-                    <button onClick={() => setEditingLead(openLead)} className="px-3 py-1 bg-orange-50 hover:bg-orange-100 text-orange-800 text-xs font-bold rounded-xl border border-orange-200 shadow-sm transition-colors">
+                    <button onClick={() => setEditingLead(openLead)} className="px-3 py-1 bg-nikki-surface-blue hover:bg-nikki-surface-blue text-nikki-navy text-xs font-bold rounded-xl border border-nikki-border shadow-sm transition-colors">
                       Edit Lead
                     </button>
                     <button onClick={() => deleteLead(openLead.id)} className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 shadow-sm transition-colors">
@@ -2053,7 +2053,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                     </button>
                   </>
                 )}
-                <button className="text-stone-700 hover:text-stone-900 p-1" onClick={() => setOpenLead(null)}>✕</button>
+                <button className="text-stone-700 hover:text-nikki-navy p-1" onClick={() => setOpenLead(null)}>✕</button>
               </div>
             </div>
             {hasPermission('manage_leads') && (
@@ -2103,7 +2103,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 ].filter(Boolean) as { type: string; at: string; icon: string }[];
                 if (candidates.length === 0) {
                   return (
-                    <div className="px-3 py-2 rounded-lg bg-stone-50 border border-stone-200 text-xs text-stone-700 flex items-center gap-2">
+                    <div className="px-3 py-2 rounded-lg bg-stone-50 border border-nikki-border text-xs text-stone-700 flex items-center gap-2">
                       <span>⚪</span> Nothing scheduled next — no follow-up, callback, or appointment set.
                     </div>
                   );
@@ -2112,7 +2112,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 const next = candidates[0];
                 const overdue = new Date(next.at) < new Date();
                 return (
-                  <div className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-2 ${overdue ? 'bg-red-50 border-red-200 text-red-700' : 'bg-teal-50 border-teal-200 text-teal-800'}`}>
+                  <div className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-2 ${overdue ? 'bg-red-50 border-red-200 text-red-700' : 'bg-nikki-surface-blue border-nikki-border text-nikki-navy'}`}>
                     <span className="text-base">{next.icon}</span>
                     <span>Next: {next.type} — {new Date(next.at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}{overdue ? ' (overdue)' : ''}</span>
                   </div>
@@ -2121,7 +2121,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
 
               <p className="text-stone-700 text-xs font-medium mb-1 mt-3">Full History</p>
               <div className="relative pl-5">
-                {remarks.length > 1 && <div className="absolute left-[7px] top-2 bottom-2 w-px bg-stone-200" />}
+                {remarks.length > 1 && <div className="absolute left-[7px] top-2 bottom-2 w-px bg-nikki-border" />}
                 {remarks.map(r => {
                   const isStage = r.remark.startsWith('Stage changed:');
                   const isReassign = r.remark.startsWith('Reassigned:');
@@ -2140,11 +2140,11 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                           {r.address && <span className="text-stone-700">📍 {r.address}</span>}
                           {r.photo_url && (
                             leadPhotoUrls[r.photo_url] ? (
-                              <button onClick={() => setPreviewLeadPhoto(leadPhotoUrls[r.photo_url as string])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                              <button onClick={() => setPreviewLeadPhoto(leadPhotoUrls[r.photo_url as string])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-nikki-border shadow-sm">
                                 <img src={leadPhotoUrls[r.photo_url]} alt="Visit proof" className="w-full h-full object-cover" />
                               </button>
                             ) : (
-                              <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
+                              <div className="shrink-0 w-12 h-12 rounded-lg bg-nikki-border animate-pulse" />
                             )
                           )}
                         </div>
@@ -2154,8 +2154,8 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 })}
               </div>
             </div>
-            <div className="border-t border-stone-200 pt-4 mt-4">
-              <p className="text-stone-900 text-sm font-bold mb-2">Meetings</p>
+            <div className="border-t border-nikki-border pt-4 mt-4">
+              <p className="text-nikki-navy text-sm font-bold mb-2">Meetings</p>
               <LeadMeetingsTab
                 leadId={openLead.id}
                 leadName={openLead.customer_name}
@@ -2200,7 +2200,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4" onClick={() => setGalleryLead(null)}>
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-stone-900 font-bold text-sm">{galleryLead.customer_name} — Photos</h3>
+              <h3 className="text-nikki-navy font-bold text-sm">{galleryLead.customer_name} — Photos</h3>
               <button onClick={() => setGalleryLead(null)} className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500"><X className="w-4 h-4" /></button>
             </div>
             {galleryLoading ? (
@@ -2210,7 +2210,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {galleryPhotos.map((p, i) => (
-                  <button key={i} onClick={() => setPreviewLeadPhoto(p.url)} className="relative rounded-lg overflow-hidden border border-stone-200 aspect-square group">
+                  <button key={i} onClick={() => setPreviewLeadPhoto(p.url)} className="relative rounded-lg overflow-hidden border border-nikki-border aspect-square group">
                     <img src={p.url} alt={p.caption} className="w-full h-full object-cover" />
                     <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] px-1.5 py-0.5 truncate">{p.caption}</span>
                   </button>
@@ -2223,10 +2223,10 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
 
       {editingLead && (
         <div className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditingLead(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h3 className="text-stone-900 font-extrabold text-lg">Edit Lead Details</h3>
-              <button onClick={() => setEditingLead(null)} className="text-stone-700 hover:text-stone-900">✕</button>
+              <h3 className="text-nikki-navy font-extrabold text-lg">Edit Lead Details</h3>
+              <button onClick={() => setEditingLead(null)} className="text-stone-700 hover:text-nikki-navy">✕</button>
             </div>
             <form onSubmit={saveEditedLead} className="space-y-3">
               <div>
@@ -2291,7 +2291,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 </button>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setEditingLead(null)} className="px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-xl">Cancel</button>
-                  <button type="submit" className="px-4 py-2 text-xs font-bold text-white bg-orange-700 hover:bg-orange-600 rounded-xl shadow-md">{user?.role === 'super_admin' ? 'Save Changes' : 'Submit for Approval'}</button>
+                  <button type="submit" className="px-4 py-2 text-xs font-bold text-white bg-nikki-blue hover:bg-nikki-royal rounded-xl shadow-md">{user?.role === 'super_admin' ? 'Save Changes' : 'Submit for Approval'}</button>
                 </div>
               </div>
               {user?.role !== 'super_admin' && (
@@ -2395,25 +2395,25 @@ function LogOutcomeDialog({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
           <div>
             <p className="text-stone-700 text-xs uppercase tracking-wide font-bold">Log outcome for</p>
-            <h3 className="text-stone-900 text-lg font-bold mt-0.5">{lead.customer_name}</h3>
+            <h3 className="text-nikki-navy text-lg font-bold mt-0.5">{lead.customer_name}</h3>
             <p className="text-stone-600 text-xs mt-0.5">{lead.phone} • currently {stageLabel(lead.stage)}</p>
           </div>
-          <button onClick={onClose} className="text-stone-700 hover:text-stone-900 p-1">✕</button>
+          <button onClick={onClose} className="text-stone-700 hover:text-nikki-navy p-1">✕</button>
         </div>
 
         <div className="flex gap-2 mb-4">
           <button
             onClick={() => { setMode('call'); setOutcomeKey(''); }}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'call' ? 'bg-teal-700 text-white' : 'bg-stone-100 text-stone-700'}`}>
+            className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'call' ? 'bg-nikki-blue text-white' : 'bg-stone-100 text-stone-700'}`}>
             📞 Phone call
           </button>
           <button
             onClick={() => { setMode('visit'); setOutcomeKey(''); }}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'visit' ? 'bg-teal-700 text-white' : 'bg-stone-100 text-stone-700'}`}>
+            className={`flex-1 py-2 rounded-lg text-xs font-bold ${mode === 'visit' ? 'bg-nikki-blue text-white' : 'bg-stone-100 text-stone-700'}`}>
             🚗 Field visit
           </button>
         </div>
@@ -2477,7 +2477,7 @@ function LogOutcomeDialog({
           <button
             onClick={submit}
             disabled={busy || !outcome}
-            className="px-4 py-2 text-xs font-bold text-white bg-orange-700 hover:bg-orange-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl shadow-md">
+            className="px-4 py-2 text-xs font-bold text-white bg-nikki-blue hover:bg-nikki-navy disabled:opacity-40 disabled:cursor-not-allowed rounded-xl shadow-md">
             {busy ? 'Saving…' : 'Save & advance'}
           </button>
         </div>
@@ -2642,7 +2642,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
       <div className="flex gap-2 mb-5">
         {visibleTabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${tab === t.id ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>{t.id}</button>
+            className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${tab === t.id ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>{t.id}</button>
         ))}
       </div>
 
@@ -2684,7 +2684,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             return filtered.map(s => (
             <div key={s.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
               <div>
-                <p className="text-stone-900 font-medium">{s.full_name} <span className="text-stone-700 text-xs">({s.role})</span></p>
+                <p className="text-nikki-navy font-medium">{s.full_name} <span className="text-stone-700 text-xs">({s.role})</span></p>
                 <p className="text-stone-700 text-xs">{s.email} • {s.phone} • segments: {(s.segments || []).join(', ') || '—'}</p>
               </div>
               <span className={`text-xs px-2 py-0.5 rounded ${s.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{s.is_active ? 'active' : 'disabled'}</span>
@@ -2696,9 +2696,9 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
 
       {tab === 'attendance' && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-stone-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-nikki-border">
             <div>
-              <p className="text-stone-900 font-semibold text-sm">Daily Attendance Logs</p>
+              <p className="text-nikki-navy font-semibold text-sm">Daily Attendance Logs</p>
               <p className="text-stone-500 text-xs">Select date to inspect check-in times, locations, and selfie photos</p>
             </div>
             <input type="date" className={inputCls + ' max-w-xs'} value={date} onChange={e => setDate(e.target.value)} />
@@ -2747,7 +2747,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                 <div key={s.id} className={cardCls + ' space-y-3'}>
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3">
                     <div>
-                      <span className="text-stone-900 font-bold text-sm mr-2">{s.full_name}</span>
+                      <span className="text-nikki-navy font-bold text-sm mr-2">{s.full_name}</span>
                       <span className="text-stone-500 text-xs">({s.role.replace('_', ' ')})</span>
                     </div>
                     
@@ -2762,9 +2762,9 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                       
                       <button 
                         onClick={() => setSelectedStaffModal({ id: s.id, name: s.full_name })}
-                        className="px-3 py-1 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-200 transition-colors shadow-sm inline-flex items-center gap-1.5"
+                        className="px-3 py-1 text-xs font-semibold text-nikki-blue bg-nikki-surface-blue hover:bg-nikki-surface-blue rounded-lg border border-nikki-border transition-colors shadow-sm inline-flex items-center gap-1.5"
                       >
-                        <Eye className="w-3.5 h-3.5 text-teal-600" /> Full 30-Day History
+                        <Eye className="w-3.5 h-3.5 text-nikki-royal" /> Full 30-Day History
                       </button>
                     </div>
                   </div>
@@ -2776,17 +2776,17 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                         {rec.check_in_selfie_url && (() => {
                           const src = photoUrls[rec.check_in_selfie_url] || (rec.check_in_selfie_url.startsWith('http') || rec.check_in_selfie_url.startsWith('data:') ? rec.check_in_selfie_url : null);
                           return src ? (
-                            <button onClick={() => setPreviewImage(src)} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm hover:opacity-90 transition-opacity">
+                            <button onClick={() => setPreviewImage(src)} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-nikki-border shadow-sm hover:opacity-90 transition-opacity">
                               <img src={src} alt="Check-in selfie" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
                             </button>
                           ) : (
-                            <div className="shrink-0 w-14 h-14 rounded-lg bg-stone-200 animate-pulse" />
+                            <div className="shrink-0 w-14 h-14 rounded-lg bg-nikki-border animate-pulse" />
                           );
                         })()}
                         <div className="flex-1 flex items-center justify-between gap-2">
                           <div>
                             <p className="text-stone-500 font-medium">Check In</p>
-                            <p className="text-stone-900 font-semibold text-sm">
+                            <p className="text-nikki-navy font-semibold text-sm">
                               {rec.check_in_at ? new Date(rec.check_in_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                             </p>
                             {rec.is_late && <p className="text-amber-700 text-[11px] font-medium">{rec.minutes_late}m late</p>}
@@ -2796,7 +2796,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                               href={`https://maps.google.com/?q=${rec.check_in_lat},${rec.check_in_lng}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-teal-100 shrink-0"
+                              className="text-nikki-blue hover:text-nikki-navy bg-nikki-surface-blue px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-nikki-surface-blue shrink-0"
                             >
                               <MapPin className="w-3 h-3" /> Map
                             </a>
@@ -2809,17 +2809,17 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                         {rec.check_out_selfie_url && (() => {
                           const src = photoUrls[rec.check_out_selfie_url] || (rec.check_out_selfie_url.startsWith('http') || rec.check_out_selfie_url.startsWith('data:') ? rec.check_out_selfie_url : null);
                           return src ? (
-                            <button onClick={() => setPreviewImage(src)} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-stone-200 shadow-sm hover:opacity-90 transition-opacity">
+                            <button onClick={() => setPreviewImage(src)} className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-nikki-border shadow-sm hover:opacity-90 transition-opacity">
                               <img src={src} alt="Check-out selfie" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
                             </button>
                           ) : (
-                            <div className="shrink-0 w-14 h-14 rounded-lg bg-stone-200 animate-pulse" />
+                            <div className="shrink-0 w-14 h-14 rounded-lg bg-nikki-border animate-pulse" />
                           );
                         })()}
                         <div className="flex-1 flex items-center justify-between gap-2">
                           <div>
                             <p className="text-stone-500 font-medium">Check Out</p>
-                            <p className="text-stone-900 font-semibold text-sm">
+                            <p className="text-nikki-navy font-semibold text-sm">
                               {rec.check_out_at ? new Date(rec.check_out_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                             </p>
                             {rec.work_mode && <p className="text-stone-600 text-[11px] capitalize font-medium">{rec.work_mode.replace('_', ' ')}</p>}
@@ -2829,7 +2829,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
                               href={`https://maps.google.com/?q=${rec.check_out_lat},${rec.check_out_lng}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-teal-100 shrink-0"
+                              className="text-nikki-blue hover:text-nikki-navy bg-nikki-surface-blue px-2 py-0.5 rounded font-medium inline-flex items-center gap-1 border border-nikki-surface-blue shrink-0"
                             >
                               <MapPin className="w-3 h-3" /> Map
                             </a>
@@ -2889,7 +2889,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             <div key={l.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-stone-900 text-sm font-medium">{staffById[l.staff_user_id]?.full_name || '—'} • {l.leave_type}</p>
+                  <p className="text-nikki-navy text-sm font-medium">{staffById[l.staff_user_id]?.full_name || '—'} • {l.leave_type}</p>
                   <p className="text-stone-700 text-xs">{l.from_date} → {l.to_date} • {l.reason}</p>
                   {l.status === 'pending' && (() => {
                     const b = (leaveBalances[l.staff_user_id] || []).find(x => x.leave_type === l.leave_type);
@@ -2940,7 +2940,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
             <div key={a.id} className={cardCls}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-stone-900 text-sm font-medium">{staffById[a.staff_user_id]?.full_name || '—'} • ₹{Number(a.amount).toLocaleString('en-IN')}</p>
+                  <p className="text-nikki-navy text-sm font-medium">{staffById[a.staff_user_id]?.full_name || '—'} • ₹{Number(a.amount).toLocaleString('en-IN')}</p>
                   <p className="text-stone-700 text-xs">{a.reason} • {new Date(a.created_at ?? '').toLocaleDateString()}</p>
                 </div>
                 {a.status === 'pending' && hasPermission('approve_advances') ? (

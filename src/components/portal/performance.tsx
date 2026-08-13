@@ -49,7 +49,7 @@ export function MyPerformanceChart() {
   if (data.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-4">Hours Worked — Last 14 Days</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-4">Hours Worked — Last 14 Days</h3>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
@@ -94,7 +94,7 @@ export function MyCallsChart() {
   if (data.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-4">Calls Logged — Last 7 Days</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-4">Calls Logged — Last 7 Days</h3>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
@@ -133,7 +133,7 @@ export function AttendanceTrendChart() {
   if (data.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-4">Company Attendance — Last 14 Days</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-4">Company Attendance — Last 14 Days</h3>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
@@ -177,7 +177,7 @@ export function LeadsFunnelChart({ segments, onSegmentClick }: { segments: Segme
   const barClick = (item: { payload?: { slug?: string } }) => { if (item?.payload?.slug) onSegmentClick?.(item.payload.slug); };
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-4">Leads Funnel by Segment</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-4">Leads Funnel by Segment</h3>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
@@ -214,7 +214,7 @@ export function TicketStatusChart() {
   if (data.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-4">Ticket Status Breakdown</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-4">Ticket Status Breakdown</h3>
       <ResponsiveContainer width="100%" height={200}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={2}>
@@ -287,18 +287,18 @@ export function SourcingFunnelWidget({ segments }: { segments: Segment[] }) {
     <div className={cardCls}>
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <div>
-          <h3 className="text-stone-900 font-semibold text-sm">Sourcing Funnel</h3>
+          <h3 className="text-nikki-navy font-semibold text-sm">Sourcing Funnel</h3>
           <p className="text-stone-500 text-[11px]">Who's bringing in the deals</p>
         </div>
         <div className="flex items-center gap-2">
           <select value={range} onChange={e => setRange(e.target.value as typeof range)}
-            className="text-xs px-2 py-1 rounded-lg border border-stone-200 bg-white text-stone-700 font-semibold">
+            className="text-xs px-2 py-1 rounded-lg border border-nikki-border bg-white text-stone-700 font-semibold">
             <option value="30d">Last 30 days</option>
             <option value="90d">Last 90 days</option>
             <option value="all">All time</option>
           </select>
           <select value={segment} onChange={e => setSegment(e.target.value)}
-            className="text-xs px-2 py-1 rounded-lg border border-stone-200 bg-white text-stone-700 font-semibold">
+            className="text-xs px-2 py-1 rounded-lg border border-nikki-border bg-white text-stone-700 font-semibold">
             <option value="">All segments</option>
             {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
           </select>
@@ -316,11 +316,11 @@ export function SourcingFunnelWidget({ segments }: { segments: Segment[] }) {
         <div className="space-y-2">
           {rows.slice(0, 6).map((r, i) => (
             <div key={r.sourcer_id} className="flex items-center gap-3 p-2.5 rounded-xl bg-stone-50 border border-stone-100">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-amber-100 text-amber-800' : 'bg-stone-200 text-stone-700'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-amber-100 text-amber-800' : 'bg-nikki-border text-stone-700'}`}>
                 {r.sourcer_name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-stone-900 text-sm font-medium truncate">{r.sourcer_name}</p>
+                <p className="text-nikki-navy text-sm font-medium truncate">{r.sourcer_name}</p>
                 <p className="text-stone-500 text-xs">{r.total_leads} sourced • {r.won_leads} won</p>
               </div>
               <p className={`text-sm font-bold shrink-0 ${

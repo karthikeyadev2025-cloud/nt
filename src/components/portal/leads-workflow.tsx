@@ -59,8 +59,8 @@ export function TelecallerStatsDashboard() {
 
   if (!stats) return null;
   const cards = [
-    { label: 'Leads in my queue', value: stats.assigned, color: 'text-teal-700' },
-    { label: 'Calls made today', value: stats.calledToday, color: 'text-stone-900' },
+    { label: 'Leads in my queue', value: stats.assigned, color: 'text-nikki-blue' },
+    { label: 'Calls made today', value: stats.calledToday, color: 'text-nikki-navy' },
     { label: 'Callbacks pending', value: stats.callbacks, color: 'text-amber-700' },
     { label: 'Converted this month', value: stats.convertedMonth, color: 'text-emerald-700' },
     { label: 'Transfers awaiting approval', value: stats.transfersPending, color: 'text-purple-700' },
@@ -234,16 +234,16 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       <TelecallerStatsDashboard />
       <MyCallsChart />
       <div className="flex items-center justify-between mt-6 mb-3">
-        <h3 className="text-stone-900 font-semibold text-sm">My Call Queue ({leads.length})</h3>
+        <h3 className="text-nikki-navy font-semibold text-sm">My Call Queue ({leads.length})</h3>
         <div className="flex items-center gap-2">
           {leads.length > 0 && (
             <button onClick={() => exportLeadsToExcel(leads, `my-leads-${new Date().toISOString().slice(0, 10)}.xlsx`)}
-              className="px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:border-teal-400 text-stone-700 text-xs font-semibold inline-flex items-center gap-1.5">
+              className="px-3 py-1.5 rounded-lg bg-white border border-stone-300 hover:border-nikki-sky text-stone-700 text-xs font-semibold inline-flex items-center gap-1.5">
               <Download className="w-3.5 h-3.5" /> Export
             </button>
           )}
           {hasPermission('create_leads') && (
-            <button onClick={() => setShowAddLead(true)} className="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold shadow-sm">+ Add Lead</button>
+            <button onClick={() => setShowAddLead(true)} className="px-3 py-1.5 rounded-lg bg-nikki-blue hover:bg-nikki-navy text-white text-xs font-bold shadow-sm">+ Add Lead</button>
           )}
         </div>
       </div>
@@ -251,7 +251,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
         {leads.map(l => (
           <div key={l.id} className={cardCls + ' flex items-center justify-between'}>
             <div className="min-w-0 cursor-pointer" onClick={() => openLead(l)}>
-              <p className="text-stone-900 text-sm font-medium truncate">{l.customer_name}</p>
+              <p className="text-nikki-navy text-sm font-medium truncate">{l.customer_name}</p>
               <p className="text-stone-700 text-xs mt-0.5">
                 {l.interested_in || 'No notes'} {l.callback_at && (
                   new Date(l.callback_at) <= new Date()
@@ -264,7 +264,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               <button onClick={() => call(l.phone)} className="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-white" title="Call">
                 <Phone className="w-4 h-4" />
               </button>
-              <button onClick={() => openLead(l)} className="text-teal-700 text-xs font-medium">Add Remark</button>
+              <button onClick={() => openLead(l)} className="text-nikki-blue text-xs font-medium">Add Remark</button>
             </div>
           </div>
         ))}
@@ -274,7 +274,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       </div>
 
       <div className="mt-8">
-        <button onClick={() => setShowPool(!showPool)} className="text-teal-700 text-sm font-medium">
+        <button onClick={() => setShowPool(!showPool)} className="text-nikki-blue text-sm font-medium">
           {showPool ? '▾' : '▸'} Unassigned Pool — claim new leads
         </button>
         {showPool && <div className="mt-4"><UnassignedLeadsPool segments={segments} onChanged={load} /></div>}
@@ -294,9 +294,9 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
 
       {active && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-stone-900 font-semibold truncate">{active.customer_name}</h3>
+              <h3 className="text-nikki-navy font-semibold truncate">{active.customer_name}</h3>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button onClick={() => call(active.phone)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm">
                   <PhoneCall className="w-4 h-4" /> {active.phone}
@@ -309,12 +309,12 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               </div>
             </div>
             {active.appointment_at && (
-              <p className={`text-xs font-medium flex items-center gap-1 ${new Date(active.appointment_at) < new Date() ? 'text-amber-700' : 'text-teal-700'}`}>
+              <p className={`text-xs font-medium flex items-center gap-1 ${new Date(active.appointment_at) < new Date() ? 'text-amber-700' : 'text-nikki-blue'}`}>
                 📅 {new Date(active.appointment_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 {new Date(active.appointment_at) < new Date() ? ' (date passed)' : ''}
               </p>
             )}
-            <button type="button" onClick={() => setRescheduleActive(active)} className="text-teal-700 text-xs font-medium self-start">
+            <button type="button" onClick={() => setRescheduleActive(active)} className="text-nikki-blue text-xs font-medium self-start">
               {active.appointment_at ? '📅 Reschedule appointment' : '📅 Schedule an appointment'}
             </button>
             <p className="text-stone-700 text-xs">{active.interested_in}</p>
@@ -326,8 +326,8 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} />
             )}
             {outcome === 'appointment' && (
-              <div className="space-y-2 rounded-lg border border-teal-500/30 bg-teal-500/5 p-3">
-                <p className="text-teal-700 text-xs font-medium">Appointment date &amp; time *</p>
+              <div className="space-y-2 rounded-lg border border-nikki-royal/30 bg-nikki-royal/5 p-3">
+                <p className="text-nikki-blue text-xs font-medium">Appointment date &amp; time *</p>
                 <input type="datetime-local" className={inputCls} value={appointmentDate}
                   min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                   onChange={e => setAppointmentDate(e.target.value)} />
@@ -421,7 +421,7 @@ export function TransferApprovals() {
     <div className="space-y-2">
       {items.map(l => (
         <div key={l.id} className={cardCls}>
-          <p className="text-stone-900 text-sm font-medium">{l.customer_name} <span className="text-stone-700 text-xs">• {l.phone}</span></p>
+          <p className="text-nikki-navy text-sm font-medium">{l.customer_name} <span className="text-stone-700 text-xs">• {l.phone}</span></p>
           <p className="text-stone-700 text-xs mt-1">
             Requested by <span className="text-stone-700">{names[l.transfer_requested_by ?? ''] || '—'}</span> → to <span className="text-stone-700">{names[l.pending_transfer_to ?? ''] || '—'}</span>
           </p>
@@ -500,7 +500,7 @@ export function LeadChangeApprovals() {
         return (
           <div key={r.id} className={cardCls}>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-stone-900 text-sm font-bold">{(orig.customer_name as string) || 'Unknown lead'}</p>
+              <p className="text-nikki-navy text-sm font-bold">{(orig.customer_name as string) || 'Unknown lead'}</p>
               <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${r.action === 'delete' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                 {r.action === 'delete' ? 'Deletion requested' : 'Edit requested'}
               </span>
@@ -812,8 +812,8 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
   return (
     <div className={cardCls + ' space-y-4'}>
       <div>
-        <h3 className="text-stone-900 font-extrabold text-base flex items-center gap-2">
-          <FileSpreadsheet className="w-5 h-5 text-teal-700" /> Universal Lead Import (Excel / CSV)
+        <h3 className="text-nikki-navy font-extrabold text-base flex items-center gap-2">
+          <FileSpreadsheet className="w-5 h-5 text-nikki-blue" /> Universal Lead Import (Excel / CSV)
         </h3>
         <p className="text-stone-700 text-xs mt-0.5">
           Auto-detects business name, phone, address, and category from any Excel sheet. Assign immediately to Telecallers or Field Executives.
@@ -821,19 +821,19 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
       </div>
 
       <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile}
-        className="text-stone-700 text-sm w-full file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:bg-orange-50 file:text-orange-900 file:font-bold file:text-xs hover:file:bg-orange-100 cursor-pointer" />
+        className="text-stone-700 text-sm w-full file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:bg-nikki-surface-blue file:text-nikki-navy file:font-bold file:text-xs hover:file:bg-nikki-surface-blue cursor-pointer" />
 
       {parseInfo && parseInfo.headers.length > 0 && (
-        <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 space-y-3">
+        <div className="p-3.5 rounded-xl bg-stone-50 border border-nikki-border space-y-3">
           <div className="flex justify-between items-center flex-wrap gap-2">
-            <p className="text-stone-900 text-xs font-bold">
+            <p className="text-nikki-navy text-xs font-bold">
               <span className="text-stone-600 font-normal">{fileName}</span> — Detected <span className="text-emerald-700">{rows.length}</span> valid lead(s) out of {parseInfo.totalRows} total row(s)
             </p>
-            <p className="text-stone-700 text-xs">File columns: <span className="font-mono text-stone-900">{parseInfo.headers.join(', ')}</span></p>
+            <p className="text-stone-700 text-xs">File columns: <span className="font-mono text-nikki-navy">{parseInfo.headers.join(', ')}</span></p>
           </div>
 
           {/* Interactive Custom Column Mapping Dropdowns */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-stone-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-nikki-border">
             <div>
               <label className="block text-[11px] font-bold text-stone-700 mb-1">Customer / Business Name Column</label>
               <select className={inputCls} value={nameCol} onChange={e => handleCustomMapChange(e.target.value, undefined, undefined)}>
@@ -860,8 +860,8 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
       )}
 
       {rows.length > 0 && (
-        <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200 space-y-3">
-          <p className="text-orange-950 text-xs font-bold">Step 2: Choose Segment & Assignee for {rows.length} Leads</p>
+        <div className="p-4 rounded-xl bg-nikki-surface-blue/60 border border-nikki-border space-y-3">
+          <p className="text-nikki-navy text-xs font-bold">Step 2: Choose Segment & Assignee for {rows.length} Leads</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-1">Target Segment *</label>
@@ -888,9 +888,9 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
             <p className="text-stone-700 text-[11px] font-bold mb-1.5">First 3 Preview Rows:</p>
             <div className="space-y-1.5">
               {rows.slice(0, 3).map((r, i) => (
-                <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-stone-200">
+                <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-nikki-border">
                   <div>
-                    <span className="font-bold text-stone-900">{r.customer_name}</span>
+                    <span className="font-bold text-nikki-navy">{r.customer_name}</span>
                     <span className="text-stone-700 ml-2">📞 {r.phone}</span>
                   </div>
                   {r.interested_in && <span className="text-stone-700 text-[11px] truncate max-w-[200px]">{r.interested_in}</span>}
@@ -973,7 +973,7 @@ export function TeamActivityFeed() {
   useEffect(() => { load(); }, [load]);
 
   const typeColor: Record<string, string> = {
-    outgoing: 'text-teal-700', incoming: 'text-emerald-700', visit: 'text-amber-700',
+    outgoing: 'text-nikki-blue', incoming: 'text-emerald-700', visit: 'text-amber-700',
     whatsapp: 'text-emerald-700', email: 'text-purple-700', note: 'text-stone-700',
     review: 'text-purple-700',
   };
@@ -982,7 +982,7 @@ export function TeamActivityFeed() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-stone-700 text-sm">Every call, visit and note across your team, most recent first.</p>
-        <button className="text-teal-700 text-xs" onClick={load}>Refresh</button>
+        <button className="text-nikki-blue text-xs" onClick={load}>Refresh</button>
       </div>
       <div className="flex gap-2 mb-4 flex-wrap">
         <select className={inputCls + ' w-auto'} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
@@ -1009,7 +1009,7 @@ export function TeamActivityFeed() {
           {items.map(r => (
             <div key={r.id} className={cardCls}>
               <div className="flex items-center justify-between">
-                <p className="text-stone-900 text-sm font-medium">{leadNames[r.lead_id]?.name || 'Unknown lead'}</p>
+                <p className="text-nikki-navy text-sm font-medium">{leadNames[r.lead_id]?.name || 'Unknown lead'}</p>
                 <span className={`text-xs ${typeColor[r.call_type ?? ''] || 'text-stone-700'} capitalize`}>{(r.call_type ?? '').replace('_', ' ')}</span>
               </div>
               <p className="text-stone-700 text-sm mt-1">{r.remark}</p>
@@ -1023,16 +1023,16 @@ export function TeamActivityFeed() {
                 <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
                   {r.address && <span className="text-stone-700">📍 {r.address}</span>}
                   {!r.address && r.latitude && (
-                    <a className="text-teal-700" target="_blank" rel="noreferrer"
+                    <a className="text-nikki-blue" target="_blank" rel="noreferrer"
                       href={`https://www.google.com/maps?q=${r.latitude},${r.longitude}`}>📍 View on map</a>
                   )}
                   {r.photo_url && (
                     photoUrls[r.photo_url ?? ''] ? (
-                      <button onClick={() => setPreviewImage(photoUrls[r.photo_url ?? ''])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                      <button onClick={() => setPreviewImage(photoUrls[r.photo_url ?? ''])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-nikki-border shadow-sm">
                         <img src={photoUrls[r.photo_url ?? '']} alt="Visit proof" className="w-full h-full object-cover" />
                       </button>
                     ) : (
-                      <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
+                      <div className="shrink-0 w-12 h-12 rounded-lg bg-nikki-border animate-pulse" />
                     )
                   )}
                 </div>
@@ -1121,7 +1121,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
-        <button className="text-teal-700 text-xs" onClick={load}>Refresh</button>
+        <button className="text-nikki-blue text-xs" onClick={load}>Refresh</button>
       </div>
 
       {selected.size > 0 && (
@@ -1150,13 +1150,13 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
               <label className="flex items-center gap-3 cursor-pointer min-w-0 flex-1">
                 <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)} />
                 <div className="min-w-0">
-                  <p className="text-stone-900 text-sm font-medium truncate">{l.customer_name}
+                  <p className="text-nikki-navy text-sm font-medium truncate">{l.customer_name}
                     {seg && <span className="text-xs px-2 py-0.5 rounded ml-2" style={{ backgroundColor: (seg.color || '#64748b') + '22', color: seg.color || '#64748b' }}>{seg.name}</span>}
                   </p>
                   <p className="text-stone-700 text-xs">{l.phone} • {l.stage.replace('_', ' ')} • {new Date(l.created_at ?? '').toLocaleDateString()}</p>
                 </div>
               </label>
-              <button className="text-teal-700 text-xs font-medium shrink-0" disabled={busy} onClick={() => user && assign(user.id, [l.id])}>
+              <button className="text-nikki-blue text-xs font-medium shrink-0" disabled={busy} onClick={() => user && assign(user.id, [l.id])}>
                 Claim
               </button>
             </div>
@@ -1238,7 +1238,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
       <div className="flex gap-2 mb-4">
         {([['upcoming', 'Upcoming'], ['unassigned', 'Needs Executive'], ['past', 'Past']] as const).map(([v, label]) => (
           <button key={v} onClick={() => setScope(v)}
-            className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
+            className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
             {label}
           </button>
         ))}
@@ -1258,8 +1258,8 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
             <div key={l.id} className={cardCls}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-stone-900 text-sm font-medium">{l.customer_name} <span className="text-stone-700">• {l.phone}</span></p>
-                  <p className={`text-xs mt-0.5 ${overdue ? 'text-amber-700' : 'text-teal-700'}`}>
+                  <p className="text-nikki-navy text-sm font-medium">{l.customer_name} <span className="text-stone-700">• {l.phone}</span></p>
+                  <p className={`text-xs mt-0.5 ${overdue ? 'text-amber-700' : 'text-nikki-blue'}`}>
                     {fmt(l.appointment_at ?? '')}{overdue ? ' — date passed' : ''}
                   </p>
                   {l.appointment_note && <p className="text-stone-700 text-xs mt-0.5">{l.appointment_note}</p>}
@@ -1315,7 +1315,7 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
 
   const primaryBtn = (k: typeof sub, label: string) => (
     <button key={k} onClick={() => setSub(k)}
-      className={`px-3 py-1.5 rounded-lg text-sm border ${sub === k ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
+      className={`px-3 py-1.5 rounded-lg text-sm border ${sub === k ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
       {label}
     </button>
   );
@@ -1334,15 +1334,15 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
             <button
               onClick={() => setMoreOpen(v => !v)}
               onBlur={() => setTimeout(() => setMoreOpen(false), 150)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${['pool','activity','bulk','reassign','duplicates','transfers'].includes(sub) ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
+              className={`px-3 py-1.5 rounded-lg text-sm border ${['pool','activity','bulk','reassign','duplicates','transfers'].includes(sub) ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
               More ▾
             </button>
             {moreOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-lg z-10 py-1 min-w-[180px]">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-nikki-border rounded-lg shadow-lg z-10 py-1 min-w-[180px]">
                 {secondaryTabs.map(t => (
                   <button key={t.key}
                     onMouseDown={() => { setSub(t.key); setMoreOpen(false); }}
-                    className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-stone-50 ${sub === t.key ? 'text-teal-700 font-semibold' : 'text-stone-700'}`}>
+                    className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-stone-50 ${sub === t.key ? 'text-nikki-blue font-semibold' : 'text-stone-700'}`}>
                     {t.label}
                   </button>
                 ))}
@@ -1630,12 +1630,12 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               </p>
             </div>
             {online && pendingCount > 0 && (
-              <button className="px-3 py-1.5 rounded-lg border border-stone-300 text-stone-200 text-xs whitespace-nowrap"
+              <button className="px-3 py-1.5 rounded-lg border border-stone-300 text-nikki-border text-xs whitespace-nowrap"
                 disabled={syncing} onClick={syncNow}>{syncing ? 'Syncing…' : 'Sync now'}</button>
             )}
           </div>
           {pendingItems.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-stone-200/60 space-y-1">
+            <div className="mt-2 pt-2 border-t border-nikki-border/60 space-y-1">
               {pendingItems.slice(0, 5).map(p => (
                 <p key={p.id} className="text-stone-700 text-[11px]">
                   {p.leadName} — {new Date(p.occurredAt ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
@@ -1648,15 +1648,15 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       )}
 
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-stone-900 font-semibold text-sm">My Field Leads ({leads.length})</h3>
-        <button className="text-teal-700 text-xs font-medium" onClick={() => { setDuplicateInfo(null); setShowAddLead(true); }}>+ Add Lead</button>
+        <h3 className="text-nikki-navy font-semibold text-sm">My Field Leads ({leads.length})</h3>
+        <button className="text-nikki-blue text-xs font-medium" onClick={() => { setDuplicateInfo(null); setShowAddLead(true); }}>+ Add Lead</button>
       </div>
       <div className="space-y-2">
         {leads.map(l => (
           <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => openLead(l)}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="text-stone-900 text-sm font-medium">{l.customer_name}</p>
+                <p className="text-nikki-navy text-sm font-medium">{l.customer_name}</p>
                 <p className="text-stone-700 text-xs mt-0.5">{l.phone}{l.interested_in ? ` • ${l.interested_in}` : ''}</p>
               </div>
             </div>
@@ -1668,7 +1668,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 {l.latitude && l.longitude && (
                   <a href={`https://www.google.com/maps?q=${l.latitude},${l.longitude}`} target="_blank" rel="noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className="text-teal-700 hover:text-teal-900 text-xs font-medium inline-flex items-center gap-1 w-fit">
+                    className="text-nikki-blue hover:text-nikki-navy text-xs font-medium inline-flex items-center gap-1 w-fit">
                     <MapPin className="w-3 h-3" /> Open in Google Maps ↗
                   </a>
                 )}
@@ -1684,7 +1684,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               </p>
             )}
             {l.appointment_at && (
-              <p className={`text-xs mt-1 font-medium ${new Date(l.appointment_at) < new Date() ? 'text-amber-700' : 'text-teal-700'}`}>
+              <p className={`text-xs mt-1 font-medium ${new Date(l.appointment_at) < new Date() ? 'text-amber-700' : 'text-nikki-blue'}`}>
                 📅 {new Date(l.appointment_at ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 {l.appointment_note ? ` — ${l.appointment_note}` : ''}
                 {new Date(l.appointment_at) < new Date() ? ' (date passed)' : ''}
@@ -1696,7 +1696,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       </div>
 
       <div className="mt-8">
-        <button onClick={() => setShowPool(!showPool)} className="text-orange-800 text-sm font-bold bg-orange-50 hover:bg-orange-100 border border-orange-200 px-4 py-2 rounded-xl transition-colors">
+        <button onClick={() => setShowPool(!showPool)} className="text-nikki-navy text-sm font-bold bg-nikki-surface-blue hover:bg-nikki-surface-blue border border-nikki-border px-4 py-2 rounded-xl transition-colors">
           {showPool ? '▾ Hide Available Leads' : '▸ View Available Unassigned Leads'}
         </button>
         {showPool && <div className="mt-4"><UnassignedLeadsPool segments={segments} onChanged={load} /></div>}
@@ -1704,8 +1704,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
       {active && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">{active.customer_name}</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">{active.customer_name}</h3>
             <p className="text-stone-700 text-xs">{active.phone} {active.email && `• ${active.email}`}</p>
 
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-1 my-2">
@@ -1721,7 +1721,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               {photoDataUrl ? (
                 <img src={photoDataUrl} alt="Captured" className="w-full rounded-lg mb-2" />
               ) : (
-                <button className="w-full py-2.5 rounded-lg border border-stone-200 text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" onClick={() => setCapturing(true)}>
+                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" onClick={() => setCapturing(true)}>
                   <Camera className="w-4 h-4" /> Take Client/Site Photo
                 </button>
               )}
@@ -1729,10 +1729,10 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               {location ? (
                 <div className="mb-2 px-3 py-2 rounded-lg bg-stone-50 border border-stone-800">
                   <p className="text-emerald-700 text-xs">📍 {location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
-                  <button className="text-teal-700 text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
+                  <button className="text-nikki-blue text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
                 </div>
               ) : (
-                <button className="w-full py-2.5 rounded-lg border border-stone-200 text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={() => captureLocation()}>
+                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={() => captureLocation()}>
                   <MapPin className="w-4 h-4" /> {locating ? 'Getting location…' : 'Capture Location & Address'}
                 </button>
               )}
@@ -1774,11 +1774,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                       {r.address && <span className="text-stone-700">📍 {r.address}</span>}
                       {r.photo_url && (
                         photoUrls[r.photo_url ?? ''] ? (
-                          <button onClick={() => setPreviewImage(photoUrls[r.photo_url ?? ''])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-stone-200 shadow-sm">
+                          <button onClick={() => setPreviewImage(photoUrls[r.photo_url ?? ''])} className="shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-nikki-border shadow-sm">
                             <img src={photoUrls[r.photo_url ?? '']} alt="Visit proof" className="w-full h-full object-cover" />
                           </button>
                         ) : (
-                          <div className="shrink-0 w-12 h-12 rounded-lg bg-stone-200 animate-pulse" />
+                          <div className="shrink-0 w-12 h-12 rounded-lg bg-nikki-border animate-pulse" />
                         )
                       )}
                     </div>
@@ -1809,8 +1809,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
       {showAddLead && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowAddLead(false)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">Add Field Lead</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">Add Field Lead</h3>
             <p className="text-stone-700 text-xs">Found a new prospect on-site? Add them directly — it lands in your own queue.</p>
             <select className={inputCls} value={newLead.segment_slug} onChange={e => { setNewLead({ ...newLead, segment_slug: e.target.value }); setDuplicateInfo(null); }}>
               <option value="">Segment *</option>
@@ -1830,7 +1830,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               </div>
             ) : (
               <button type="button" onClick={() => captureLocation()} disabled={locating}
-                className="w-full px-3 py-2 rounded-lg border border-stone-200 text-stone-700 text-xs flex items-center justify-center gap-1.5">
+                className="w-full px-3 py-2 rounded-lg border border-nikki-border text-stone-700 text-xs flex items-center justify-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5" /> {locating ? 'Getting location…' : 'Attach current location (optional)'}
               </button>
             )}
@@ -1910,16 +1910,16 @@ export function DuplicateLeadsManager() {
         const defaultKeep = keepChoice[key] || members[0].id;
         return (
           <div key={key} className={cardCls}>
-            <p className="text-stone-900 text-sm font-bold mb-2">{members[0].phone} — {members.length} records</p>
+            <p className="text-nikki-navy text-sm font-bold mb-2">{members[0].phone} — {members.length} records</p>
             <div className="space-y-1.5">
               {members.map(m => (
-                <label key={m.id} className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer ${defaultKeep === m.id ? 'bg-teal-50 border border-teal-200' : 'bg-stone-50 border border-stone-200'}`}>
+                <label key={m.id} className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer ${defaultKeep === m.id ? 'bg-nikki-surface-blue border border-nikki-border' : 'bg-stone-50 border border-nikki-border'}`}>
                   <input type="radio" name={key} checked={defaultKeep === m.id} onChange={() => setKeepChoice(prev => ({ ...prev, [key]: m.id }))} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-stone-900 text-sm font-medium truncate">{m.customer_name} <span className="text-stone-500 font-normal">— {stageLabel(m.stage)}</span></p>
+                    <p className="text-nikki-navy text-sm font-medium truncate">{m.customer_name} <span className="text-stone-500 font-normal">— {stageLabel(m.stage)}</span></p>
                     <p className="text-stone-700 text-xs">{m.assignee_name || 'Unassigned'} • {m.remark_count} note{m.remark_count === 1 ? '' : 's'} • added {new Date(m.created_at).toLocaleDateString('en-IN')}</p>
                   </div>
-                  {defaultKeep === m.id && <span className="text-teal-700 text-[11px] font-bold shrink-0">KEEP</span>}
+                  {defaultKeep === m.id && <span className="text-nikki-blue text-[11px] font-bold shrink-0">KEEP</span>}
                 </label>
               ))}
             </div>
@@ -2006,7 +2006,7 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
           <div className="flex items-center justify-between mb-3">
             <p className="text-stone-700 text-sm">{leads.length} active lead(s) assigned to {fromName}</p>
             {leads.length > 0 && (
-              <button className="text-teal-700 text-xs" onClick={() => setSelected(selected.size === leads.length ? new Set() : new Set(leads.map(l => l.id)))}>
+              <button className="text-nikki-blue text-xs" onClick={() => setSelected(selected.size === leads.length ? new Set() : new Set(leads.map(l => l.id)))}>
                 {selected.size === leads.length ? 'Deselect all' : 'Select all'}
               </button>
             )}
@@ -2018,7 +2018,7 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
                 <label key={l.id} className={cardCls + ' flex items-center gap-3 cursor-pointer py-2.5'}>
                   <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)} />
                   <div className="flex-1">
-                    <span className="text-stone-900 text-sm">{l.customer_name}</span>
+                    <span className="text-nikki-navy text-sm">{l.customer_name}</span>
                     <span className="text-stone-700 text-xs ml-2">{l.phone} • {l.stage}</span>
                   </div>
                   {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}

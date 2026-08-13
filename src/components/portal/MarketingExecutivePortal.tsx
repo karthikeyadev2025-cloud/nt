@@ -76,7 +76,7 @@ function ExecutiveHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-stone-900 text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
+        <h2 className="text-nikki-navy text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
         <p className="text-stone-700 text-sm">
           {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
@@ -86,7 +86,7 @@ function ExecutiveHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
         {!stats.attendance ? (
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-stone-900 text-sm font-medium">Not checked in yet</p>
+              <p className="text-nikki-navy text-sm font-medium">Not checked in yet</p>
               <p className="text-stone-700 text-xs">Start your day from My Attendance.</p>
             </div>
             <button className={btnCls} onClick={() => onNavigate('attendance')}>Check In</button>
@@ -101,7 +101,7 @@ function ExecutiveHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
               <p className="text-stone-700 text-xs capitalize">{(stats.attendance.work_mode || 'field').replace('_', ' ')}{stats.attendance.check_out_at ? ' • checked out' : ''}</p>
             </div>
             {!stats.attendance.check_out_at && (
-              <button className="px-3 py-1.5 rounded-lg border border-stone-200 text-stone-700 text-sm" onClick={() => onNavigate('attendance')}>Check Out</button>
+              <button className="px-3 py-1.5 rounded-lg border border-nikki-border text-stone-700 text-sm" onClick={() => onNavigate('attendance')}>Check Out</button>
             )}
           </div>
         )}
@@ -113,19 +113,19 @@ function ExecutiveHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
       {/* Field numbers — visits and pipeline, the actual job. */}
       <div>
-        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-2">Today's Field Work</p>
+        <p className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider mb-2">Today's Field Work</p>
         <div className="grid grid-cols-3 gap-3">
           <button onClick={() => onNavigate('visits')} className={cardCls + ' text-left hover:border-stone-300'}>
             <p className="text-stone-700 text-xs">My leads</p>
-            <p className="text-2xl font-semibold mt-0.5 text-stone-900">{stats.myLeads}</p>
+            <p className="text-2xl font-semibold mt-0.5 text-nikki-navy">{stats.myLeads}</p>
           </button>
           <div className={cardCls}>
             <p className="text-stone-700 text-xs">Visits logged today</p>
-            <p className="text-2xl font-semibold mt-0.5 text-stone-900">{stats.visitsToday}</p>
+            <p className="text-2xl font-semibold mt-0.5 text-nikki-navy">{stats.visitsToday}</p>
           </div>
           <button onClick={() => onNavigate('visits')} className={cardCls + ' text-left hover:border-stone-300'}>
             <p className="text-stone-700 text-xs">Upcoming appointments</p>
-            <p className={`text-2xl font-semibold mt-0.5 ${stats.appointments.length > 0 ? 'text-teal-700' : 'text-stone-900'}`}>{stats.appointments.length}</p>
+            <p className={`text-2xl font-semibold mt-0.5 ${stats.appointments.length > 0 ? 'text-nikki-blue' : 'text-nikki-navy'}`}>{stats.appointments.length}</p>
           </button>
         </div>
       </div>
@@ -133,15 +133,15 @@ function ExecutiveHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       {/* Next appointments — the thing a field executive most needs to see. */}
       {stats.appointments.length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-stone-900 text-sm font-semibold mb-3">Next appointments</h3>
+          <h3 className="text-nikki-navy text-sm font-semibold mb-3">Next appointments</h3>
           <div className="space-y-2">
             {stats.appointments.map(a => (
               <div key={a.id} className="flex items-start justify-between gap-3 border-b border-stone-100 last:border-0 pb-2 last:pb-0">
                 <div className="min-w-0">
-                  <p className="text-stone-900 text-sm">{a.customer_name}</p>
+                  <p className="text-nikki-navy text-sm">{a.customer_name}</p>
                   <p className="text-stone-700 text-xs">{a.phone}{a.appointment_note ? ` • ${a.appointment_note}` : ''}</p>
                 </div>
-                <p className="text-teal-700 text-xs whitespace-nowrap shrink-0">
+                <p className="text-nikki-blue text-xs whitespace-nowrap shrink-0">
                   {new Date(a.appointment_at ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 </p>
               </div>
@@ -152,18 +152,18 @@ function ExecutiveHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
       {stats.todaysMeetings.length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-stone-900 text-sm font-semibold mb-3 flex items-center justify-between">
+          <h3 className="text-nikki-navy text-sm font-semibold mb-3 flex items-center justify-between">
             <span>Today's meetings</span>
-            <button onClick={() => onNavigate('meetings')} className="text-teal-700 text-xs font-medium">View all →</button>
+            <button onClick={() => onNavigate('meetings')} className="text-nikki-blue text-xs font-medium">View all →</button>
           </h3>
           <div className="space-y-2">
             {stats.todaysMeetings.map(m => (
               <div key={m.id} className="flex items-center justify-between gap-3 border-b border-stone-100 last:border-0 pb-2 last:pb-0">
                 <div className="min-w-0">
-                  <p className="text-stone-900 text-sm font-medium truncate">{m.meeting_type_name}</p>
+                  <p className="text-nikki-navy text-sm font-medium truncate">{m.meeting_type_name}</p>
                   <p className="text-stone-700 text-xs truncate">{m.customer_name || 'Internal'}</p>
                 </div>
-                <p className="text-teal-700 text-xs whitespace-nowrap shrink-0">
+                <p className="text-nikki-blue text-xs whitespace-nowrap shrink-0">
                   {new Date(m.scheduled_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 </p>
               </div>
@@ -173,15 +173,15 @@ function ExecutiveHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       )}
 
       <div className={cardCls + ' space-y-3'}>
-        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider">Quick Actions</p>
+        <p className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider">Quick Actions</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          <button onClick={() => onNavigate('visits')} className="flex items-center gap-2 p-3 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-900 font-bold text-xs transition-colors shadow-sm">
+          <button onClick={() => onNavigate('visits')} className="flex items-center gap-2 p-3 rounded-xl bg-nikki-surface-blue hover:bg-nikki-surface-blue border border-nikki-border text-nikki-navy font-bold text-xs transition-colors shadow-sm">
             <MapPin className="w-4 h-4" /> Log Field Visit
           </button>
           <button onClick={() => onNavigate('meetings')} className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 font-bold text-xs transition-colors shadow-sm">
             <Calendar className="w-4 h-4" /> Schedule Meeting
           </button>
-          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 font-bold text-xs transition-colors">
             <CalendarDays className="w-4 h-4" /> Request Leave
           </button>
         </div>

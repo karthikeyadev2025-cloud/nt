@@ -60,8 +60,8 @@ export function MyRegularizations() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold mb-1 text-sm flex items-center gap-2">
-        <CalendarCheck className="w-4 h-4 text-teal-700" /> Attendance Correction
+      <h3 className="text-nikki-navy font-semibold mb-1 text-sm flex items-center gap-2">
+        <CalendarCheck className="w-4 h-4 text-nikki-blue" /> Attendance Correction
       </h3>
       <p className="text-stone-700 text-xs mb-3">Forgot to check in or out? Request a correction — it needs manager/HR approval.</p>
       <input type="date" className={inputCls + ' mb-2'} max={istDateStr()}
@@ -133,7 +133,7 @@ export function RegularizationApprovals() {
     <div className="space-y-2">
       {pending.map(r => (
         <div key={r.id} className={cardCls}>
-          <p className="text-stone-900 text-sm font-medium">{names[r.staff_user_id] || '—'} • {r.attendance_date}</p>
+          <p className="text-nikki-navy text-sm font-medium">{names[r.staff_user_id] || '—'} • {r.attendance_date}</p>
           <p className="text-stone-700 text-xs mt-1">In: {fmtTime(r.requested_check_in)} • Out: {fmtTime(r.requested_check_out)}</p>
           <p className="text-stone-700 text-xs mt-0.5">"{r.reason}"</p>
           {hasPermission('approve_leaves') && (
@@ -191,7 +191,7 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className={cardCls + ' mb-5 space-y-2'}>
-        <h3 className="text-stone-900 font-semibold text-sm flex items-center gap-2"><CalendarX className="w-4 h-4 text-teal-700" /> Add Holiday</h3>
+        <h3 className="text-nikki-navy font-semibold text-sm flex items-center gap-2"><CalendarX className="w-4 h-4 text-nikki-blue" /> Add Holiday</h3>
         <p className="text-stone-700 text-xs">Holidays are excluded from working-day counts, so payroll doesn't treat them as absences.</p>
         <div className="grid grid-cols-2 gap-2">
           <input type="date" className={inputCls} value={form.holiday_date} onChange={e => setForm({ ...form, holiday_date: e.target.value })} />
@@ -201,7 +201,7 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
           <option value="">Company-wide</option>
           {segments.map(s => <option key={s.slug} value={s.slug}>{s.name} only</option>)}
         </select>
-        <label className="flex items-center gap-2 text-sm text-stone-900 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-nikki-navy cursor-pointer">
           <input type="checkbox" checked={form.is_optional} onChange={e => setForm({ ...form, is_optional: e.target.checked })} />
           Optional holiday <span className="text-stone-700 text-xs">(still counts as a working day)</span>
         </label>
@@ -213,7 +213,7 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
         {upcoming.map(h => (
           <div key={h.id} className={cardCls + ' flex items-center justify-between py-2.5'}>
             <div>
-              <p className="text-stone-900 text-sm">{h.name} {h.is_optional && <span className="text-amber-700 text-xs">(optional)</span>}</p>
+              <p className="text-nikki-navy text-sm">{h.name} {h.is_optional && <span className="text-amber-700 text-xs">(optional)</span>}</p>
               <p className="text-stone-700 text-xs">{new Date(h.holiday_date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                 {h.segment_slug && ` • ${segments.find(s => s.slug === h.segment_slug)?.name || h.segment_slug}`}</p>
             </div>
@@ -274,7 +274,7 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: { id: stri
 
   return (
     <div className="space-y-3">
-      <h3 className="text-stone-900 font-semibold">Offboard {staffMember.full_name}</h3>
+      <h3 className="text-nikki-navy font-semibold">Offboard {staffMember.full_name}</h3>
       {openLeads > 0 && (
         <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-600/40 text-amber-700 text-xs">
           ⚠ They still have <strong>{openLeads} active lead(s)</strong> assigned. Reassign those first
@@ -292,7 +292,7 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: { id: stri
         </select>
       </div>
       <textarea className={inputCls} rows={2} placeholder="Notes (optional)" value={form.exit_note} onChange={e => setForm({ ...form, exit_note: e.target.value })} />
-      <label className="flex items-center gap-2 text-sm text-stone-900 cursor-pointer">
+      <label className="flex items-center gap-2 text-sm text-nikki-navy cursor-pointer">
         <input type="checkbox" checked={form.disable_account} onChange={e => setForm({ ...form, disable_account: e.target.checked })} />
         Disable their login immediately
       </label>
@@ -350,7 +350,7 @@ export function DanglingCheckins() {
           <div key={r.id} className={cardCls}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-stone-900 text-sm font-medium">{r.full_name}</p>
+                <p className="text-nikki-navy text-sm font-medium">{r.full_name}</p>
                 <p className="text-stone-700 text-xs mt-0.5">
                   {r.attendance_date} • in at {new Date(r.check_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                   <span className="text-amber-700 ml-2">{r.days_open} day(s) open</span>
@@ -404,12 +404,12 @@ export function OverdueTickets({ segments }: { segments: Segment[] }) {
             return (
               <div key={t.id} className={cardCls + ' border-red-900/50'}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-teal-700 text-sm">{t.ticket_no}</span>
+                  <span className="font-mono text-nikki-blue text-sm">{t.ticket_no}</span>
                   {seg && <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}
                   <span className="text-xs text-red-700 font-medium">{over}h over target</span>
                   <span className="text-xs text-stone-700">{t.priority} • target {t.target_hours}h</span>
                 </div>
-                <p className="text-stone-900 text-sm mt-1">{t.subject}</p>
+                <p className="text-nikki-navy text-sm mt-1">{t.subject}</p>
                 <p className="text-stone-700 text-xs mt-0.5">{t.customer_name} • open {Math.round(Number(t.hours_open))}h</p>
               </div>
             );

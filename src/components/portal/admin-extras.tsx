@@ -33,13 +33,13 @@ export function SecurityLogsViewer() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
-        <Shield className="w-4 h-4 text-orange-700" />
+        <Shield className="w-4 h-4 text-nikki-blue" />
         <p className="text-stone-700 text-sm font-semibold">Login/logout history and security events, most recent first.</p>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={() => setFilter('')} className={`px-3 py-1 rounded-lg text-xs font-semibold border ${filter === '' ? 'border-orange-600 bg-orange-50 text-orange-800' : 'border-stone-300 bg-white text-stone-700'}`}>All ({logs.length})</button>
+        <button onClick={() => setFilter('')} className={`px-3 py-1 rounded-lg text-xs font-semibold border ${filter === '' ? 'border-nikki-royal bg-nikki-surface-blue text-nikki-navy' : 'border-stone-300 bg-white text-stone-700'}`}>All ({logs.length})</button>
         {eventTypes.map(e => (
-          <button key={e} onClick={() => setFilter(e)} className={`px-3 py-1 rounded-lg text-xs font-semibold border capitalize ${filter === e ? 'border-orange-600 bg-orange-50 text-orange-800' : 'border-stone-300 bg-white text-stone-700'}`}>{e.replace(/_/g, ' ')}</button>
+          <button key={e} onClick={() => setFilter(e)} className={`px-3 py-1 rounded-lg text-xs font-semibold border capitalize ${filter === e ? 'border-nikki-royal bg-nikki-surface-blue text-nikki-navy' : 'border-stone-300 bg-white text-stone-700'}`}>{e.replace(/_/g, ' ')}</button>
         ))}
       </div>
       {loading ? <p className="text-stone-700 text-sm font-semibold text-center py-10">Loading…</p> : (
@@ -47,7 +47,7 @@ export function SecurityLogsViewer() {
           {filtered.map(l => (
             <div key={l.id} className={cardCls + ' flex items-center justify-between py-3'}>
               <div>
-                <p className="text-stone-900 text-sm font-bold">{l.user_email || 'Unknown'}</p>
+                <p className="text-nikki-navy text-sm font-bold">{l.user_email || 'Unknown'}</p>
                 <p className="text-stone-700 text-xs font-medium">{new Date(l.created_at ?? '').toLocaleString()}</p>
               </div>
               <span className={`text-xs capitalize ${eventColor[l.event_type] || 'text-stone-700'}`}>{l.event_type.replace(/_/g, ' ')}</span>
@@ -88,17 +88,17 @@ export function SetupChecklist(_props: { segments: Segment[] }) {
   if (remaining.length === 0) return null;
 
   return (
-    <div className={cardCls + ' border-orange-200 bg-white'}>
+    <div className={cardCls + ' border-nikki-border bg-white'}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-stone-900 font-bold text-sm">Getting Set Up ({checks.length - remaining.length}/{checks.length})</h3>
+        <h3 className="text-nikki-navy font-bold text-sm">Getting Set Up ({checks.length - remaining.length}/{checks.length})</h3>
         <button onClick={() => setDismissed(true)} className="text-stone-700 hover:text-stone-700 p-1"><X className="w-4 h-4" /></button>
       </div>
       <div className="space-y-2.5">
         {checks.map(c => (
           <div key={c.label} className="flex items-center gap-2.5 text-sm">
             {c.done ? <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" /> : <Circle className="w-4 h-4 text-stone-700 shrink-0" />}
-            <span className={c.done ? 'text-stone-700 line-through font-medium' : 'text-stone-900 font-bold'}>{c.label}</span>
-            {!c.done && <span className="text-stone-700 text-xs font-semibold bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-md ml-auto">{c.hint}</span>}
+            <span className={c.done ? 'text-stone-700 line-through font-medium' : 'text-nikki-navy font-bold'}>{c.label}</span>
+            {!c.done && <span className="text-stone-700 text-xs font-semibold bg-stone-100 border border-nikki-border px-2 py-0.5 rounded-md ml-auto">{c.hint}</span>}
           </div>
         ))}
       </div>
@@ -137,10 +137,10 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-sm focus-within:border-orange-600 focus-within:ring-2 focus-within:ring-orange-600/20 shadow-sm w-48 sm:w-64">
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-sm focus-within:border-nikki-royal focus-within:ring-2 focus-within:ring-nikki-royal/20 shadow-sm w-48 sm:w-64">
         <Search className="w-4 h-4 text-stone-700 shrink-0" />
         <input
-          className="bg-transparent border-none p-0 text-stone-900 text-xs focus:ring-0 focus:outline-none w-full placeholder-stone-400 font-medium"
+          className="bg-transparent border-none p-0 text-nikki-navy text-xs focus:ring-0 focus:outline-none w-full placeholder-stone-400 font-medium"
           placeholder="Search staff, leads, tickets..."
           value={query}
           onChange={e => setQuery(e.target.value)}
@@ -151,7 +151,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
         <>
           <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setOpen(false)} />
           <div className="fixed left-3 right-3 top-16 z-50 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:inset-x-auto sm:mt-2 sm:w-80
-                          max-h-[70vh] sm:max-h-96 overflow-y-auto bg-white border border-stone-200 rounded-2xl shadow-xl p-2 space-y-1">
+                          max-h-[70vh] sm:max-h-96 overflow-y-auto bg-white border border-nikki-border rounded-2xl shadow-xl p-2 space-y-1">
             {results.map(r => (
               <button
                 key={r.id}
@@ -162,7 +162,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
                 }}
                 className="w-full text-left p-2.5 rounded-xl hover:bg-stone-100 transition-colors"
               >
-                <p className="text-stone-900 font-bold text-xs truncate">{r.title}</p>
+                <p className="text-nikki-navy font-bold text-xs truncate">{r.title}</p>
                 <p className="text-stone-700 text-[11px] font-medium truncate">{r.subtitle}</p>
               </button>
             ))}
@@ -188,7 +188,7 @@ export function ExportStaffButton() {
     const a = document.createElement('a'); a.href = url; a.download = `staff_export_${istDateStr()}.csv`; a.click();
   }
   return (
-    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold border border-stone-300 transition-all">
+    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 text-xs font-bold border border-stone-300 transition-all">
       <Download className="w-3.5 h-3.5" /> Export CSV
     </button>
   );
@@ -213,7 +213,7 @@ export function ExportPayslipsButton() {
     const a = document.createElement('a'); a.href = url; a.download = `payslips_export_${istDateStr()}.csv`; a.click();
   }
   return (
-    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold border border-stone-300 transition-all">
+    <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 text-xs font-bold border border-stone-300 transition-all">
       <Download className="w-3.5 h-3.5" /> Export Payslips CSV
     </button>
   );

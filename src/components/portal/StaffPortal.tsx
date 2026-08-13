@@ -21,7 +21,6 @@ import { MyPerformanceChart } from './performance';
 import { MyPayslips } from './payroll';
 import { MyMeetings } from './meetings';
 import CameraCapture from '../CameraCapture';
-import { KiteTailLogo } from '../KiteTailLogo';
 import SessionDevices from '../SessionDevices';
 import { ChangePasswordModal } from '../ChangePasswordModal';
 import { cachedQuery } from '../../lib/cachedQuery';
@@ -157,7 +156,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = (user?.full_name || '').split(' ')[0];
 
-  const Tile = ({ label, value, tone = 'text-stone-900', onClick }: { label: string; value: ReactNode; tone?: string; onClick?: () => void }) => (
+  const Tile = ({ label, value, tone = 'text-nikki-navy', onClick }: { label: string; value: ReactNode; tone?: string; onClick?: () => void }) => (
     <button onClick={onClick} disabled={!onClick}
       className={`${cardCls} text-left ${onClick ? 'hover:border-stone-300 cursor-pointer' : ''}`}>
       <p className="text-stone-700 text-xs">{label}</p>
@@ -168,7 +167,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-stone-900 text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
+        <h2 className="text-nikki-navy text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
         <p className="text-stone-700 text-sm">
           {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
           {user?.designation ? ` • ${user.designation}` : ''}
@@ -180,7 +179,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
         {!stats.attendance ? (
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-stone-900 text-sm font-medium">Not checked in yet</p>
+              <p className="text-nikki-navy text-sm font-medium">Not checked in yet</p>
               <p className="text-stone-700 text-xs">Start your day from My Attendance.</p>
             </div>
             <button className={btnCls} onClick={() => onNavigate('attendance')}>Check In</button>
@@ -198,7 +197,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
               </p>
             </div>
             {!stats.attendance.check_out_at && (
-              <button className="px-3 py-1.5 rounded-lg border border-stone-200 text-stone-700 text-sm"
+              <button className="px-3 py-1.5 rounded-lg border border-nikki-border text-stone-700 text-sm"
                 onClick={() => onNavigate('attendance')}>Check Out</button>
             )}
           </div>
@@ -212,15 +211,15 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
 
       {/* Interactive Quick Shortcuts & Actions */}
       <div className={cardCls + ' space-y-3'}>
-        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider">Quick Actions & Shortcuts</p>
+        <p className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider">Quick Actions & Shortcuts</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {hasPermission('view_leads') && (
-            <button onClick={() => onNavigate('leads')} className="flex items-center gap-2 p-3 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-900 font-bold text-xs transition-colors shadow-sm">
+            <button onClick={() => onNavigate('leads')} className="flex items-center gap-2 p-3 rounded-xl bg-nikki-surface-blue hover:bg-nikki-surface-blue border border-nikki-border text-nikki-navy font-bold text-xs transition-colors shadow-sm">
               <span className="text-base">➕</span> + Add Lead
             </button>
           )}
           {isExec && (
-            <button onClick={() => onNavigate('leads')} className="flex items-center gap-2 p-3 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-900 font-bold text-xs transition-colors shadow-sm">
+            <button onClick={() => onNavigate('leads')} className="flex items-center gap-2 p-3 rounded-xl bg-nikki-surface-blue hover:bg-nikki-surface-blue border border-nikki-border text-nikki-navy font-bold text-xs transition-colors shadow-sm">
               <span className="text-base">📍</span> Log Field Visit
             </button>
           )}
@@ -234,16 +233,16 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
               <span className="text-base">🎫</span> View Tickets
             </button>
           )}
-          <button onClick={() => onNavigate('attendance')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+          <button onClick={() => onNavigate('attendance')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 font-bold text-xs transition-colors">
             <span className="text-base">⏱</span> Attendance
           </button>
-          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 font-bold text-xs transition-colors">
             <span className="text-base">🌴</span> Request Leave
           </button>
-          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 font-bold text-xs transition-colors">
             <span className="text-base">💰</span> Apply Advance
           </button>
-          <button onClick={() => onNavigate('documents')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+          <button onClick={() => onNavigate('documents')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 font-bold text-xs transition-colors">
             <span className="text-base">📄</span> My Documents
           </button>
         </div>
@@ -252,24 +251,24 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       {/* Role-specific tiles */}
       {(isCaller || isExec) && (
         <div>
-          <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-2">My Numbers</p>
+          <p className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider mb-2">My Numbers</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Tile label={isExec ? 'My leads' : 'In my queue'} value={stats.myLeads} onClick={() => onNavigate('leads')} />
             <Tile label={isExec ? 'Visits logged today' : 'Calls logged today'} value={stats.callsToday} />
             <Tile label="Callbacks due" value={stats.callbacksDue}
-              tone={(stats.callbacksDue ?? 0) > 0 ? 'text-amber-700' : 'text-stone-900'} onClick={() => onNavigate('leads')} />
+              tone={(stats.callbacksDue ?? 0) > 0 ? 'text-amber-700' : 'text-nikki-navy'} onClick={() => onNavigate('leads')} />
             <Tile label="Upcoming appointments" value={(stats.appointments || []).length}
-              tone={(stats.appointments || []).length > 0 ? 'text-teal-700' : 'text-stone-900'} onClick={() => onNavigate('leads')} />
+              tone={(stats.appointments || []).length > 0 ? 'text-nikki-blue' : 'text-nikki-navy'} onClick={() => onNavigate('leads')} />
           </div>
         </div>
       )}
 
       {isSupport && (
         <div>
-          <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-2">My Numbers</p>
+          <p className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider mb-2">My Numbers</p>
           <div className="grid grid-cols-2 gap-3">
             <Tile label="Assigned to me" value={stats.myTickets}
-              tone={(stats.myTickets ?? 0) > 0 ? 'text-teal-700' : 'text-stone-900'} onClick={() => onNavigate('tickets')} />
+              tone={(stats.myTickets ?? 0) > 0 ? 'text-nikki-blue' : 'text-nikki-navy'} onClick={() => onNavigate('tickets')} />
             <Tile label="Open in my segment" value={stats.openTickets} onClick={() => onNavigate('tickets')} />
           </div>
         </div>
@@ -278,15 +277,15 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       {/* Next appointments — the thing a field executive most needs to see. */}
       {(isCaller || isExec) && (stats.appointments || []).length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-stone-900 text-sm font-semibold mb-3">Next appointments</h3>
+          <h3 className="text-nikki-navy text-sm font-semibold mb-3">Next appointments</h3>
           <div className="space-y-2">
             {(stats.appointments || []).map(a => (
-              <div key={a.id} className="flex items-start justify-between gap-3 border-b border-stone-900 last:border-0 pb-2 last:pb-0">
+              <div key={a.id} className="flex items-start justify-between gap-3 border-b border-nikki-navy last:border-0 pb-2 last:pb-0">
                 <div className="min-w-0">
-                  <p className="text-stone-900 text-sm">{a.customer_name}</p>
+                  <p className="text-nikki-navy text-sm">{a.customer_name}</p>
                   <p className="text-stone-700 text-xs">{a.phone}{a.appointment_note ? ` • ${a.appointment_note}` : ''}</p>
                 </div>
-                <p className="text-teal-700 text-xs whitespace-nowrap">
+                <p className="text-nikki-blue text-xs whitespace-nowrap">
                   {new Date(a.appointment_at ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 </p>
               </div>
@@ -300,24 +299,24 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
           its own tab where people forget to check it. */}
       {(stats.todaysMeetings || []).length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-stone-900 text-sm font-semibold mb-3 flex items-center justify-between">
+          <h3 className="text-nikki-navy text-sm font-semibold mb-3 flex items-center justify-between">
             <span>Today's meetings</span>
-            <button onClick={() => onNavigate('meetings')} className="text-teal-700 text-xs font-medium">View all →</button>
+            <button onClick={() => onNavigate('meetings')} className="text-nikki-blue text-xs font-medium">View all →</button>
           </h3>
           <div className="space-y-2">
             {(stats.todaysMeetings || []).map(m => (
               <div key={m.id} className="flex items-center justify-between gap-3 border-b border-stone-100 last:border-0 pb-2 last:pb-0">
                 <div className="min-w-0">
-                  <p className="text-stone-900 text-sm font-medium truncate">{m.meeting_type_name}</p>
+                  <p className="text-nikki-navy text-sm font-medium truncate">{m.meeting_type_name}</p>
                   <p className="text-stone-700 text-xs truncate">{m.customer_name || 'Internal'}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <p className="text-teal-700 text-xs whitespace-nowrap">
+                  <p className="text-nikki-blue text-xs whitespace-nowrap">
                     {new Date(m.scheduled_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </p>
                   {m.meet_link && (
                     <a href={m.meet_link} target="_blank" rel="noreferrer"
-                      className="px-2 py-1 rounded-lg bg-teal-600 text-white text-[11px] font-semibold hover:bg-teal-700">
+                      className="px-2 py-1 rounded-lg bg-nikki-royal text-white text-[11px] font-semibold hover:bg-nikki-blue">
                       Join
                     </a>
                   )}
@@ -334,23 +333,23 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
           extra tabs unlocked. */}
       {stats.teamPulse && (
         <div className={cardCls}>
-          <h3 className="text-stone-900 text-sm font-semibold mb-3">Team pulse</h3>
+          <h3 className="text-nikki-navy text-sm font-semibold mb-3">Team pulse</h3>
           <div className="grid grid-cols-2 gap-3">
             <button onClick={() => onNavigate('leads')} className="text-left hover:bg-stone-50 rounded-lg p-2 -m-2">
               <p className="text-stone-700 text-xs">Open leads</p>
-              <p className="text-stone-900 text-xl font-semibold">{stats.teamPulse.openLeads}</p>
+              <p className="text-nikki-navy text-xl font-semibold">{stats.teamPulse.openLeads}</p>
             </button>
             <button onClick={() => onNavigate('leads')} className="text-left hover:bg-stone-50 rounded-lg p-2 -m-2">
               <p className="text-stone-700 text-xs">Stale 7+ days</p>
-              <p className={`text-xl font-semibold ${stats.teamPulse.overdueLeads > 0 ? 'text-amber-700' : 'text-stone-900'}`}>{stats.teamPulse.overdueLeads}</p>
+              <p className={`text-xl font-semibold ${stats.teamPulse.overdueLeads > 0 ? 'text-amber-700' : 'text-nikki-navy'}`}>{stats.teamPulse.overdueLeads}</p>
             </button>
             <button onClick={() => onNavigate('requests')} className="text-left hover:bg-stone-50 rounded-lg p-2 -m-2">
               <p className="text-stone-700 text-xs">Pending approvals</p>
-              <p className={`text-xl font-semibold ${stats.teamPulse.pendingApprovals > 0 ? 'text-amber-700' : 'text-stone-900'}`}>{stats.teamPulse.pendingApprovals}</p>
+              <p className={`text-xl font-semibold ${stats.teamPulse.pendingApprovals > 0 ? 'text-amber-700' : 'text-nikki-navy'}`}>{stats.teamPulse.pendingApprovals}</p>
             </button>
             <button onClick={() => onNavigate('tickets')} className="text-left hover:bg-stone-50 rounded-lg p-2 -m-2">
               <p className="text-stone-700 text-xs">Open tickets</p>
-              <p className="text-stone-900 text-xl font-semibold">{stats.teamPulse.ticketsOpen}</p>
+              <p className="text-nikki-navy text-xl font-semibold">{stats.teamPulse.ticketsOpen}</p>
             </button>
           </div>
         </div>
@@ -511,7 +510,7 @@ export function MyAttendance() {
       <MyStatsCard />
       <MyPerformanceChart />
       <div className={cardCls + ' text-center py-8'}>
-        <Clock className="w-8 h-8 text-teal-700 mx-auto mb-2" />
+        <Clock className="w-8 h-8 text-nikki-blue mx-auto mb-2" />
         <p className="text-stone-700 text-sm mb-4">{new Date().toDateString()}</p>
         {!today ? (
           <button className={btnCls} disabled={busy} onClick={() => setPickingMode(true)}>
@@ -535,15 +534,15 @@ export function MyAttendance() {
 
       <div className={cardCls + ' space-y-4'}>
         <div>
-          <h3 className="text-stone-900 font-bold text-sm">Attendance History (Last 14 days)</h3>
+          <h3 className="text-nikki-navy font-bold text-sm">Attendance History (Last 14 days)</h3>
           <p className="text-stone-500 text-xs">View your check-in/out times, photos, and map locations</p>
         </div>
 
         <div className="space-y-3">
           {history.map(r => (
-            <div key={r.id} className="border border-stone-200 rounded-xl p-3 bg-white space-y-2">
+            <div key={r.id} className="border border-nikki-border rounded-xl p-3 bg-white space-y-2">
               <div className="flex items-center justify-between text-xs border-b border-stone-100 pb-2">
-                <span className="text-stone-900 font-bold">
+                <span className="text-nikki-navy font-bold">
                   {new Date(r.attendance_date ?? '').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
                 <div className="flex items-center gap-2">
@@ -560,19 +559,19 @@ export function MyAttendance() {
                 <div className="bg-stone-50 p-2 rounded-lg border border-stone-100 flex items-center justify-between">
                   <div>
                     <span className="text-stone-500 font-medium block text-[11px]">Check In</span>
-                    <span className="text-stone-900 font-semibold">
+                    <span className="text-nikki-navy font-semibold">
                       {r.check_in_at ? new Date(r.check_in_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     {r.check_in_lat && r.check_in_lng && (
-                      <a href={`https://maps.google.com/?q=${r.check_in_lat},${r.check_in_lng}`} target="_blank" rel="noreferrer" className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-1 rounded font-medium border border-teal-100 inline-flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-teal-600" /> Map
+                      <a href={`https://maps.google.com/?q=${r.check_in_lat},${r.check_in_lng}`} target="_blank" rel="noreferrer" className="text-nikki-blue hover:text-nikki-navy bg-nikki-surface-blue px-2 py-1 rounded font-medium border border-nikki-surface-blue inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-nikki-royal" /> Map
                       </a>
                     )}
                     {r.check_in_selfie_url && (
-                      <button onClick={() => viewSelfie(r.check_in_selfie_url)} className="text-teal-700 hover:text-teal-900 bg-white px-2 py-1 rounded font-medium border border-stone-200 inline-flex items-center gap-1">
-                        <ImageIcon className="w-3 h-3 text-teal-600" /> Photo 📷
+                      <button onClick={() => viewSelfie(r.check_in_selfie_url)} className="text-nikki-blue hover:text-nikki-navy bg-white px-2 py-1 rounded font-medium border border-nikki-border inline-flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3 text-nikki-royal" /> Photo 📷
                       </button>
                     )}
                   </div>
@@ -582,19 +581,19 @@ export function MyAttendance() {
                 <div className="bg-stone-50 p-2 rounded-lg border border-stone-100 flex items-center justify-between">
                   <div>
                     <span className="text-stone-500 font-medium block text-[11px]">Check Out</span>
-                    <span className="text-stone-900 font-semibold">
+                    <span className="text-nikki-navy font-semibold">
                       {r.check_out_at ? new Date(r.check_out_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     {r.check_out_lat && r.check_out_lng && (
-                      <a href={`https://maps.google.com/?q=${r.check_out_lat},${r.check_out_lng}`} target="_blank" rel="noreferrer" className="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-1 rounded font-medium border border-teal-100 inline-flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-teal-600" /> Map
+                      <a href={`https://maps.google.com/?q=${r.check_out_lat},${r.check_out_lng}`} target="_blank" rel="noreferrer" className="text-nikki-blue hover:text-nikki-navy bg-nikki-surface-blue px-2 py-1 rounded font-medium border border-nikki-surface-blue inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-nikki-royal" /> Map
                       </a>
                     )}
                     {r.check_out_selfie_url && (
-                      <button onClick={() => viewSelfie(r.check_out_selfie_url)} className="text-teal-700 hover:text-teal-900 bg-white px-2 py-1 rounded font-medium border border-stone-200 inline-flex items-center gap-1">
-                        <ImageIcon className="w-3 h-3 text-teal-600" /> Photo 📷
+                      <button onClick={() => viewSelfie(r.check_out_selfie_url)} className="text-nikki-blue hover:text-nikki-navy bg-white px-2 py-1 rounded font-medium border border-nikki-border inline-flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3 text-nikki-royal" /> Photo 📷
                       </button>
                     )}
                   </div>
@@ -616,8 +615,8 @@ export function MyAttendance() {
 
       {pickingMode && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setPickingMode(false)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-xs w-full p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold text-sm mb-4">Where are you checking in from?</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-xs w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold text-sm mb-4">Where are you checking in from?</h3>
             <div className="space-y-2">
               {([
                 { v: 'office' as const, label: 'Office' },
@@ -625,7 +624,7 @@ export function MyAttendance() {
                 { v: 'field_visit' as const, label: 'Field Visit' },
               ]).map(m => (
                 <button key={m.v} onClick={() => { setWorkMode(m.v); setPickingMode(false); setShowCamera('in'); }}
-                  className="w-full text-left px-4 py-3 rounded-lg border border-stone-200 text-stone-900 text-sm hover:border-teal-500 transition-colors">
+                  className="w-full text-left px-4 py-3 rounded-lg border border-nikki-border text-nikki-navy text-sm hover:border-nikki-royal transition-colors">
                   {m.label}
                 </button>
               ))}
@@ -721,15 +720,15 @@ export function MyRequests() {
     <div className="space-y-6">
       {balances.length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-stone-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-teal-700" /> Leave Balance <span className="text-stone-700 text-xs font-normal">this year</span></h3>
+          <h3 className="text-nikki-navy font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-nikki-blue" /> Leave Balance <span className="text-stone-700 text-xs font-normal">this year</span></h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {balances.map(b => (
               <div key={b.leave_type} className="rounded-xl bg-white border border-stone-800 px-3 py-2.5">
                 <p className="text-stone-700 text-xs capitalize">{b.leave_type}</p>
                 {b.is_unlimited ? (
-                  <p className="text-teal-700 text-lg font-semibold leading-tight">—</p>
+                  <p className="text-nikki-blue text-lg font-semibold leading-tight">—</p>
                 ) : (
-                  <p className={`text-lg font-semibold leading-tight ${Number(b.remaining) <= 0 ? 'text-red-700' : 'text-stone-900'}`}>
+                  <p className={`text-lg font-semibold leading-tight ${Number(b.remaining) <= 0 ? 'text-red-700' : 'text-nikki-navy'}`}>
                     {Number(b.remaining)}<span className="text-stone-700 text-xs font-normal"> / {Number(b.entitled)}</span>
                   </p>
                 )}
@@ -744,7 +743,7 @@ export function MyRequests() {
 
     <div className="grid md:grid-cols-2 gap-6">
       <div className={cardCls}>
-        <h3 className="text-stone-900 font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-teal-700" /> Leave Request</h3>
+        <h3 className="text-nikki-navy font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-nikki-blue" /> Leave Request</h3>
         <div className="grid grid-cols-2 gap-2 mb-2">
           <input type="date" className={inputCls} value={leaveForm.from_date} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} />
           <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} />
@@ -768,7 +767,7 @@ export function MyRequests() {
         </div>
       </div>
       <div className={cardCls}>
-        <h3 className="text-stone-900 font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-teal-700" /> Salary Advance</h3>
+        <h3 className="text-nikki-navy font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-nikki-blue" /> Salary Advance</h3>
         <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} />
         <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} />
         <button className={btnCls + ' w-full'} disabled={busyAdv} onClick={requestAdvance}>{busyAdv ? 'Submitting…' : 'Request Advance'}</button>
@@ -798,7 +797,7 @@ export function MyDocuments() {
       <MySalaryCard salary={user?.salary_structure} />
       <MyPayslips />
       <div>
-        <h3 className="text-stone-900 font-semibold mb-3 text-sm">My Documents</h3>
+        <h3 className="text-nikki-navy font-semibold mb-3 text-sm">My Documents</h3>
         <MyDocumentsList staffUserId={user.id} employeeName={user.full_name} />
       </div>
     </div>
@@ -813,8 +812,8 @@ export function MyProfile() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-800 text-xs font-bold rounded-xl flex items-center gap-2 transition-colors">
-          <Key className="w-4 h-4 text-orange-700" /> Change My Password
+        <button onClick={() => setShowModal(true)} className="px-4 py-2 bg-nikki-surface-blue hover:bg-nikki-surface-blue border border-nikki-border text-nikki-navy text-xs font-bold rounded-xl flex items-center gap-2 transition-colors">
+          <Key className="w-4 h-4 text-nikki-blue" /> Change My Password
         </button>
       </div>
       <div className="grid md:grid-cols-2 gap-6">
@@ -886,15 +885,15 @@ export default function StaffPortal() {
     : segments.filter(s => user?.segments.includes(s.slug)).map(s => s.name).join(', ') || '—';
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row text-stone-900">
+    <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row text-nikki-navy">
       {/* ── Desktop Collapsible Sidebar Navigation (Classic Light Theme) ── */}
-      <aside className={`hidden md:flex flex-col border-r border-stone-200 bg-white backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 shadow-sm ${collapsed ? 'w-20' : 'w-64'}`}>
-        <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+      <aside className={`hidden md:flex flex-col border-r border-nikki-border bg-white backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 shadow-sm ${collapsed ? 'w-20' : 'w-64'}`}>
+        <div className="p-4 border-b border-nikki-border flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <KiteTailLogo className="w-8 h-8 shrink-0" />
+            <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 shrink-0 object-contain" />
             {!collapsed && (
               <div className="min-w-0">
-                <p className="text-stone-900 font-bold text-sm tracking-tight truncate">Nikki Suite</p>
+                <p className="text-nikki-navy font-bold text-sm tracking-tight truncate">Nikki Suite</p>
                 <p className="text-stone-700 text-[11px] font-mono truncate">Enterprise Portal</p>
               </div>
             )}
@@ -917,12 +916,12 @@ export default function StaffPortal() {
                 onClick={() => setTab(t.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   active
-                    ? 'bg-orange-50 border border-orange-200 text-orange-800 shadow-sm font-semibold'
-                    : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100 border border-transparent'
+                    ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm font-semibold'
+                    : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'
                 }`}
                 title={collapsed ? t.label : undefined}
               >
-                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-orange-700' : 'text-stone-700'}`} />
+                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-nikki-blue' : 'text-stone-700'}`} />
                 {!collapsed && <span className="truncate">{t.label}</span>}
               </button>
             );
@@ -930,14 +929,14 @@ export default function StaffPortal() {
         </div>
 
         {/* User Card at bottom of sidebar */}
-        <div className="p-3 border-t border-stone-200">
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-stone-50 border border-stone-200">
-            <div className="w-8 h-8 rounded-lg bg-orange-100 border border-orange-200 text-orange-800 font-bold flex items-center justify-center text-xs shrink-0">
+        <div className="p-3 border-t border-nikki-border">
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-stone-50 border border-nikki-border">
+            <div className="w-8 h-8 rounded-lg bg-nikki-surface-blue border border-nikki-border text-nikki-navy font-bold flex items-center justify-center text-xs shrink-0">
               {user?.full_name?.[0] || 'U'}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-stone-900 text-xs font-semibold truncate">{user?.full_name}</p>
+                <p className="text-nikki-navy text-xs font-semibold truncate">{user?.full_name}</p>
                 <p className="text-stone-700 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
@@ -951,14 +950,14 @@ export default function StaffPortal() {
       {/* ── Main Area ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="border-b border-stone-200 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
+        <header className="border-b border-nikki-border px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setMobileNavOpen(true)} className="md:hidden p-1 -ml-1 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <div className="md:hidden shrink-0">
-              <KiteTailLogo className="w-8 h-8" />
+              <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 object-contain" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-stone-900 font-bold text-base md:text-lg tracking-tight truncate">
+              <h1 className="text-nikki-navy font-bold text-base md:text-lg tracking-tight truncate">
                 {tabs.find(t => t.id === tab)?.label || 'Portal'}
               </h1>
               <p className="text-stone-700 text-xs hidden sm:block truncate">{mySegNames}</p>
@@ -977,13 +976,13 @@ export default function StaffPortal() {
             the edge of a narrow screen. */}
         {mobileNavOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
-            <div className="absolute inset-0 bg-stone-900/50" onClick={() => setMobileNavOpen(false)} />
+            <div className="absolute inset-0 bg-nikki-navy/50" onClick={() => setMobileNavOpen(false)} />
             <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
               <div className="flex items-center justify-between mb-6 px-1">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <KiteTailLogo className="w-8 h-8 shrink-0" />
+                  <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 shrink-0 object-contain" />
                   <div className="min-w-0">
-                    <p className="text-stone-900 font-bold text-sm tracking-tight truncate">Nikki Suite</p>
+                    <p className="text-nikki-navy font-bold text-sm tracking-tight truncate">Nikki Suite</p>
                     <p className="text-stone-700 text-[11px] font-mono truncate">Enterprise Portal</p>
                   </div>
                 </div>
@@ -998,17 +997,17 @@ export default function StaffPortal() {
                       onClick={() => { setTab(t.id); setMobileNavOpen(false); }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                         active
-                          ? 'bg-orange-50 border border-orange-200 text-orange-800 shadow-sm font-semibold'
-                          : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100 border border-transparent'
+                          ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm font-semibold'
+                          : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'
                       }`}
                     >
-                      <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-orange-700' : 'text-stone-700'}`} />
+                      <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-nikki-blue' : 'text-stone-700'}`} />
                       <span className="truncate">{t.label}</span>
                     </button>
                   );
                 })}
               </nav>
-              <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-stone-200 pt-3">
+              <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-nikki-border pt-3">
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
             </div>
@@ -1020,7 +1019,7 @@ export default function StaffPortal() {
             <div className={cardCls + ' mb-5'}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-stone-900 font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
+                  <p className="text-nikki-navy font-semibold">Welcome back, {user?.full_name?.split(' ')[0]}</p>
                   <p className="text-stone-700 text-xs mt-0.5">
                     {user?.designation || user?.role} • {mySegNames} {user?.staff_code && `• ${user.staff_code}`}
                   </p>

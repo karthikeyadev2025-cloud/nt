@@ -45,7 +45,6 @@ import SessionDevices from '../SessionDevices';
 import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
-import { KiteTailLogo } from '../KiteTailLogo';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads', 'full_leads_view', 'bulk_assign_leads', 'approve_transfers',
@@ -129,14 +128,14 @@ function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: str
     { key: 'overdueCallbacksAppts', label: 'Callbacks/appointments overdue', tab: 'crm', tone: 'text-red-700 font-extrabold', show: canLeads },
     { key: 'duplicateLeadGroups', label: 'Duplicate leads to merge', tab: 'crm', tone: 'text-amber-700 font-bold', show: canLeads },
     { key: 'leadChangeRequests', label: 'Lead edits/deletes to approve', tab: 'crm', tone: 'text-amber-700 font-extrabold', show: isSA },
-    { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-teal-700 font-extrabold', show: true },
+    { key: 'myTasks', label: 'Tasks assigned to me', tab: 'tasks', tone: 'text-nikki-blue font-extrabold', show: true },
     { key: 'overdueTasks', label: 'Tasks overdue', tab: 'tasks', tone: 'text-red-700 font-extrabold', show: canStaff || canLeads },
   ].filter(i => i.show);
 
   const snapshotItems = [
     { key: 'checkedInToday', label: 'Checked in today', tab: 'hr', tone: 'text-emerald-700 font-extrabold', show: canAttendance },
-    { key: 'newLeadsToday', label: 'New leads today', tab: 'crm', tone: 'text-orange-700 font-extrabold', show: canLeads },
-    { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-stone-900 font-extrabold', show: canTickets },
+    { key: 'newLeadsToday', label: 'New leads today', tab: 'crm', tone: 'text-nikki-blue font-extrabold', show: canLeads },
+    { key: 'openTickets', label: 'Open tickets', tab: 'tickets', tone: 'text-nikki-navy font-extrabold', show: canTickets },
   ].filter(i => i.show);
 
   const items = [...attentionItems, ...snapshotItems];
@@ -145,7 +144,7 @@ function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: str
   return (
     <div className="mb-5">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-stone-900 text-xs font-extrabold tracking-wider">NEEDS YOUR ATTENTION</h3>
+        <h3 className="text-nikki-navy text-xs font-extrabold tracking-wider">NEEDS YOUR ATTENTION</h3>
         {nonZeroCount === 0 && (
           <p className="text-emerald-900 text-xs font-bold flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
@@ -160,7 +159,7 @@ function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: str
           const dim = !isSnapshot && n === 0;
           return (
             <button key={i.key} onClick={() => onGo(i.tab)}
-              className={`text-left rounded-xl border bg-white px-3 py-2 transition-all cursor-pointer ${dim ? 'border-stone-200 opacity-60 hover:opacity-100 hover:border-stone-300' : 'border-stone-200 hover:border-orange-400 hover:shadow-sm'}`}>
+              className={`text-left rounded-xl border bg-white px-3 py-2 transition-all cursor-pointer ${dim ? 'border-nikki-border opacity-60 hover:opacity-100 hover:border-stone-300' : 'border-nikki-border hover:border-nikki-sky hover:shadow-sm'}`}>
               <p className={`text-lg leading-tight ${dim ? 'text-stone-400 font-bold' : i.tone}`}>{n}</p>
               <p className="text-stone-700 text-[11px] font-semibold leading-tight mt-0.5">{i.label}</p>
             </button>
@@ -206,9 +205,9 @@ function rangeToDates(key: string): { from: string | null; to: string | null } {
 function CollapsibleSection({ title, icon: Icon, defaultOpen = false, children }: { title: string; icon: LucideIcon; defaultOpen?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden">
+    <div className="rounded-2xl border border-nikki-border bg-white overflow-hidden">
       <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-stone-50 transition-colors">
-        <h3 className="text-stone-900 text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" /> {title}</h3>
+        <h3 className="text-nikki-navy text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" /> {title}</h3>
         <ChevronRight className={`w-4 h-4 text-stone-400 transition-transform ${open ? 'rotate-90' : ''}`} />
       </button>
       {open && <div className="px-4 pb-4 pt-1 border-t border-stone-100">{children}</div>}
@@ -270,9 +269,9 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
       {hasPermission('manage_leads') && <MyLeadsToDoList />}
       {hasPermission('manage_leads') && <TodayMeetingsWidget />}
       {canOnboard && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 rounded-xl bg-orange-50 border border-orange-200">
-          <p className="text-orange-950 font-bold text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
-          <button onClick={onAddStaff} className="self-start sm:self-auto shrink-0 px-4 py-1.5 rounded-lg bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold shadow-sm whitespace-nowrap">+ Onboard Employee</button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 rounded-xl bg-nikki-surface-blue border border-nikki-border">
+          <p className="text-nikki-navy font-bold text-sm">New hire waiting? Onboard them — account, salary and documents, all in one step.</p>
+          <button onClick={onAddStaff} className="self-start sm:self-auto shrink-0 px-4 py-1.5 rounded-lg bg-nikki-blue hover:bg-nikki-royal text-white text-sm font-bold shadow-sm whitespace-nowrap">+ Onboard Employee</button>
         </div>
       )}
 
@@ -280,13 +279,13 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
           instead of a tall header bar, all four stats inline. Date-range
           chips sit right on this header since they only affect these
           numbers. */}
-      <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden">
+      <div className="rounded-2xl border border-nikki-border bg-white overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 flex-wrap gap-2 border-b border-stone-100">
-          <h3 className="text-stone-900 text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> SEGMENTS</h3>
+          <h3 className="text-nikki-navy text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> SEGMENTS</h3>
           <div className="flex items-center gap-1.5 flex-wrap">
             {OVERVIEW_RANGES.map(r => (
               <button key={r.key} onClick={() => setRange(r.key)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${range === r.key ? 'bg-orange-700 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${range === r.key ? 'bg-nikki-blue text-white' : 'bg-stone-100 text-stone-700 hover:bg-nikki-border'}`}>
                 {r.label}
               </button>
             ))}
@@ -304,12 +303,12 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
             );
             return (
               <div key={seg.slug} className="flex items-center gap-3 px-4 py-2 flex-wrap" style={{ borderLeft: `3px solid ${seg.color ?? '#78716c'}` }}>
-                <span className="text-stone-900 font-bold text-sm w-28 shrink-0 truncate">{seg.name}</span>
+                <span className="text-nikki-navy font-bold text-sm w-28 shrink-0 truncate">{seg.name}</span>
                 <div className="flex items-center flex-wrap flex-1">
-                  {statBtn(st.openTickets, 'open tickets', 'text-stone-900', () => onGo('tickets', { segFilter: seg.slug, ticketStatus: 'open' }))}
-                  {statBtn(st.leads, 'leads', 'text-stone-900', () => onGo('crm', { segFilter: seg.slug }))}
+                  {statBtn(st.openTickets, 'open tickets', 'text-nikki-navy', () => onGo('tickets', { segFilter: seg.slug, ticketStatus: 'open' }))}
+                  {statBtn(st.leads, 'leads', 'text-nikki-navy', () => onGo('crm', { segFilter: seg.slug }))}
                   {statBtn(st.won, 'won', 'text-emerald-700', () => onGo('crm', { segFilter: seg.slug, stageFilter: 'won' }))}
-                  {statBtn(st.staff, 'staff', 'text-stone-900', () => onGo('access'))}
+                  {statBtn(st.staff, 'staff', 'text-nikki-navy', () => onGo('access'))}
                 </div>
                 {st.leads > 0 && (
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${winRate >= 20 ? 'bg-emerald-50 text-emerald-700' : winRate >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-stone-100 text-stone-600'}`}>
@@ -572,15 +571,15 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white border border-stone-200 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+      <div className="bg-white border border-nikki-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-stone-900 font-semibold text-lg">Onboard New Employee</h3>
-          <button className="text-stone-700 hover:text-stone-900" onClick={onClose}>✕</button>
+          <h3 className="text-nikki-navy font-semibold text-lg">Onboard New Employee</h3>
+          <button className="text-stone-700 hover:text-nikki-navy" onClick={onClose}>✕</button>
         </div>
         <div className="flex items-center gap-1 mb-6 text-xs">
           {steps.map((s, i) => (
-            <div key={s} className={`flex items-center gap-1 ${i <= step ? 'text-teal-700' : 'text-stone-700'}`}>
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center border ${i <= step ? 'border-teal-400' : 'border-stone-200'}`}>{i < step ? '✓' : i + 1}</span>
+            <div key={s} className={`flex items-center gap-1 ${i <= step ? 'text-nikki-blue' : 'text-stone-700'}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center border ${i <= step ? 'border-nikki-sky' : 'border-nikki-border'}`}>{i < step ? '✓' : i + 1}</span>
               <span className="hidden sm:inline">{s}</span>
               {i < steps.length - 1 && <ChevronRight className="w-3 h-3 mx-1 text-stone-700" />}
             </div>
@@ -589,7 +588,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 
         {showRestore && (
           <div className="space-y-3 mb-4 p-4 rounded-xl border border-amber-300 bg-amber-50">
-            <p className="text-stone-900 font-bold text-sm">Unfinished onboarding found</p>
+            <p className="text-nikki-navy font-bold text-sm">Unfinished onboarding found</p>
             <p className="text-stone-700 text-xs">
               You started onboarding someone and closed the wizard before finishing.
               Restore the draft, or discard it and start fresh?
@@ -619,7 +618,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
                   }
                   setShowRestore(false);
                 }}
-                className="px-3 py-1.5 bg-orange-700 hover:bg-orange-800 text-white text-xs font-bold rounded-lg">
+                className="px-3 py-1.5 bg-nikki-blue hover:bg-nikki-navy text-white text-xs font-bold rounded-lg">
                 Restore draft
               </button>
             </div>
@@ -632,13 +631,13 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             <input className={inputCls} placeholder="Email *" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
             <div className="flex gap-2">
               <input className={inputCls} placeholder="Temporary Password *" type="text" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
-              <button type="button" className="px-3 py-2 rounded-lg border border-stone-200 text-stone-700 text-xs whitespace-nowrap"
+              <button type="button" className="px-3 py-2 rounded-lg border border-nikki-border text-stone-700 text-xs whitespace-nowrap"
                 onClick={() => {
                   const gen = Array.from(crypto.getRandomValues(new Uint8Array(9)))
                     .map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'[b % 55]).join('');
                   setForm({ ...form, password: gen });
                 }}>Generate</button>
-              <button type="button" className="px-3 py-2 rounded-lg border border-stone-200 text-stone-700 text-xs whitespace-nowrap disabled:opacity-40"
+              <button type="button" className="px-3 py-2 rounded-lg border border-nikki-border text-stone-700 text-xs whitespace-nowrap disabled:opacity-40"
                 disabled={!form.password}
                 onClick={() => { navigator.clipboard?.writeText(form.password); toast.success('Password copied'); }}>Copy</button>
             </div>
@@ -665,7 +664,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
               <div className="flex flex-wrap gap-2">
                 {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
                   <button key={s.slug} onClick={() => toggleSeg(s.slug)}
-                    className={`px-3 py-1 rounded-full text-xs border ${form.segments.includes(s.slug) ? 'bg-teal-500 text-stone-950 border-teal-500' : 'border-stone-200 text-stone-700'}`}>
+                    className={`px-3 py-1 rounded-full text-xs border ${form.segments.includes(s.slug) ? 'bg-nikki-royal text-stone-950 border-nikki-royal' : 'border-nikki-border text-stone-700'}`}>
                     {s.name}
                   </button>
                 ))}
@@ -745,11 +744,11 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             {availableTemplates.length === 0 && <p className="text-amber-700 text-sm">Select a segment first to see relevant templates.</p>}
             {availableTemplates.map(t => (
               <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
-                <label className="flex items-center gap-2 text-sm text-stone-900 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-nikki-navy cursor-pointer">
                   <input type="checkbox" checked={form.doc_types.includes(t.doc_type)} onChange={() => toggleDoc(t.doc_type)} />
                   {t.title} <span className="text-stone-700 text-xs">({DOC_TYPE_LABELS[t.doc_type]}{t.requires_signature ? ' • needs signature' : ' • acknowledge only'})</span>
                 </label>
-                <button className="text-teal-700 text-xs" onClick={() => previewDoc(t)}>Preview</button>
+                <button className="text-nikki-blue text-xs" onClick={() => previewDoc(t)}>Preview</button>
               </div>
             ))}
           </div>
@@ -774,7 +773,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
           <div className="space-y-3 text-sm">
             <div className={cardCls + ' space-y-3'}>
               <div>
-                <p className="text-stone-900 font-bold text-base">{form.full_name || <span className="text-red-700">(name missing)</span>}</p>
+                <p className="text-nikki-navy font-bold text-base">{form.full_name || <span className="text-red-700">(name missing)</span>}</p>
                 <p className="text-stone-700 text-xs mt-0.5">{form.designation || form.role}</p>
               </div>
 
@@ -820,11 +819,11 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
               <div className="pt-2 border-t border-stone-100">
                 <p className="text-stone-500 uppercase text-[10px] font-bold mb-1">Salary structure</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-                  <p className="text-stone-700">Basic</p><p className="text-stone-900 text-right">{money(sal.basic)}</p>
-                  <p className="text-stone-700">HRA</p><p className="text-stone-900 text-right">{money(sal.hra)}</p>
-                  <p className="text-stone-700">Allowances</p><p className="text-stone-900 text-right">{money(sal.allowances)}</p>
-                  <p className="text-stone-900 font-bold pt-1 border-t border-stone-100 mt-1">CTC (annual)</p>
-                  <p className="text-stone-900 font-bold text-right pt-1 border-t border-stone-100 mt-1">{money(sal.ctc)}</p>
+                  <p className="text-stone-700">Basic</p><p className="text-nikki-navy text-right">{money(sal.basic)}</p>
+                  <p className="text-stone-700">HRA</p><p className="text-nikki-navy text-right">{money(sal.hra)}</p>
+                  <p className="text-stone-700">Allowances</p><p className="text-nikki-navy text-right">{money(sal.allowances)}</p>
+                  <p className="text-nikki-navy font-bold pt-1 border-t border-stone-100 mt-1">CTC (annual)</p>
+                  <p className="text-nikki-navy font-bold text-right pt-1 border-t border-stone-100 mt-1">{money(sal.ctc)}</p>
                 </div>
               </div>
 
@@ -888,7 +887,7 @@ type AccessUser = Pick<
 // straight from role_permissions.permissions, so an admin understands a
 // role at a glance without opening a specific employee's editor.
 const ROLE_THEME: Record<string, { label: string; bg: string; border: string; text: string; chip: string }> = {
-  super_admin:          { label: 'Super Admin',         bg: 'bg-teal-50',   border: 'border-teal-200',   text: 'text-teal-800',   chip: 'bg-teal-600' },
+  super_admin:          { label: 'Super Admin',         bg: 'bg-nikki-surface-blue',   border: 'border-nikki-border',   text: 'text-nikki-navy',   chip: 'bg-nikki-royal' },
   manager:               { label: 'Manager',             bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-800', chip: 'bg-indigo-600' },
   hr:                     { label: 'HR',                  bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800', chip: 'bg-purple-600' },
   marketing_executive:   { label: 'Marketing Executive',  bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-800',  chip: 'bg-amber-600' },
@@ -1113,17 +1112,17 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
         <div className="mb-5">
           <p className="text-stone-700 text-xs uppercase tracking-wider mb-2">Owner account</p>
           {owners.map(u => (
-            <div key={u.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-3 border-teal-800/60'}>
+            <div key={u.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-3 border-nikki-navy/60'}>
               <div>
-                <p className="text-stone-900 font-medium">
+                <p className="text-nikki-navy font-medium">
                   {u.full_name}
-                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-teal-100 text-teal-700">Owner · full access</span>
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded bg-nikki-surface-blue text-nikki-blue">Owner · full access</span>
                 </p>
                 <p className="text-stone-700 text-xs">{u.email}</p>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => setShowChangePwModal(true)} className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors">
-                  <Key className="w-3.5 h-3.5 text-orange-700" /> Change My Password
+                <button onClick={() => setShowChangePwModal(true)} className="px-3 py-1.5 bg-nikki-surface-blue hover:bg-nikki-surface-blue border border-nikki-border text-nikki-navy text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors">
+                  <Key className="w-3.5 h-3.5 text-nikki-blue" /> Change My Password
                 </button>
               </div>
             </div>
@@ -1143,13 +1142,13 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
         {staffOnly.map(u => (
           <div key={u.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-3'}>
             <div>
-              <p className="text-stone-900 font-medium">{u.full_name} <span className="text-teal-700 text-xs">({u.role.replace('_', ' ')})</span></p>
+              <p className="text-nikki-navy font-medium">{u.full_name} <span className="text-nikki-blue text-xs">({u.role.replace('_', ' ')})</span></p>
               <p className="text-stone-700 text-xs">{u.email} • segments: {(u.segments || []).join(', ') || 'none'}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className={`text-xs px-2 py-0.5 rounded ${u.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{u.is_active ? 'active' : 'disabled'}</span>
               <OnboardingStatusBadge staffUserId={u.id} />
-              <button className="text-teal-700 text-sm font-medium" onClick={() => {
+              <button className="text-nikki-blue text-sm font-medium" onClick={() => {
                 setEditing({ ...u, permission_overrides: u.permission_overrides || {}, salary_structure: u.salary_structure || { basic: 0, hra: 0, allowances: 0, deductions: 0, performance_bonus: 0, incentives: 0, ctc: 0 } });
                 setSnapshot({ designation: u.designation || '', ctc: u.salary_structure?.ctc || 0 });
                 setResetPasswordValue('');
@@ -1166,8 +1165,8 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
 
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold text-lg">{editing.full_name} — Access Control</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold text-lg">{editing.full_name} — Access Control</h3>
             <div className="grid grid-cols-2 gap-3">
               <select className={inputCls} value={editing.role} onChange={e => setEditing({ ...editing, role: e.target.value })}>
                 {['manager', 'hr', 'marketing_executive', 'telecaller', 'support_agent', 'employee'].map(r => <option key={r} value={r}>{r}</option>)}
@@ -1210,7 +1209,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
               <div className="flex flex-wrap gap-2">
                 {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
                   <button key={s.slug} onClick={() => toggleSeg(editing, setEditing, s.slug)}
-                    className={`px-3 py-1 rounded-full text-xs border ${(editing.segments || []).includes(s.slug) ? 'bg-teal-500 text-stone-950 border-teal-500' : 'border-stone-200 text-stone-700'}`}>
+                    className={`px-3 py-1 rounded-full text-xs border ${(editing.segments || []).includes(s.slug) ? 'bg-nikki-royal text-stone-950 border-nikki-royal' : 'border-nikki-border text-stone-700'}`}>
                     {s.name}
                   </button>
                 ))}
@@ -1229,7 +1228,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
                       else delete next[p];
                       setEditing({ ...editing, permission_overrides: next });
                     }}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs border text-left ${val === true ? 'border-emerald-500 text-emerald-700' : val === false ? 'border-red-500 text-red-700' : 'border-stone-200 text-stone-700'}`}>
+                      className={`px-2.5 py-1.5 rounded-lg text-xs border text-left ${val === true ? 'border-emerald-500 text-emerald-700' : val === false ? 'border-red-500 text-red-700' : 'border-nikki-border text-stone-700'}`}>
                       {p.replace(/_/g, ' ')} {val === true ? '✓' : val === false ? '✕' : '· role default'}
                     </button>
                   );
@@ -1245,7 +1244,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
               <p className="text-stone-700 text-xs mt-1">Sets their password directly — tell them the new password securely. They can also self-reset via "Forgot password?" on the login page.</p>
             </div>
             <div className="border-t border-stone-800 pt-3">
-              <button className="text-teal-700 text-sm font-medium mb-4 block" onClick={() => { setViewDocsFor(editing); setEditing(null); }}>View Documents</button>
+              <button className="text-nikki-blue text-sm font-medium mb-4 block" onClick={() => { setViewDocsFor(editing); setEditing(null); }}>View Documents</button>
               {showOffboard ? (
                 <OffboardStaff staffMember={editing} onDone={() => { setShowOffboard(false); setEditing(null); load(); }} />
               ) : editing.exit_date ? (
@@ -1279,8 +1278,8 @@ function TicketsSection({ segments, focusId, initialSegFilter, initialStatus, fi
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setSub('queue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'queue' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>All Tickets</button>
-        <button onClick={() => setSub('overdue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'overdue' ? 'border-red-500 text-red-700' : 'border-stone-200 text-stone-700'}`}>Overdue (SLA)</button>
+        <button onClick={() => setSub('queue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'queue' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>All Tickets</button>
+        <button onClick={() => setSub('overdue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'overdue' ? 'border-red-500 text-red-700' : 'border-nikki-border text-stone-700'}`}>Overdue (SLA)</button>
       </div>
       {sub === 'queue' && <TicketsBoard segments={segments} focusId={focusId} initialSegFilter={initialSegFilter} initialStatus={initialStatus} filterNonce={filterNonce} />}
       {sub === 'overdue' && <OverdueTickets segments={segments} />}
@@ -1311,7 +1310,7 @@ function LeavePolicyManager() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold mb-1 text-sm">Annual Leave Entitlements</h3>
+      <h3 className="text-nikki-navy font-semibold mb-1 text-sm">Annual Leave Entitlements</h3>
       <p className="text-stone-700 text-xs mb-4">Days granted per employee per calendar year. Balances are calculated from approved requests, counting working days only.</p>
       <div className="space-y-2">
         {rows.map(r => (
@@ -1344,14 +1343,14 @@ function HRSection({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex gap-2 mb-5 flex-wrap">
-        <button onClick={() => setSub('core')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'core' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Staff & Leaves</button>
-        {canApprove && <button onClick={() => setSub('corrections')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'corrections' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Attendance Corrections</button>}
-        {canSummary && <button onClick={() => setSub('dangling')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'dangling' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Unclosed Days</button>}
-        {canShifts && <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Shifts</button>}
-        {canPayroll && <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Payslips</button>}
-        {canSummary && <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Attendance Summary</button>}
-        {canPolicy && <button onClick={() => setSub('policy')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'policy' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Leave Policy</button>}
-        {canPolicy && <button onClick={() => setSub('holidays')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'holidays' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Holidays</button>}
+        <button onClick={() => setSub('core')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'core' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Staff & Leaves</button>
+        {canApprove && <button onClick={() => setSub('corrections')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'corrections' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Attendance Corrections</button>}
+        {canSummary && <button onClick={() => setSub('dangling')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'dangling' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Unclosed Days</button>}
+        {canShifts && <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Shifts</button>}
+        {canPayroll && <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Payslips</button>}
+        {canSummary && <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Attendance Summary</button>}
+        {canPolicy && <button onClick={() => setSub('policy')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'policy' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Leave Policy</button>}
+        {canPolicy && <button onClick={() => setSub('holidays')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'holidays' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Holidays</button>}
       </div>
       {sub === 'core' && <HRBoard segments={segments} />}
       {sub === 'corrections' && canApprove && <RegularizationApprovals />}
@@ -1371,8 +1370,8 @@ function ApprovalsSection() {
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setSub('bank')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bank' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Bank Details</button>
-        <button onClick={() => setSub('photo')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'photo' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Profile Photos</button>
+        <button onClick={() => setSub('bank')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bank' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Bank Details</button>
+        <button onClick={() => setSub('photo')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'photo' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Profile Photos</button>
       </div>
       {sub === 'bank' && <BankChangeApprovals />}
       {sub === 'photo' && <PhotoChangeApprovals />}
@@ -1452,7 +1451,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color ?? undefined }} />
               <div>
-                <p className="text-stone-900 font-bold">{s.name} <span className="text-stone-700 text-xs">({s.slug} • NKT-{s.ticket_prefix}-)</span></p>
+                <p className="text-nikki-navy font-bold">{s.name} <span className="text-stone-700 text-xs">({s.slug} • NKT-{s.ticket_prefix}-)</span></p>
                 <p className="text-stone-700 text-xs">{s.tagline}</p>
                 {usage[s.slug] && (usage[s.slug].staff > 0 || usage[s.slug].leads > 0 || usage[s.slug].tickets > 0) && (
                   <p className="text-stone-700 text-xs mt-0.5">
@@ -1463,7 +1462,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
             </div>
             <div className="flex items-center gap-3">
               <span className={`text-xs ${s.active ? 'text-emerald-700' : 'text-amber-700'}`}>{s.active ? 'live' : 'retired'}</span>
-              <button className="text-teal-700 text-sm" onClick={() => setEditing(s)}>Edit</button>
+              <button className="text-nikki-blue text-sm" onClick={() => setEditing(s)}>Edit</button>
               <button className={s.active ? 'text-amber-700 text-sm' : 'text-emerald-700 text-sm'} onClick={() => toggleActive(s)}>
                 {s.active ? 'Retire' : 'Reactivate'}
               </button>
@@ -1473,8 +1472,8 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
       </div>
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">{editing.id ? 'Edit' : 'New'} Segment</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">{editing.id ? 'Edit' : 'New'} Segment</h3>
             <input className={inputCls} placeholder="Name *" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} />
             <input className={inputCls} placeholder="Slug * (e.g. ai_automation)" value={editing.slug || ''} disabled={!!editing.id} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') })} />
             <input className={inputCls} placeholder="Ticket Prefix * (e.g. AI)" value={editing.ticket_prefix || ''} onChange={e => setEditing({ ...editing, ticket_prefix: e.target.value.toUpperCase() })} />
@@ -1547,29 +1546,29 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
             <div key={seg.slug}>
               <div className="flex items-center gap-2 mb-2.5">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color ?? '#78716c' }} />
-                <h4 className="text-stone-900 text-xs font-extrabold uppercase tracking-wider">{seg.name}</h4>
+                <h4 className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider">{seg.name}</h4>
                 <span className="text-stone-400 text-xs">({segRows.length})</span>
               </div>
               <div className="space-y-2">
                 {segRows.map(p => {
                   const features = (p.features as ProductFeature[] | null) || [];
                   return (
-                    <div key={p.id} className="rounded-xl bg-white border border-stone-200/90 shadow-sm p-4" style={{ borderLeftWidth: 3, borderLeftColor: seg.color ?? '#78716c' }}>
+                    <div key={p.id} className="rounded-xl bg-white border border-nikki-border/90 shadow-sm p-4" style={{ borderLeftWidth: 3, borderLeftColor: seg.color ?? '#78716c' }}>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-stone-900 font-bold">{p.name} <span className="text-stone-500 text-xs font-normal">/{p.slug}</span></p>
+                          <p className="text-nikki-navy font-bold">{p.name} <span className="text-stone-500 text-xs font-normal">/{p.slug}</span></p>
                           <p className="text-stone-700 text-xs">{p.tagline} {p.external_url && `• ${p.external_url}`}</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <span className={`text-xs px-2 py-0.5 rounded ${p.status === 'active' ? 'bg-emerald-100 text-emerald-700' : p.status === 'coming_soon' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-700'}`}>{p.status}</span>
-                          <button className="text-teal-700 text-sm font-medium" onClick={() => setEditing({ ...p, features })}>Edit</button>
+                          <button className="text-nikki-blue text-sm font-medium" onClick={() => setEditing({ ...p, features })}>Edit</button>
                           <button className="text-red-700 text-sm font-medium" onClick={() => remove(p.id)}>Delete</button>
                         </div>
                       </div>
                       {features.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-stone-100">
                           {features.map((f, i) => (
-                            <span key={i} className="text-[11px] px-2 py-1 rounded-full bg-stone-50 text-stone-700 border border-stone-200" title={f.description}>{f.title}</span>
+                            <span key={i} className="text-[11px] px-2 py-1 rounded-full bg-stone-50 text-stone-700 border border-nikki-border" title={f.description}>{f.title}</span>
                           ))}
                         </div>
                       )}
@@ -1582,16 +1581,16 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
         })}
         {rows.filter(p => !segments.some(s => s.slug === p.segment_slug)).length > 0 && (
           <div>
-            <h4 className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-2.5">Unassigned Segment</h4>
+            <h4 className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider mb-2.5">Unassigned Segment</h4>
             <div className="space-y-2">
               {rows.filter(p => !segments.some(s => s.slug === p.segment_slug)).map(p => (
                 <div key={p.id} className={cardCls + ' flex flex-wrap items-center justify-between gap-2'}>
                   <div>
-                    <p className="text-stone-900 font-bold">{p.name} <span className="text-stone-700 text-xs">/{p.slug}</span></p>
+                    <p className="text-nikki-navy font-bold">{p.name} <span className="text-stone-700 text-xs">/{p.slug}</span></p>
                     <p className="text-stone-700 text-xs">{p.tagline}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button className="text-teal-700 text-sm" onClick={() => setEditing({ ...p, features: (p.features as ProductFeature[] | null) || [] })}>Edit</button>
+                    <button className="text-nikki-blue text-sm" onClick={() => setEditing({ ...p, features: (p.features as ProductFeature[] | null) || [] })}>Edit</button>
                     <button className="text-red-700 text-sm" onClick={() => remove(p.id)}>Delete</button>
                   </div>
                 </div>
@@ -1602,8 +1601,8 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
       </div>
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">{editing.id ? 'Edit' : 'Add'} Product</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">{editing.id ? 'Edit' : 'Add'} Product</h3>
             <div className="grid grid-cols-2 gap-3">
               <input className={inputCls} placeholder="Name *" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} />
               <input className={inputCls} placeholder="Slug *" value={editing.slug || ''} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} />
@@ -1624,7 +1623,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <p className="text-stone-700 text-sm font-medium">Feature Cards</p>
-                <button className="text-teal-700 text-xs" onClick={() => setEditing({ ...editing, features: [...(editing.features || []), { title: '', description: '', icon: 'CheckCircle2' }] })}>+ Add feature</button>
+                <button className="text-nikki-blue text-xs" onClick={() => setEditing({ ...editing, features: [...(editing.features || []), { title: '', description: '', icon: 'CheckCircle2' }] })}>+ Add feature</button>
               </div>
               {(editing.features || []).map((f, i) => (
                 <div key={i} className="grid grid-cols-[1fr_2fr_auto] gap-2 mb-2">
@@ -1702,7 +1701,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
       <SegmentTabs segments={segments} value={seg} onChange={s => setSeg(s || segments[0]?.slug || '')} includeAll={false} />
       <div className="grid md:grid-cols-2 gap-6">
         <div className={cardCls}>
-          <h3 className="text-stone-900 font-bold mb-3">Services on Website</h3>
+          <h3 className="text-nikki-navy font-bold mb-3">Services on Website</h3>
           <div className="space-y-2 mb-4">
             {services.filter(s => s.segment_slug === seg).map(s => (
               <div key={s.id} className="text-sm border-b border-stone-100 pb-2">
@@ -1714,7 +1713,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
                   <p className="text-stone-500 text-xs mt-0.5">{(s as unknown as { highlights?: string[] }).highlights!.join(' • ')}</p>
                 )}
                 {(s as unknown as { best_for?: string }).best_for && (
-                  <p className="text-orange-700 text-xs mt-0.5 italic">Best for: {(s as unknown as { best_for?: string }).best_for}</p>
+                  <p className="text-nikki-blue text-xs mt-0.5 italic">Best for: {(s as unknown as { best_for?: string }).best_for}</p>
                 )}
               </div>
             ))}
@@ -1726,7 +1725,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
           <button className={btnCls} onClick={addService}>Add Service</button>
         </div>
         <div className={cardCls}>
-          <h3 className="text-stone-900 font-bold mb-3">Ticket Types (support form options)</h3>
+          <h3 className="text-nikki-navy font-bold mb-3">Ticket Types (support form options)</h3>
           <div className="space-y-2 mb-4">
             {types.filter(t => t.segment_slug === seg).map(t => (
               <div key={t.id} className="flex justify-between items-center text-sm">
@@ -1822,16 +1821,16 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setTab('gallery')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'gallery' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Gallery ({gallery.length})</button>
-        <button onClick={() => setTab('team')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'team' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Team ({team.length})</button>
-        <button onClick={() => setTab('testimonials')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'testimonials' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Testimonials ({testimonials.length})</button>
-        <button onClick={() => setTab('logos')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'logos' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Client Logos ({logos.length})</button>
+        <button onClick={() => setTab('gallery')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'gallery' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Gallery ({gallery.length})</button>
+        <button onClick={() => setTab('team')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'team' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Team ({team.length})</button>
+        <button onClick={() => setTab('testimonials')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'testimonials' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Testimonials ({testimonials.length})</button>
+        <button onClick={() => setTab('logos')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'logos' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Client Logos ({logos.length})</button>
       </div>
 
       {tab === 'gallery' && (
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
-            <p className="text-stone-900 text-sm font-medium">Add Gallery Photo</p>
+            <p className="text-nikki-navy text-sm font-medium">Add Gallery Photo</p>
             <ImageUpload placeholder="Upload Gallery Image *" value={newGallery.image_url} onChange={url => setNewGallery({ ...newGallery, image_url: url })} />
             <input className={inputCls} placeholder="Caption (optional)" value={newGallery.title} onChange={e => setNewGallery({ ...newGallery, title: e.target.value })} />
             <select className={inputCls} value={newGallery.segment_slug} onChange={e => setNewGallery({ ...newGallery, segment_slug: e.target.value })}>
@@ -1845,7 +1844,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
               <div key={g.id} className="relative rounded-lg overflow-hidden border border-stone-800">
                 <img src={g.image_url || ''} alt={g.title || ''} className="w-full h-28 object-cover" />
                 <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                  <button className="text-xs text-stone-900" onClick={() => toggleActive('gallery_items', g.id, g.active, load)}>{g.active ? 'Hide' : 'Show'}</button>
+                  <button className="text-xs text-nikki-navy" onClick={() => toggleActive('gallery_items', g.id, g.active, load)}>{g.active ? 'Hide' : 'Show'}</button>
                   <button className="text-xs text-red-700" onClick={() => remove('gallery_items', g.id, load)}>Delete</button>
                 </div>
               </div>
@@ -1857,7 +1856,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
       {tab === 'team' && (
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
-            <p className="text-stone-900 text-sm font-medium">Add Team Member</p>
+            <p className="text-nikki-navy text-sm font-medium">Add Team Member</p>
             <div className="grid grid-cols-2 gap-2">
               <input className={inputCls} placeholder="Name *" value={newTeam.name} onChange={e => setNewTeam({ ...newTeam, name: e.target.value })} />
               <input className={inputCls} placeholder="Designation" value={newTeam.designation} onChange={e => setNewTeam({ ...newTeam, designation: e.target.value })} />
@@ -1875,7 +1874,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
                 <div className="flex items-center gap-3">
                   {t.photo_url && <img src={t.photo_url} className="w-9 h-9 rounded-full object-cover" />}
                   <div>
-                    <p className="text-stone-900 text-sm">{t.name}</p>
+                    <p className="text-nikki-navy text-sm">{t.name}</p>
                     <p className="text-stone-700 text-xs">{t.designation}</p>
                   </div>
                 </div>
@@ -1892,7 +1891,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
       {tab === 'testimonials' && (
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
-            <p className="text-stone-900 text-sm font-medium">Add Testimonial</p>
+            <p className="text-nikki-navy text-sm font-medium">Add Testimonial</p>
             <input className={inputCls} placeholder="Customer Name *" value={newTestimonial.customer_name} onChange={e => setNewTestimonial({ ...newTestimonial, customer_name: e.target.value })} />
             <textarea className={inputCls} rows={2} placeholder="Testimonial text *" value={newTestimonial.content} onChange={e => setNewTestimonial({ ...newTestimonial, content: e.target.value })} />
             <div className="grid grid-cols-2 gap-2">
@@ -1910,7 +1909,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
             {testimonials.map(t => (
               <div key={t.id} className={cardCls}>
                 <div className="flex items-center justify-between">
-                  <p className="text-stone-900 text-sm font-medium">{t.customer_name} <span className="text-amber-700 text-xs">{'★'.repeat(t.rating ?? 0)}</span></p>
+                  <p className="text-nikki-navy text-sm font-medium">{t.customer_name} <span className="text-amber-700 text-xs">{'★'.repeat(t.rating ?? 0)}</span></p>
                   <div className="flex gap-3">
                     <button className="text-stone-700 text-xs" onClick={() => toggleActive('testimonials', t.id, t.active, load)}>{t.active ? 'Hide' : 'Show'}</button>
                     <button className="text-red-700 text-xs" onClick={() => remove('testimonials', t.id, load)}>Delete</button>
@@ -1926,7 +1925,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
       {tab === 'logos' && (
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
-            <p className="text-stone-900 text-sm font-medium">Add Client Logo</p>
+            <p className="text-nikki-navy text-sm font-medium">Add Client Logo</p>
             <p className="text-stone-700 text-xs">Shows in the scrolling "Trusted By" strip on the homepage.</p>
             <input className={inputCls} placeholder="Client Name *" value={newLogo.name} onChange={e => setNewLogo({ ...newLogo, name: e.target.value })} />
             <ImageUpload placeholder="Upload Client Logo *" value={newLogo.logo_url} onChange={url => setNewLogo({ ...newLogo, logo_url: url })} />
@@ -1941,7 +1940,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
               <div key={l.id} className="relative rounded-lg overflow-hidden border border-stone-800 bg-white p-4 flex items-center justify-center">
                 <img src={l.logo_url} alt={l.name} className="max-h-10 object-contain" />
                 <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1">
-                  <button className="text-xs text-stone-900" onClick={() => toggleActive('client_logos', l.id, l.active, load)}>{l.active ? 'Hide' : 'Show'}</button>
+                  <button className="text-xs text-nikki-navy" onClick={() => toggleActive('client_logos', l.id, l.active, load)}>{l.active ? 'Hide' : 'Show'}</button>
                   <button className="text-xs text-red-700" onClick={() => remove('client_logos', l.id, load)}>Delete</button>
                 </div>
               </div>
@@ -1976,7 +1975,7 @@ function ContentManager() {
       <p className="text-stone-700 text-sm">Edit any text on the public website. Changes go live immediately.</p>
       {sections.map(sec => (
         <div key={sec} className={cardCls}>
-          <h3 className="text-stone-900 font-semibold capitalize mb-3">{sec}</h3>
+          <h3 className="text-nikki-navy font-semibold capitalize mb-3">{sec}</h3>
           <div className="space-y-3">
             {rows.filter(r => r.section === sec).map(r => (
               <div key={r.id}>
@@ -2075,19 +2074,19 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
     <div className="space-y-8">
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-stone-900 font-semibold">Document Templates</h3>
+          <h3 className="text-nikki-navy font-semibold">Document Templates</h3>
           <button className={btnCls} onClick={() => setEditingTpl({ segment_slug: '', doc_type: 'other', title: '', body: '', active: true, requires_signature: true })}>+ New Template</button>
         </div>
         <div className="space-y-2">
           {templates.map(t => (
             <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
               <div>
-                <p className="text-stone-900 text-sm font-medium">{t.title}</p>
+                <p className="text-nikki-navy text-sm font-medium">{t.title}</p>
                 <p className="text-stone-700 text-xs">{DOC_TYPE_LABELS[t.doc_type]} • {segments.find(s => s.slug === t.segment_slug)?.name || 'All segments'} • {t.requires_signature ? 'needs signature' : 'acknowledge only'}</p>
               </div>
               <div className="flex gap-3">
-                <button className="text-teal-700 text-xs" onClick={() => setPreview({ title: t.title, content: t.body })}>Preview</button>
-                <button className="text-teal-700 text-xs" onClick={() => setEditingTpl(t)}>Edit</button>
+                <button className="text-nikki-blue text-xs" onClick={() => setPreview({ title: t.title, content: t.body })}>Preview</button>
+                <button className="text-nikki-blue text-xs" onClick={() => setEditingTpl(t)}>Edit</button>
               </div>
             </div>
           ))}
@@ -2095,19 +2094,19 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       </div>
 
       <div>
-        <h3 className="text-stone-900 font-semibold mb-4">Issue Documents to Existing Staff</h3>
+        <h3 className="text-nikki-navy font-semibold mb-4">Issue Documents to Existing Staff</h3>
         <div className="space-y-2">
           {staff.map(s => (
             <div key={s.id} className={cardCls + ' flex items-center justify-between'}>
-              <p className="text-stone-900 text-sm">{s.full_name} <span className="text-stone-700 text-xs">({s.role})</span></p>
+              <p className="text-nikki-navy text-sm">{s.full_name} <span className="text-stone-700 text-xs">({s.role})</span></p>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 border-r border-stone-200 pr-3">
+                <div className="flex items-center gap-2 border-r border-nikki-border pr-3">
                   <OnboardingStatusBadge staffUserId={s.id} />
-                  <button onClick={() => setViewDocsFor(s)} className="text-[11px] font-semibold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2 py-1 rounded transition-colors">
+                  <button onClick={() => setViewDocsFor(s)} className="text-[11px] font-semibold text-nikki-blue hover:text-nikki-navy bg-nikki-surface-blue hover:bg-nikki-surface-blue px-2 py-1 rounded transition-colors">
                     View Collected
                   </button>
                 </div>
-                <button className="text-teal-700 text-xs font-medium hover:text-teal-900" onClick={() => openIssue(s)}>Issue Document</button>
+                <button className="text-nikki-blue text-xs font-medium hover:text-nikki-navy" onClick={() => openIssue(s)}>Issue Document</button>
               </div>
             </div>
           ))}
@@ -2116,8 +2115,8 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
 
       {editingTpl && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingTpl(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">{editingTpl.id ? 'Edit' : 'New'} Template</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">{editingTpl.id ? 'Edit' : 'New'} Template</h3>
             <input className={inputCls} placeholder="Title *" value={editingTpl.title} onChange={e => setEditingTpl({ ...editingTpl, title: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
               <select className={inputCls} value={editingTpl.doc_type} onChange={e => setEditingTpl({ ...editingTpl, doc_type: e.target.value })}>
@@ -2130,7 +2129,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
             </div>
             <p className="text-stone-700 text-xs">Placeholders: {'{{name}} {{designation}} {{role}} {{segment}} {{joining_date}} {{ctc}} {{employment_type}} {{company}}'}</p>
             <textarea className={inputCls} rows={10} value={editingTpl.body} onChange={e => setEditingTpl({ ...editingTpl, body: e.target.value })} />
-            <label className="flex items-center gap-2 text-sm text-stone-900 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-nikki-navy cursor-pointer">
               <input type="checkbox" checked={editingTpl.requires_signature !== false} onChange={e => setEditingTpl({ ...editingTpl, requires_signature: e.target.checked })} />
               Requires employee signature <span className="text-stone-700 text-xs">(off = simple acknowledge)</span>
             </label>
@@ -2141,10 +2140,10 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
 
       {issueFor && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setIssueFor(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">Issue documents to {issueFor.full_name}</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">Issue documents to {issueFor.full_name}</h3>
             {relevantTemplates(issueFor).map(t => (
-              <label key={t.id} className="flex items-center gap-2 text-sm text-stone-900 cursor-pointer">
+              <label key={t.id} className="flex items-center gap-2 text-sm text-nikki-navy cursor-pointer">
                 <input type="checkbox" checked={issueDocs.includes(t.id)} onChange={() => setIssueDocs(prev => prev.includes(t.id) ? prev.filter(x => x !== t.id) : [...prev, t.id])} />
                 {t.title}
               </label>
@@ -2310,8 +2309,8 @@ export default function SuperAdminDashboard() {
           <div className="space-y-1">
             {g.items.map(t => (
               <button key={t.id} onClick={() => goTo(t.id)} onMouseEnter={() => prefetchTab(t.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-orange-50 border border-orange-200 text-orange-800 shadow-sm' : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100 border border-transparent'}`}>
-                <t.icon className={`w-4 h-4 shrink-0 ${tab === t.id ? 'text-orange-700' : 'text-stone-700'}`} /> {t.label}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm' : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'}`}>
+                <t.icon className={`w-4 h-4 shrink-0 ${tab === t.id ? 'text-nikki-blue' : 'text-stone-700'}`} /> {t.label}
               </button>
             ))}
           </div>
@@ -2321,18 +2320,18 @@ export default function SuperAdminDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-stone-50 flex text-stone-900" key={refreshKey}>
+    <div className="min-h-screen bg-stone-50 flex text-nikki-navy" key={refreshKey}>
       <DueAlertBanner alerts={activeAlerts} onDismiss={dismissAlert} onSnooze={snoozeAlert} />
-      <aside className="w-60 shrink-0 border-r border-stone-200 bg-white p-4 hidden md:flex flex-col shadow-sm sticky top-0 h-screen">
+      <aside className="w-60 shrink-0 border-r border-nikki-border bg-white p-4 hidden md:flex flex-col shadow-sm sticky top-0 h-screen">
         <div className="flex items-center gap-2.5 mb-8 px-2">
-          <KiteTailLogo className="w-8 h-8 shrink-0" />
+          <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 shrink-0 object-contain" />
           <div>
-            <p className="text-stone-900 font-extrabold text-sm leading-tight">Nikki Technologies</p>
+            <p className="text-nikki-navy font-extrabold text-sm leading-tight">Nikki Technologies</p>
             <p className="text-stone-700 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto min-h-0">{navGroups}</nav>
-        <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-stone-200 pt-3 shrink-0">
+        <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-nikki-border pt-3 shrink-0">
           <LogOut className="w-4 h-4" /> Sign Out
         </button>
       </aside>
@@ -2341,20 +2340,20 @@ export default function SuperAdminDashboard() {
           so mobile gets the same grouped sections as the desktop sidebar, in an overlay. */}
       {mobileNavOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-stone-900/50" onClick={() => setMobileNavOpen(false)} />
+          <div className="absolute inset-0 bg-nikki-navy/50" onClick={() => setMobileNavOpen(false)} />
           <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
             <div className="flex items-center justify-between mb-6 px-1">
               <div className="flex items-center gap-2.5">
-                <KiteTailLogo className="w-8 h-8 shrink-0" />
+                <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 shrink-0 object-contain" />
                 <div>
-                  <p className="text-stone-900 font-extrabold text-sm leading-tight">Nikki Technologies</p>
+                  <p className="text-nikki-navy font-extrabold text-sm leading-tight">Nikki Technologies</p>
                   <p className="text-stone-700 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
                 </div>
               </div>
               <button onClick={() => setMobileNavOpen(false)} className="p-1 text-stone-700"><X className="w-5 h-5" /></button>
             </div>
             <nav className="flex-1">{navGroups}</nav>
-            <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-stone-200 pt-3">
+            <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-nikki-border pt-3">
               <LogOut className="w-4 h-4" /> Sign Out
             </button>
           </div>
@@ -2365,19 +2364,19 @@ export default function SuperAdminDashboard() {
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setMobileNavOpen(true)} className="md:hidden p-1.5 -ml-1.5 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
-            <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight truncate">{tabs.find(t => t.id === tab)?.label}</h1>
+            <h1 className="text-3xl font-extrabold text-nikki-navy tracking-tight truncate">{tabs.find(t => t.id === tab)?.label}</h1>
           </div>
           <div className="flex items-center gap-3">
             <QuickSearch onNavigate={navigateWithFocus} />
             <button
               onClick={() => { setSoundEnabled(!soundEnabled); if (notifPermission === 'default') requestNotificationPermission(); }}
               title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}
-              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-teal-700 hover:bg-teal-50' : 'text-stone-400 hover:bg-stone-100'}`}>
+              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-400 hover:bg-stone-100'}`}>
               {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
             </button>
             <NotificationBell onNavigate={(t) => setTab(t as Tab)} />
-            <button onClick={() => setShowHeaderPwModal(true)} title="Click to Change Password" className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 hover:bg-orange-50 border border-stone-200 hover:border-orange-200 text-stone-800 hover:text-orange-900 rounded-xl text-xs font-bold transition-all">
-              <Key className="w-3.5 h-3.5 text-orange-700" />
+            <button onClick={() => setShowHeaderPwModal(true)} title="Click to Change Password" className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 hover:bg-nikki-surface-blue border border-nikki-border hover:border-nikki-border text-stone-800 hover:text-nikki-navy rounded-xl text-xs font-bold transition-all">
+              <Key className="w-3.5 h-3.5 text-nikki-blue" />
               <span className="hidden sm:inline">{user?.full_name}</span>
             </button>
             <button onClick={signOut} className="md:hidden text-stone-700"><LogOut className="w-5 h-5" /></button>

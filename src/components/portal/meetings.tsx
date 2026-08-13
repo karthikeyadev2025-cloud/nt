@@ -56,9 +56,9 @@ function toLocalInput(iso: string) {
 }
 
 const statusStyle = {
-  scheduled: 'bg-teal-50 text-teal-700 border-teal-200',
+  scheduled: 'bg-nikki-surface-blue text-nikki-blue border-nikki-border',
   completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  cancelled: 'bg-stone-100 text-stone-700 border-stone-200',
+  cancelled: 'bg-stone-100 text-stone-700 border-nikki-border',
   no_show:   'bg-amber-50 text-amber-700 border-amber-200',
 };
 
@@ -186,19 +186,19 @@ export function ScheduleMeetingModal({
     setForm(f => ({ ...f, attendees: f.attendees.includes(id) ? f.attendees.filter(x => x !== id) : [...f.attendees, id] }));
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-stone-200 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-nikki-border max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700">
+            <div className="w-9 h-9 rounded-xl bg-nikki-surface-blue flex items-center justify-center text-nikki-blue">
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-stone-900 font-extrabold text-base leading-tight">Schedule Meeting</h3>
+              <h3 className="text-nikki-navy font-extrabold text-base leading-tight">Schedule Meeting</h3>
               <p className="text-stone-700 text-xs font-semibold">{leadName ? `With ${leadName}` : 'Internal team meeting'}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-stone-700 hover:text-stone-900 hover:bg-stone-100"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1 rounded-lg text-stone-700 hover:text-nikki-navy hover:bg-stone-100"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="space-y-4">
@@ -233,7 +233,7 @@ export function ScheduleMeetingModal({
               ]).map(o => (
                 <button key={o.v} type="button" onClick={() => setForm({ ...form, location_kind: o.v })}
                   className={`px-2 py-1.5 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1
-                    ${form.location_kind === o.v ? 'bg-teal-50 border-teal-500 text-teal-800' : 'border-stone-200 text-stone-700'}`}>
+                    ${form.location_kind === o.v ? 'bg-nikki-surface-blue border-nikki-royal text-nikki-navy' : 'border-nikki-border text-stone-700'}`}>
                   {o.icon} {o.label}
                 </button>
               ))}
@@ -244,7 +244,7 @@ export function ScheduleMeetingModal({
                   <input className={inputCls + ' flex-1'} placeholder="Google Meet link (auto-fills, or paste)"
                     value={form.meet_link} onChange={e => setForm({ ...form, meet_link: e.target.value })} />
                   <button type="button" onClick={openAndAutoFillMeet}
-                    className="shrink-0 px-3 py-2 rounded-lg bg-teal-50 border border-teal-300 text-teal-800 text-xs font-semibold hover:bg-teal-100 flex items-center gap-1.5">
+                    className="shrink-0 px-3 py-2 rounded-lg bg-nikki-surface-blue border border-nikki-sky text-nikki-navy text-xs font-semibold hover:bg-nikki-surface-blue flex items-center gap-1.5">
                     <Video className="w-3.5 h-3.5" /> Open Meet & Auto-Fill
                   </button>
                 </div>
@@ -252,7 +252,7 @@ export function ScheduleMeetingModal({
                   <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
                     <ClipboardCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-stone-900 text-xs font-semibold">Meet room opened in a new tab</p>
+                      <p className="text-nikki-navy text-xs font-semibold">Meet room opened in a new tab</p>
                       <p className="text-stone-700 text-[11px] mt-0.5">Copy the URL from the Meet tab, then click back here — we'll fill it in automatically.</p>
                     </div>
                     <button type="button" onClick={() => setWaitingForMeetPaste(false)}
@@ -282,7 +282,7 @@ export function ScheduleMeetingModal({
             <label className="text-xs font-bold text-stone-700 mb-1 flex items-center gap-1">
               <Users className="w-3.5 h-3.5" /> Additional Attendees ({form.attendees.length})
             </label>
-            <div className="grid grid-cols-2 gap-1 max-h-40 overflow-y-auto border border-stone-200 rounded-lg p-2">
+            <div className="grid grid-cols-2 gap-1 max-h-40 overflow-y-auto border border-nikki-border rounded-lg p-2">
               {staff.filter(s => s.id !== user?.id).map(s => (
                 <label key={s.id} className="flex items-center gap-2 text-xs text-stone-700 hover:bg-stone-50 px-2 py-1 rounded cursor-pointer">
                   <input type="checkbox" checked={form.attendees.includes(s.id)} onChange={() => toggleAttendee(s.id)} />
@@ -302,7 +302,7 @@ export function ScheduleMeetingModal({
             <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-stone-900 text-sm font-medium">Scheduling conflict</p>
+                <p className="text-nikki-navy text-sm font-medium">Scheduling conflict</p>
                 <p className="text-stone-700 text-xs mt-0.5">{conflictWarn}</p>
                 <button onClick={() => submit(true)} disabled={busy} className="text-amber-800 text-xs font-bold mt-2 hover:underline">
                   Schedule anyway →
@@ -382,15 +382,15 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-stone-200 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-nikki-border max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700">
+            <div className="w-9 h-9 rounded-xl bg-nikki-surface-blue flex items-center justify-center text-nikki-blue">
               {locationIcon[meeting.location_kind]}
             </div>
             <div>
-              <h3 className="text-stone-900 font-extrabold text-base leading-tight">{meeting.meeting_type_name}</h3>
+              <h3 className="text-nikki-navy font-extrabold text-base leading-tight">{meeting.meeting_type_name}</h3>
               <p className="text-stone-700 text-xs">{meeting.customer_name || 'Internal team meeting'}</p>
             </div>
           </div>
@@ -407,7 +407,7 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
               <span className="capitalize">{meeting.location_kind.replace('_', ' ')}</span>
               {meeting.meet_link && (
                 <a href={meeting.meet_link} target="_blank" rel="noreferrer"
-                  className="text-teal-700 hover:underline flex items-center gap-1 ml-auto text-xs font-semibold">
+                  className="text-nikki-blue hover:underline flex items-center gap-1 ml-auto text-xs font-semibold">
                   <ExternalLink className="w-3 h-3" /> Join
                 </a>
               )}
@@ -423,18 +423,18 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
             {meeting.agenda && (
               <div className="pt-2 border-t border-stone-100">
                 <p className="text-stone-700 text-xs font-semibold mb-1">Agenda</p>
-                <p className="text-stone-900 text-sm whitespace-pre-wrap">{meeting.agenda}</p>
+                <p className="text-nikki-navy text-sm whitespace-pre-wrap">{meeting.agenda}</p>
               </div>
             )}
             {(meeting.outcome_notes || meeting.next_step) && (
               <div className="pt-2 border-t border-stone-100 space-y-2">
                 {meeting.outcome_notes && <div>
                   <p className="text-stone-700 text-xs font-semibold mb-1">Outcome</p>
-                  <p className="text-stone-900 text-sm whitespace-pre-wrap">{meeting.outcome_notes}</p>
+                  <p className="text-nikki-navy text-sm whitespace-pre-wrap">{meeting.outcome_notes}</p>
                 </div>}
                 {meeting.next_step && <div>
                   <p className="text-stone-700 text-xs font-semibold mb-1">Next Step</p>
-                  <p className="text-stone-900 text-sm whitespace-pre-wrap">{meeting.next_step}</p>
+                  <p className="text-nikki-navy text-sm whitespace-pre-wrap">{meeting.next_step}</p>
                 </div>}
               </div>
             )}
@@ -475,12 +475,12 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => setOutcome('completed')}
                   className={`px-3 py-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1
-                    ${outcome === 'completed' ? 'bg-emerald-50 border-emerald-500 text-emerald-800' : 'border-stone-200 text-stone-700'}`}>
+                    ${outcome === 'completed' ? 'bg-emerald-50 border-emerald-500 text-emerald-800' : 'border-nikki-border text-stone-700'}`}>
                   <CheckCircle2 className="w-4 h-4" /> Completed
                 </button>
                 <button onClick={() => setOutcome('no_show')}
                   className={`px-3 py-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1
-                    ${outcome === 'no_show' ? 'bg-amber-50 border-amber-500 text-amber-800' : 'border-stone-200 text-stone-700'}`}>
+                    ${outcome === 'no_show' ? 'bg-amber-50 border-amber-500 text-amber-800' : 'border-nikki-border text-stone-700'}`}>
                   <XCircle className="w-4 h-4" /> No-show
                 </button>
               </div>
@@ -512,7 +512,7 @@ function MeetingListItem({ m, onOpen }: { m: MeetingRow; onOpen: (m: MeetingRow)
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-stone-900 text-sm font-semibold truncate">{m.meeting_type_name}</span>
+            <span className="text-nikki-navy text-sm font-semibold truncate">{m.meeting_type_name}</span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded border capitalize ${statusStyle[m.status]}`}>{m.status.replace('_', ' ')}</span>
           </div>
           <p className="text-stone-700 text-xs">{m.customer_name || 'Internal'}{m.customer_phone ? ` • ${m.customer_phone}` : ''}</p>
@@ -523,7 +523,7 @@ function MeetingListItem({ m, onOpen }: { m: MeetingRow; onOpen: (m: MeetingRow)
         </div>
         {m.meet_link && !isPast && m.status === 'scheduled' && (
           <a href={m.meet_link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-            className="shrink-0 px-2.5 py-1 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 flex items-center gap-1">
+            className="shrink-0 px-2.5 py-1 rounded-lg bg-nikki-royal text-white text-xs font-semibold hover:bg-nikki-blue flex items-center gap-1">
             <Video className="w-3.5 h-3.5" /> Join
           </a>
         )}
@@ -564,11 +564,11 @@ export function MyMeetings() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-2">
           <button onClick={() => setTab('upcoming')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${tab === 'upcoming' ? 'bg-teal-50 text-teal-800 border border-teal-200' : 'text-stone-700 border border-transparent'}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${tab === 'upcoming' ? 'bg-nikki-surface-blue text-nikki-navy border border-nikki-border' : 'text-stone-700 border border-transparent'}`}>
             Upcoming ({upcoming.length})
           </button>
           <button onClick={() => setTab('past')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${tab === 'past' ? 'bg-teal-50 text-teal-800 border border-teal-200' : 'text-stone-700 border border-transparent'}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${tab === 'past' ? 'bg-nikki-surface-blue text-nikki-navy border border-nikki-border' : 'text-stone-700 border border-transparent'}`}>
             Past
           </button>
         </div>
@@ -655,7 +655,7 @@ export function TodayMeetingsWidget() {
   return (
     <div className={cardCls}>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-stone-900 font-bold text-sm flex items-center gap-1.5"><Calendar className="w-4 h-4 text-teal-700" /> Today's Meetings</h3>
+        <h3 className="text-nikki-navy font-bold text-sm flex items-center gap-1.5"><Calendar className="w-4 h-4 text-nikki-blue" /> Today's Meetings</h3>
         <span className="text-stone-500 text-xs">{rows.length}</span>
       </div>
       {rows.length === 0 ? (
@@ -666,7 +666,7 @@ export function TodayMeetingsWidget() {
             <button key={m.id} onClick={() => setOpen(m)} className={`w-full text-left flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-stone-50 transition-colors ${new Date(m.scheduled_at) < new Date() && m.status === 'scheduled' ? 'opacity-60' : ''}`}>
               <span className="text-stone-700 text-xs font-bold w-14 shrink-0">{fmtTime(m.scheduled_at)}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-stone-900 text-xs font-semibold truncate">{m.meeting_type_name} — {m.customer_name || m.organizer_name}</p>
+                <p className="text-nikki-navy text-xs font-semibold truncate">{m.meeting_type_name} — {m.customer_name || m.organizer_name}</p>
               </div>
               <span className={`text-[10px] px-1.5 py-0.5 rounded border capitalize shrink-0 ${statusStyle[m.status]}`}>{m.status.replace('_', ' ')}</span>
             </button>
@@ -723,9 +723,9 @@ export function TeamCalendar() {
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div className="flex items-center gap-1">
           <button onClick={prev} className="p-1.5 rounded-lg hover:bg-stone-100"><ChevronLeft className="w-4 h-4 text-stone-700" /></button>
-          <button onClick={today} className="px-3 py-1.5 rounded-lg border border-stone-200 text-xs font-semibold text-stone-700 hover:bg-stone-100">Today</button>
+          <button onClick={today} className="px-3 py-1.5 rounded-lg border border-nikki-border text-xs font-semibold text-stone-700 hover:bg-stone-100">Today</button>
           <button onClick={next} className="p-1.5 rounded-lg hover:bg-stone-100"><ChevronRight className="w-4 h-4 text-stone-700" /></button>
-          <span className="ml-2 text-stone-900 text-sm font-semibold">
+          <span className="ml-2 text-nikki-navy text-sm font-semibold">
             {weekStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', day: 'numeric' })} –
             {' '}{new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
           </span>
@@ -758,23 +758,23 @@ export function TeamCalendar() {
           return (
             <button key={d.offset} onClick={() => setSelectedDay(d.offset)}
               className={`shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-xl border transition-colors min-w-[64px] ${
-                isSelected ? 'bg-teal-700 border-teal-700 text-white' : isToday ? 'bg-teal-50 border-teal-200 text-teal-800' : 'bg-white border-stone-200 text-stone-700 hover:border-stone-300'
+                isSelected ? 'bg-nikki-blue border-nikki-blue text-white' : isToday ? 'bg-nikki-surface-blue border-nikki-border text-nikki-navy' : 'bg-white border-nikki-border text-stone-700 hover:border-stone-300'
               }`}>
               <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">{d.date.toLocaleDateString('en-IN', { weekday: 'short' })}</span>
               <span className="text-base font-bold leading-none">{d.date.getDate()}</span>
               {count > 0 && (
-                <span className={`text-[10px] font-bold px-1.5 rounded-full ${isSelected ? 'bg-white/20' : 'bg-teal-100 text-teal-800'}`}>{count}</span>
+                <span className={`text-[10px] font-bold px-1.5 rounded-full ${isSelected ? 'bg-white/20' : 'bg-nikki-surface-blue text-nikki-navy'}`}>{count}</span>
               )}
             </button>
           );
         })}
       </div>
 
-      <div className="border border-stone-200 rounded-2xl bg-white">
+      <div className="border border-nikki-border rounded-2xl bg-white">
         <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between bg-stone-50 rounded-t-2xl">
-          <p className="text-stone-900 text-sm font-bold">{days[selectedDay].date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <p className="text-nikki-navy text-sm font-bold">{days[selectedDay].date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
           <button onClick={() => { const start = new Date(days[selectedDay].date); start.setHours(10, 0, 0, 0); setShowSchedule(start.toISOString()); }}
-            className="text-teal-700 hover:text-teal-900 text-xs font-bold flex items-center gap-1">
+            className="text-nikki-blue hover:text-nikki-navy text-xs font-bold flex items-center gap-1">
             <Plus className="w-3.5 h-3.5" /> Add
           </button>
         </div>
@@ -845,21 +845,21 @@ export function MeetingTypesManager() {
           <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <p className="text-stone-900 text-sm font-semibold">{t.name}</p>
+                <p className="text-nikki-navy text-sm font-semibold">{t.name}</p>
                 <span className="text-[10px] text-stone-500 font-mono">{t.slug}</span>
                 {!t.active && <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-700">hidden</span>}
               </div>
               <p className="text-stone-700 text-xs">{t.default_duration_minutes} min default • {t.description || 'no description'}</p>
             </div>
-            <button onClick={() => setEditing(t)} className="text-teal-700 text-sm font-semibold">Edit</button>
+            <button onClick={() => setEditing(t)} className="text-nikki-blue text-sm font-semibold">Edit</button>
           </div>
         ))}
       </div>
       {editing && (
-        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-stone-200">
+        <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-nikki-border">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-stone-900 font-extrabold text-base">{editing.id ? 'Edit' : 'New'} Meeting Type</h3>
+              <h3 className="text-nikki-navy font-extrabold text-base">{editing.id ? 'Edit' : 'New'} Meeting Type</h3>
               <button onClick={() => setEditing(null)}><X className="w-5 h-5 text-stone-700" /></button>
             </div>
             <div className="space-y-3">

@@ -93,7 +93,7 @@ export function IdProofUploader({ staffUserId, canManage }: { staffUserId: strin
 
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-bold text-sm mb-1">ID Proof Documents</h3>
+      <h3 className="text-nikki-navy font-bold text-sm mb-1">ID Proof Documents</h3>
       <p className="text-stone-700 text-xs mb-3">Aadhaar, PAN, passport, or other government ID — {canManage ? 'upload for this staff member' : 'upload your own'}.</p>
 
       <div className="flex gap-2 mb-4">
@@ -114,18 +114,18 @@ export function IdProofUploader({ staffUserId, canManage }: { staffUserId: strin
       ) : (
         <div className="space-y-2">
           {proofs.map(p => (
-            <div key={p.id} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-stone-50 border border-stone-200">
+            <div key={p.id} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-stone-50 border border-nikki-border">
               <FileText className="w-4 h-4 text-stone-400 shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-stone-900 text-xs font-semibold truncate">{DOC_TYPE_LABELS[p.doc_type] || p.doc_type}</p>
+                <p className="text-nikki-navy text-xs font-semibold truncate">{DOC_TYPE_LABELS[p.doc_type] || p.doc_type}</p>
                 <p className="text-stone-500 text-[11px] truncate">{p.file_name} • {new Date(p.uploaded_at).toLocaleDateString('en-IN')}</p>
               </div>
               {p.verified_at && (
                 <span className="flex items-center gap-1 text-emerald-700 text-[11px] font-bold shrink-0"><CheckCircle2 className="w-3.5 h-3.5" /> Verified</span>
               )}
-              <button onClick={() => view(p)} className="p-1.5 rounded-lg hover:bg-stone-200 text-stone-600 shrink-0" title="View"><Eye className="w-3.5 h-3.5" /></button>
+              <button onClick={() => view(p)} className="p-1.5 rounded-lg hover:bg-nikki-border text-stone-600 shrink-0" title="View"><Eye className="w-3.5 h-3.5" /></button>
               {canManage && !p.verified_at && (
-                <button onClick={() => verify(p)} className="text-[11px] font-bold text-teal-700 shrink-0">Verify</button>
+                <button onClick={() => verify(p)} className="text-[11px] font-bold text-nikki-blue shrink-0">Verify</button>
               )}
               <button onClick={() => remove(p)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 shrink-0" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>

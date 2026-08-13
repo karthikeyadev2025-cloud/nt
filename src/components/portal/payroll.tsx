@@ -89,12 +89,12 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
           <div key={s.id} className={cardCls}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-stone-900 font-medium">{s.name}</p>
+                <p className="text-nikki-navy font-medium">{s.name}</p>
                 <p className="text-stone-700 text-xs mt-0.5">{s.start_time} – {s.end_time} • grace {s.grace_minutes}min • {assignedCount(s.id)} staff assigned</p>
               </div>
               <div className="flex gap-3">
-                <button className="text-teal-700 text-xs" onClick={() => setAssigningFor(s)}>Assign Staff</button>
-                <button className="text-teal-700 text-xs" onClick={() => setEditing(s)}>Edit</button>
+                <button className="text-nikki-blue text-xs" onClick={() => setAssigningFor(s)}>Assign Staff</button>
+                <button className="text-nikki-blue text-xs" onClick={() => setEditing(s)}>Edit</button>
               </div>
             </div>
           </div>
@@ -104,8 +104,8 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
 
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">{editing.id ? 'Edit' : 'New'} Shift</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">{editing.id ? 'Edit' : 'New'} Shift</h3>
             <input className={inputCls} placeholder="Shift Name *" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} />
             <select className={inputCls} value={editing.segment_slug || ''} onChange={e => setEditing({ ...editing, segment_slug: e.target.value || null })}>
               <option value="">Company-wide</option>
@@ -120,7 +120,7 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
               <div className="flex flex-wrap gap-1.5">
                 {DAYS.map(d => (
                   <button key={d.v} onClick={() => toggleDay(d.v)}
-                    className={`px-2.5 py-1 rounded-lg text-xs border ${(editing.working_days || []).includes(d.v) ? 'bg-teal-500 text-stone-950 border-teal-500' : 'border-stone-200 text-stone-700'}`}>
+                    className={`px-2.5 py-1 rounded-lg text-xs border ${(editing.working_days || []).includes(d.v) ? 'bg-nikki-royal text-stone-950 border-nikki-royal' : 'border-nikki-border text-stone-700'}`}>
                     {d.l}
                   </button>
                 ))}
@@ -152,8 +152,8 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
 
       {assigningFor && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setAssigningFor(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">Assign to "{assigningFor.name}"</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">Assign to "{assigningFor.name}"</h3>
             <select className={inputCls} value={assignStaffId} onChange={e => setAssignStaffId(e.target.value)}>
               <option value="">Select staff member</option>
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
@@ -339,7 +339,7 @@ export function PayslipManager() {
         {payslips.map(p => (
           <div key={p.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => openPayments(p)}>
             <div>
-              <p className="text-stone-900 text-sm font-medium">{staffName(p.staff_user_id)} — {p.period_month}/{p.period_year}</p>
+              <p className="text-nikki-navy text-sm font-medium">{staffName(p.staff_user_id)} — {p.period_month}/{p.period_year}</p>
               <p className="text-stone-700 text-xs mt-0.5">Net Pay ₹{Number(p.net_pay).toLocaleString('en-IN')} • Paid ₹{Number(p.amount_paid).toLocaleString('en-IN')}</p>
             </div>
             <span className={`text-xs px-2 py-0.5 rounded capitalize ${statusColor[p.payment_status]}`}>{p.payment_status}</span>
@@ -350,8 +350,8 @@ export function PayslipManager() {
 
       {showGen && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowGen(false)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">Generate Payslip</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">Generate Payslip</h3>
             <select className={inputCls} value={genForm.staff_user_id} onChange={e => setGenForm({ ...genForm, staff_user_id: e.target.value })}>
               <option value="">Select staff *</option>
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
@@ -360,7 +360,7 @@ export function PayslipManager() {
               <div><label className="text-stone-700 text-xs">Month</label><input type="number" min={1} max={12} className={inputCls} value={genForm.period_month} onChange={e => setGenForm({ ...genForm, period_month: Number(e.target.value) })} /></div>
               <div><label className="text-stone-700 text-xs">Year</label><input type="number" className={inputCls} value={genForm.period_year} onChange={e => setGenForm({ ...genForm, period_year: Number(e.target.value) })} /></div>
             </div>
-            <button className="w-full py-2 rounded-lg border border-teal-600 text-teal-700 text-sm font-medium" onClick={autoFillFromAttendance}>
+            <button className="w-full py-2 rounded-lg border border-nikki-royal text-nikki-blue text-sm font-medium" onClick={autoFillFromAttendance}>
               Auto-fill from Attendance & Leave Records
             </button>
             <div className="grid grid-cols-2 gap-3">
@@ -380,10 +380,10 @@ export function PayslipManager() {
 
       {openSlip && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenSlip(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">{staffName(openSlip.staff_user_id)} — {openSlip.period_month}/{openSlip.period_year}</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">{staffName(openSlip.staff_user_id)} — {openSlip.period_month}/{openSlip.period_year}</h3>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
-              <span className="text-stone-700">Net Pay</span><span className="text-stone-900 text-right">₹{Number(openSlip.net_pay).toLocaleString('en-IN')}</span>
+              <span className="text-stone-700">Net Pay</span><span className="text-nikki-navy text-right">₹{Number(openSlip.net_pay).toLocaleString('en-IN')}</span>
               <span className="text-stone-700">Paid So Far</span><span className="text-emerald-700 text-right">₹{Number(openSlip.amount_paid).toLocaleString('en-IN')}</span>
               <span className="text-stone-700">Balance</span><span className="text-amber-700 text-right">₹{Math.max(0, Number(openSlip.net_pay) - Number(openSlip.amount_paid)).toLocaleString('en-IN')}</span>
             </div>
@@ -404,7 +404,7 @@ export function PayslipManager() {
                 {payments.map(p => (
                   <div key={p.id} className="flex justify-between text-xs">
                     <span className="text-stone-700">{new Date(p.paid_at ?? '').toLocaleDateString()} • {p.method.replace('_', ' ')}</span>
-                    <span className="text-stone-900">₹{Number(p.amount).toLocaleString('en-IN')}</span>
+                    <span className="text-nikki-navy">₹{Number(p.amount).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
               </div>
@@ -431,7 +431,7 @@ export function MyPayslips() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-3 flex items-center gap-2"><FileText className="w-4 h-4 text-teal-700" /> My Payslips</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-3 flex items-center gap-2"><FileText className="w-4 h-4 text-nikki-blue" /> My Payslips</h3>
       <div className="space-y-2">
         {payslips.map(p => (
           <div key={p.id} className="flex items-center justify-between text-sm">
@@ -482,14 +482,14 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
   const mapLink = (lat: number, lng: number) => `https://maps.google.com/?q=${lat},${lng}`;
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
+        <div className="p-4 border-b border-nikki-border flex items-center justify-between bg-stone-50">
           <div>
-            <h2 className="text-stone-900 font-bold text-lg">{staffName}</h2>
+            <h2 className="text-nikki-navy font-bold text-lg">{staffName}</h2>
             <p className="text-stone-700 text-sm">Detailed Attendance Logs & Photos (Last 30 Days)</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-stone-200 rounded-full text-stone-700"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-2 hover:bg-nikki-border rounded-full text-stone-700"><X className="w-5 h-5" /></button>
         </div>
         
         <div className="flex-1 overflow-y-auto p-4">
@@ -500,10 +500,10 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
           ) : (
             <div className="space-y-4">
               {logs.map(log => (
-                <div key={log.id} className="border border-stone-200 rounded-xl p-4 bg-white shadow-sm flex flex-col md:flex-row gap-6">
+                <div key={log.id} className="border border-nikki-border rounded-xl p-4 bg-white shadow-sm flex flex-col md:flex-row gap-6">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-stone-900 font-bold">{new Date(log.attendance_date ?? '').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      <span className="text-nikki-navy font-bold">{new Date(log.attendance_date ?? '').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${log.status === 'present' ? 'bg-emerald-100 text-emerald-700' : log.status === 'absent' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                         {(log.status || '').toUpperCase()}
                       </span>
@@ -517,10 +517,10 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                         <p className="text-stone-700 text-xs font-semibold uppercase tracking-wider mb-2">Check In Details</p>
                         {log.check_in_at ? (
                           <div className="space-y-2">
-                            <p className="text-stone-900 text-sm font-semibold">{new Date(log.check_in_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                            <p className="text-nikki-navy text-sm font-semibold">{new Date(log.check_in_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
                             {log.check_in_lat && log.check_in_lng ? (
-                              <a href={mapLink(log.check_in_lat, log.check_in_lng)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-1 rounded text-xs font-medium border border-teal-100">
-                                <MapPin className="w-3.5 h-3.5 text-teal-600" /> View Check-In Location Map
+                              <a href={mapLink(log.check_in_lat, log.check_in_lng)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-nikki-blue hover:text-nikki-navy bg-nikki-surface-blue px-2 py-1 rounded text-xs font-medium border border-nikki-surface-blue">
+                                <MapPin className="w-3.5 h-3.5 text-nikki-royal" /> View Check-In Location Map
                               </a>
                             ) : (
                               <p className="text-stone-500 text-xs">No location data captured</p>
@@ -529,7 +529,7 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                               photoUrls[log.check_in_selfie_url] ? (
                                 <div className="mt-2">
                                   <p className="text-[11px] text-stone-500 mb-1">Check-in Photo:</p>
-                                  <button onClick={() => setPreviewImage(photoUrls[log.check_in_selfie_url!])} className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-stone-200 shadow-sm">
+                                  <button onClick={() => setPreviewImage(photoUrls[log.check_in_selfie_url!])} className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
                                     <img src={photoUrls[log.check_in_selfie_url!]} alt="Check in selfie" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                       <ImageIcon className="w-6 h-6 text-white" />
@@ -553,10 +553,10 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                         <p className="text-stone-700 text-xs font-semibold uppercase tracking-wider mb-2">Check Out Details</p>
                         {log.check_out_at ? (
                           <div className="space-y-2">
-                            <p className="text-stone-900 text-sm font-semibold">{new Date(log.check_out_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                            <p className="text-nikki-navy text-sm font-semibold">{new Date(log.check_out_at ?? '').toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
                             {log.check_out_lat && log.check_out_lng ? (
-                              <a href={mapLink(log.check_out_lat, log.check_out_lng)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-1 rounded text-xs font-medium border border-teal-100">
-                                <MapPin className="w-3.5 h-3.5 text-teal-600" /> View Check-Out Location Map
+                              <a href={mapLink(log.check_out_lat, log.check_out_lng)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-nikki-blue hover:text-nikki-navy bg-nikki-surface-blue px-2 py-1 rounded text-xs font-medium border border-nikki-surface-blue">
+                                <MapPin className="w-3.5 h-3.5 text-nikki-royal" /> View Check-Out Location Map
                               </a>
                             ) : (
                               <p className="text-stone-500 text-xs">No location data captured</p>
@@ -565,7 +565,7 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                               photoUrls[log.check_out_selfie_url] ? (
                                 <div className="mt-2">
                                   <p className="text-[11px] text-stone-500 mb-1">Check-out Photo:</p>
-                                  <button onClick={() => setPreviewImage(photoUrls[log.check_out_selfie_url!])} className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-stone-200 shadow-sm">
+                                  <button onClick={() => setPreviewImage(photoUrls[log.check_out_selfie_url!])} className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
                                     <img src={photoUrls[log.check_out_selfie_url!]} alt="Check out selfie" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                       <ImageIcon className="w-6 h-6 text-white" />
@@ -630,7 +630,7 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
   return (
     <div className={cardCls}>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h3 className="text-stone-900 font-semibold text-sm">Attendance Summary</h3>
+        <h3 className="text-nikki-navy font-semibold text-sm">Attendance Summary</h3>
         <div className="flex gap-2">
           <select className={inputCls + ' w-auto'} value={segment} onChange={e => setSegment(e.target.value)}>
             <option value="">All Segments</option>
@@ -646,7 +646,7 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-stone-700 text-xs text-left border-b border-stone-200 pb-2">
+            <tr className="text-stone-700 text-xs text-left border-b border-nikki-border pb-2">
               <th className="pb-2 font-semibold text-stone-700">Staff Member</th>
               <th className="pb-2 font-semibold text-stone-700">Present</th>
               <th className="pb-2 font-semibold text-stone-700">Absent</th>
@@ -658,7 +658,7 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
           <tbody>
             {rows.map(r => (
               <tr key={r.staff_user_id} className="border-b border-stone-100 hover:bg-stone-50 transition-colors">
-                <td className="py-3 text-stone-900 font-medium">{r.full_name}</td>
+                <td className="py-3 text-nikki-navy font-medium">{r.full_name}</td>
                 <td className="py-3 text-emerald-700 font-semibold">{r.days_present}</td>
                 <td className="py-3 text-red-700 font-semibold">{r.days_absent}</td>
                 <td className="py-3 text-amber-700 font-semibold">{r.days_on_leave}</td>
@@ -666,9 +666,9 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
                 <td className="py-3 text-right">
                   <button 
                     onClick={() => setSelectedStaff({ id: r.staff_user_id, name: r.full_name })}
-                    className="px-3 py-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg border border-teal-200 transition-colors shadow-sm inline-flex items-center gap-1.5"
+                    className="px-3 py-1.5 text-xs font-semibold text-nikki-blue bg-nikki-surface-blue hover:bg-nikki-surface-blue rounded-lg border border-nikki-border transition-colors shadow-sm inline-flex items-center gap-1.5"
                   >
-                    <Eye className="w-3.5 h-3.5 text-teal-600" /> View Logs & Photos
+                    <Eye className="w-3.5 h-3.5 text-nikki-royal" /> View Logs & Photos
                   </button>
                 </td>
               </tr>

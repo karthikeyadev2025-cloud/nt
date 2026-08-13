@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { withTimeout } from '../lib/withTimeout';
 import { Lock, Mail, AlertCircle, Users, Phone, Briefcase, HeartHandshake, Clock, CheckCircle2 } from 'lucide-react';
-import { KiteTailLogo } from './KiteTailLogo';
 
 export default function UnifiedLogin() {
   const [email, setEmail] = useState('');
@@ -123,25 +122,25 @@ export default function UnifiedLogin() {
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">
-            <KiteTailLogo className="w-20 h-20 drop-shadow-md" />
+            <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-20 h-20 drop-shadow-md object-contain" />
           </div>
-          <h1 className="font-display text-3xl font-semibold text-stone-900 tracking-tight mb-1">Nikki Technologies</h1>
+          <h1 className="font-poppins text-3xl font-semibold text-nikki-navy tracking-tight mb-1">Nikki Technologies</h1>
           <p className="text-stone-700 text-sm font-semibold">Enterprise Staff Portal — Sign in to continue</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-stone-200 px-5 py-3 mb-4 flex items-center justify-between gap-4 shadow-sm">
+        <div className="bg-white rounded-2xl border border-nikki-border px-5 py-3 mb-4 flex items-center justify-between gap-4 shadow-sm">
           <span className="text-xs text-stone-700 truncate font-semibold">
             {now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
           <div className="flex items-center gap-1.5 text-stone-700 shrink-0">
-            <Clock className="w-3.5 h-3.5 text-orange-700" />
+            <Clock className="w-3.5 h-3.5 text-nikki-blue" />
             <span className="text-xs font-mono font-bold tabular-nums">
               {now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
             </span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-stone-200/90 p-8 shadow-xl">
+        <div className="bg-white rounded-2xl border border-nikki-border/90 p-8 shadow-xl">
           {!isSupabaseConfigured && (
             <div className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3" data-testid="config-warning">
               <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
@@ -161,29 +160,29 @@ export default function UnifiedLogin() {
             passwordSetDone ? (
               <div className="text-center py-4">
                 <CheckCircle2 className="w-10 h-10 text-emerald-700 mx-auto mb-3" />
-                <p className="text-stone-900 font-bold mb-1">Password updated</p>
+                <p className="text-nikki-navy font-bold mb-1">Password updated</p>
                 <p className="text-stone-700 text-sm mb-4">You're signed in — continue to your portal.</p>
-                <button onClick={() => { setRecoveryMode(false); window.location.href = '/login'; }} className="w-full py-3 bg-orange-700 hover:bg-orange-600 text-white font-bold rounded-xl text-sm shadow-md">
+                <button onClick={() => { setRecoveryMode(false); window.location.href = '/login'; }} className="w-full py-3 bg-nikki-blue hover:bg-nikki-royal text-white font-bold rounded-xl text-sm shadow-md">
                   Continue
                 </button>
               </div>
             ) : (
               <form onSubmit={setNewPasswordSubmit} className="space-y-5">
                 <div>
-                  <h3 className="text-stone-900 font-bold mb-1">Set a new password</h3>
+                  <h3 className="text-nikki-navy font-bold mb-1">Set a new password</h3>
                   <p className="text-stone-700 text-sm">Choose a new password for your account.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">New Password</label>
                   <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6}
-                    className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-stone-900 placeholder-stone-500 focus:outline-none focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm" />
+                    className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">Confirm Password</label>
                   <input type="password" value={newPasswordConfirm} onChange={e => setNewPasswordConfirm(e.target.value)} required minLength={6}
-                    className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-stone-900 placeholder-stone-500 focus:outline-none focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm" />
+                    className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm" />
                 </div>
-                <button type="submit" disabled={settingPassword} className="w-full py-3.5 bg-orange-700 hover:bg-orange-600 text-white font-bold rounded-xl disabled:opacity-60 transition-all text-base shadow-md shadow-orange-700/20">
+                <button type="submit" disabled={settingPassword} className="w-full py-3.5 bg-nikki-blue hover:bg-nikki-royal text-white font-bold rounded-xl disabled:opacity-60 transition-all text-base shadow-md shadow-nikki-blue/20">
                   {settingPassword ? 'Updating…' : 'Update Password'}
                 </button>
               </form>
@@ -199,7 +198,7 @@ export default function UnifiedLogin() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="w-full pl-11 pr-4 py-3 bg-white border border-stone-300 rounded-xl text-stone-900 placeholder-stone-500 focus:outline-none focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 transition-colors shadow-sm"
+                  className="w-full pl-11 pr-4 py-3 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 transition-colors shadow-sm"
                   required
                   autoComplete="email"
                   data-testid="login-email-input"
@@ -216,13 +215,13 @@ export default function UnifiedLogin() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 bg-white border border-stone-300 rounded-xl text-stone-900 placeholder-stone-500 focus:outline-none focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 transition-colors shadow-sm"
+                  className="w-full pl-11 pr-4 py-3 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 transition-colors shadow-sm"
                   required
                   autoComplete="current-password"
                   data-testid="login-password-input"
                 />
               </div>
-              <button type="button" onClick={() => { setShowReset(true); setResetSent(false); setResetEmail(email); }} className="text-orange-700 text-xs mt-2 hover:text-orange-800 font-semibold">
+              <button type="button" onClick={() => { setShowReset(true); setResetSent(false); setResetEmail(email); }} className="text-nikki-blue text-xs mt-2 hover:text-nikki-navy font-semibold">
                 Forgot password?
               </button>
             </div>
@@ -230,7 +229,7 @@ export default function UnifiedLogin() {
             <button
               type="submit"
               disabled={loading || !isSupabaseConfigured}
-              className="w-full py-3.5 bg-orange-700 hover:bg-orange-600 text-white font-bold rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-orange-700/25 text-base border border-orange-600/20"
+              className="w-full py-3.5 bg-nikki-blue hover:bg-nikki-royal text-white font-bold rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-nikki-blue/25 text-base border border-nikki-royal/20"
               data-testid="login-submit-button"
             >
               {loading ? (
@@ -244,27 +243,27 @@ export default function UnifiedLogin() {
           )}
 
           {showReset && (
-            <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowReset(false)}>
-              <div className="bg-white border border-stone-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowReset(false)}>
+              <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
                 {resetSent ? (
                   <div className="text-center py-4">
                     <CheckCircle2 className="w-10 h-10 text-emerald-700 mx-auto mb-3" />
-                    <p className="text-stone-900 font-bold mb-1">Check your email</p>
+                    <p className="text-nikki-navy font-bold mb-1">Check your email</p>
                     <p className="text-stone-700 text-sm">If an account exists for {resetEmail}, a reset link has been sent.</p>
-                    <button className="text-orange-700 font-semibold text-sm mt-4" onClick={() => setShowReset(false)}>Close</button>
+                    <button className="text-nikki-blue font-semibold text-sm mt-4" onClick={() => setShowReset(false)}>Close</button>
                   </div>
                 ) : (
                   <form onSubmit={sendResetEmail}>
-                    <h3 className="text-stone-900 font-bold mb-1">Reset your password</h3>
+                    <h3 className="text-nikki-navy font-bold mb-1">Reset your password</h3>
                     <p className="text-stone-700 text-sm mb-4">Enter your account email and we'll send a reset link.</p>
                     <input
                       type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} required
                       placeholder="you@nikkitechnologies.com"
-                      className="w-full px-4 py-2.5 bg-white border border-stone-300 rounded-xl text-stone-900 placeholder-stone-500 focus:outline-none focus:border-orange-700 mb-4 shadow-sm"
+                      className="w-full px-4 py-2.5 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue mb-4 shadow-sm"
                     />
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setShowReset(false)} className="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-semibold text-sm hover:bg-stone-50">Cancel</button>
-                      <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-60 text-white font-bold text-sm shadow-md">
+                      <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-60 text-white font-bold text-sm shadow-md">
                         {resetLoading ? 'Sending…' : 'Send Link'}
                       </button>
                     </div>
@@ -274,7 +273,7 @@ export default function UnifiedLogin() {
             </div>
           )}
 
-          <div className="mt-6 pt-5 border-t border-stone-200">
+          <div className="mt-6 pt-5 border-t border-nikki-border">
             <p className="text-xs text-stone-700 text-center font-medium mb-3">Login is available for:</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {[
@@ -284,8 +283,8 @@ export default function UnifiedLogin() {
                 { label: 'Executive', icon: Users },
                 { label: 'Telecaller', icon: Phone },
               ].map(({ label, icon: Icon }) => (
-                <span key={label} className="flex items-center gap-1.5 px-3 py-1 bg-stone-100 border border-stone-200 rounded-full text-xs text-stone-700 font-semibold shadow-xs">
-                  <Icon className="w-3.5 h-3.5 text-orange-700" />
+                <span key={label} className="flex items-center gap-1.5 px-3 py-1 bg-stone-100 border border-nikki-border rounded-full text-xs text-stone-700 font-semibold shadow-xs">
+                  <Icon className="w-3.5 h-3.5 text-nikki-blue" />
                   {label}
                 </span>
               ))}
@@ -294,7 +293,7 @@ export default function UnifiedLogin() {
         </div>
 
         <div className="text-center mt-6">
-          <a href="/" className="text-sm text-stone-700 hover:text-orange-700 font-semibold transition-colors">
+          <a href="/" className="text-sm text-stone-700 hover:text-nikki-blue font-semibold transition-colors">
             ← Back to website
           </a>
         </div>

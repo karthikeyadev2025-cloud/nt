@@ -70,7 +70,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className="relative text-stone-700 hover:text-stone-900">
+      <button onClick={() => setOpen(!open)} className="relative text-stone-700 hover:text-nikki-navy">
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
@@ -78,16 +78,16 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
         <>
           <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setOpen(false)} />
           <div className="fixed left-3 right-3 top-16 z-50 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:inset-x-auto sm:mt-2 sm:w-80
-                          max-h-[70vh] sm:max-h-96 overflow-y-auto bg-white border border-stone-200 rounded-xl shadow-xl">
+                          max-h-[70vh] sm:max-h-96 overflow-y-auto bg-white border border-nikki-border rounded-xl shadow-xl">
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-800">
-              <p className="text-stone-900 text-sm font-semibold">Notifications</p>
-              {unreadCount > 0 && <button onClick={markAllRead} className="text-teal-700 text-xs">Mark all read</button>}
+              <p className="text-nikki-navy text-sm font-semibold">Notifications</p>
+              {unreadCount > 0 && <button onClick={markAllRead} className="text-nikki-blue text-xs">Mark all read</button>}
             </div>
             {items.length === 0 && <p className="text-stone-700 text-sm text-center py-8">No notifications yet.</p>}
             {items.map(n => (
               <div key={n.id} onClick={() => handleClick(n)}
-                className={`px-4 py-3 border-b border-stone-900 cursor-pointer hover:bg-stone-50 ${!n.read_at ? 'bg-teal-500/5' : ''}`}>
-                <p className="text-stone-900 text-sm">{n.title}</p>
+                className={`px-4 py-3 border-b border-nikki-navy cursor-pointer hover:bg-stone-50 ${!n.read_at ? 'bg-nikki-royal/5' : ''}`}>
+                <p className="text-nikki-navy text-sm">{n.title}</p>
                 {n.body && <p className="text-stone-700 text-xs mt-0.5">{n.body}</p>}
                 <p className="text-stone-700 text-[10px] mt-1">{new Date(n.created_at ?? '').toLocaleString()}</p>
               </div>
@@ -115,11 +115,11 @@ export function AnnouncementsFeed() {
   return (
     <div className="space-y-2 mb-6">
       {items.map(a => (
-        <div key={a.id} className={cardCls + (a.is_pinned ? ' border-teal-600/50' : '')}>
+        <div key={a.id} className={cardCls + (a.is_pinned ? ' border-nikki-royal/50' : '')}>
           <div className="flex items-center gap-2">
-            <Megaphone className="w-4 h-4 text-teal-700 shrink-0" />
-            <p className="text-stone-900 text-sm font-medium">{a.title}</p>
-            {a.is_pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700">Pinned</span>}
+            <Megaphone className="w-4 h-4 text-nikki-blue shrink-0" />
+            <p className="text-nikki-navy text-sm font-medium">{a.title}</p>
+            {a.is_pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-nikki-surface-blue text-nikki-blue">Pinned</span>}
           </div>
           <p className="text-stone-700 text-sm mt-1.5">{a.body}</p>
           <p className="text-stone-700 text-xs mt-1.5">{new Date(a.created_at ?? '').toLocaleDateString()}</p>
@@ -161,14 +161,14 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className={cardCls + ' mb-6 space-y-3'}>
-        <h3 className="text-stone-900 font-semibold text-sm">Post Announcement</h3>
+        <h3 className="text-nikki-navy font-semibold text-sm">Post Announcement</h3>
         <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
           <option value="">All Staff</option>
           {segments.map(s => <option key={s.slug} value={s.slug}>{s.name} only</option>)}
         </select>
         <input className={inputCls} placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
         <textarea className={inputCls} rows={3} placeholder="Message" value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} />
-        <label className="flex items-center gap-2 text-sm text-stone-900 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-nikki-navy cursor-pointer">
           <input type="checkbox" checked={form.is_pinned} onChange={e => setForm({ ...form, is_pinned: e.target.checked })} /> Pin to top
         </label>
         <button className={btnCls} onClick={post}>Post & Notify Staff</button>
@@ -177,7 +177,7 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
         {items.map(a => (
           <div key={a.id} className={cardCls + ' flex items-start justify-between'}>
             <div>
-              <p className="text-stone-900 text-sm font-medium">{a.title} {a.is_pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 ml-1">Pinned</span>}</p>
+              <p className="text-nikki-navy text-sm font-medium">{a.title} {a.is_pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-nikki-surface-blue text-nikki-blue ml-1">Pinned</span>}</p>
               <p className="text-stone-700 text-xs mt-1">{a.body}</p>
               <p className="text-stone-700 text-[10px] mt-1">{segments.find(s => s.slug === a.segment_slug)?.name || 'All staff'} • {new Date(a.created_at ?? '').toLocaleDateString()}</p>
             </div>
@@ -234,7 +234,7 @@ export function ShiftSwapBoard() {
   return (
     <div className="space-y-6">
       <div className={cardCls + ' space-y-3'}>
-        <h3 className="text-stone-900 font-semibold text-sm flex items-center gap-2"><Repeat className="w-4 h-4 text-teal-700" /> Request Shift Swap</h3>
+        <h3 className="text-nikki-navy font-semibold text-sm flex items-center gap-2"><Repeat className="w-4 h-4 text-nikki-blue" /> Request Shift Swap</h3>
         <input type="date" className={inputCls} value={form.shift_date} onChange={e => setForm({ ...form, shift_date: e.target.value })} />
         <select className={inputCls} value={form.target_id} onChange={e => setForm({ ...form, target_id: e.target.value })}>
           <option value="">Swap with (optional)</option>
@@ -246,12 +246,12 @@ export function ShiftSwapBoard() {
 
       {hasPermission('approve_leaves') && pending.length > 0 && (
         <div>
-          <h3 className="text-stone-900 font-semibold text-sm mb-3">Pending Approvals</h3>
+          <h3 className="text-nikki-navy font-semibold text-sm mb-3">Pending Approvals</h3>
           <div className="space-y-2">
             {pending.map(p => (
               <div key={p.id} className={cardCls + ' flex items-center justify-between'}>
                 <div>
-                  <p className="text-stone-900 text-sm">{p.shift_date} {p.target_id && `↔ ${byId[p.target_id] || '—'}`}</p>
+                  <p className="text-nikki-navy text-sm">{p.shift_date} {p.target_id && `↔ ${byId[p.target_id] || '—'}`}</p>
                   <p className="text-stone-700 text-xs">{p.reason}</p>
                 </div>
                 <div className="flex gap-2">
@@ -265,7 +265,7 @@ export function ShiftSwapBoard() {
       )}
 
       <div>
-        <h3 className="text-stone-900 font-semibold text-sm mb-3">My Requests</h3>
+        <h3 className="text-nikki-navy font-semibold text-sm mb-3">My Requests</h3>
         <div className="space-y-2">
           {mine.map(m => (
             <div key={m.id} className={cardCls + ' flex items-center justify-between'}>
@@ -310,7 +310,7 @@ export function MyBankDetails() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-4 flex items-center gap-2"><Landmark className="w-4 h-4 text-teal-700" /> Bank Details</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-4 flex items-center gap-2"><Landmark className="w-4 h-4 text-nikki-blue" /> Bank Details</h3>
       {pendingReq && (
         <div className="mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-600/40 text-amber-700 text-xs">
           A change request is pending HR approval.
@@ -318,12 +318,12 @@ export function MyBankDetails() {
       )}
       {!editing ? (
         <div className="space-y-2 text-sm">
-          <p className="text-stone-700">Account Holder: <span className="text-stone-900">{current.account_holder || '—'}</span></p>
-          <p className="text-stone-700">Account Number: <span className="text-stone-900">{current.account_number ? '••••' + String(current.account_number).slice(-4) : '—'}</span></p>
-          <p className="text-stone-700">IFSC: <span className="text-stone-900">{current.ifsc || '—'}</span></p>
-          <p className="text-stone-700">Bank: <span className="text-stone-900">{current.bank_name || '—'}</span></p>
-          <p className="text-stone-700">UPI ID: <span className="text-stone-900">{current.upi_id || '—'}</span></p>
-          {!pendingReq && <button className="text-teal-700 text-sm mt-2" onClick={() => setEditing(true)}>Request Change</button>}
+          <p className="text-stone-700">Account Holder: <span className="text-nikki-navy">{current.account_holder || '—'}</span></p>
+          <p className="text-stone-700">Account Number: <span className="text-nikki-navy">{current.account_number ? '••••' + String(current.account_number).slice(-4) : '—'}</span></p>
+          <p className="text-stone-700">IFSC: <span className="text-nikki-navy">{current.ifsc || '—'}</span></p>
+          <p className="text-stone-700">Bank: <span className="text-nikki-navy">{current.bank_name || '—'}</span></p>
+          <p className="text-stone-700">UPI ID: <span className="text-nikki-navy">{current.upi_id || '—'}</span></p>
+          {!pendingReq && <button className="text-nikki-blue text-sm mt-2" onClick={() => setEditing(true)}>Request Change</button>}
         </div>
       ) : (
         <div className="space-y-2">
@@ -370,7 +370,7 @@ export function BankChangeApprovals() {
       {items.map(r => (
         <div key={r.id} className={cardCls}>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-stone-900 text-sm font-medium">{staffNames[r.staff_user_id] || '—'}</p>
+            <p className="text-nikki-navy text-sm font-medium">{staffNames[r.staff_user_id] || '—'}</p>
             <span className={`text-xs ${r.status === 'pending' ? 'text-amber-700' : r.status === 'approved' ? 'text-emerald-700' : 'text-red-700'}`}>{r.status}</span>
           </div>
           <div className="grid grid-cols-2 gap-x-4 text-xs text-stone-700">
@@ -437,12 +437,12 @@ export function IDCard() {
           <div className="text-xs font-normal">{seg?.name || 'Staff'}</div>
         </div>
         <div className="bg-white text-center p-5">
-          <div className="w-16 h-16 rounded-full bg-stone-200 mx-auto mb-2 overflow-hidden flex items-center justify-center text-stone-700 font-bold text-xl">
+          <div className="w-16 h-16 rounded-full bg-nikki-border mx-auto mb-2 overflow-hidden flex items-center justify-center text-stone-700 font-bold text-xl">
             {user.profile_photo_url ? <img src={user.profile_photo_url} className="w-full h-full object-cover" /> : user.full_name[0]}
           </div>
-          <p className="text-stone-900 font-semibold">{user.full_name}</p>
+          <p className="text-nikki-navy font-semibold">{user.full_name}</p>
           <p className="text-stone-700 text-xs mb-3">{user.designation || user.role}</p>
-          <div className="text-left text-xs text-stone-700 space-y-1 border-t border-stone-200 pt-2">
+          <div className="text-left text-xs text-stone-700 space-y-1 border-t border-nikki-border pt-2">
             <p>ID: {user.staff_code || '—'}</p>
             <p>Phone: {user.phone || '—'}</p>
             {user.blood_group && <p>Blood Group: {user.blood_group}</p>}
@@ -450,7 +450,7 @@ export function IDCard() {
           </div>
         </div>
       </div>
-      <button onClick={print} className="flex items-center gap-1.5 text-teal-700 text-sm mt-3 print:hidden"><Printer className="w-4 h-4" /> Print ID Card</button>
+      <button onClick={print} className="flex items-center gap-1.5 text-nikki-blue text-sm mt-3 print:hidden"><Printer className="w-4 h-4" /> Print ID Card</button>
     </div>
   );
 }
@@ -492,10 +492,10 @@ export function MyStatsCard() {
   if (!stats) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-teal-700" /> My Stats (last 30 days)</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-nikki-blue" /> My Stats (last 30 days)</h3>
       <div className="grid grid-cols-3 gap-3 text-center">
         <div><p className="text-2xl font-bold text-amber-700 flex items-center justify-center gap-1"><Flame className="w-5 h-5" />{stats.streak}</p><p className="text-stone-700 text-xs">Day streak</p></div>
-        <div><p className="text-2xl font-bold text-stone-900">{stats.presentDays}</p><p className="text-stone-700 text-xs">Days present</p></div>
+        <div><p className="text-2xl font-bold text-nikki-navy">{stats.presentDays}</p><p className="text-stone-700 text-xs">Days present</p></div>
         <div><p className="text-2xl font-bold text-emerald-700">{stats.punctuality}%</p><p className="text-stone-700 text-xs">On-time rate</p></div>
       </div>
     </div>
@@ -524,15 +524,15 @@ export function PunctualityLeaderboard({ segments }: { segments: Segment[] }) {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-4">Punctuality Leaderboard (30 days)</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-4">Punctuality Leaderboard (30 days)</h3>
       <div className="space-y-2">
         {rows.map((r, i) => (
           <div key={r.name} className="flex items-center gap-3 p-2.5 rounded-xl bg-stone-50 border border-stone-100">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-amber-100 text-amber-800' : 'bg-stone-200 text-stone-700'}`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-amber-100 text-amber-800' : 'bg-nikki-border text-stone-700'}`}>
               {r.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-stone-900 text-sm font-medium truncate">{r.name}</p>
+              <p className="text-nikki-navy text-sm font-medium truncate">{r.name}</p>
               <p className="text-stone-500 text-xs">{r.presentDays} day{r.presentDays === 1 ? '' : 's'} present</p>
             </div>
             <p className={`text-sm font-bold shrink-0 ${r.punctuality >= 80 ? 'text-emerald-700' : r.punctuality >= 50 ? 'text-amber-700' : 'text-red-700'}`}>
@@ -568,7 +568,7 @@ export function BirthdaysWidget() {
   if (items.length === 0) return null;
   return (
     <div className={cardCls + ' border-pink-600/40'}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-3 flex items-center gap-2"><Cake className="w-4 h-4 text-pink-400" /> Today's Celebrations</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-3 flex items-center gap-2"><Cake className="w-4 h-4 text-pink-400" /> Today's Celebrations</h3>
       {items.map((u, i) => <p key={i} className="text-stone-700 text-sm">🎉 {u.full_name}</p>)}
     </div>
   );
@@ -576,7 +576,7 @@ export function BirthdaysWidget() {
 
 // ─────────────────────────── Careers: job postings + applications (Super Admin / HR)
 const APP_STATUS_COLORS: Record<string, string> = {
-  new: 'bg-teal-100 text-teal-700',
+  new: 'bg-nikki-surface-blue text-nikki-blue',
   shortlisted: 'bg-purple-100 text-purple-700',
   interviewed: 'bg-amber-100 text-amber-700',
   hired: 'bg-emerald-100 text-emerald-700',
@@ -662,8 +662,8 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setTab('jobs')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'jobs' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Job Postings</button>
-        <button onClick={() => setTab('applications')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'applications' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>Applications ({apps.length})</button>
+        <button onClick={() => setTab('jobs')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'jobs' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Job Postings</button>
+        <button onClick={() => setTab('applications')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'applications' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Applications ({apps.length})</button>
       </div>
 
       {tab === 'jobs' && (
@@ -677,12 +677,12 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
               return (
                 <div key={j.id} className={cardCls + ' flex items-center justify-between'}>
                   <div>
-                    <p className="text-stone-900 text-sm font-medium">{j.title} {seg && <span className="text-xs px-1.5 py-0.5 rounded ml-1" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}</p>
+                    <p className="text-nikki-navy text-sm font-medium">{j.title} {seg && <span className="text-xs px-1.5 py-0.5 rounded ml-1" style={{ backgroundColor: seg.color ?? undefined + '22', color: seg.color ?? undefined }}>{seg.name}</span>}</p>
                     <p className="text-stone-700 text-xs mt-0.5">{j.location} • {j.employment_type.replace('_', ' ')} • {apps.filter(a => a.job_posting_id === j.id).length} applicants</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs px-2 py-0.5 rounded ${j.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-700'}`}>{j.status}</span>
-                    <button className="text-teal-700 text-xs" onClick={() => setEditingJob(j)}>Edit</button>
+                    <button className="text-nikki-blue text-xs" onClick={() => setEditingJob(j)}>Edit</button>
                     <button className="text-stone-700 text-xs" onClick={() => toggleJobStatus(j)}>{j.status === 'open' ? 'Close' : 'Reopen'}</button>
                   </div>
                 </div>
@@ -696,16 +696,16 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
       {tab === 'applications' && (
         <div>
           <div className="flex flex-wrap gap-2 mb-4">
-            <button onClick={() => setStatusFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${statusFilter === '' ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>All ({apps.length})</button>
+            <button onClick={() => setStatusFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${statusFilter === '' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>All ({apps.length})</button>
             {APP_STATUSES.map(s => (
-              <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-lg text-xs border capitalize ${statusFilter === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>{s} ({counts[s] || 0})</button>
+              <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-lg text-xs border capitalize ${statusFilter === s ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>{s} ({counts[s] || 0})</button>
             ))}
           </div>
           <div className="space-y-2">
             {filteredApps.map(a => (
               <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => viewFiles(a)}>
                 <div>
-                  <p className="text-stone-900 text-sm font-medium">{a.name} <span className="text-stone-700 text-xs">— {a.position || jobTitle(a.job_posting_id || '')}</span></p>
+                  <p className="text-nikki-navy text-sm font-medium">{a.name} <span className="text-stone-700 text-xs">— {a.position || jobTitle(a.job_posting_id || '')}</span></p>
                   <p className="text-stone-700 text-xs mt-0.5">{a.phone} • {a.experience || 'exp not specified'} • {new Date(a.created_at ?? '').toLocaleDateString()}</p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded capitalize ${APP_STATUS_COLORS[a.status]}`}>{a.status}</span>
@@ -718,8 +718,8 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
 
       {editingJob && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingJob(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">{editingJob.id ? 'Edit' : 'New'} Job Posting</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">{editingJob.id ? 'Edit' : 'New'} Job Posting</h3>
             <input className={inputCls} placeholder="Job Title *" value={editingJob.title || ''} onChange={e => setEditingJob({ ...editingJob, title: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
               <select className={inputCls} value={editingJob.segment_slug || ''} onChange={e => setEditingJob({ ...editingJob, segment_slug: e.target.value })}>
@@ -737,7 +737,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <p className="text-stone-700 text-sm font-medium">Screening Questions</p>
-                <button className="text-teal-700 text-xs" onClick={() => setEditingJob({ ...editingJob, questions: [...((editingJob.questions as string[] | null) || []), ''] })}>+ Add question</button>
+                <button className="text-nikki-blue text-xs" onClick={() => setEditingJob({ ...editingJob, questions: [...((editingJob.questions as string[] | null) || []), ''] })}>+ Add question</button>
               </div>
               {((editingJob.questions as string[] | null) || []).map((q: string, i: number) => (
                 <div key={i} className="flex gap-2 mb-2">
@@ -755,19 +755,19 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
 
       {openApp && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenApp(null)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-stone-900 text-lg font-semibold">{openApp.name}</h3>
+                <h3 className="text-nikki-navy text-lg font-semibold">{openApp.name}</h3>
                 <p className="text-stone-700 text-sm">{openApp.phone} {openApp.email && `• ${openApp.email}`}</p>
                 <p className="text-stone-700 text-xs mt-0.5">Applied for: {openApp.position || jobTitle(openApp.job_posting_id || '')} • {openApp.experience || 'exp not specified'}</p>
               </div>
-              <button className="text-stone-700 hover:text-stone-900" onClick={() => setOpenApp(null)}>✕</button>
+              <button className="text-stone-700 hover:text-nikki-navy" onClick={() => setOpenApp(null)}>✕</button>
             </div>
 
             <div className="flex gap-3 mb-4">
-              {fileUrls.photo && <a href={fileUrls.photo} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-teal-700 text-xs"><ExternalLink className="w-3.5 h-3.5" /> View Photo</a>}
-              {fileUrls.resume && <a href={fileUrls.resume} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-teal-700 text-xs"><Download className="w-3.5 h-3.5" /> Download Resume</a>}
+              {fileUrls.photo && <a href={fileUrls.photo} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-nikki-blue text-xs"><ExternalLink className="w-3.5 h-3.5" /> View Photo</a>}
+              {fileUrls.resume && <a href={fileUrls.resume} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-nikki-blue text-xs"><Download className="w-3.5 h-3.5" /> Download Resume</a>}
             </div>
 
             {openApp.message && <p className="text-stone-700 text-sm mb-3">{openApp.message}</p>}
@@ -777,7 +777,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
                 {(openApp.question_answers as QuestionAnswer[]).map((qa, i) => (
                   <div key={i}>
                     <p className="text-stone-700 text-xs">{qa.question}</p>
-                    <p className="text-stone-900 text-sm">{qa.answer || '—'}</p>
+                    <p className="text-nikki-navy text-sm">{qa.answer || '—'}</p>
                   </div>
                 ))}
               </div>
@@ -786,7 +786,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
             <div className="flex flex-wrap gap-2 border-t border-stone-800 pt-4">
               {APP_STATUSES.map(s => (
                 <button key={s} onClick={() => updateAppStatus(openApp.id, s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs capitalize border ${openApp.status === s ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs capitalize border ${openApp.status === s ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
                   {s}
                 </button>
               ))}
@@ -831,7 +831,7 @@ export function MyPhotoRequest() {
 
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-3">Profile Photo</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-3">Profile Photo</h3>
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-stone-100 overflow-hidden flex items-center justify-center text-stone-700 font-bold">
           {user?.profile_photo_url ? <img src={user.profile_photo_url} className="w-full h-full object-cover" /> : user?.full_name?.[0]}
@@ -883,7 +883,7 @@ export function PhotoChangeApprovals() {
         <div key={r.id} className={cardCls + ' flex items-center justify-between'}>
           <div className="flex items-center gap-3">
             <img src={r.requested_photo_url} className="w-12 h-12 rounded-full object-cover" />
-            <p className="text-stone-900 text-sm">{names[r.staff_user_id] || '—'}</p>
+            <p className="text-nikki-navy text-sm">{names[r.staff_user_id] || '—'}</p>
           </div>
           <div className="flex gap-2">
             <button className="px-3 py-1 rounded bg-emerald-600 text-white text-xs" onClick={() => review(r.id, 'approved')}>Approve</button>
@@ -907,13 +907,13 @@ export function MyPromotionHistory() {
   if (items.length === 0) return null;
   return (
     <div className={cardCls}>
-      <h3 className="text-stone-900 font-semibold text-sm mb-3">Role & Compensation History</h3>
+      <h3 className="text-nikki-navy font-semibold text-sm mb-3">Role & Compensation History</h3>
       <div className="space-y-2">
         {items.map(p => (
-          <div key={p.id} className="text-xs border-l-2 border-teal-600 pl-3">
+          <div key={p.id} className="text-xs border-l-2 border-nikki-royal pl-3">
             <p className="text-stone-700">{new Date(p.effective_date ?? '').toLocaleDateString()}</p>
             {p.new_designation && p.new_designation !== p.previous_designation && (
-              <p className="text-stone-900">{p.previous_designation || '—'} → {p.new_designation}</p>
+              <p className="text-nikki-navy">{p.previous_designation || '—'} → {p.new_designation}</p>
             )}
             {(p.new_ctc ?? 0) > 0 && p.new_ctc !== p.previous_ctc && (
               <p className="text-emerald-700">₹{Number(p.previous_ctc ?? 0).toLocaleString('en-IN')} → ₹{Number(p.new_ctc ?? 0).toLocaleString('en-IN')}</p>

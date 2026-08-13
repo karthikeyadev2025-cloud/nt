@@ -2,7 +2,6 @@ import { useState, type ReactNode } from 'react';
 import { LogOut, Menu, X, Bell, BellOff, MessageCircle, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationBell } from './features';
-import { KiteTailLogo } from '../KiteTailLogo';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
 import { waLink } from '../../lib/phone';
 
@@ -26,11 +25,11 @@ export function DueAlertBanner({ alerts, onDismiss, onSnooze }: { alerts: Return
   return (
     <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-1.5rem)] max-w-sm space-y-2">
       {alerts.map(a => (
-        <div key={a.key} className="bg-white border-2 border-teal-500 rounded-2xl shadow-2xl p-3.5 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2">
+        <div key={a.key} className="bg-white border-2 border-nikki-royal rounded-2xl shadow-2xl p-3.5 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
             <span className="text-2xl shrink-0">{ALERT_TYPE_META[a.type]?.icon}</span>
             <div className="min-w-0 flex-1">
-              <p className="text-stone-900 text-sm font-bold truncate">{ALERT_TYPE_META[a.type]?.label}: {a.customerName}</p>
+              <p className="text-nikki-navy text-sm font-bold truncate">{ALERT_TYPE_META[a.type]?.label}: {a.customerName}</p>
               <p className="text-stone-700 text-xs">{a.phone}</p>
             </div>
             <button onClick={() => onDismiss(a.key)} className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500 shrink-0"><X className="w-4 h-4" /></button>
@@ -78,16 +77,16 @@ export function PortalShell({
   const { activeAlerts, dismiss, snooze, soundEnabled, setSoundEnabled, requestNotificationPermission, notifPermission } = useDueLeadAlerts();
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row text-stone-900">
+    <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row text-nikki-navy">
       <DueAlertBanner alerts={activeAlerts} onDismiss={dismiss} onSnooze={snooze} />
       {/* ── Desktop Collapsible Sidebar ── */}
-      <aside className={`hidden md:flex flex-col border-r border-stone-200 bg-white backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 shadow-sm ${collapsed ? 'w-20' : 'w-64'}`}>
-        <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+      <aside className={`hidden md:flex flex-col border-r border-nikki-border bg-white backdrop-blur sticky top-0 h-screen transition-all duration-300 z-40 shadow-sm ${collapsed ? 'w-20' : 'w-64'}`}>
+        <div className="p-4 border-b border-nikki-border flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <KiteTailLogo className="w-8 h-8 shrink-0" />
+            <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 shrink-0 object-contain" />
             {!collapsed && (
               <div className="min-w-0">
-                <p className="text-stone-900 font-bold text-sm tracking-tight truncate">{brandLabel}</p>
+                <p className="text-nikki-navy font-bold text-sm tracking-tight truncate">{brandLabel}</p>
                 <p className="text-stone-700 text-[11px] font-mono truncate">{subLabel}</p>
               </div>
             )}
@@ -110,26 +109,26 @@ export function PortalShell({
                 onClick={() => onTabChange(t.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   active
-                    ? 'bg-orange-50 border border-orange-200 text-orange-800 shadow-sm font-semibold'
-                    : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100 border border-transparent'
+                    ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm font-semibold'
+                    : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'
                 }`}
                 title={collapsed ? t.label : undefined}
               >
-                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-orange-700' : 'text-stone-700'}`} />
+                <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-nikki-blue' : 'text-stone-700'}`} />
                 {!collapsed && <span className="truncate">{t.label}</span>}
               </button>
             );
           })}
         </div>
 
-        <div className="p-3 border-t border-stone-200">
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-stone-50 border border-stone-200">
-            <div className="w-8 h-8 rounded-lg bg-orange-100 border border-orange-200 text-orange-800 font-bold flex items-center justify-center text-xs shrink-0">
+        <div className="p-3 border-t border-nikki-border">
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-stone-50 border border-nikki-border">
+            <div className="w-8 h-8 rounded-lg bg-nikki-surface-blue border border-nikki-border text-nikki-navy font-bold flex items-center justify-center text-xs shrink-0">
               {user?.full_name?.[0] || 'U'}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-stone-900 text-xs font-semibold truncate">{user?.full_name}</p>
+                <p className="text-nikki-navy text-xs font-semibold truncate">{user?.full_name}</p>
                 <p className="text-stone-700 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
@@ -142,14 +141,14 @@ export function PortalShell({
 
       {/* ── Main Area ── */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="border-b border-stone-200 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
+        <header className="border-b border-nikki-border px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setMobileNavOpen(true)} className="md:hidden p-1 -ml-1 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <div className="md:hidden shrink-0">
-              <KiteTailLogo className="w-8 h-8" />
+              <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 object-contain" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-stone-900 font-bold text-base md:text-lg tracking-tight truncate">
+              <h1 className="text-nikki-navy font-bold text-base md:text-lg tracking-tight truncate">
                 {visibleTabs.find(t => t.id === activeTab)?.label || brandLabel}
               </h1>
               <p className="text-stone-700 text-xs hidden sm:block truncate">{subLabel}</p>
@@ -159,7 +158,7 @@ export function PortalShell({
             <button
               onClick={() => { setSoundEnabled(!soundEnabled); if (notifPermission === 'default') requestNotificationPermission(); }}
               title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}
-              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-teal-700 hover:bg-teal-50' : 'text-stone-400 hover:bg-stone-100'}`}>
+              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-400 hover:bg-stone-100'}`}>
               {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
             </button>
             <NotificationBell onNavigate={(t) => { if (visibleTabs.some(x => x.id === t)) onTabChange(t); }} />
@@ -169,13 +168,13 @@ export function PortalShell({
 
         {mobileNavOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
-            <div className="absolute inset-0 bg-stone-900/50" onClick={() => setMobileNavOpen(false)} />
+            <div className="absolute inset-0 bg-nikki-navy/50" onClick={() => setMobileNavOpen(false)} />
             <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
               <div className="flex items-center justify-between mb-6 px-1">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <KiteTailLogo className="w-8 h-8 shrink-0" />
+                  <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 shrink-0 object-contain" />
                   <div className="min-w-0">
-                    <p className="text-stone-900 font-bold text-sm tracking-tight truncate">{brandLabel}</p>
+                    <p className="text-nikki-navy font-bold text-sm tracking-tight truncate">{brandLabel}</p>
                     <p className="text-stone-700 text-[11px] font-mono truncate">{subLabel}</p>
                   </div>
                 </div>
@@ -190,17 +189,17 @@ export function PortalShell({
                       onClick={() => { onTabChange(t.id); setMobileNavOpen(false); }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                         active
-                          ? 'bg-orange-50 border border-orange-200 text-orange-800 shadow-sm font-semibold'
-                          : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100 border border-transparent'
+                          ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm font-semibold'
+                          : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'
                       }`}
                     >
-                      <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-orange-700' : 'text-stone-700'}`} />
+                      <t.icon className={`w-5 h-5 shrink-0 ${active ? 'text-nikki-blue' : 'text-stone-700'}`} />
                       <span className="truncate">{t.label}</span>
                     </button>
                   );
                 })}
               </nav>
-              <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-stone-200 pt-3">
+              <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-nikki-border pt-3">
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
             </div>

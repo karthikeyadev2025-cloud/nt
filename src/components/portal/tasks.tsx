@@ -20,7 +20,7 @@ const PRIORITY_TONE: Record<string, string> = {
 
 const STATUS_META: Record<string, { label: string; icon: LucideIcon; tone: string }> = {
   pending: { label: 'Pending', icon: Circle, tone: 'text-stone-700' },
-  in_progress: { label: 'In progress', icon: Clock3, tone: 'text-teal-700' },
+  in_progress: { label: 'In progress', icon: Clock3, tone: 'text-nikki-blue' },
   completed: { label: 'Completed', icon: CheckCircle2, tone: 'text-emerald-700' },
   cancelled: { label: 'Cancelled', icon: XCircle, tone: 'text-stone-700' },
 };
@@ -150,7 +150,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
         <div className="flex gap-2">
           {([['open', 'Open'], ['mine', 'Assigned to me'], ['done', 'Completed']] as const).map(([v, label]) => (
             <button key={v} onClick={() => setScope(v)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-teal-500 text-teal-700' : 'border-stone-200 text-stone-700'}`}>
+              className={`px-3 py-1.5 rounded-lg text-sm border ${scope === v ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
               {label}
             </button>
           ))}
@@ -178,7 +178,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Icon className={`w-4 h-4 shrink-0 ${meta.tone}`} />
-                    <p className="text-stone-900 text-sm font-medium">{t.title}</p>
+                    <p className="text-nikki-navy text-sm font-medium">{t.title}</p>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded border capitalize ${PRIORITY_TONE[t.priority]}`}>
                       {t.priority}
                     </span>
@@ -237,8 +237,8 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
 
       {showNew && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowNew(false)}>
-          <div className="bg-white border border-stone-200 rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
-            <h3 className="text-stone-900 font-semibold">New Task</h3>
+          <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
+            <h3 className="text-nikki-navy font-semibold">New Task</h3>
             <input className={inputCls} placeholder="What needs doing? *"
               value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
             <textarea className={inputCls} rows={2} placeholder="Details (optional)"

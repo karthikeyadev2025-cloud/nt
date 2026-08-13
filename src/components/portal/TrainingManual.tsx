@@ -14,15 +14,15 @@ type Section = { id: string; label: string; icon: LucideIcon; body: React.ReactN
 function Field({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <p className="text-sm text-stone-800 mb-2">
-      <span className="font-bold text-stone-900">{name}: </span>{children}
+      <span className="font-bold text-nikki-navy">{name}: </span>{children}
     </p>
   );
 }
 function Step({ n, title, children }: { n: number; title?: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-2.5 mb-2.5">
-      <span className="shrink-0 w-6 h-6 rounded-full bg-teal-700 text-white text-xs font-bold flex items-center justify-center">{n}</span>
-      <p className="text-sm text-stone-800 pt-0.5">{title && <span className="font-bold text-stone-900">{title} — </span>}{children}</p>
+      <span className="shrink-0 w-6 h-6 rounded-full bg-nikki-blue text-white text-xs font-bold flex items-center justify-center">{n}</span>
+      <p className="text-sm text-stone-800 pt-0.5">{title && <span className="font-bold text-nikki-navy">{title} — </span>}{children}</p>
     </div>
   );
 }
@@ -38,13 +38,13 @@ function Bul({ children }: { children: React.ReactNode }) {
 }
 function Script({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border-l-4 border-teal-500 bg-stone-50 pl-3 py-2 my-2 rounded-r-lg">
+    <div className="border-l-4 border-nikki-royal bg-stone-50 pl-3 py-2 my-2 rounded-r-lg">
       <p className="text-sm text-stone-800 italic">"{children}"</p>
     </div>
   );
 }
 function ScriptLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-teal-700 text-xs font-bold uppercase tracking-wide mt-3 mb-1">{children}</p>;
+  return <p className="text-nikki-blue text-xs font-bold uppercase tracking-wide mt-3 mb-1">{children}</p>;
 }
 
 type Role = 'telecaller' | 'marketing_executive' | 'manager' | 'super_admin' | string;
@@ -100,8 +100,8 @@ function buildSections(role: Role): Section[] {
       id: 'intro', label: 'Introduction', icon: BookOpen,
       body: <>
         <p className="text-sm text-stone-700 mb-4">This manual explains the Leads and CRM system — how to add a lead, how to work it through to a sale, and every tool built to help you do that faster.</p>
-        <div className="px-3 py-2.5 rounded-lg bg-teal-50 border border-teal-200 mb-3">
-          <p className="text-teal-800 text-xs font-bold uppercase tracking-wide mb-1">Your role: {roleLabel}</p>
+        <div className="px-3 py-2.5 rounded-lg bg-nikki-surface-blue border border-nikki-border mb-3">
+          <p className="text-nikki-navy text-xs font-bold uppercase tracking-wide mb-1">Your role: {roleLabel}</p>
           <p className="text-sm text-stone-800">{roleDesc}</p>
         </div>
         <Note>Everything below is shown the way it actually looks for you — if a step mentions a button and you don't see it, that's expected, not a mistake.</Note>
@@ -418,7 +418,7 @@ export default function TrainingManual() {
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <h2 className="text-stone-900 font-extrabold text-lg">Leads & CRM Training Manual</h2>
+        <h2 className="text-nikki-navy font-extrabold text-lg">Leads & CRM Training Manual</h2>
         <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wide">Internal use only</span>
       </div>
       <p className="text-stone-700 text-sm mb-4">Everything you need to know to work leads in this system — pick a topic.</p>
@@ -430,7 +430,7 @@ export default function TrainingManual() {
               const Icon = s.icon;
               return (
                 <button key={s.id} onClick={() => setActive(s.id)}
-                  className={`shrink-0 md:shrink flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs font-semibold whitespace-nowrap md:whitespace-normal transition-colors ${active === s.id ? 'bg-teal-700 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
+                  className={`shrink-0 md:shrink flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs font-semibold whitespace-nowrap md:whitespace-normal transition-colors ${active === s.id ? 'bg-nikki-blue text-white' : 'bg-stone-100 text-stone-700 hover:bg-nikki-border'}`}>
                   <Icon className="w-3.5 h-3.5 shrink-0" /> {s.label}
                 </button>
               );
@@ -439,8 +439,8 @@ export default function TrainingManual() {
         </div>
 
         <div className={cardCls + ' flex-1 min-w-0'}>
-          <h3 className="text-stone-900 font-bold text-base mb-3 flex items-center gap-2">
-            <section.icon className="w-5 h-5 text-teal-700" /> {section.label}
+          <h3 className="text-nikki-navy font-bold text-base mb-3 flex items-center gap-2">
+            <section.icon className="w-5 h-5 text-nikki-blue" /> {section.label}
           </h3>
           {section.body}
         </div>

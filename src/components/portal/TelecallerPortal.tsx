@@ -74,7 +74,7 @@ function TelecallerHome({ onNavigate }: { onNavigate: (tab: string, openAddLead?
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-stone-900 text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
+        <h2 className="text-nikki-navy text-lg font-semibold">{greeting}{firstName ? `, ${firstName}` : ''}</h2>
         <p className="text-stone-700 text-sm">
           {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
@@ -85,7 +85,7 @@ function TelecallerHome({ onNavigate }: { onNavigate: (tab: string, openAddLead?
         {!stats.attendance ? (
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-stone-900 text-sm font-medium">Not checked in yet</p>
+              <p className="text-nikki-navy text-sm font-medium">Not checked in yet</p>
               <p className="text-stone-700 text-xs">Start your day from My Attendance.</p>
             </div>
             <button className={btnCls} onClick={() => onNavigate('attendance')}>Check In</button>
@@ -100,7 +100,7 @@ function TelecallerHome({ onNavigate }: { onNavigate: (tab: string, openAddLead?
               <p className="text-stone-700 text-xs">{stats.attendance.check_out_at ? 'Checked out' : 'Still checked in'}</p>
             </div>
             {!stats.attendance.check_out_at && (
-              <button className="px-3 py-1.5 rounded-lg border border-stone-200 text-stone-700 text-sm" onClick={() => onNavigate('attendance')}>Check Out</button>
+              <button className="px-3 py-1.5 rounded-lg border border-nikki-border text-stone-700 text-sm" onClick={() => onNavigate('attendance')}>Check Out</button>
             )}
           </div>
         )}
@@ -109,19 +109,19 @@ function TelecallerHome({ onNavigate }: { onNavigate: (tab: string, openAddLead?
       {/* Call-queue numbers — the thing a telecaller's day revolves around,
           front and center instead of buried among generic self-service tiles. */}
       <div>
-        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider mb-2">Today's Call Queue</p>
+        <p className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider mb-2">Today's Call Queue</p>
         <div className="grid grid-cols-3 gap-3">
           <button onClick={() => onNavigate('queue')} className={cardCls + ' text-left hover:border-stone-300'}>
             <p className="text-stone-700 text-xs">In my queue</p>
-            <p className="text-2xl font-semibold mt-0.5 text-stone-900">{stats.inQueue}</p>
+            <p className="text-2xl font-semibold mt-0.5 text-nikki-navy">{stats.inQueue}</p>
           </button>
           <button onClick={() => onNavigate('queue')} className={cardCls + ' text-left hover:border-stone-300'}>
             <p className="text-stone-700 text-xs">Callbacks due</p>
-            <p className={`text-2xl font-semibold mt-0.5 ${stats.callbacksDue > 0 ? 'text-amber-700' : 'text-stone-900'}`}>{stats.callbacksDue}</p>
+            <p className={`text-2xl font-semibold mt-0.5 ${stats.callbacksDue > 0 ? 'text-amber-700' : 'text-nikki-navy'}`}>{stats.callbacksDue}</p>
           </button>
           <div className={cardCls}>
             <p className="text-stone-700 text-xs">Calls made today</p>
-            <p className="text-2xl font-semibold mt-0.5 text-stone-900">{stats.calledToday}</p>
+            <p className="text-2xl font-semibold mt-0.5 text-nikki-navy">{stats.calledToday}</p>
           </div>
         </div>
       </div>
@@ -134,18 +134,18 @@ function TelecallerHome({ onNavigate }: { onNavigate: (tab: string, openAddLead?
       {/* Today's meetings, if any. */}
       {stats.todaysMeetings.length > 0 && (
         <div className={cardCls}>
-          <h3 className="text-stone-900 text-sm font-semibold mb-3 flex items-center justify-between">
+          <h3 className="text-nikki-navy text-sm font-semibold mb-3 flex items-center justify-between">
             <span>Today's meetings</span>
-            <button onClick={() => onNavigate('meetings')} className="text-teal-700 text-xs font-medium">View all →</button>
+            <button onClick={() => onNavigate('meetings')} className="text-nikki-blue text-xs font-medium">View all →</button>
           </h3>
           <div className="space-y-2">
             {stats.todaysMeetings.map(m => (
               <div key={m.id} className="flex items-center justify-between gap-3 border-b border-stone-100 last:border-0 pb-2 last:pb-0">
                 <div className="min-w-0">
-                  <p className="text-stone-900 text-sm font-medium truncate">{m.meeting_type_name}</p>
+                  <p className="text-nikki-navy text-sm font-medium truncate">{m.meeting_type_name}</p>
                   <p className="text-stone-700 text-xs truncate">{m.customer_name || 'Internal'}</p>
                 </div>
-                <p className="text-teal-700 text-xs whitespace-nowrap shrink-0">
+                <p className="text-nikki-blue text-xs whitespace-nowrap shrink-0">
                   {new Date(m.scheduled_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}
                 </p>
               </div>
@@ -156,20 +156,20 @@ function TelecallerHome({ onNavigate }: { onNavigate: (tab: string, openAddLead?
 
       {/* Quick actions. */}
       <div className={cardCls + ' space-y-3'}>
-        <p className="text-stone-900 text-xs font-extrabold uppercase tracking-wider">Quick Actions</p>
+        <p className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider">Quick Actions</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           <button onClick={() => onNavigate('queue')} className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 font-bold text-xs transition-colors shadow-sm">
             <PhoneCall className="w-4 h-4" /> Call Queue
           </button>
           {hasPermission('create_leads') && (
-            <button onClick={() => onNavigate('queue', true)} className="flex items-center gap-2 p-3 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-900 font-bold text-xs transition-colors shadow-sm">
+            <button onClick={() => onNavigate('queue', true)} className="flex items-center gap-2 p-3 rounded-xl bg-nikki-surface-blue hover:bg-nikki-surface-blue border border-nikki-border text-nikki-navy font-bold text-xs transition-colors shadow-sm">
               <UserPlus className="w-4 h-4" /> Add Lead
             </button>
           )}
-          <button onClick={() => onNavigate('meetings')} className="flex items-center gap-2 p-3 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-900 font-bold text-xs transition-colors shadow-sm">
+          <button onClick={() => onNavigate('meetings')} className="flex items-center gap-2 p-3 rounded-xl bg-nikki-surface-blue hover:bg-nikki-surface-blue border border-nikki-border text-nikki-navy font-bold text-xs transition-colors shadow-sm">
             <Calendar className="w-4 h-4" /> Schedule Meeting
           </button>
-          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-colors">
+          <button onClick={() => onNavigate('requests')} className="flex items-center gap-2 p-3 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 font-bold text-xs transition-colors">
             <CalendarDays className="w-4 h-4" /> Request Leave
           </button>
         </div>
