@@ -202,7 +202,7 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-nikki-royal" />
           <div className="w-3 h-3 rounded-full bg-indigo-600" />
-          <div className="w-3 h-3 rounded-full bg-teal-400" />
+          <div className="w-3 h-3 rounded-full bg-nikki-sky" />
           <span className="text-stone-700 text-xs font-extrabold uppercase tracking-wider ml-1">Nikki Technologies • Core Divisions</span>
         </div>
         <div className="flex flex-wrap gap-1.5 bg-stone-100 p-1 rounded-xl border border-nikki-border">

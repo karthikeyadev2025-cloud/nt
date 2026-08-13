@@ -83,19 +83,19 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-nikki-border animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center text-orange-700">
+            <div className="w-9 h-9 rounded-xl bg-nikki-surface-blue flex items-center justify-center text-nikki-blue">
               <Key className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-stone-900 font-extrabold text-base leading-tight">Change Password</h3>
+              <h3 className="text-nikki-navy font-extrabold text-base leading-tight">Change Password</h3>
               <p className="text-stone-700 text-xs font-semibold">Verify current, set a new one, sign out other devices</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-stone-700 hover:text-stone-900 hover:bg-stone-100">
+          <button onClick={onClose} className="p-1 rounded-lg text-stone-700 hover:text-nikki-navy hover:bg-stone-100">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -112,7 +112,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                 value={currentPw}
                 onChange={e => setCurrentPw(e.target.value)}
                 autoComplete="current-password"
-                className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono"
+                className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nikki-royal font-mono"
               />
             </div>
           </div>
@@ -129,7 +129,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                 value={newPw}
                 onChange={e => setNewPw(e.target.value)}
                 autoComplete="new-password"
-                className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono"
+                className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nikki-royal font-mono"
               />
             </div>
           </div>
@@ -146,7 +146,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                 value={confirmPw}
                 onChange={e => setConfirmPw(e.target.value)}
                 autoComplete="new-password"
-                className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono"
+                className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nikki-royal font-mono"
               />
             </div>
           </div>
@@ -162,7 +162,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             <button
               type="submit"
               disabled={busy}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-orange-700 hover:bg-orange-600 disabled:opacity-50 shadow-md shadow-orange-700/20"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-nikki-blue hover:bg-nikki-royal disabled:opacity-50 shadow-md shadow-nikki-blue/20"
             >
               {busy ? 'Updating...' : 'Update Password'}
             </button>

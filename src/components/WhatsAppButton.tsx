@@ -65,7 +65,7 @@ Looking forward to hearing from you!`;
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowPopup(false)}>
           <div
-            className="bg-gradient-to-br from-stone-900 to-stone-800 border border-stone-700 rounded-2xl shadow-2xl max-w-md w-full p-6 relative animate-scale-in"
+            className="bg-gradient-to-br from-nikki-navy to-stone-800 border border-stone-700 rounded-2xl shadow-2xl max-w-md w-full p-6 relative animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <button

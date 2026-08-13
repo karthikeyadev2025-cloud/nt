@@ -31,10 +31,10 @@ export default function ForcePasswordChange() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-stone-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-stone-950 via-nikki-navy to-stone-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-stone-800/80 backdrop-blur rounded-2xl border border-stone-700 p-8 shadow-2xl">
         <div className="text-center mb-6">
-          <ShieldCheck className="w-10 h-10 text-teal-400 mx-auto mb-3" />
+          <ShieldCheck className="w-10 h-10 text-nikki-sky mx-auto mb-3" />
           <h1 className="text-xl font-bold text-white mb-1">Set your own password</h1>
           <p className="text-stone-400 text-sm">
             Your account was set up with a temporary password. Choose a new one only you know before continuing.
@@ -43,11 +43,11 @@ export default function ForcePasswordChange() {
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
         <form onSubmit={submit} className="space-y-4">
           <input type="password" required minLength={6} placeholder="New password" value={pw} onChange={e => setPw(e.target.value)}
-            className="w-full px-4 py-3 bg-stone-900 border border-stone-600 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:border-teal-500" />
+            className="w-full px-4 py-3 bg-nikki-navy border border-stone-600 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:border-nikki-royal" />
           <input type="password" required minLength={6} placeholder="Confirm new password" value={pw2} onChange={e => setPw2(e.target.value)}
-            className="w-full px-4 py-3 bg-stone-900 border border-stone-600 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:border-teal-500" />
+            className="w-full px-4 py-3 bg-nikki-navy border border-stone-600 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:border-nikki-royal" />
           <button type="submit" disabled={busy}
-            className="w-full py-3.5 bg-gradient-to-r from-teal-500 to-cyan-400 text-white font-semibold rounded-xl hover:from-teal-400 hover:to-cyan-300 disabled:opacity-60 transition-all">
+            className="w-full py-3.5 bg-gradient-to-r from-nikki-royal to-cyan-400 text-white font-semibold rounded-xl hover:from-nikki-sky hover:to-cyan-300 disabled:opacity-60 transition-all">
             {busy ? 'Saving…' : 'Save & Continue'}
           </button>
         </form>

@@ -131,11 +131,11 @@ export default function SessionDevices() {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200/90 p-6 shadow-sm" data-testid="session-devices-panel">
+    <div className="bg-white rounded-2xl border border-nikki-border/90 p-6 shadow-sm" data-testid="session-devices-panel">
       <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
         <div>
-          <h3 className="text-stone-900 font-extrabold text-base tracking-tight flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-orange-700" />
+          <h3 className="text-nikki-navy font-extrabold text-base tracking-tight flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-nikki-blue" />
             Session Devices
           </h3>
           <p className="text-stone-700 text-xs mt-1 font-medium">
@@ -181,16 +181,16 @@ export default function SessionDevices() {
               <li
                 key={r.id}
                 data-testid={`session-row-${r.id}`}
-                className={`flex items-center gap-3 p-3.5 rounded-xl border ${isCurrent ? 'border-orange-300 bg-orange-50/60' : 'border-stone-200 bg-stone-50'}`}
+                className={`flex items-center gap-3 p-3.5 rounded-xl border ${isCurrent ? 'border-nikki-sky bg-nikki-surface-blue/60' : 'border-nikki-border bg-stone-50'}`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isCurrent ? 'bg-orange-700 text-white' : 'bg-white border border-stone-200 text-stone-700'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isCurrent ? 'bg-nikki-blue text-white' : 'bg-white border border-nikki-border text-stone-700'}`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-stone-900 text-sm font-bold truncate">{r.device_label}</p>
+                    <p className="text-nikki-navy text-sm font-bold truncate">{r.device_label}</p>
                     {isCurrent && (
-                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-orange-700 text-white flex items-center gap-1" data-testid="current-device-badge">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-nikki-blue text-white flex items-center gap-1" data-testid="current-device-badge">
                         <CheckCircle2 className="w-3 h-3" /> This device
                       </span>
                     )}

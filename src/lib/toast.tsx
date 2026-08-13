@@ -37,7 +37,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className={`flex items-start gap-2.5 px-4 py-3 rounded-xl shadow-lg border text-sm animate-in fade-in slide-in-from-bottom-2 ${
               t.kind === 'success' ? 'bg-emerald-950 border-emerald-700 text-emerald-200' :
               t.kind === 'error' ? 'bg-red-950 border-red-700 text-red-200' :
-              'bg-stone-900 border-stone-700 text-stone-200'
+              'bg-nikki-navy border-stone-700 text-stone-200'
             }`}>
             {t.kind === 'success' ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> : t.kind === 'error' ? <XCircle className="w-4 h-4 mt-0.5 shrink-0" /> : null}
             <span className="flex-1">{t.message}</span>

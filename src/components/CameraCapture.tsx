@@ -60,7 +60,7 @@ export default function CameraCapture({ title, onCapture, onCancel, onSkip }: Ca
     <div className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4" onClick={onCancel}>
       <div className="bg-stone-950 border border-stone-700 rounded-2xl max-w-sm w-full p-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold text-sm flex items-center gap-2"><Camera className="w-4 h-4 text-teal-400" /> {title}</h3>
+          <h3 className="text-white font-semibold text-sm flex items-center gap-2"><Camera className="w-4 h-4 text-nikki-sky" /> {title}</h3>
           <button onClick={onCancel} className="text-stone-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
@@ -73,7 +73,7 @@ export default function CameraCapture({ title, onCapture, onCancel, onSkip }: Ca
           </div>
         ) : (
           <>
-            <div className="rounded-xl overflow-hidden bg-stone-900 aspect-square mb-4">
+            <div className="rounded-xl overflow-hidden bg-nikki-navy aspect-square mb-4">
               {captured ? (
                 <img src={captured} alt="Captured selfie" className="w-full h-full object-cover" />
               ) : (
@@ -96,7 +96,7 @@ export default function CameraCapture({ title, onCapture, onCancel, onSkip }: Ca
                   <Camera className="w-4 h-4" /> Take Photo
                 </button>
                 {onSkip && (
-                  <button onClick={onSkip} className="w-full py-2 text-stone-400 hover:text-stone-200 text-xs">
+                  <button onClick={onSkip} className="w-full py-2 text-stone-400 hover:text-nikki-border text-xs">
                     Skip photo &amp; continue
                   </button>
                 )}

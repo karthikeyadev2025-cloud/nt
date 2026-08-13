@@ -53,9 +53,9 @@ export default function PWAInstallBanner() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-[100] animate-in slide-in-from-bottom-4 duration-300">
-      <div className="bg-stone-900 border border-teal-500/30 rounded-2xl shadow-2xl shadow-black/50 p-4">
+      <div className="bg-nikki-navy border border-nikki-royal/30 rounded-2xl shadow-2xl shadow-black/50 p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-400 rounded-xl flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 bg-gradient-to-br from-nikki-royal to-cyan-400 rounded-xl flex items-center justify-center shrink-0">
             <Smartphone className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
@@ -81,7 +81,7 @@ export default function PWAInstallBanner() {
           <button
             onClick={handleInstall}
             disabled={installing}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-teal-500 to-cyan-400 hover:from-teal-400 hover:to-cyan-300 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-60"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-nikki-royal to-cyan-400 hover:from-nikki-sky hover:to-cyan-300 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-60"
           >
             {installing ? (
               <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
