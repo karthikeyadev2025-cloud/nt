@@ -75,11 +75,11 @@ function AnimatedStats() {
     { label: 'Divisions', value: '2' },
   ];
   return (
-    <section className="py-14 px-4 border-y border-stone-200 bg-white">
+    <section className="py-14 px-4 border-y border-nikki-border bg-white">
       <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
         {stats.map(s => (
           <div key={s.label} className="text-center">
-            <p className="text-4xl md:text-5xl font-extrabold text-orange-700">
+            <p className="text-4xl md:text-5xl font-extrabold text-nikki-blue">
               <AnimatedNumber value={s.value} />
             </p>
             <p className="text-stone-700 text-sm font-semibold mt-2">{s.label}</p>
@@ -125,28 +125,28 @@ function Navigation() {
     { href: '#contact', label: 'Contact' },
   ];
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-sm">
+    <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-b border-nikki-border/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="#" className="flex items-center gap-2.5">
-          <KiteTailLogo className="w-8 h-8" />
+          <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-9 h-9 object-contain" />
           <div className="flex flex-col text-left">
-            <span className="text-stone-900 font-extrabold text-lg tracking-tight leading-tight">Nikki Technologies</span>
+            <span className="font-poppins text-nikki-navy font-extrabold text-lg tracking-tight leading-tight">Nikki Technologies</span>
           </div>
         </a>
         <div className="hidden md:flex items-center gap-6">
           {links.map(l => (
-            <a key={l.href} href={l.href} className="text-stone-700 hover:text-orange-700 text-sm font-semibold transition-colors">{l.label}</a>
+            <a key={l.href} href={l.href} className="text-stone-700 hover:text-nikki-blue text-sm font-semibold transition-colors">{l.label}</a>
           ))}
-          <a href="/login" className="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-sm font-semibold shadow-md shadow-orange-700/20 transition-all border border-orange-600/30">Staff Login</a>
+          <a href="/login" className="px-4 py-2 rounded-xl bg-nikki-blue hover:bg-nikki-royal text-white text-sm font-semibold shadow-md shadow-nikki-blue/20 transition-all border border-nikki-royal/30">Staff Login</a>
         </div>
         <button className="md:hidden text-stone-700" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
       </div>
       {open && (
-        <div className="md:hidden bg-white border-t border-stone-200 px-4 py-3 space-y-2 shadow-lg">
+        <div className="md:hidden bg-white border-t border-nikki-border px-4 py-3 space-y-2 shadow-lg">
           {links.map(l => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block text-stone-700 hover:text-orange-700 py-1.5 font-medium">{l.label}</a>
+            <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="block text-stone-700 hover:text-nikki-blue py-1.5 font-medium">{l.label}</a>
           ))}
-          <a href="/login" className="block text-orange-700 font-bold py-1.5">Staff Login</a>
+          <a href="/login" className="block text-nikki-blue font-bold py-1.5">Staff Login</a>
         </div>
       )}
     </nav>
@@ -196,16 +196,16 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
       initial={{ opacity: 0, y: 35 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.3 }}
-      className="mt-12 max-w-5xl mx-auto rounded-2xl bg-white border border-stone-200/90 p-5 md:p-7 shadow-xl shadow-stone-200/60 relative overflow-hidden text-left"
+      className="mt-12 max-w-5xl mx-auto rounded-2xl bg-white border border-nikki-border/90 p-5 md:p-7 shadow-xl shadow-nikki-border/60 relative overflow-hidden text-left"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 pb-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-nikki-border pb-4 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-orange-600" />
+          <div className="w-3 h-3 rounded-full bg-nikki-royal" />
           <div className="w-3 h-3 rounded-full bg-indigo-600" />
           <div className="w-3 h-3 rounded-full bg-teal-400" />
           <span className="text-stone-700 text-xs font-extrabold uppercase tracking-wider ml-1">Nikki Technologies • Core Divisions</span>
         </div>
-        <div className="flex flex-wrap gap-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200">
+        <div className="flex flex-wrap gap-1.5 bg-stone-100 p-1 rounded-xl border border-nikki-border">
           {([
             { id: 'kite_tail' as const, label: 'Kite & Tail Digital' },
             { id: 'software' as const, label: 'Software Studio' },
@@ -215,8 +215,8 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
               onClick={() => setActiveTab(t.id)}
               className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
                 activeTab === t.id
-                  ? 'bg-orange-700 text-white shadow-md shadow-orange-700/20'
-                  : 'text-stone-700 hover:text-stone-900'
+                  ? 'bg-nikki-blue text-white shadow-md shadow-nikki-blue/20'
+                  : 'text-stone-700 hover:text-nikki-navy'
               }`}
             >
               {t.id === 'kite_tail' ? <Megaphone className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
@@ -237,36 +237,36 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
         >
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
-              <IconComponent className="w-5 h-5 text-orange-700" />
-              <span className="px-3.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-xs font-extrabold shadow-xs">
+              <IconComponent className="w-5 h-5 text-nikki-blue" />
+              <span className="px-3.5 py-1 rounded-full bg-nikki-surface-blue border border-nikki-border text-nikki-navy text-xs font-extrabold shadow-xs">
                 {curr.badge}
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-stone-900 tracking-tight">{curr.title}</h3>
+            <h3 className="text-2xl font-bold text-nikki-navy tracking-tight">{curr.title}</h3>
             <p className="text-stone-700 text-sm leading-relaxed font-medium">{curr.desc}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
               {curr.highlights.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-2 text-xs text-stone-700 font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-orange-700 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-nikki-blue shrink-0 mt-0.5" />
                   <span>{item}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-xl bg-stone-50 border border-stone-200 p-5 space-y-4 flex flex-col justify-between shadow-xs">
+          <div className="rounded-xl bg-stone-50 border border-nikki-border p-5 space-y-4 flex flex-col justify-between shadow-xs">
             <p className="text-xs text-stone-700 font-bold uppercase tracking-wider">Performance Guarantee</p>
             <div className="space-y-3">
               {Object.entries(curr.stats).map(([k, v]) => (
-                <div key={k} className="flex justify-between items-center border-b border-stone-200 pb-2">
+                <div key={k} className="flex justify-between items-center border-b border-nikki-border pb-2">
                   <span className="text-stone-700 text-xs capitalize font-medium">{k}</span>
-                  <span className="text-orange-800 font-extrabold text-xs">{v}</span>
+                  <span className="text-nikki-navy font-extrabold text-xs">{v}</span>
                 </div>
               ))}
             </div>
             <a
               href="#contact"
-              className="w-full py-2.5 rounded-xl bg-orange-700 hover:bg-orange-600 text-white font-bold text-xs text-center transition-all shadow-md shadow-orange-700/20"
+              className="w-full py-2.5 rounded-xl bg-nikki-blue hover:bg-nikki-royal text-white font-bold text-xs text-center transition-all shadow-md shadow-nikki-blue/20"
             >
               Get Free Consultation
             </a>
@@ -282,7 +282,7 @@ function HeroicFlyingKites() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
       {/* Soft ambient background gradient blur circles */}
-      <div className="absolute -top-24 -left-20 w-96 h-96 bg-orange-100/50 rounded-full blur-3xl" />
+      <div className="absolute -top-24 -left-20 w-96 h-96 bg-nikki-surface-blue/50 rounded-full blur-3xl" />
       <div className="absolute top-1/3 -right-20 w-80 h-80 bg-indigo-100/40 rounded-full blur-3xl" />
 
       {/* Floating Kite 1 - Top Left */}
@@ -295,7 +295,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
         className="absolute top-16 left-[8%] opacity-25 w-24 h-24"
       >
-        <KiteTailLogo className="w-full h-full text-orange-700 drop-shadow-sm" />
+        <KiteTailLogo className="w-full h-full text-nikki-blue drop-shadow-sm" />
       </motion.div>
 
       {/* Floating Kite 2 - Top Right */}
@@ -308,7 +308,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
         className="absolute top-28 right-[10%] opacity-20 w-32 h-32 hidden sm:block"
       >
-        <KiteTailLogo className="w-full h-full text-indigo-700 drop-shadow-sm" />
+        <KiteTailLogo className="w-full h-full text-nikki-royal drop-shadow-sm" />
       </motion.div>
 
       {/* Floating Kite 3 - Center Right */}
@@ -321,7 +321,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2.5 }}
         className="absolute top-1/2 right-[22%] opacity-15 w-20 h-20 hidden md:block"
       >
-        <KiteTailLogo className="w-full h-full text-teal-700" />
+        <KiteTailLogo className="w-full h-full text-nikki-sky" />
       </motion.div>
 
       {/* Floating Kite 4 - Center Left */}
@@ -334,7 +334,7 @@ function HeroicFlyingKites() {
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 3.5 }}
         className="absolute top-2/3 left-[16%] opacity-20 w-28 h-28 hidden lg:block"
       >
-        <KiteTailLogo className="w-full h-full text-orange-700" />
+        <KiteTailLogo className="w-full h-full text-nikki-blue" />
       </motion.div>
     </div>
   );
@@ -343,16 +343,16 @@ function HeroicFlyingKites() {
 // ─────────────────────────────────────────────── Hero
 function Hero({ segments }: { segments: Segment[] }) {
   return (
-    <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-orange-50/60 via-stone-50 to-stone-50">
+    <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-nikki-surface-blue/60 via-stone-50 to-stone-50">
       <HeroicFlyingKites />
       <div className="max-w-6xl mx-auto text-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100/80 border border-orange-200 text-orange-800 text-xs font-extrabold mb-6 shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-nikki-surface-blue/80 border border-nikki-border text-nikki-navy text-xs font-extrabold mb-6 shadow-sm"
         >
-          <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-nikki-royal animate-pulse" />
           <span>Digital Marketing &amp; Custom Software Engineering</span>
         </motion.div>
 
@@ -368,7 +368,7 @@ function Hero({ segments }: { segments: Segment[] }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="font-display text-5xl md:text-7xl font-semibold text-stone-900 mb-6 tracking-tight leading-tight"
+          className="font-poppins text-5xl md:text-7xl font-semibold text-nikki-navy mb-6 tracking-tight leading-tight"
         >
           Nikki Technologies
         </motion.h1>
@@ -377,7 +377,7 @@ function Hero({ segments }: { segments: Segment[] }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-xl md:text-2xl bg-gradient-to-r from-orange-800 via-indigo-700 to-orange-900 bg-clip-text text-transparent font-extrabold mb-6"
+          className="text-xl md:text-2xl bg-gradient-to-r from-nikki-navy via-nikki-royal to-nikki-blue bg-clip-text text-transparent font-extrabold mb-6"
         >
           Kite &amp; Tail Digital Marketing • Custom Software &amp; Mobile Apps
         </motion.p>
@@ -399,8 +399,8 @@ function Hero({ segments }: { segments: Segment[] }) {
         >
           {segments.map((s) => (
             <a key={s.slug} href={`#seg-${s.slug}`}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-stone-300 bg-white hover:border-orange-600 hover:bg-stone-50 transition-all text-stone-900 shadow-md font-semibold text-sm">
-              <Icon name={s.icon ?? ''} className="w-5 h-5 text-orange-700" />
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-stone-300 bg-white hover:border-nikki-royal hover:bg-stone-50 transition-all text-nikki-navy shadow-md font-semibold text-sm">
+              <Icon name={s.icon ?? ''} className="w-5 h-5 text-nikki-blue" />
               <span>{s.name}</span>
               <ChevronRight className="w-4 h-4 text-stone-400" />
             </a>
@@ -556,7 +556,7 @@ function AboutSection({ segments }: { segments: Segment[] }) {
     <section id="about" className="py-20 px-4 bg-white">
       <div className="max-w-5xl mx-auto">
         <Reveal>
-          <h2 className="font-display text-4xl md:text-5xl font-extrabold text-center text-stone-900 mb-5 tracking-tight">About Us</h2>
+          <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-5 tracking-tight">About Us</h2>
           <p className="text-center text-stone-700 max-w-3xl mx-auto font-medium leading-relaxed mb-14">
             Nikki Technologies is a digital marketing and custom software engineering firm, serving clients across
             the UAE, UK, USA, Singapore, Australia, and India. We run two specialized divisions under one roof —
@@ -568,12 +568,12 @@ function AboutSection({ segments }: { segments: Segment[] }) {
         <div className="grid md:grid-cols-2 gap-6">
           {segments.map((seg, i) => (
             <Reveal key={seg.slug} delay={i * 100}>
-              <div className="h-full p-7 rounded-2xl border border-stone-200 bg-stone-50/60 hover:bg-white hover:shadow-lg transition-all">
+              <div className="h-full p-7 rounded-2xl border border-nikki-border bg-stone-50/60 hover:bg-white hover:shadow-lg transition-all">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: (seg.color ?? '#c2410c') + '18', color: seg.color ?? '#c2410c' }}>
                   <Icon name={seg.icon ?? ''} className="w-6 h-6" />
                 </div>
-                <h3 className="text-xl font-bold text-stone-900 mb-1">{seg.name}</h3>
-                <p className="text-orange-700 text-xs font-semibold mb-3">{seg.tagline}</p>
+                <h3 className="text-xl font-bold text-nikki-navy mb-1">{seg.name}</h3>
+                <p className="text-nikki-blue text-xs font-semibold mb-3">{seg.tagline}</p>
                 <p className="text-stone-700 text-sm leading-relaxed font-medium">{seg.description}</p>
               </div>
             </Reveal>
@@ -595,7 +595,7 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
     <section id="segments" className="py-20 px-4 bg-stone-50">
       <div className="max-w-7xl mx-auto">
         <Reveal>
-          <h2 className="font-display text-4xl md:text-5xl font-extrabold text-center text-stone-900 mb-3 tracking-tight">What We Do</h2>
+          <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-3 tracking-tight">What We Do</h2>
           <p className="text-center text-stone-700 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
         </Reveal>
         <div id="services" className="space-y-16">
@@ -623,7 +623,7 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
                       <Icon name={seg.icon ?? ''} className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-stone-900">{seg.name}</h3>
+                      <h3 className="text-2xl font-bold text-nikki-navy">{seg.name}</h3>
                       <p className="text-stone-700 text-sm font-medium">{seg.tagline}</p>
                     </div>
                   </div>
@@ -634,13 +634,13 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
                       <motion.div
                         whileHover={{ y: -6, scale: 1.01 }}
                         transition={{ duration: 0.2 }}
-                        className="p-6 rounded-2xl bg-white border border-stone-200/90 shadow-md hover:shadow-xl hover:border-orange-300 transition-all h-full flex flex-col"
+                        className="p-6 rounded-2xl bg-white border border-nikki-border/90 shadow-md hover:shadow-xl hover:border-nikki-sky transition-all h-full flex flex-col"
                       >
-                        <Icon name={s.icon ?? ''} className="w-8 h-8 mb-4 text-orange-700" />
-                        <h4 className="text-lg font-bold text-stone-900 mb-2">{s.title}</h4>
+                        <Icon name={s.icon ?? ''} className="w-8 h-8 mb-4 text-nikki-blue" />
+                        <h4 className="text-lg font-bold text-nikki-navy mb-2">{s.title}</h4>
                         <p className="text-stone-700 text-sm leading-relaxed font-medium mb-3">{s.description}</p>
                         {s.best_for && (
-                          <p className="text-xs font-medium text-orange-800 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 mb-4">
+                          <p className="text-xs font-medium text-nikki-navy bg-nikki-surface-blue border border-nikki-surface-blue rounded-lg px-3 py-2 mb-4">
                             <span className="font-bold">Best for:</span> {s.best_for}
                           </p>
                         )}
@@ -734,10 +734,10 @@ function Products() {
   if (products.length === 0) return null;
 
   return (
-    <section id="products" className="py-20 px-4 bg-stone-100/60 border-y border-stone-200">
+    <section id="products" className="py-20 px-4 bg-stone-100/60 border-y border-nikki-border">
       <div className="max-w-7xl mx-auto">
         <Reveal>
-          <h2 className="font-display text-4xl md:text-5xl font-extrabold text-center text-stone-900 mb-3 tracking-tight">Our Products</h2>
+          <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-3 tracking-tight">Our Products</h2>
           <p className="text-center text-stone-700 mb-14 max-w-2xl mx-auto font-medium">Software built by Nikki Technologies, powering businesses.</p>
         </Reveal>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -746,24 +746,24 @@ function Products() {
               <motion.div
                 whileHover={{ y: -6, scale: 1.01 }}
                 transition={{ duration: 0.2 }}
-                className="flex flex-col h-full p-7 rounded-2xl bg-white border border-stone-200 shadow-md hover:shadow-xl transition-all"
+                className="flex flex-col h-full p-7 rounded-2xl bg-white border border-nikki-border shadow-md hover:shadow-xl transition-all"
               >
                 <div className="flex items-center gap-3 mb-3">
                   {p.logo_url
                     ? <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-cover shadow-xs" />
-                    : <div className="w-11 h-11 rounded-xl bg-orange-700 flex items-center justify-center font-extrabold text-white text-lg shadow-md">{p.name[0]}</div>}
+                    : <div className="w-11 h-11 rounded-xl bg-nikki-blue flex items-center justify-center font-extrabold text-white text-lg shadow-md">{p.name[0]}</div>}
                   <div>
-                    <h3 className="text-xl font-bold text-stone-900">{p.name}</h3>
-                    <p className="text-orange-700 text-xs font-semibold">{p.tagline}</p>
+                    <h3 className="text-xl font-bold text-nikki-navy">{p.name}</h3>
+                    <p className="text-nikki-blue text-xs font-semibold">{p.tagline}</p>
                   </div>
                 </div>
                 <p className="text-stone-700 text-sm mb-5 leading-relaxed font-medium">{p.description}</p>
                 <div className="space-y-2.5 mb-6">
                   {((p.features as unknown as ProductFeature[] | null) || []).map((f, i) => (
                     <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-orange-700 mt-0.5 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-nikki-blue mt-0.5 shrink-0" />
                       <div>
-                        <span className="text-stone-900 text-sm font-semibold">{f.title}</span>
+                        <span className="text-nikki-navy text-sm font-semibold">{f.title}</span>
                         <span className="text-stone-700 text-sm font-medium"> — {f.description}</span>
                       </div>
                     </div>
@@ -771,10 +771,10 @@ function Products() {
                 </div>
                 <div className="mt-auto">
                   {p.status === 'coming_soon' ? (
-                    <span className="inline-block px-4 py-2 rounded-xl bg-stone-100 border border-stone-200 text-stone-700 text-xs font-semibold">Coming Soon</span>
+                    <span className="inline-block px-4 py-2 rounded-xl bg-stone-100 border border-nikki-border text-stone-700 text-xs font-semibold">Coming Soon</span>
                   ) : p.external_url ? (
                     <a href={p.external_url} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-md shadow-orange-700/20">
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-nikki-blue hover:bg-nikki-royal text-white text-xs font-bold transition-all shadow-md shadow-nikki-blue/20">
                       {p.demo_cta || 'Visit Website'} <ExternalLink className="w-4 h-4" />
                     </a>
                   ) : null}
@@ -799,10 +799,10 @@ function GallerySection() {
   return (
     <section className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <h2 className="font-display text-4xl md:text-5xl font-extrabold text-center text-stone-900 mb-12 tracking-tight">Our Work</h2>
+        <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-12 tracking-tight">Our Work</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {items.map(g => (
-            <div key={g.id} className="rounded-xl overflow-hidden aspect-square bg-stone-900">
+            <div key={g.id} className="rounded-xl overflow-hidden aspect-square bg-nikki-navy">
               <img src={g.image_url || ''} alt={g.title || ''} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
             </div>
           ))}
@@ -829,14 +829,14 @@ function TeamSection() {
   return (
     <section className="py-20 px-4 bg-stone-50">
       <div className="max-w-6xl mx-auto">
-        <h2 className="font-display text-4xl font-bold text-center text-stone-900 mb-12 tracking-tight">Meet the Team</h2>
+        <h2 className="font-poppins text-4xl font-bold text-center text-nikki-navy mb-12 tracking-tight">Meet the Team</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {items.map(m => (
-            <div key={m.id} className="text-center p-5 rounded-2xl bg-white border border-stone-200/90 shadow-sm">
-              <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-700 font-bold text-2xl shadow-xs">
+            <div key={m.id} className="text-center p-5 rounded-2xl bg-white border border-nikki-border/90 shadow-sm">
+              <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-stone-100 border border-nikki-border flex items-center justify-center text-stone-700 font-bold text-2xl shadow-xs">
                 {m.photo_url ? <img src={m.photo_url} alt={m.name} className="w-full h-full object-cover" /> : m.name[0]}
               </div>
-              <p className="text-stone-900 font-bold text-sm">{m.name}</p>
+              <p className="text-nikki-navy font-bold text-sm">{m.name}</p>
               <p className="text-stone-700 text-xs font-medium">{m.designation}</p>
             </div>
           ))}
@@ -876,18 +876,18 @@ function Testimonials() {
   }, []);
   if (items.length === 0) return null;
   return (
-    <section id="testimonials" className="py-20 px-4 bg-stone-100/60 border-y border-stone-200">
+    <section id="testimonials" className="py-20 px-4 bg-stone-100/60 border-y border-nikki-border">
       <div className="max-w-6xl mx-auto">
-        <h2 className="font-display text-4xl font-extrabold text-center text-stone-900 mb-14 tracking-tight">What Clients Say</h2>
+        <h2 className="font-poppins text-4xl font-extrabold text-center text-nikki-navy mb-14 tracking-tight">What Clients Say</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {items.map((t, i) => (
             <Reveal key={t.id} delay={i * 100}>
-            <div className="p-6 rounded-2xl bg-white border border-stone-200 shadow-md">
+            <div className="p-6 rounded-2xl bg-white border border-nikki-border shadow-md">
               <div className="flex gap-1 mb-3">
                 {Array.from({ length: t.rating ?? 0 }).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
               </div>
               <p className="text-stone-700 text-sm mb-4 leading-relaxed font-medium">"{t.content}"</p>
-              <p className="text-stone-900 font-bold text-sm">{t.customer_name}</p>
+              <p className="text-nikki-navy font-bold text-sm">{t.customer_name}</p>
             </div>
             </Reveal>
           ))}
@@ -912,7 +912,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm placeholder-stone-500';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm placeholder-stone-500';
 
   async function submit() {
     setError('');
@@ -953,11 +953,11 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white border border-stone-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-5">
           <div>
-            <h3 className="text-stone-900 text-lg font-bold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
+            <h3 className="text-nikki-navy text-lg font-bold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
             {job && <p className="text-stone-700 text-xs mt-0.5">{job.location} • {job.employment_type.replace('_', ' ')}</p>}
           </div>
           <button className="text-stone-400 hover:text-stone-700" onClick={onClose}>✕</button>
@@ -966,7 +966,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
         {done ? (
           <div className="text-center py-10">
             <CheckCircle2 className="w-12 h-12 text-emerald-700 mx-auto mb-3" />
-            <p className="text-stone-900 font-bold mb-1">Application submitted!</p>
+            <p className="text-nikki-navy font-bold mb-1">Application submitted!</p>
             <p className="text-stone-700 text-sm">We'll review your profile and get back to you.</p>
           </div>
         ) : (
@@ -998,19 +998,19 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
             <textarea className={inputCls} rows={2} placeholder="Anything else you'd like to share" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
 
             <div>
-              <label className="text-stone-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5 text-orange-700" /> Passport size photo</label>
+              <label className="text-stone-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5 text-nikki-blue" /> Passport size photo</label>
               <input type="file" accept="image/*" className="text-stone-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs font-medium"
                 onChange={e => setPhoto(e.target.files?.[0] || null)} />
             </div>
             <div>
-              <label className="text-stone-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><Upload className="w-3.5 h-3.5 text-orange-700" /> Resume (PDF/DOC) *</label>
+              <label className="text-stone-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><Upload className="w-3.5 h-3.5 text-nikki-blue" /> Resume (PDF/DOC) *</label>
               <input type="file" accept=".pdf,.doc,.docx" className="text-stone-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs font-medium"
                 onChange={e => setResume(e.target.files?.[0] || null)} />
             </div>
 
             {error && <p className="text-red-700 text-xs font-medium">{error}</p>}
             <button onClick={submit} disabled={busy}
-              className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-orange-700/20">
+              className="w-full py-3 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-nikki-blue/20">
               {busy ? 'Submitting…' : 'Submit Application'}
             </button>
           </div>
@@ -1061,8 +1061,8 @@ function Careers({ segments }: { segments: Segment[] }) {
     <section id="careers" className="py-20 px-4 bg-stone-50" aria-labelledby="careers-heading">
       <div className="max-w-5xl mx-auto">
         <header className="text-center mb-14">
-          <Briefcase className="w-10 h-10 text-orange-700 mx-auto mb-3" aria-hidden="true" />
-          <h2 id="careers-heading" className="font-display text-4xl md:text-5xl font-extrabold text-stone-900 mb-3 tracking-tight">Careers at Nikki Technologies</h2>
+          <Briefcase className="w-10 h-10 text-nikki-blue mx-auto mb-3" aria-hidden="true" />
+          <h2 id="careers-heading" className="font-poppins text-4xl md:text-5xl font-extrabold text-nikki-navy mb-3 tracking-tight">Careers at Nikki Technologies</h2>
           <p className="text-stone-700 max-w-2xl mx-auto font-medium">
             {`We're hiring across ${segments.map(s => s.name).join(', ') || 'our divisions'}. Don't see a role that fits? Send us a general application.`}
           </p>
@@ -1085,10 +1085,10 @@ function Careers({ segments }: { segments: Segment[] }) {
               : undefined;
             return (
               <li key={job.id}>
-                <article className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-white border border-stone-200 shadow-md hover:border-orange-500 transition-all">
+                <article className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-white border border-nikki-border shadow-md hover:border-nikki-surface-blue0 transition-all">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-stone-900 font-bold">{job.title}</h3>
+                      <h3 className="text-nikki-navy font-bold">{job.title}</h3>
                       {seg && (
                         <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={badgeStyle}>
                           {seg.name}
@@ -1101,7 +1101,7 @@ function Careers({ segments }: { segments: Segment[] }) {
                   </div>
                   <button
                     onClick={() => setApplyJob(job)}
-                    className="px-4 py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-md shadow-orange-700/20 shrink-0"
+                    className="px-4 py-2 rounded-xl bg-nikki-blue hover:bg-nikki-royal text-white text-xs font-bold transition-all shadow-md shadow-nikki-blue/20 shrink-0"
                     aria-label={`Apply for ${job.title}`}>
                     Apply Now
                   </button>
@@ -1114,7 +1114,7 @@ function Careers({ segments }: { segments: Segment[] }) {
         <div className="text-center">
           <button
             onClick={() => setApplyJob('general')}
-            className="text-orange-700 text-sm font-semibold underline hover:text-orange-800"
+            className="text-nikki-blue text-sm font-semibold underline hover:text-nikki-navy"
             aria-label="Submit a general career application">
             Don't see your role? Submit a general application
           </button>
@@ -1135,7 +1135,7 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
   type TicketLookupResult = { ticket_no: string; subject: string; status: string; priority: string; created_at: string; resolved_at: string | null };
   const [result, setResult] = useState<TicketLookupResult | null | 'not_found'>(null);
   const [busy, setBusy] = useState(false);
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm placeholder-stone-500';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm placeholder-stone-500';
 
   async function lookup() {
     if (!ticketNo || !phone) return;
@@ -1146,38 +1146,38 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
   }
 
   const statusColor: Record<string, string> = {
-    open: 'text-orange-700', in_progress: 'text-amber-700', waiting_customer: 'text-purple-700',
+    open: 'text-nikki-blue', in_progress: 'text-amber-700', waiting_customer: 'text-purple-700',
     resolved: 'text-emerald-700', closed: 'text-stone-700',
   };
 
   return (
-    <div className="p-8 rounded-2xl bg-white border border-stone-200 shadow-xl">
+    <div className="p-8 rounded-2xl bg-white border border-nikki-border shadow-xl">
       <button onClick={onBack} className="text-stone-700 hover:text-stone-800 text-xs mb-4 font-semibold">← Back to raise a ticket</button>
       {!result ? (
         <div className="space-y-3">
           <input className={inputCls} placeholder="Ticket Number (e.g. NKT-CC-00001)" value={ticketNo} onChange={e => setTicketNo(e.target.value)} />
           <input className={inputCls} placeholder="Phone number used when raising it" value={phone} onChange={e => setPhone(e.target.value)} />
           <button onClick={lookup} disabled={busy || !ticketNo || !phone}
-            className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-orange-700/20">
+            className="w-full py-3 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-nikki-blue/20">
             {busy ? 'Looking up…' : 'Check Status'}
           </button>
         </div>
       ) : result === 'not_found' ? (
         <div className="text-center py-6">
           <p className="text-stone-700 text-sm mb-3 font-medium">No ticket found matching that number and phone.</p>
-          <button onClick={() => setResult(null)} className="text-orange-700 text-sm font-semibold">Try again</button>
+          <button onClick={() => setResult(null)} className="text-nikki-blue text-sm font-semibold">Try again</button>
         </div>
       ) : (
         <div>
-          <p className="font-mono text-orange-700 text-sm mb-1 font-bold">{result.ticket_no}</p>
-          <p className="text-stone-900 font-bold mb-3">{result.subject}</p>
+          <p className="font-mono text-nikki-blue text-sm mb-1 font-bold">{result.ticket_no}</p>
+          <p className="text-nikki-navy font-bold mb-3">{result.subject}</p>
           <div className="space-y-1.5 text-sm font-medium">
             <p><span className="text-stone-700">Status: </span><span className={`font-bold ${statusColor[result.status]}`}>{result.status.replace('_', ' ')}</span></p>
             <p><span className="text-stone-700">Priority: </span><span className="text-stone-800">{result.priority}</span></p>
             <p><span className="text-stone-700">Raised: </span><span className="text-stone-800">{new Date(result.created_at).toLocaleDateString()}</span></p>
             {result.resolved_at && <p><span className="text-stone-700">Resolved: </span><span className="text-stone-800">{new Date(result.resolved_at).toLocaleDateString()}</span></p>}
           </div>
-          <button onClick={() => setResult(null)} className="text-orange-700 text-sm font-semibold mt-4">Check another ticket</button>
+          <button onClick={() => setResult(null)} className="text-nikki-blue text-sm font-semibold mt-4">Check another ticket</button>
         </div>
       )}
     </div>
@@ -1290,7 +1290,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
     }
   }
 
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm placeholder-stone-500 font-medium';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm placeholder-stone-500 font-medium';
 
   const isMarketingSeg = form.segment_slug.includes('marketing') || form.segment_slug.includes('media') || form.segment_slug.includes('digital') || form.segment_slug.includes('kt');
   const isSoftwareSeg = form.segment_slug.includes('software') || form.segment_slug.includes('dev') || form.segment_slug.includes('tech');
@@ -1308,27 +1308,27 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
       );
 
   return (
-    <section id="raise-ticket" className="py-20 px-4 bg-stone-100/60 border-y border-stone-200">
+    <section id="raise-ticket" className="py-20 px-4 bg-stone-100/60 border-y border-nikki-border">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
-          <Ticket className="w-10 h-10 text-orange-700 mx-auto mb-3" />
-          <h2 className="font-display text-4xl font-extrabold text-stone-900 mb-2 tracking-tight">Raise a Support Ticket</h2>
+          <Ticket className="w-10 h-10 text-nikki-blue mx-auto mb-3" />
+          <h2 className="font-poppins text-4xl font-extrabold text-nikki-navy mb-2 tracking-tight">Raise a Support Ticket</h2>
           <p className="text-stone-700 font-medium">{`Existing customer? Get help from the right team — ${cleanSegments.map(s => s.name).join(' or ') || 'pick your division below'}.`}</p>
-          <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-orange-700 text-sm mt-2 font-semibold underline">
+          <button onClick={() => setMode(mode === 'raise' ? 'track' : 'raise')} className="text-nikki-blue text-sm mt-2 font-semibold underline">
             {mode === 'raise' ? 'Already raised a ticket? Track its status' : 'Raise a new ticket instead'}
           </button>
         </div>
         {mode === 'track' ? (
           <TrackTicket onBack={() => setMode('raise')} />
         ) : done ? (
-          <div className="p-8 rounded-2xl bg-white border border-orange-200 text-center shadow-xl">
+          <div className="p-8 rounded-2xl bg-white border border-nikki-border text-center shadow-xl">
             <CheckCircle2 className="w-12 h-12 text-emerald-700 mx-auto mb-3" />
-            <p className="text-stone-900 text-lg font-bold mb-1">Ticket created: {done}</p>
+            <p className="text-nikki-navy text-lg font-bold mb-1">Ticket created: {done}</p>
             <p className="text-stone-700 text-sm mb-4">Our team will contact you shortly. Save your ticket number.</p>
-            <button onClick={() => setDone(null)} className="text-orange-700 text-sm font-semibold">Raise another ticket</button>
+            <button onClick={() => setDone(null)} className="text-nikki-blue text-sm font-semibold">Raise another ticket</button>
           </div>
         ) : (
-          <div className="p-8 rounded-2xl bg-white border border-stone-200 shadow-xl space-y-4">
+          <div className="p-8 rounded-2xl bg-white border border-nikki-border shadow-xl space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <select className={inputCls} value={form.segment_slug}
                 onChange={e => setForm({ ...form, segment_slug: e.target.value, ticket_type: '' })}>
@@ -1355,7 +1355,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
               </div>
             )}
             <button onClick={submit} disabled={busy || (!!turnstileSiteKey && !turnstileToken)}
-              className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-orange-700/20">
+              className="w-full py-3 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-nikki-blue/20">
               <Send className="w-4 h-4" /> {busy ? 'Submitting…' : 'Submit Ticket'}
             </button>
           </div>
@@ -1372,7 +1372,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const c = content?.contact || {};
-  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-stone-900 text-sm focus:border-orange-700 focus:ring-2 focus:ring-orange-700/20 shadow-sm placeholder-stone-500';
+  const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm placeholder-stone-500';
 
   async function submit() {
     if (!form.segment_slug || !form.customer_name || !form.phone) {
@@ -1391,24 +1391,24 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
     <section id="contact" className="py-20 px-4 bg-stone-50">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
         <div>
-          <h2 className="font-display text-4xl font-extrabold text-stone-900 mb-6 tracking-tight">Get In Touch</h2>
+          <h2 className="font-poppins text-4xl font-extrabold text-nikki-navy mb-6 tracking-tight">Get In Touch</h2>
           <div className="space-y-4 text-stone-700 font-medium">
-            {hasRealPhone(c.phone) && <p className="flex items-center gap-3"><Phone className="w-5 h-5 text-orange-700" /> {c.phone}</p>}
-            {c.email && <p className="flex items-center gap-3"><Mail className="w-5 h-5 text-orange-700" /> {c.email}</p>}
-            {c.address && <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-orange-700" /> {c.address}</p>}
+            {hasRealPhone(c.phone) && <p className="flex items-center gap-3"><Phone className="w-5 h-5 text-nikki-blue" /> {c.phone}</p>}
+            {c.email && <p className="flex items-center gap-3"><Mail className="w-5 h-5 text-nikki-blue" /> {c.email}</p>}
+            {c.address && <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-nikki-blue" /> {c.address}</p>}
             {!hasRealPhone(c.phone) && (
               <p className="text-stone-700 text-sm pt-2">
                 Prefer to raise a request directly? Use the form here or{' '}
-                <a href="#raise-ticket" className="text-orange-700 font-semibold underline">open a support ticket</a> — we respond to every one.
+                <a href="#raise-ticket" className="text-nikki-blue font-semibold underline">open a support ticket</a> — we respond to every one.
               </p>
             )}
           </div>
         </div>
-        <div className="p-7 rounded-2xl bg-white border border-stone-200 shadow-xl">
+        <div className="p-7 rounded-2xl bg-white border border-nikki-border shadow-xl">
           {sent ? (
             <div className="text-center py-10">
               <CheckCircle2 className="w-12 h-12 text-emerald-700 mx-auto mb-3" />
-              <p className="text-stone-900 font-bold">Thanks! Our team will call you soon.</p>
+              <p className="text-nikki-navy font-bold">Thanks! Our team will call you soon.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1422,7 +1422,7 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
               <textarea className={inputCls} rows={2} placeholder="Tell us what you need" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
               {err && <p className="text-red-700 text-sm font-medium">{err}</p>}
               <button onClick={submit} disabled={busy}
-                className="w-full py-3 rounded-xl bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-orange-700/20">
+                className="w-full py-3 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-nikki-blue/20">
                 {busy ? 'Sending…' : 'Request Free Consultation'}
               </button>
             </div>
@@ -1436,21 +1436,24 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
 // ─────────────────────────────────────────────── Footer
 function Footer({ content, segments }: { content: Record<string, Record<string, string>>; segments: Segment[] }) {
   return (
-    <footer className="border-t border-stone-800 bg-stone-900 py-12 px-4 text-stone-300">
+    <footer className="border-t border-nikki-royal/30 bg-nikki-navy py-12 px-4 text-stone-300">
       <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8 text-sm">
         <div>
-          <p className="text-white font-bold text-lg mb-2">Nikki Technologies</p>
+          <div className="flex items-center gap-2 mb-2">
+            <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-7 h-7 object-contain" />
+            <p className="text-white font-poppins font-bold text-lg">Nikki Technologies</p>
+          </div>
           <p className="text-stone-400">{content?.footer?.about && !/cctv/i.test(content.footer.about) ? content.footer.about : 'Nikki Technologies — Digital Marketing and Custom Software Engineering under one roof.'}</p>
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Divisions</p>
-          {segments.map(s => <a key={s.slug} href={`#seg-${s.slug}`} className="block text-stone-400 hover:text-orange-400 py-0.5">{s.name}</a>)}
+          {segments.map(s => <a key={s.slug} href={`#seg-${s.slug}`} className="block text-stone-400 hover:text-nikki-sky py-0.5">{s.name}</a>)}
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Quick Links</p>
-          <a href="#products" className="block text-stone-400 hover:text-orange-400 py-0.5">Products</a>
-          <a href="#raise-ticket" className="block text-stone-400 hover:text-orange-400 py-0.5">Support</a>
-          <a href="/login" className="block text-stone-400 hover:text-orange-400 py-0.5">Staff Login</a>
+          <a href="#products" className="block text-stone-400 hover:text-nikki-sky py-0.5">Products</a>
+          <a href="#raise-ticket" className="block text-stone-400 hover:text-nikki-sky py-0.5">Support</a>
+          <a href="/login" className="block text-stone-400 hover:text-nikki-sky py-0.5">Staff Login</a>
         </div>
       </div>
       <p className="text-center text-stone-700 text-xs mt-10">© {new Date().getFullYear()} Nikki Technologies, a unit of K² Adexos Global Technologies. All rights reserved.</p>
@@ -1469,7 +1472,7 @@ export default function PublicSite() {
   // differ from its fallback) shows a shimmer while real content loads;
   // everything else — nav, images, sections below — is on screen right away.
   return (
-    <div className="bg-stone-50 min-h-screen text-stone-900">
+    <div className="bg-stone-50 min-h-screen text-nikki-navy">
       <SEOHead />
       <Navigation />
       <Hero segments={segments} />

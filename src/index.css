@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  NIKKI master brand palette — added for the new landing-page design.
+  Scoped as CSS variables so the internal staff portal (still on the
+  old orange/teal/stone scheme) is completely unaffected until that's
+  approved separately. See tailwind.config.js for the matching
+  nikki-* utility classes that read these.
+*/
+:root {
+  --nikki-navy: #0A1B3D;
+  --nikki-royal: #0D47A1;
+  --nikki-blue: #0066FF;
+  --nikki-sky: #00B4FF;
+  --nikki-background: #FFFFFF;
+  --nikki-surface: #F7FAFC;
+  --nikki-surface-blue: #EAF5FF;
+  --nikki-text-primary: #172033;
+  --nikki-text-secondary: #64748B;
+  --nikki-border: #D9E2EC;
+  --nikki-success: #16A34A;
+  --nikki-warning: #F59E0B;
+  --nikki-error: #DC2626;
+}
+
 @layer base {
   * {
     scroll-behavior: smooth;
