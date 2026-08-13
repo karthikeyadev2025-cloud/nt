@@ -148,7 +148,7 @@ export function MyHome({ onNavigate }: { onNavigate: (tab: string) => void }) {
       if (s) setStats(s);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [user]);
+  }, [user, isCaller, isExec, isManagerish, isSupport]);
 
   if (loading) return <p className="text-stone-700 text-sm py-8 text-center">Loading…</p>;
 
@@ -393,7 +393,7 @@ export function MyAttendance() {
     } catch {
       // ignore
     }
-  }, [user]);
+  }, [user, dateStr]);
   useEffect(() => { load(); }, [load]);
 
   function getPosition(): Promise<{ lat: number | null; lng: number | null }> {
@@ -657,7 +657,7 @@ export function MyRequests() {
   type LeaveBalance = { leave_type: string; entitled: number; used: number; remaining: number; is_unlimited?: boolean; pending?: number };
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
 
-  async function loadBalances() {
+  const loadBalances = useCallback(async () => {
     if (!user) return;
     try {
       const data = await cachedRpc(`get_leave_balances:${user.id}`, () => supabase.rpc('get_leave_balances', { _staff_user_id: user.id }));
@@ -667,7 +667,7 @@ export function MyRequests() {
     } catch {
       // ignore
     }
-  }
+  }, [user]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -684,7 +684,7 @@ export function MyRequests() {
     } catch {
       // ignore
     }
-  }, [user]);
+  }, [user, loadBalances]);
   useEffect(() => { load(); }, [load]);
 
   async function requestLeave() {

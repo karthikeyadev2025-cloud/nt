@@ -1,10 +1,10 @@
-import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
 import { CheckCircle2, XCircle, X } from 'lucide-react';
 
 type ToastKind = 'success' | 'error' | 'info';
 interface ToastItem { id: number; kind: ToastKind; message: string; }
 
-interface ToastContextType {
+export interface ToastContextType {
   success: (msg: string) => void;
   error: (msg: string) => void;
   info: (msg: string) => void;
@@ -22,11 +22,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setItems(prev => prev.filter(t => t.id !== id)), 4000);
   }, []);
 
-  const value: ToastContextType = {
+  const value: ToastContextType = useMemo(() => ({
     success: (msg: string) => push('success', msg),
     error: (msg: string) => push('error', msg),
     info: (msg: string) => push('info', msg),
-  };
+  }), [push]);
 
   return (
     <ToastContext.Provider value={value}>
@@ -51,23 +51,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// useToast is a hook, not a component — same reasoning as useAuth in
+// AuthContext.tsx: a context's Provider and its accompanying hook belong
+// in the same file by convention, not split apart to satisfy this rule.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast must be used within ToastProvider');
   return ctx;
 }
 
-// Helper: wraps a supabase mutation result and reports success/error consistently.
-export function reportResult(
-  toast: ToastContextType,
-  error: { message: string } | null,
-  successMsg: string,
-  errorPrefix = 'Failed'
-) {
-  if (error) {
-    toast.error(`${errorPrefix}: ${error.message}`);
-    return false;
-  }
-  toast.success(successMsg);
-  return true;
-}
+// reportResult lives in toast-utils.ts, imported directly from there by
+// callers — kept out of this file so it doesn't trip
+// react-refresh/only-export-components alongside ToastProvider/useToast,
+// which stay here since a Context's Provider and its accompanying hook are
+// conventionally colocated.

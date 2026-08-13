@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Clock, Calendar, ClipboardList, FileText, CalendarDays,
   CreditCard, Repeat, PhoneCall, UserPlus, BookOpen,
@@ -183,7 +183,7 @@ export default function TelecallerPortal() {
   const { user } = useAuth();
   const { segments } = useSegments(true);
 
-  const tabs: PortalTab[] = [
+  const tabs: PortalTab[] = useMemo(() => [
     { id: 'home', label: 'Home', icon: LayoutDashboard, show: true },
     { id: 'queue', label: 'My Call Queue', icon: PhoneCall, show: true },
     { id: 'meetings', label: 'My Meetings', icon: Calendar, show: true },
@@ -194,7 +194,7 @@ export default function TelecallerPortal() {
     { id: 'training', label: 'Training Manual', icon: BookOpen, show: true },
     { id: 'profile', label: 'My Profile', icon: CreditCard, show: true },
     { id: 'swap', label: 'Shift Swap', icon: Repeat, show: true },
-  ];
+  ], []);
 
   const [tab, setTab] = useState('home');
   // Home's "+ Add Lead" quick action jumps to the queue tab AND opens the

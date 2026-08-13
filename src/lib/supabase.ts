@@ -18,7 +18,6 @@ export const isSupabaseConfigured = Boolean(
 
 if (!isSupabaseConfigured) {
   // Loud, once-only warning — the app will refuse sign-in until this is fixed.
-  // eslint-disable-next-line no-console
   console.error(
     '[Nikki] Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env, then restart the dev server.'
   );

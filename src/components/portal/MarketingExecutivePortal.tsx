@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Clock, Calendar, ClipboardList, FileText, CalendarDays,
   CreditCard, Repeat, MapPin, BookOpen,
@@ -195,7 +195,7 @@ export default function MarketingExecutivePortal() {
   const { user } = useAuth();
   const { segments } = useSegments(true);
 
-  const tabs: PortalTab[] = [
+  const tabs: PortalTab[] = useMemo(() => [
     { id: 'home', label: 'Home', icon: LayoutDashboard, show: true },
     { id: 'visits', label: 'Field Visits', icon: MapPin, show: true },
     { id: 'meetings', label: 'My Meetings', icon: Calendar, show: true },
@@ -206,7 +206,7 @@ export default function MarketingExecutivePortal() {
     { id: 'training', label: 'Training Manual', icon: BookOpen, show: true },
     { id: 'profile', label: 'My Profile', icon: CreditCard, show: true },
     { id: 'swap', label: 'Shift Swap', icon: Repeat, show: true },
-  ];
+  ], []);
 
   const [tab, setTab] = useState('home');
   const mySegNames = user?.segments.includes('all')

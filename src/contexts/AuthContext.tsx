@@ -389,11 +389,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Public actions
   // ─────────────────────────────────────────────────────────────────────
 
-  const hasPermission = (perm: string) =>
-    !!user && (user.role === 'super_admin' || permissions[perm] === true || permissions['all'] === true);
+  const hasPermission = useCallback((perm: string) =>
+    !!user && (user.role === 'super_admin' || permissions[perm] === true || permissions['all'] === true), [user, permissions]);
 
-  const canAccessSegment = (slug: string) =>
-    !!user && (user.role === 'super_admin' || user.segments?.includes('all') || user.segments?.includes(slug));
+  const canAccessSegment = useCallback((slug: string) =>
+    !!user && (user.role === 'super_admin' || user.segments?.includes('all') || user.segments?.includes(slug)), [user]);
 
   async function signIn(email: string, password: string) {
     const cleanEmail = email.trim().toLowerCase();
@@ -496,6 +496,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// useAuth is a hook, not a component — the react-refresh rule flags any
+// non-component export, but a context's Provider and its accompanying
+// hook are conventionally kept in the same file (splitting them apart
+// is the less idiomatic choice here, not the more correct one).
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');

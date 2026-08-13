@@ -7,7 +7,8 @@ import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc'
 import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
-import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal, stageLabel, describeDbError } from './shared';
+import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
+import { stageLabel, describeDbError } from './shared-utils';
 import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
@@ -123,7 +124,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     } catch (err) {
       toast.error(`Couldn't load queue: ${(err instanceof Error ? err.message : String(err))}`);
     }
-  }, [user]);
+  }, [user, toast]);
   useEffect(() => { load(); }, [load]);
   // Fallback when pg_cron isn't enabled — sweeping here means overdue
   // callbacks still notify whenever a telecaller opens their queue.
@@ -1078,7 +1079,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
     if (error) { toast.error(`Couldn't load pool: ${error.message}`); return; }
     setLeads(data || []);
     setSelected(new Set());
-  }, [segFilter]);
+  }, [segFilter, toast]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     supabase.from('app_users').select('id, full_name, role, segments').eq('is_active', true).neq('role', 'super_admin').order('full_name')
@@ -1200,7 +1201,11 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
     } catch (err) {
       toast.error(`Couldn't load appointments: ${(err instanceof Error ? err.message : String(err))}`);
     }
-  }, [segFilter, scope, execs.length]);
+    // execs.length (not execs) is deliberate: this only needs to rerun when
+    // the actual headcount changes, not every time the execs list is
+    // refetched with a new array reference but the same people in it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [segFilter, scope, execs.length, toast]);
 
   useEffect(() => {
     cachedQuery('marketing_execs_summary', async () => {
@@ -1412,7 +1417,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       .order('updated_at', { ascending: true });
     if (error) { toast.error(`Couldn't load your leads: ${error.message}`); return; }
     if (data) setLeads(data);
-  }, [user]);
+  }, [user, toast]);
   useEffect(() => { load(); }, [load]);
   // Fallback when pg_cron isn't enabled: sweeping here means due follow-ups
   // still notify whenever field staff open their queue. Idempotent.
@@ -1435,7 +1440,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     window.addEventListener('online', on);
     window.addEventListener('offline', off);
     return () => { stop(); window.removeEventListener('online', on); window.removeEventListener('offline', off); };
-  }, []);
+  }, [load, toast]);
 
   async function syncNow() {
     setSyncing(true);
@@ -1874,7 +1879,7 @@ export function DuplicateLeadsManager() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
   useEffect(() => { load(); }, [load]);
 
   const groups = new Map<string, DupGroupRow[]>();

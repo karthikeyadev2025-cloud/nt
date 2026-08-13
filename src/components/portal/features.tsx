@@ -210,7 +210,7 @@ export function ShiftSwapBoard() {
       const { data: p } = await supabase.from('shift_swap_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
       if (p) setPending(p);
     }
-  }, [user]);
+  }, [user, hasPermission]);
   useEffect(() => { load(); }, [load]);
 
   async function submit() {

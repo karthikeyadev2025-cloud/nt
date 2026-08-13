@@ -39,7 +39,7 @@ export function IdProofUploader({ staffUserId, canManage }: { staffUserId: strin
     } finally {
       setLoading(false);
     }
-  }, [staffUserId]);
+  }, [staffUserId, toast]);
   useEffect(() => { load(); }, [load]);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {

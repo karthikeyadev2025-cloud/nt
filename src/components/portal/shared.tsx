@@ -15,7 +15,8 @@ import { scanBusinessCard, type CardExtract } from '../../lib/cardScan';
 import { exportLeadsToExcel } from '../../lib/exportLeads';
 import CameraCapture from '../CameraCapture';
 import { AttendanceDetailsModal } from './payroll';
-import { LeadMeetingsTab, rpcCall, type MeetingRow } from './meetings';
+import { LeadMeetingsTab, type MeetingRow } from './meetings';
+import { rpcCall } from './meetings-utils';
 import { cachedQuery, invalidateQueryCache } from '../../lib/cachedQuery';
 import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
 
@@ -25,35 +26,20 @@ export const btnCls =
   'px-4 py-2.5 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-50 text-white text-sm font-semibold shadow-md shadow-nikki-blue/20 border border-nikki-royal/30 transition-all active:scale-[0.98]';
 export const cardCls = 'p-5 rounded-2xl bg-white border border-nikki-border/90 shadow-md shadow-nikki-border/50 backdrop-blur-md';
 
-// Postgres/PostgREST errors carry far more than .message — .code (e.g.
-// 23514 for a check violation) and .details name the exact constraint,
-// which .message alone often doesn't. Every write-path toast in this file
-// uses this so a failure is instantly diagnosable from the screen, no
-// DevTools required. Also logs the full object to console for anyone who
-// does have DevTools open.
-// Name shown for a staff member who might have left the company. Data is
-// never touched by this — full_name stays exactly what it always was in
-// the database; this only changes what's *displayed*, and only to
-// viewers without manage_staff/super_admin. HR/Admin always sees the
-// real name, since they're the ones who need it for audit purposes.
-export type StaffNameInfo = { full_name: string; staff_code?: string | null; employment_status?: string | null };
-export function displayStaffName(person: StaffNameInfo | null | undefined, viewerCanSeeReal: boolean): string {
-  if (!person) return 'Unknown';
-  const departed = person.employment_status && person.employment_status !== 'active';
-  if (departed && !viewerCanSeeReal) {
-    return `Former Employee${person.staff_code ? ` (${person.staff_code})` : ''}`;
-  }
-  return person.full_name;
-}
-
-export function describeDbError(error: { message: string; code?: string; details?: string | null; hint?: string | null }): string {
-  console.error('Supabase write error:', error);
-  const parts = [error.message];
-  if (error.code) parts.push(`[${error.code}]`);
-  if (error.details) parts.push(`— ${error.details}`);
-  if (error.hint) parts.push(`(hint: ${error.hint})`);
-  return parts.join(' ');
-}
+// Non-component helpers (types, labels, outcome lists, error formatting)
+// live in shared-utils.ts — kept separate from this file specifically
+// because it also exports React components, and mixing the two defeats
+// Vite's fast-refresh (an edit to a plain function here would force a
+// full reload of every component in this file too, not just the one
+// that changed). Imported directly below since this file's own code
+// uses them throughout; not re-exported from here — the one other file
+// that needed them (leads-workflow.tsx) now imports straight from
+// shared-utils.ts instead.
+import {
+  describeDbError, displayStaffName, ticketStatusLabel, stageLabel,
+  CALL_OUTCOMES, VISIT_OUTCOMES,
+  type StaffNameInfo,
+} from './shared-utils';
 
 export function SegmentTabs({
   segments, value, onChange, includeAll = true,
@@ -89,17 +75,10 @@ const ticketStatusColors: Record<string, string> = {
   closed: 'bg-stone-100 text-stone-700',
 };
 
-// See STAGE_LABELS above — same rationale: DB values stay, rendered
-// vocabulary is friendlier. `waiting_customer` was reading as an enum name
-// to support agents; `in_progress` looked like a system field.
-export const TICKET_STATUS_LABELS: Record<string, string> = {
-  open: 'Open',
-  in_progress: 'Working on it',
-  waiting_customer: 'Waiting on customer',
-  resolved: 'Resolved',
-  closed: 'Closed',
-};
-export const ticketStatusLabel = (s: string) => TICKET_STATUS_LABELS[s] ?? s.replace('_', ' ');
+// See STAGE_LABELS (shared-utils.ts) — same rationale: DB values stay,
+// rendered vocabulary is friendlier. `waiting_customer` was reading as an
+// enum name to support agents; `in_progress` looked like a system field.
+// TICKET_STATUS_LABELS/ticketStatusLabel now live in shared-utils.ts.
 
 // SLA targets copied from the seed in ticket_sla_policies (migration
 // 20260726000002). Duplicating them client-side lets us render the
@@ -175,7 +154,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
     } catch (err) {
       toast.error(`Couldn't load tickets: ${(err instanceof Error ? err.message : String(err))}`);
     }
-  }, [segFilter, statusFilter]);
+  }, [segFilter, statusFilter, toast]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
@@ -415,56 +394,12 @@ const stageColors: Record<string, string> = {
   not_answered: 'bg-stone-100 text-stone-700',
 };
 
-// Friendly labels for the stage values shown to staff. DB values stay the
-// same (no migration) — only the rendered text changes. Anywhere the UI
-// used `stage.replace('_', ' ')` it now uses this map so the vocabulary is
-// consistent everywhere and reads like a person talking, not a CRM.
-export const STAGE_LABELS: Record<string, string> = {
-  new: 'New',
-  contacted: 'Called',
-  qualified: 'Interested',
-  quoted: 'Quote Sent',
-  won: 'Won',
-  lost: 'Lost',
-  not_answered: 'Callback later',
-};
-export const stageLabel = (stage: string) => STAGE_LABELS[stage] ?? stage.replace('_', ' ');
+// Friendly labels for the stage values shown to staff — STAGE_LABELS,
+// stageLabel, Outcome, CALL_OUTCOMES, VISIT_OUTCOMES now live in
+// shared-utils.ts.
 
-// The "Log Outcome" catalog — this is what a staff member sees when they
-// record what happened on a call or visit. Each row maps a
-// person-language outcome to (a) the underlying DB stage, (b) the
-// call_type for the lead_remarks row, and (c) how many days later the
-// system should nudge them to follow up. `requiresNote` forces the user
-// to say why for deal-ending outcomes so we never lose the reason a deal
-// was lost.
-export type Outcome = {
-  key: string;
-  label: string;
-  stage: string;
-  callType: 'outgoing' | 'incoming' | 'visit' | 'whatsapp' | 'email' | 'note';
-  followupDays: number | null;   // null = no follow-up (deal closed)
-  requiresNote?: boolean;
-  hint?: string;
-};
-
-export const CALL_OUTCOMES: Outcome[] = [
-  { key: 'no_answer',        label: 'No answer',              stage: 'not_answered', callType: 'outgoing', followupDays: 1 },
-  { key: 'voicemail',        label: 'Left voicemail',         stage: 'contacted',    callType: 'outgoing', followupDays: 1 },
-  { key: 'callback_later',   label: 'Asked to call back',     stage: 'not_answered', callType: 'outgoing', followupDays: 2, hint: 'Pick a specific follow-up time below.' },
-  { key: 'interested',       label: 'Spoke — interested',     stage: 'qualified',    callType: 'outgoing', followupDays: 3 },
-  { key: 'not_interested',   label: 'Spoke — not interested', stage: 'lost',         callType: 'outgoing', followupDays: null, requiresNote: true, hint: 'Say briefly why so we can learn from it.' },
-  { key: 'quote_sent',       label: 'Sent quote',             stage: 'quoted',       callType: 'outgoing', followupDays: 7 },
-  { key: 'deal_won',         label: 'Deal won 🎉',            stage: 'won',          callType: 'note',     followupDays: null, requiresNote: true },
-  { key: 'deal_lost',        label: 'Deal lost',              stage: 'lost',         callType: 'note',     followupDays: null, requiresNote: true, hint: 'Say briefly why so we can learn from it.' },
-];
-
-export const VISIT_OUTCOMES: Outcome[] = [
-  { key: 'visit_interested',  label: 'Met — interested',      stage: 'qualified', callType: 'visit', followupDays: 3 },
-  { key: 'visit_not_interested', label: 'Met — not interested', stage: 'lost',    callType: 'visit', followupDays: null, requiresNote: true },
-  { key: 'visit_absent',      label: 'Nobody home',           stage: 'not_answered', callType: 'visit', followupDays: 1 },
-  { key: 'visit_quoted',      label: 'Quoted on site',        stage: 'quoted',    callType: 'visit', followupDays: 7 },
-  { key: 'visit_won',         label: 'Closed deal on site 🎉', stage: 'won',      callType: 'visit', followupDays: null, requiresNote: true },
-];
+// The "Log Outcome" catalog — Outcome, CALL_OUTCOMES, VISIT_OUTCOMES now
+// live in shared-utils.ts (same rationale as the other extractions above).
 
 // Standalone, reusable "add a lead" modal — same underlying dup-check +
 // insert as before, rebuilt with the actual capabilities the DB already
@@ -544,7 +479,7 @@ export function MyLeadsToDoList() {
     } catch (err) {
       toast.error(`Couldn't load your to-do list: ${(err instanceof Error ? err.message : String(err))}`);
     }
-  }, [user]);
+  }, [user, toast]);
   useEffect(() => { load(); }, [load]);
 
   async function markDone(item: TodoItem) {
@@ -1470,7 +1405,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     } catch (err) {
       toast.error(`Couldn't load leads: ${(err instanceof Error ? err.message : String(err))}`);
     }
-  }, [segFilter, stageFilter]);
+  }, [segFilter, stageFilter, toast]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (leads.length === 0) { setFollowupCounts({}); return; }
@@ -1495,6 +1430,10 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       supabase.from('marketing_leads').select('*').eq('id', focusLeadId).maybeSingle()
         .then(({ data }) => { if (data) { setOpenLead(data as Lead); loadRemarks(data.id); } });
     }
+    // loadRemarks is a plain (non-memoized) function defined below — adding
+    // it here would re-run this effect on every render, not just when the
+    // deep-linked lead actually changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusLeadId, leads]);
   useEffect(() => {
     cachedQuery('staff_users_summary', async () => {
@@ -2601,6 +2540,10 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
       const { data } = await supabase.rpc('get_leave_balances', { _staff_user_id: id });
       if (data) setLeaveBalances(prev => ({ ...prev, [id]: data }));
     });
+    // leaveBalances is read here only to skip an id already cached — adding
+    // it to deps would make this effect re-run every time it sets that same
+    // state, refetching everyone again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaves]);
 
   async function review<T extends { id: string; status: string }>(table: string, id: string, status: string, setter: React.Dispatch<React.SetStateAction<T[]>>, override = false) {
@@ -2625,16 +2568,23 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
 
   // Only show tabs this person can actually act on — a manager without
   // approve_advances would otherwise see an Advances tab that is always empty.
-  const visibleTabs = ([
+  // Memoized on hasPermission (now stable — see AuthContext) rather than
+  // recomputed as a fresh array every render, so the effect below can
+  // safely depend on it without re-running on every render.
+  const visibleTabs = useMemo(() => ([
     { id: 'staff' as const, show: hasPermission('view_staff') },
     { id: 'attendance' as const, show: hasPermission('view_attendance') },
     { id: 'leaves' as const, show: hasPermission('approve_leaves') || hasPermission('view_staff') },
     { id: 'advances' as const, show: hasPermission('approve_advances') || hasPermission('view_payroll') },
-  ]).filter(t => t.show);
+  ]).filter(t => t.show), [hasPermission]);
 
   useEffect(() => {
     if (visibleTabs.length > 0 && !visibleTabs.some(t => t.id === tab)) setTab(visibleTabs[0].id);
-  }, [visibleTabs.length]);
+    // `tab` is intentionally excluded — this only needs to re-check when the
+    // set of *available* tabs changes, not every time the user switches tabs
+    // (which would make this effect fire on its own resulting tab change).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleTabs]);
 
   return (
     <div>

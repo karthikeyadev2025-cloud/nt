@@ -10,6 +10,7 @@ import { useToast } from '../../lib/toast';
 import { cachedRpc, invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
+import { rpcCall } from './meetings-utils';
 
 export type MeetingRow = {
   id: string; lead_id: string | null; segment_slug: string | null;
@@ -31,18 +32,7 @@ type MeetingType = {
 
 type StaffLite = { id: string; full_name: string; role: string };
 
-type RpcResult = { ok: boolean; meeting_id?: string; conflict?: string; message?: string };
-
-export async function rpcCall<T = RpcResult>(fn: string, args: Record<string, unknown>): Promise<{ data: T | null; error: { message: string } | null }> {
-  // Call supabase.rpc(...) directly — extracting it to a local variable
-  // first detaches it from the client instance's `this` and throws
-  // "Cannot read properties of undefined (reading 'rest')" inside the
-  // library (this.rest.rpc(...) with this === undefined). Every call
-  // through this helper was silently failing because of that, swallowed
-  // by the async-function wrapper turning the synchronous throw into a
-  // rejected promise that callers' .catch() then quietly ate.
-  return supabase.rpc(fn as never, args as never) as unknown as Promise<{ data: T | null; error: { message: string } | null }>;
-}
+// rpcCall now lives in meetings-utils.ts (imported above).
 
 const IST_TZ = 'Asia/Kolkata';
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('en-IN', { timeZone: IST_TZ, hour: 'numeric', minute: '2-digit', hour12: true });
