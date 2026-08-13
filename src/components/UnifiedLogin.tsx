@@ -121,8 +121,8 @@ export default function UnifiedLogin() {
     <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-4">
-            <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-20 h-20 drop-shadow-md object-contain" />
+          <div className="inline-flex items-center justify-center mb-4 bg-white rounded-2xl p-3 shadow-md">
+            <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-16 h-16 object-contain" />
           </div>
           <h1 className="font-poppins text-3xl font-semibold text-nikki-navy tracking-tight mb-1">Nikki Technologies</h1>
           <p className="text-stone-700 text-sm font-semibold">Enterprise Staff Portal — Sign in to continue</p>
