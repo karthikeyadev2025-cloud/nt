@@ -26,9 +26,7 @@ function PageLoader() {
   }, []);
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center select-none">
-      <div className="bg-white rounded-2xl p-2 shadow-md mb-3">
-        <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-9 h-9 object-contain" />
-      </div>
+      <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-12 h-12 mb-3 drop-shadow-md object-contain" />
       <p className="text-nikki-navy font-extrabold text-sm tracking-tight">Nikki Technologies</p>
       <div className="w-28 h-1 bg-nikki-border rounded-full mt-4 overflow-hidden">
         <div className="w-full h-full bg-nikki-blue rounded-full animate-pulse" />

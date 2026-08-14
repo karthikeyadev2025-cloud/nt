@@ -1433,9 +1433,7 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
       <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8 text-sm">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center justify-center bg-white rounded-lg p-1 shadow-sm">
-              <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-6 h-6 object-contain" />
-            </span>
+            <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-7 h-7 object-contain" />
             <p className="text-white font-poppins font-bold text-lg">Nikki Technologies</p>
           </div>
           <p className="text-stone-400">{content?.footer?.about && !/cctv/i.test(content.footer.about) ? content.footer.about : 'Nikki Technologies — Digital Marketing and Custom Software Engineering under one roof.'}</p>
