@@ -61,12 +61,13 @@ function AnimatedNumber({ value }: { value: string }) {
   return <span ref={ref}>{display}</span>;
 }
 
-function AnimatedStats() {
+function AnimatedStats({ content, divisionCount }: { content: Record<string, Record<string, string>>; divisionCount: number }) {
+  const s = content?.stats || {};
   const stats = [
-    { label: 'Years in Business', value: '2+' },
-    { label: 'Happy Clients', value: '50+' },
-    { label: 'Projects Completed', value: '100+' },
-    { label: 'Divisions', value: '2' },
+    { label: 'Years in Business', value: s.years_in_business || '2+' },
+    { label: 'Happy Clients', value: s.clients_served || '50+' },
+    { label: 'Projects Completed', value: s.projects_completed || '100+' },
+    { label: 'Divisions', value: String(divisionCount || 2) },
   ];
   return (
     <section className="py-14 px-4 border-y border-nikki-border bg-white">
@@ -336,7 +337,12 @@ function HeroicFlyingKites() {
 
 // ─────────────────────────────────────────────── Hero
 // ─────────────────────────────────────────────── Hero illustration (dashboard mockup + floating service badges)
-function HeroIllustration() {
+function HeroIllustration({ content }: { content: Record<string, Record<string, string>> }) {
+  const s = content?.stats || {};
+  const avgLeadGrowth = s.avg_lead_growth || '+248%';
+  const clientRating = s.client_rating || '4.9';
+  const happyClients = s.clients_served || '50+';
+  const projectsCompleted = s.projects_completed || '100+';
   const sparkline = [30, 45, 38, 60, 52, 75, 68, 90];
   const avatars = [
     { initials: 'RK', bg: 'from-nikki-royal to-nikki-blue' },
@@ -366,7 +372,7 @@ function HeroIllustration() {
           <div className="flex items-start justify-between mb-3">
             <div>
               <p className="text-white/70 text-[11px] font-bold uppercase tracking-wide mb-1">Avg. Lead Growth</p>
-              <p className="text-white text-4xl font-extrabold tracking-tight">+248%</p>
+              <p className="text-white text-4xl font-extrabold tracking-tight">{avgLeadGrowth}</p>
             </div>
             <span className="flex items-center gap-1 text-emerald-300 text-xs font-bold bg-white/10 backdrop-blur-sm px-2.5 py-1.5 rounded-full border border-white/10">
               <TrendingUp className="w-3.5 h-3.5" /> Trending up
@@ -401,7 +407,7 @@ function HeroIllustration() {
             ))}
           </div>
           <div>
-            <p className="text-nikki-navy text-lg font-extrabold leading-none">50+</p>
+            <p className="text-nikki-navy text-lg font-extrabold leading-none">{happyClients}</p>
             <p className="text-stone-500 text-[10px] font-semibold mt-1">Happy Clients</p>
           </div>
         </motion.div>
@@ -436,7 +442,7 @@ function HeroIllustration() {
             <Star className="w-4.5 h-4.5 text-white fill-white" />
           </div>
           <div>
-            <p className="text-nikki-navy text-lg font-extrabold leading-none">4.9</p>
+            <p className="text-nikki-navy text-lg font-extrabold leading-none">{clientRating}</p>
             <p className="text-stone-500 text-[10px] font-semibold mt-1">Client Rating</p>
           </div>
         </motion.div>
@@ -452,7 +458,7 @@ function HeroIllustration() {
             <Code2 className="w-4.5 h-4.5 text-nikki-blue" />
           </div>
           <div>
-            <p className="text-nikki-navy text-lg font-extrabold leading-none">100+</p>
+            <p className="text-nikki-navy text-lg font-extrabold leading-none">{projectsCompleted}</p>
             <p className="text-stone-500 text-[10px] font-semibold mt-1">Projects Shipped</p>
           </div>
         </motion.div>
@@ -461,7 +467,7 @@ function HeroIllustration() {
   );
 }
 
-function Hero({ segments }: { segments: Segment[] }) {
+function Hero({ segments, content }: { segments: Segment[]; content: Record<string, Record<string, string>> }) {
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-nikki-surface-blue/60 via-stone-50 to-stone-50">
       <HeroicFlyingKites />
@@ -531,7 +537,7 @@ function Hero({ segments }: { segments: Segment[] }) {
           </div>
 
           <div className="pt-4 lg:pt-0">
-            <HeroIllustration />
+            <HeroIllustration content={content} />
           </div>
         </div>
 
@@ -1687,9 +1693,9 @@ export default function PublicSite() {
     <div className="bg-stone-50 min-h-screen text-nikki-navy">
       <SEOHead />
       <Navigation />
-      <Hero segments={segments} />
+      <Hero segments={segments} content={content} />
       <ClientLogos />
-      <AnimatedStats />
+      <AnimatedStats content={content} divisionCount={segments.length} />
       <HowWeWork />
       <AboutSection segments={segments} />
       <SegmentSections segments={segments} />
