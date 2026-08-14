@@ -4,6 +4,7 @@ import {
   Boxes, Bot, Layers, Phone, Mail, MapPin, ExternalLink, Star, Menu, X,
   Ticket, Send, CheckCircle2, ChevronRight, Briefcase, Upload, User,
   FileText, MessageCircle, Globe, ShoppingCart, Plug, BarChart3, LifeBuoy,
+  PhoneCall, ClipboardCheck, Rocket, LineChart,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -543,25 +544,109 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
   },
 ];
 
-// ─────────────────────────────────────────────── About (who we are, before what we do)
+// ─────────────────────────────────────────────── How We Work (real 4-step engagement flow)
+function HowWeWork() {
+  const steps = [
+    {
+      icon: PhoneCall,
+      title: 'Discovery Call',
+      body: 'A free 30-minute call to understand what you actually need — more leads, a working product, or both.',
+    },
+    {
+      icon: ClipboardCheck,
+      title: 'Proposal & Plan',
+      body: 'A written scope, timeline, and fixed price before any work starts. No surprise invoices later.',
+    },
+    {
+      icon: Rocket,
+      title: 'Build & Launch',
+      body: 'Kite & Tail runs your campaigns, or Nikki Software Studio ships your product — sometimes both at once.',
+    },
+    {
+      icon: LineChart,
+      title: 'Ongoing Growth',
+      body: 'Monthly reporting and support after launch. We stay on as your technology partner, not a one-time vendor.',
+    },
+  ];
+
+  return (
+    <section className="py-20 px-4 bg-white border-y border-nikki-border">
+      <div className="max-w-6xl mx-auto">
+        <Reveal>
+          <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-3 tracking-tight">How We Work</h2>
+          <p className="text-center text-stone-700 mb-16 max-w-2xl mx-auto font-medium">From first call to ongoing growth — the same four steps for every client, every time.</p>
+        </Reveal>
+        <div className="relative grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-6">
+          {/* connecting line, desktop only */}
+          <div className="hidden md:block absolute top-8 left-[12.5%] right-[12.5%] h-0.5 bg-nikki-border" aria-hidden="true" />
+          {steps.map((step, i) => (
+            <Reveal key={step.title} delay={i * 120}>
+              <div className="relative flex flex-col items-center text-center">
+                <div className="relative z-10 w-16 h-16 rounded-2xl bg-nikki-navy flex items-center justify-center shadow-lg shadow-nikki-navy/20 mb-5">
+                  <step.icon className="w-7 h-7 text-white" />
+                  <span className="absolute -top-2.5 -right-2.5 w-7 h-7 rounded-full bg-nikki-blue text-white text-xs font-extrabold flex items-center justify-center border-2 border-white">
+                    {i + 1}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-nikki-navy mb-2">{step.title}</h3>
+                <p className="text-stone-700 text-sm leading-relaxed font-medium max-w-[240px]">{step.body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AboutSection({ segments }: { segments: Segment[] }) {
+  const countries = ['UAE', 'UK', 'USA', 'Singapore', 'Australia', 'India'];
   return (
     <section id="about" className="py-20 px-4 bg-white">
       <div className="max-w-5xl mx-auto">
         <Reveal>
           <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-5 tracking-tight">About Us</h2>
-          <p className="text-center text-stone-700 max-w-3xl mx-auto font-medium leading-relaxed mb-14">
-            Nikki Technologies is a digital marketing and custom software engineering firm, serving clients across
-            the UAE, UK, USA, Singapore, Australia, and India. We run two specialized divisions under one roof —
-            one grows your brand online, the other builds the software that runs your business — so a client never
-            has to juggle separate vendors for marketing and technology. India-based delivery keeps costs
-            competitive without sacrificing craft.
+          <p className="text-center text-stone-700 max-w-2xl mx-auto font-medium leading-relaxed mb-6">
+            Two specialized divisions under one roof — one grows your brand online, the other builds the software
+            that runs your business — so you never juggle separate vendors for marketing and technology.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-14">
+            <span className="text-xs font-bold text-stone-500 uppercase tracking-wide mr-1">Serving clients in</span>
+            {countries.map(c => (
+              <span key={c} className="px-3 py-1 rounded-full bg-nikki-surface-blue text-nikki-navy text-xs font-semibold">{c}</span>
+            ))}
+          </div>
         </Reveal>
+
+        {segments.length === 2 && (
+          <Reveal delay={80}>
+            <div className="flex items-center justify-center gap-3 md:gap-6 mb-12 flex-wrap">
+              {segments.map((seg, i) => (
+                <div key={seg.slug} className="flex items-center gap-3 md:gap-6">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: (seg.color ?? '#0066FF') + '18', color: seg.color ?? '#0066FF' }}>
+                      <Icon name={seg.icon ?? ''} className="w-7 h-7" />
+                    </div>
+                    <span className="text-xs font-bold text-nikki-navy text-center max-w-[90px]">{seg.name}</span>
+                  </div>
+                  {i === 0 && <span className="text-2xl font-extrabold text-nikki-border">+</span>}
+                </div>
+              ))}
+              <span className="text-2xl font-extrabold text-nikki-border">=</span>
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-14 h-14 rounded-2xl bg-nikki-navy flex items-center justify-center shadow-md shadow-nikki-navy/20">
+                  <Star className="w-7 h-7 text-white" />
+                </div>
+                <span className="text-xs font-bold text-nikki-navy text-center max-w-[90px]">One Technology Partner</span>
+              </div>
+            </div>
+          </Reveal>
+        )}
+
         <div className="grid md:grid-cols-2 gap-6">
           {segments.map((seg, i) => (
             <Reveal key={seg.slug} delay={i * 100}>
-              <div className="h-full p-7 rounded-2xl border border-nikki-border bg-stone-50/60 hover:bg-white hover:shadow-lg transition-all">
+              <div className="h-full p-7 rounded-2xl border border-nikki-border bg-stone-50/60 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: (seg.color ?? '#c2410c') + '18', color: seg.color ?? '#c2410c' }}>
                   <Icon name={seg.icon ?? ''} className="w-6 h-6" />
                 </div>
@@ -1471,6 +1556,7 @@ export default function PublicSite() {
       <Hero segments={segments} />
       <ClientLogos />
       <AnimatedStats />
+      <HowWeWork />
       <AboutSection segments={segments} />
       <SegmentSections segments={segments} />
       <Products />
