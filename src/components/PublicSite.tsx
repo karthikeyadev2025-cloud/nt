@@ -337,66 +337,126 @@ function HeroicFlyingKites() {
 // ─────────────────────────────────────────────── Hero
 // ─────────────────────────────────────────────── Hero illustration (dashboard mockup + floating service badges)
 function HeroIllustration() {
-  const bars = [40, 65, 50, 85, 70, 95];
-  const badges = [
-    { icon: TrendingUp, label: 'Ad ROAS 4.8x', pos: 'top-2 -right-2 md:right-4', delay: 0 },
-    { icon: Code2, label: 'Custom Software', pos: 'top-1/3 -right-6 md:-right-10', delay: 0.6 },
-    { icon: Star, label: '50+ Happy Clients', pos: '-bottom-9 left-2 md:-left-6', delay: 1.2 },
+  const sparkline = [30, 45, 38, 60, 52, 75, 68, 90];
+  const avatars = [
+    { initials: 'RK', bg: 'from-nikki-royal to-nikki-blue' },
+    { initials: 'AS', bg: 'from-nikki-blue to-nikki-sky' },
+    { initials: 'MP', bg: 'from-nikki-navy to-nikki-royal' },
+    { initials: 'TN', bg: 'from-nikki-sky to-cyan-300' },
   ];
 
   return (
     <div className="relative w-full max-w-md mx-auto lg:mx-0">
-      {/* mock dashboard card */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.2 }}
-        className="relative bg-white rounded-2xl border border-nikki-border shadow-2xl shadow-nikki-navy/10 p-5 z-10"
-      >
-        <div className="flex items-center gap-1.5 mb-4">
-          <span className="w-2.5 h-2.5 rounded-full bg-nikki-border" />
-          <span className="w-2.5 h-2.5 rounded-full bg-nikki-border" />
-          <span className="w-2.5 h-2.5 rounded-full bg-nikki-border" />
-          <span className="ml-auto text-[10px] font-bold text-stone-400 uppercase tracking-wide">Growth Dashboard</span>
-        </div>
-        <div className="flex items-end justify-between gap-2 h-32 mb-4 px-1">
-          {bars.map((h, i) => (
-            <motion.div
-              key={i}
-              initial={{ height: 0 }}
-              whileInView={{ height: `${h}%` }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 + i * 0.08, ease: 'easeOut' }}
-              className="flex-1 rounded-t-md bg-gradient-to-t from-nikki-royal to-nikki-sky"
-            />
-          ))}
-        </div>
-        <div className="flex items-center justify-between border-t border-nikki-border pt-3">
-          <div>
-            <p className="text-2xl font-extrabold text-nikki-navy leading-none">+248%</p>
-            <p className="text-[11px] text-stone-500 font-semibold mt-1">Avg. lead growth</p>
-          </div>
-          <div className="flex items-center gap-1 text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1 rounded-full">
-            <TrendingUp className="w-3.5 h-3.5" /> Trending up
-          </div>
-        </div>
-      </motion.div>
+      {/* ambient gradient blobs */}
+      <div className="absolute -top-16 -right-10 w-56 h-56 bg-nikki-blue/30 rounded-full blur-3xl" aria-hidden="true" />
+      <div className="absolute -bottom-12 -left-10 w-56 h-56 bg-nikki-sky/30 rounded-full blur-3xl" aria-hidden="true" />
 
-      {/* floating service badges */}
-      {badges.map((b) => (
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.15 }}
+        className="relative z-10 grid grid-cols-2 gap-3.5"
+      >
+        {/* big gradient growth card — spans both columns */}
         <motion.div
-          key={b.label}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: [0, -8, 0] }}
-          transition={{ opacity: { duration: 0.5, delay: 0.9 + b.delay }, y: { duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: b.delay } }}
-          className={`hidden sm:flex absolute ${b.pos} items-center gap-2 bg-white rounded-xl shadow-lg border border-nikki-border px-3.5 py-2.5 z-20`}
+          whileHover={{ scale: 1.02, rotate: -0.5 }}
+          transition={{ duration: 0.25 }}
+          className="col-span-2 rounded-3xl bg-gradient-to-br from-nikki-navy via-nikki-royal to-nikki-blue p-5 shadow-xl shadow-nikki-navy/20 overflow-hidden relative"
         >
-          <div className="w-7 h-7 rounded-lg bg-nikki-surface-blue flex items-center justify-center shrink-0">
-            <b.icon className="w-4 h-4 text-nikki-blue" />
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <p className="text-white/70 text-[11px] font-bold uppercase tracking-wide mb-1">Avg. Lead Growth</p>
+              <p className="text-white text-4xl font-extrabold tracking-tight">+248%</p>
+            </div>
+            <span className="flex items-center gap-1 text-emerald-300 text-xs font-bold bg-white/10 backdrop-blur-sm px-2.5 py-1.5 rounded-full border border-white/10">
+              <TrendingUp className="w-3.5 h-3.5" /> Trending up
+            </span>
           </div>
-          <span className="text-xs font-bold text-nikki-navy whitespace-nowrap">{b.label}</span>
+          <div className="flex items-end gap-1 h-14">
+            {sparkline.map((h, i) => (
+              <motion.div
+                key={i}
+                initial={{ height: 0 }}
+                whileInView={{ height: `${h}%` }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.4 + i * 0.06, ease: 'easeOut' }}
+                className="flex-1 rounded-full bg-white/60"
+              />
+            ))}
+          </div>
         </motion.div>
-      ))}
+
+        {/* glass card: happy clients avatar stack */}
+        <motion.div
+          whileHover={{ scale: 1.04 }}
+          animate={{ y: [0, -6, 0] }}
+          transition={{ y: { duration: 4, repeat: Infinity, ease: 'easeInOut' }, scale: { duration: 0.2 } }}
+          className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/60 shadow-lg p-4 flex flex-col justify-between"
+        >
+          <div className="flex -space-x-2.5 mb-3">
+            {avatars.map(a => (
+              <div key={a.initials} className={`w-8 h-8 rounded-full bg-gradient-to-br ${a.bg} border-2 border-white flex items-center justify-center text-white text-[9px] font-extrabold shadow-sm`}>
+                {a.initials}
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-nikki-navy text-lg font-extrabold leading-none">50+</p>
+            <p className="text-stone-500 text-[10px] font-semibold mt-1">Happy Clients</p>
+          </div>
+        </motion.div>
+
+        {/* glass card: code snippet */}
+        <motion.div
+          whileHover={{ scale: 1.04 }}
+          animate={{ y: [0, -6, 0] }}
+          transition={{ y: { duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }, scale: { duration: 0.2 } }}
+          className="rounded-2xl bg-nikki-navy backdrop-blur-xl shadow-lg p-4 font-mono"
+        >
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <span className="w-2 h-2 rounded-full bg-red-400/80" />
+            <span className="w-2 h-2 rounded-full bg-amber-300/80" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400/80" />
+          </div>
+          <p className="text-[10px] leading-relaxed">
+            <span className="text-nikki-sky">const</span> <span className="text-white">app</span>
+            <span className="text-stone-400"> = </span><span className="text-emerald-300">ship()</span>
+            <br /><span className="text-stone-500">// zero to launch</span>
+          </p>
+        </motion.div>
+
+        {/* rating chip */}
+        <motion.div
+          whileHover={{ scale: 1.04 }}
+          animate={{ y: [0, -5, 0] }}
+          transition={{ y: { duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }, scale: { duration: 0.2 } }}
+          className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/60 shadow-lg p-4 flex items-center gap-3"
+        >
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center shrink-0">
+            <Star className="w-4.5 h-4.5 text-white fill-white" />
+          </div>
+          <div>
+            <p className="text-nikki-navy text-lg font-extrabold leading-none">4.9</p>
+            <p className="text-stone-500 text-[10px] font-semibold mt-1">Client Rating</p>
+          </div>
+        </motion.div>
+
+        {/* projects chip */}
+        <motion.div
+          whileHover={{ scale: 1.04 }}
+          animate={{ y: [0, -5, 0] }}
+          transition={{ y: { duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }, scale: { duration: 0.2 } }}
+          className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/60 shadow-lg p-4 flex items-center gap-3"
+        >
+          <div className="w-9 h-9 rounded-xl bg-nikki-surface-blue flex items-center justify-center shrink-0">
+            <Code2 className="w-4.5 h-4.5 text-nikki-blue" />
+          </div>
+          <div>
+            <p className="text-nikki-navy text-lg font-extrabold leading-none">100+</p>
+            <p className="text-stone-500 text-[10px] font-semibold mt-1">Projects Shipped</p>
+          </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
