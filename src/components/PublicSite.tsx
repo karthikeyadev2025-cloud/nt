@@ -335,71 +335,145 @@ function HeroicFlyingKites() {
 }
 
 // ─────────────────────────────────────────────── Hero
+// ─────────────────────────────────────────────── Hero illustration (dashboard mockup + floating service badges)
+function HeroIllustration() {
+  const bars = [40, 65, 50, 85, 70, 95];
+  const badges = [
+    { icon: TrendingUp, label: 'Ad ROAS 4.8x', pos: 'top-2 -right-2 md:right-4', delay: 0 },
+    { icon: Code2, label: 'Custom Software', pos: 'top-1/3 -right-6 md:-right-10', delay: 0.6 },
+    { icon: Star, label: '50+ Happy Clients', pos: '-bottom-9 left-2 md:-left-6', delay: 1.2 },
+  ];
+
+  return (
+    <div className="relative w-full max-w-md mx-auto lg:mx-0">
+      {/* mock dashboard card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.2 }}
+        className="relative bg-white rounded-2xl border border-nikki-border shadow-2xl shadow-nikki-navy/10 p-5 z-10"
+      >
+        <div className="flex items-center gap-1.5 mb-4">
+          <span className="w-2.5 h-2.5 rounded-full bg-nikki-border" />
+          <span className="w-2.5 h-2.5 rounded-full bg-nikki-border" />
+          <span className="w-2.5 h-2.5 rounded-full bg-nikki-border" />
+          <span className="ml-auto text-[10px] font-bold text-stone-400 uppercase tracking-wide">Growth Dashboard</span>
+        </div>
+        <div className="flex items-end justify-between gap-2 h-32 mb-4 px-1">
+          {bars.map((h, i) => (
+            <motion.div
+              key={i}
+              initial={{ height: 0 }}
+              whileInView={{ height: `${h}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.4 + i * 0.08, ease: 'easeOut' }}
+              className="flex-1 rounded-t-md bg-gradient-to-t from-nikki-royal to-nikki-sky"
+            />
+          ))}
+        </div>
+        <div className="flex items-center justify-between border-t border-nikki-border pt-3">
+          <div>
+            <p className="text-2xl font-extrabold text-nikki-navy leading-none">+248%</p>
+            <p className="text-[11px] text-stone-500 font-semibold mt-1">Avg. lead growth</p>
+          </div>
+          <div className="flex items-center gap-1 text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1 rounded-full">
+            <TrendingUp className="w-3.5 h-3.5" /> Trending up
+          </div>
+        </div>
+      </motion.div>
+
+      {/* floating service badges */}
+      {badges.map((b) => (
+        <motion.div
+          key={b.label}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: [0, -8, 0] }}
+          transition={{ opacity: { duration: 0.5, delay: 0.9 + b.delay }, y: { duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: b.delay } }}
+          className={`hidden sm:flex absolute ${b.pos} items-center gap-2 bg-white rounded-xl shadow-lg border border-nikki-border px-3.5 py-2.5 z-20`}
+        >
+          <div className="w-7 h-7 rounded-lg bg-nikki-surface-blue flex items-center justify-center shrink-0">
+            <b.icon className="w-4 h-4 text-nikki-blue" />
+          </div>
+          <span className="text-xs font-bold text-nikki-navy whitespace-nowrap">{b.label}</span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 function Hero({ segments }: { segments: Segment[] }) {
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden bg-gradient-to-b from-nikki-surface-blue/60 via-stone-50 to-stone-50">
       <HeroicFlyingKites />
-      <div className="max-w-6xl mx-auto text-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-nikki-surface-blue/80 border border-nikki-border text-nikki-navy text-xs font-extrabold mb-6 shadow-sm"
-        >
-          <span className="w-2 h-2 rounded-full bg-nikki-royal animate-pulse" />
-          <span>Digital Marketing &amp; Custom Software Engineering</span>
-        </motion.div>
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="grid lg:grid-cols-2 gap-14 lg:gap-10 items-center">
+          <div className="text-center lg:text-left">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-nikki-surface-blue/80 border border-nikki-border text-nikki-navy text-xs font-extrabold mb-6 shadow-sm"
+            >
+              <span className="w-2 h-2 rounded-full bg-nikki-royal animate-pulse" />
+              <span>Digital Marketing &amp; Custom Software Engineering</span>
+            </motion.div>
 
-        {/* On a slow connection (real-world Indian mobile data, not a lab
-            condition) the site_content fetch this text depends on can take
-            several seconds — and this used to wait up to 8s showing only a
-            low-contrast grey skeleton before falling back to hardcoded copy,
-            which on-device looked exactly like "the homepage is blank/broken"
-            rather than "still loading". A marketing homepage's first
-            impression matters far more than avoiding a brief text swap once
-            the real CMS content arrives — show the fallback immediately. */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="font-poppins text-5xl md:text-7xl font-semibold text-nikki-navy mb-6 tracking-tight leading-tight"
-        >
-          Nikki Technologies
-        </motion.h1>
+            {/* On a slow connection (real-world Indian mobile data, not a lab
+                condition) the site_content fetch this text depends on can take
+                several seconds — and this used to wait up to 8s showing only a
+                low-contrast grey skeleton before falling back to hardcoded copy,
+                which on-device looked exactly like "the homepage is blank/broken"
+                rather than "still loading". A marketing homepage's first
+                impression matters far more than avoiding a brief text swap once
+                the real CMS content arrives — show the fallback immediately. */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="font-poppins text-5xl md:text-6xl lg:text-6xl font-semibold text-nikki-navy mb-6 tracking-tight leading-tight"
+            >
+              Nikki Technologies
+            </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-xl md:text-2xl bg-gradient-to-r from-nikki-navy via-nikki-royal to-nikki-blue bg-clip-text text-transparent font-extrabold mb-6"
-        >
-          Kite &amp; Tail Digital Marketing • Custom Software &amp; Mobile Apps
-        </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="text-xl md:text-2xl bg-gradient-to-r from-nikki-navy via-nikki-royal to-nikki-blue bg-clip-text text-transparent font-extrabold mb-6"
+            >
+              Kite &amp; Tail Digital Marketing • Custom Software &amp; Mobile Apps
+            </motion.p>
 
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.25 }}
-          className="text-stone-700 max-w-2xl mx-auto mb-10 text-lg leading-relaxed font-medium"
-        >
-          Empowering businesses with data-driven performance advertising, Meta &amp; Google PPC funnels, social media management, and custom software development.
-        </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.25 }}
+              className="text-stone-700 max-w-2xl mx-auto lg:mx-0 mb-10 text-lg leading-relaxed font-medium"
+            >
+              Empowering businesses with data-driven performance advertising, Meta &amp; Google PPC funnels, social media management, and custom software development.
+            </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-wrap justify-center gap-4"
-        >
-          {segments.map((s) => (
-            <a key={s.slug} href={`#seg-${s.slug}`}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-stone-300 bg-white hover:border-nikki-royal hover:bg-stone-50 transition-all text-nikki-navy shadow-md font-semibold text-sm">
-              <Icon name={s.icon ?? ''} className="w-5 h-5 text-nikki-blue" />
-              <span>{s.name}</span>
-              <ChevronRight className="w-4 h-4 text-stone-400" />
-            </a>
-          ))}
-        </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-wrap justify-center lg:justify-start gap-4"
+            >
+              {segments.map((s) => (
+                <a key={s.slug} href={`#seg-${s.slug}`}
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-stone-300 bg-white hover:border-nikki-royal hover:bg-stone-50 transition-all text-nikki-navy shadow-md font-semibold text-sm">
+                  <Icon name={s.icon ?? ''} className="w-5 h-5 text-nikki-blue" />
+                  <span>{s.name}</span>
+                  <ChevronRight className="w-4 h-4 text-stone-400" />
+                </a>
+              ))}
+            </motion.div>
+          </div>
+
+          <div className="pt-4 lg:pt-0">
+            <HeroIllustration />
+          </div>
+        </div>
 
         {/* Client-Facing Services Showcase */}
         <ServicesHeroShowcase segments={segments} />
