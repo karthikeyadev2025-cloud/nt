@@ -263,7 +263,8 @@ export const PAGE_CONFIGS: Record<string, PageConfig> = {
     title: `${SITE_NAME} | Digital Marketing & Custom Software Development — India, UAE, UK, US`,
     description:
       'Global digital marketing and custom software firm. Performance ads (Meta, Google), SEO, custom web and mobile apps, and SaaS. ' +
-      'India-based delivery for clients in Dubai, London, the US, Singapore, and India. From MVPs to enterprise builds.',
+      'India-based delivery for clients in Dubai, London, the US, Singapore, and India. From MVPs to enterprise builds. ' +
+      'Also offering business registration, GST, licensing, and compliance filing services across India.',
     path: '/',
     keywords: [...KEYWORDS.brand, ...KEYWORDS.uae_digital_marketing.slice(0, 6), ...KEYWORDS.uk_digital_marketing.slice(0, 6), ...KEYWORDS.india_software.slice(0, 6)],
   },

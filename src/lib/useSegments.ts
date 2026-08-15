@@ -28,6 +28,18 @@ const DEFAULT_FALLBACK_SEGMENTS: Segment[] = [
     active: true,
     order_index: 2, created_at: null,
   },
+  {
+    id: 'seg-compliance',
+    slug: 'business_compliance',
+    name: 'Business Compliance',
+    tagline: 'Company Registration, GST, Licensing & Compliance',
+    description: '',
+    icon: 'Shield',
+    color: '#059669',
+    ticket_prefix: 'BC',
+    active: true,
+    order_index: 3, created_at: null,
+  },
 ];
 
 export function useSegments(includeRetired = false) {

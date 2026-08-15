@@ -5,6 +5,7 @@ import {
   Ticket, Send, CheckCircle2, ChevronRight, Briefcase, Upload, User,
   FileText, MessageCircle, Globe, ShoppingCart, Plug, BarChart3, LifeBuoy,
   PhoneCall, ClipboardCheck, Rocket, LineChart,
+  Building2, Award, Stamp, Landmark, Utensils, Factory, Calculator,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -21,6 +22,7 @@ const iconMap: Record<string, LucideIcon> = {
   Camera, Megaphone, Code2, Shield, Wrench, Settings, Palette,
   TrendingUp, Boxes, Bot, Layers, CheckCircle2,
   FileText, MessageCircle, Globe, ShoppingCart, Plug, BarChart3, LifeBuoy, MapPin,
+  Building2, Award, Stamp, Landmark, Utensils, Factory, Calculator, ClipboardCheck,
 };
 const Icon = ({ name, className }: { name: string; className?: string }) => {
   const C = iconMap[name] || Layers;
@@ -152,7 +154,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // ─────────────────────────────────────────────── Client-Facing Services Showcase (Hero Widget)
 function ServicesHeroShowcase(_props: { segments: Segment[] }) {
-  const [activeTab, setActiveTab] = useState<'kite_tail' | 'software'>('kite_tail');
+  const [activeTab, setActiveTab] = useState<'kite_tail' | 'software' | 'compliance'>('kite_tail');
 
   const contentMap = {
     kite_tail: {
@@ -180,6 +182,19 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
         'Custom Business Automation & Enterprise Software',
       ],
       stats: { delivery: '100% On-Time Delivery', tech: 'Modern Tech Stack', architecture: 'Secure & Scalable' }
+    },
+    compliance: {
+      title: 'Business Compliance • Registration, Licensing & Filing',
+      desc: 'Company registration, GST, trade & food licenses, ISO certification, trademark, and annual compliance filings — handled by an expert CA/CS team.',
+      badge: 'Business Compliance',
+      icon: Shield,
+      highlights: [
+        'Company Registration — Pvt Ltd, LLP, OPC & Partnership',
+        'GST Registration & Ongoing Return Filing',
+        'Trade, Labour, Food (FSSAI) & ISO Licensing',
+        'Trademark Registration & Annual ROC Compliance',
+      ],
+      stats: { team: 'Expert CA/CS Team', coverage: 'PAN India Support', process: 'WhatsApp & Online Process' }
     }
   };
 
@@ -204,6 +219,7 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
           {([
             { id: 'kite_tail' as const, label: 'Kite & Tail Digital' },
             { id: 'software' as const, label: 'Software Studio' },
+            { id: 'compliance' as const, label: 'Business Compliance' },
           ]).map(t => (
             <button
               key={t.id}
@@ -214,7 +230,7 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
                   : 'text-stone-700 hover:text-nikki-navy'
               }`}
             >
-              {t.id === 'kite_tail' ? <Megaphone className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
+              {t.id === 'kite_tail' ? <Megaphone className="w-4 h-4" /> : t.id === 'software' ? <Code2 className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
               <span>{t.label}</span>
             </button>
           ))}
@@ -481,7 +497,7 @@ function Hero({ segments, content }: { segments: Segment[]; content: Record<stri
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-nikki-surface-blue/80 border border-nikki-border text-nikki-navy text-xs font-extrabold mb-6 shadow-sm"
             >
               <span className="w-2 h-2 rounded-full bg-nikki-royal animate-pulse" />
-              <span>Digital Marketing &amp; Custom Software Engineering</span>
+              <span>Digital Marketing, Custom Software &amp; Business Compliance</span>
             </motion.div>
 
             {/* On a slow connection (real-world Indian mobile data, not a lab
@@ -507,7 +523,7 @@ function Hero({ segments, content }: { segments: Segment[]; content: Record<stri
               transition={{ duration: 0.7, delay: 0.2 }}
               className="text-xl md:text-2xl bg-gradient-to-r from-nikki-navy via-nikki-royal to-nikki-blue bg-clip-text text-transparent font-extrabold mb-6"
             >
-              Kite &amp; Tail Digital Marketing • Custom Software &amp; Mobile Apps
+              Kite &amp; Tail Digital Marketing • Custom Software • Business Compliance
             </motion.p>
 
             <motion.p
@@ -516,7 +532,7 @@ function Hero({ segments, content }: { segments: Segment[]; content: Record<stri
               transition={{ duration: 0.7, delay: 0.25 }}
               className="text-stone-700 max-w-2xl mx-auto lg:mx-0 mb-10 text-lg leading-relaxed font-medium"
             >
-              Empowering businesses with data-driven performance advertising, Meta &amp; Google PPC funnels, social media management, and custom software development.
+              Empowering businesses with data-driven performance advertising, custom software development, and end-to-end business registration &amp; compliance.
             </motion.p>
 
             <motion.div
@@ -682,6 +698,79 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
     highlights: ['Custom dashboard build', 'Real-time data views', 'Exportable reports', 'Connects to your existing systems'],
     best_for: 'Businesses making decisions off scattered spreadsheets or gut feeling instead of numbers they can see at a glance.',
   },
+  // Business Compliance — mirrors the live-seeded services exactly
+  // (same titles, order, and copy as the migration) for the same
+  // fallback-never-drifts-from-CMS reason as the other two segments.
+  {
+    id: 'srv-c1', segment_slug: 'business_compliance', title: 'Company Registration',
+    description: 'Register your Private Limited, LLP, One Person Company, or Partnership — we handle the paperwork, you run the business.',
+    icon: 'Building2',
+    highlights: ['Pvt Ltd, LLP, OPC & Partnership', 'DIN & DSC processing', 'MOA/AOA drafting', 'Bank account opening support'],
+    best_for: 'Founders starting a new business who want it registered correctly the first time, without chasing forms themselves.',
+  },
+  {
+    id: 'srv-c2', segment_slug: 'business_compliance', title: 'GST Registration & Filing',
+    description: 'GST registration and ongoing monthly/quarterly return filing, so you never miss a deadline or a notice.',
+    icon: 'FileText',
+    highlights: ['New GST registration', 'Monthly/quarterly GSTR filing', 'Input tax credit reconciliation', 'Notice & query handling'],
+    best_for: 'Any business crossing the GST threshold, or already registered but tired of filing returns themselves.',
+  },
+  {
+    id: 'srv-c3', segment_slug: 'business_compliance', title: 'Labour License & Shop License',
+    description: 'Shops & Establishment registration and labour licenses for businesses employing staff.',
+    icon: 'Briefcase',
+    highlights: ['Shop & Establishment Act registration', 'Labour license application', 'Renewal reminders', 'Multi-state support'],
+    best_for: 'Businesses hiring their first employees or opening a physical shop/office location.',
+  },
+  {
+    id: 'srv-c4', segment_slug: 'business_compliance', title: 'Food License (FSSAI)',
+    description: 'FSSAI registration and license for anyone manufacturing, storing, selling, or distributing food.',
+    icon: 'Utensils',
+    highlights: ['Basic, State & Central FSSAI', 'Documentation support', 'Renewal before expiry', 'Cloud kitchens & restaurants'],
+    best_for: 'Restaurants, cloud kitchens, food manufacturers, and distributors who need to be legally compliant to operate.',
+  },
+  {
+    id: 'srv-c5', segment_slug: 'business_compliance', title: 'ISO Certification',
+    description: 'ISO 9001, 14001, and other certifications that make your business credible to bigger clients and tenders.',
+    icon: 'Award',
+    highlights: ['ISO 9001, 14001 & more', 'Documentation & audit prep', 'Certification body coordination', 'Annual surveillance support'],
+    best_for: 'Businesses bidding on tenders or enterprise clients that require ISO certification as a prerequisite.',
+  },
+  {
+    id: 'srv-c6', segment_slug: 'business_compliance', title: 'Trademark Registration',
+    description: 'Protect your brand name and logo before someone else claims it — trademark search, filing, and objection handling.',
+    icon: 'Stamp',
+    highlights: ['Trademark search & class selection', 'Application filing', 'Objection & opposition handling', 'Renewal tracking'],
+    best_for: 'Any business with a brand name or logo worth protecting from copycats.',
+  },
+  {
+    id: 'srv-c7', segment_slug: 'business_compliance', title: 'Trade License (GHMC)',
+    description: 'Municipal trade license from GHMC and other local bodies, required to legally operate your business premises.',
+    icon: 'Landmark',
+    highlights: ['GHMC & municipal trade license', 'New application & renewal', 'Document preparation', 'Follow-up with the municipal office'],
+    best_for: 'Businesses operating from a physical premises in Hyderabad or other GHMC-governed areas.',
+  },
+  {
+    id: 'srv-c8', segment_slug: 'business_compliance', title: 'MSME / Udyam Registration',
+    description: 'Udyam (MSME) registration to unlock government schemes, collateral-free loans, and delayed-payment protection.',
+    icon: 'Factory',
+    highlights: ['Udyam registration certificate', 'Access to MSME schemes', 'Collateral-free loan eligibility', 'Delayed payment protection under MSMED Act'],
+    best_for: 'Small and medium businesses that want access to government benefits and stronger legal footing with larger buyers.',
+  },
+  {
+    id: 'srv-c9', segment_slug: 'business_compliance', title: 'Income Tax Return Filing (ITR)',
+    description: 'Personal and business ITR filing by a CA team that actually checks your numbers, not just submits them.',
+    icon: 'Calculator',
+    highlights: ['Individual & business ITR', 'Tax planning & deduction review', 'Form 16/26AS reconciliation', 'Notice response support'],
+    best_for: 'Business owners and professionals who want their returns filed correctly and on time, every year.',
+  },
+  {
+    id: 'srv-c10', segment_slug: 'business_compliance', title: 'Compliance & Annual Filing Services',
+    description: 'Annual ROC filings, statutory registers, and ongoing compliance so your company stays in good legal standing.',
+    icon: 'ClipboardCheck',
+    highlights: ['Annual ROC filings (AOC-4, MGT-7)', 'Statutory register maintenance', 'Board resolution drafting', 'Compliance calendar & reminders'],
+    best_for: 'Registered companies and LLPs that need to stay compliant year-round, not just at incorporation.',
+  },
 ];
 
 // ─────────────────────────────────────────────── How We Work (real 4-step engagement flow)
@@ -747,8 +836,8 @@ function AboutSection({ segments }: { segments: Segment[] }) {
         <Reveal>
           <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-5 tracking-tight">About Us</h2>
           <p className="text-center text-stone-700 max-w-2xl mx-auto font-medium leading-relaxed mb-6">
-            Two specialized divisions under one roof — one grows your brand online, the other builds the software
-            that runs your business — so you never juggle separate vendors for marketing and technology.
+            Specialized divisions under one roof — growing your brand online, building the software
+            that runs your business, and keeping you compliant — so you never juggle separate vendors.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 mb-14">
             <span className="text-xs font-bold text-stone-500 uppercase tracking-wide mr-1">Serving clients in</span>
@@ -758,7 +847,7 @@ function AboutSection({ segments }: { segments: Segment[] }) {
           </div>
         </Reveal>
 
-        {segments.length === 2 && (
+        {segments.length >= 2 && segments.length <= 4 && (
           <Reveal delay={80}>
             <div className="flex items-center justify-center gap-3 md:gap-6 mb-12 flex-wrap">
               {segments.map((seg, i) => (
@@ -769,7 +858,7 @@ function AboutSection({ segments }: { segments: Segment[] }) {
                     </div>
                     <span className="text-xs font-bold text-nikki-navy text-center max-w-[90px]">{seg.name}</span>
                   </div>
-                  {i === 0 && <span className="text-2xl font-extrabold text-nikki-border">+</span>}
+                  {i < segments.length - 1 && <span className="text-2xl font-extrabold text-nikki-border">+</span>}
                 </div>
               ))}
               <span className="text-2xl font-extrabold text-nikki-border">=</span>
@@ -814,23 +903,25 @@ function SegmentSections({ segments }: { segments: Segment[] }) {
       <div className="max-w-7xl mx-auto">
         <Reveal>
           <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-3 tracking-tight">What We Do</h2>
-          <p className="text-center text-stone-700 mb-16 max-w-2xl mx-auto font-medium">Two specialized corporate divisions. One trusted technology partner.</p>
+          <p className="text-center text-stone-700 mb-16 max-w-2xl mx-auto font-medium">Specialized divisions. One trusted technology partner.</p>
         </Reveal>
         <div id="services" className="space-y-16">
           {segments.map(seg => {
             const isMarketingSeg = seg.slug.includes('marketing') || seg.slug.includes('media') || seg.slug.includes('digital') || seg.slug.includes('kt');
             const isSoftwareSeg = seg.slug.includes('software') || seg.slug.includes('dev') || seg.slug.includes('tech');
+            const isComplianceSeg = seg.slug.includes('compliance');
 
             const matchedServices = services.filter(s =>
               s.segment_slug === seg.slug ||
               (isMarketingSeg && (s.segment_slug.includes('marketing') || s.segment_slug.includes('media') || s.segment_slug.includes('digital'))) ||
-              (isSoftwareSeg && (s.segment_slug.includes('software') || s.segment_slug.includes('dev')))
+              (isSoftwareSeg && (s.segment_slug.includes('software') || s.segment_slug.includes('dev'))) ||
+              (isComplianceSeg && s.segment_slug.includes('compliance'))
             );
 
             const displayServices = matchedServices.length > 0
               ? matchedServices
               : DEFAULT_FALLBACK_SERVICES.filter(s =>
-                  isMarketingSeg ? s.segment_slug === 'digital_media' : isSoftwareSeg ? s.segment_slug === 'software' : true
+                  isMarketingSeg ? s.segment_slug === 'digital_media' : isSoftwareSeg ? s.segment_slug === 'software' : isComplianceSeg ? s.segment_slug === 'business_compliance' : false
                 );
 
             return (
@@ -1416,6 +1507,13 @@ const DEFAULT_FALLBACK_TICKET_TYPES = [
   { id: 'tt-8', segment_slug: 'software-development', name: 'API & Integration Support' },
   { id: 'tt-9', segment_slug: 'software-development', name: 'Server & Cloud Downtime' },
   { id: 'tt-10', segment_slug: 'software-development', name: 'Billing & License Inquiry' },
+
+  // Business Compliance
+  { id: 'tt-11', segment_slug: 'business_compliance', name: 'New Registration / License Application' },
+  { id: 'tt-12', segment_slug: 'business_compliance', name: 'Filing Deadline / Renewal Reminder' },
+  { id: 'tt-13', segment_slug: 'business_compliance', name: 'Notice / Query from Department' },
+  { id: 'tt-14', segment_slug: 'business_compliance', name: 'Document Status Check' },
+  { id: 'tt-15', segment_slug: 'business_compliance', name: 'Billing & Invoice Question' },
 ];
 
 function RaiseTicket({ segments }: { segments: Segment[] }) {
@@ -1512,17 +1610,19 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
 
   const isMarketingSeg = form.segment_slug.includes('marketing') || form.segment_slug.includes('media') || form.segment_slug.includes('digital') || form.segment_slug.includes('kt');
   const isSoftwareSeg = form.segment_slug.includes('software') || form.segment_slug.includes('dev') || form.segment_slug.includes('tech');
+  const isComplianceSeg = form.segment_slug.includes('compliance');
 
   const matchedTypes = types.filter(t =>
     t.segment_slug === form.segment_slug ||
     (isMarketingSeg && ((t.segment_slug || '').includes('marketing') || (t.segment_slug || '').includes('media') || (t.segment_slug || '').includes('digital'))) ||
-    (isSoftwareSeg && ((t.segment_slug || '').includes('software') || (t.segment_slug || '').includes('dev')))
+    (isSoftwareSeg && ((t.segment_slug || '').includes('software') || (t.segment_slug || '').includes('dev'))) ||
+    (isComplianceSeg && (t.segment_slug || '').includes('compliance'))
   );
 
   const displayTypes = matchedTypes.length > 0
     ? matchedTypes
     : DEFAULT_FALLBACK_TICKET_TYPES.filter(t =>
-        isMarketingSeg ? t.segment_slug === 'digital-marketing' : isSoftwareSeg ? t.segment_slug === 'software-development' : true
+        isMarketingSeg ? t.segment_slug === 'digital-marketing' : isSoftwareSeg ? t.segment_slug === 'software-development' : isComplianceSeg ? t.segment_slug === 'business_compliance' : false
       );
 
   return (
@@ -1661,7 +1761,7 @@ function Footer({ content, segments }: { content: Record<string, Record<string, 
             <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-7 h-7 object-contain" />
             <p className="text-white font-poppins font-bold text-lg">Nikki Technologies</p>
           </div>
-          <p className="text-stone-400">{content?.footer?.about && !/cctv/i.test(content.footer.about) ? content.footer.about : 'Nikki Technologies — Digital Marketing and Custom Software Engineering under one roof.'}</p>
+          <p className="text-stone-400">{content?.footer?.about && !/cctv/i.test(content.footer.about) ? content.footer.about : 'Nikki Technologies — Digital Marketing, Custom Software Engineering, and Business Compliance under one roof.'}</p>
         </div>
         <div>
           <p className="text-white font-semibold mb-3">Divisions</p>
