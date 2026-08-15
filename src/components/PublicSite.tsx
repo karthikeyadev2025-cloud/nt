@@ -355,129 +355,196 @@ function HeroicFlyingKites() {
 // ─────────────────────────────────────────────── Hero illustration (dashboard mockup + floating service badges)
 function HeroIllustration({ content }: { content: Record<string, Record<string, string>> }) {
   const s = content?.stats || {};
-  const avgLeadGrowth = s.avg_lead_growth || '+248%';
   const clientRating = s.client_rating || '4.9';
   const happyClients = s.clients_served || '50+';
-  const projectsCompleted = s.projects_completed || '100+';
-  const sparkline = [30, 45, 38, 60, 52, 75, 68, 90];
-  const avatars = [
-    { initials: 'RK', bg: 'from-nikki-royal to-nikki-blue' },
-    { initials: 'AS', bg: 'from-nikki-blue to-nikki-sky' },
-    { initials: 'MP', bg: 'from-nikki-navy to-nikki-royal' },
-    { initials: 'TN', bg: 'from-nikki-sky to-cyan-300' },
+
+  // Cycles through what the mascot's little screen shows — a playful nod
+  // to the fact this is a multi-division company, not just one thing.
+  const screens = [
+    { Icon: Megaphone, bg: '#ec4899', label: 'Marketing' },
+    { Icon: Code2, bg: '#0066FF', label: 'Software' },
+    { Icon: Shield, bg: '#059669', label: 'Compliance' },
+  ];
+  const [screenIdx, setScreenIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setScreenIdx(i => (i + 1) % screens.length), 2200);
+    return () => clearInterval(t);
+  }, [screens.length]);
+  const activeScreen = screens[screenIdx];
+
+  const badges = [
+    { emoji: '📣', label: 'Marketing', bg: 'from-pink-400 to-rose-400', pos: 'top-0 left-0 md:-left-6', delay: 0, duration: 3.4 },
+    { emoji: '</>', label: 'Software', bg: 'from-nikki-blue to-nikki-sky', pos: 'top-6 right-0 md:-right-8', delay: 0.5, duration: 3.8, mono: true },
+    { emoji: '✅', label: 'Compliance', bg: 'from-emerald-400 to-teal-400', pos: 'bottom-24 -left-2 md:-left-10', delay: 1, duration: 3.2 },
   ];
 
   return (
-    <div className="relative w-full max-w-md mx-auto lg:mx-0">
+    <div className="relative w-full max-w-md mx-auto lg:mx-0 h-[420px] select-none">
       {/* ambient gradient blobs */}
-      <div className="absolute -top-16 -right-10 w-56 h-56 bg-nikki-blue/30 rounded-full blur-3xl" aria-hidden="true" />
-      <div className="absolute -bottom-12 -left-10 w-56 h-56 bg-nikki-sky/30 rounded-full blur-3xl" aria-hidden="true" />
+      <div className="absolute top-0 right-4 w-52 h-52 bg-nikki-blue/25 rounded-full blur-3xl" aria-hidden="true" />
+      <div className="absolute bottom-4 left-4 w-52 h-52 bg-nikki-sky/25 rounded-full blur-3xl" aria-hidden="true" />
 
+      {/* sparkle / confetti dots for a bit of clip-art energy */}
+      {[
+        { top: '8%', left: '18%', size: 10, color: '#F59E0B', delay: 0 },
+        { top: '14%', left: '78%', size: 7, color: '#0066FF', delay: 0.6 },
+        { top: '68%', left: '85%', size: 9, color: '#EC4899', delay: 1.1 },
+        { top: '80%', left: '12%', size: 8, color: '#059669', delay: 1.6 },
+      ].map((d, i) => (
+        <motion.span
+          key={i}
+          className="absolute rounded-full"
+          style={{ top: d.top, left: d.left, width: d.size, height: d.size, backgroundColor: d.color }}
+          animate={{ y: [0, -10, 0], opacity: [0.9, 0.4, 0.9] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: d.delay }}
+          aria-hidden="true"
+        />
+      ))}
+
+      {/* the mascot */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.15 }}
-        className="relative z-10 grid grid-cols-2 gap-3.5"
+        className="absolute inset-0 flex items-end justify-center pb-6"
       >
-        {/* big gradient growth card — spans both columns */}
-        <motion.div
-          whileHover={{ scale: 1.02, rotate: -0.5 }}
-          transition={{ duration: 0.25 }}
-          className="col-span-2 rounded-3xl bg-gradient-to-br from-nikki-navy via-nikki-royal to-nikki-blue p-5 shadow-xl shadow-nikki-navy/20 overflow-hidden relative"
+        <motion.svg
+          viewBox="0 0 200 240"
+          className="w-56 h-auto drop-shadow-xl"
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-white/70 text-[11px] font-bold uppercase tracking-wide mb-1">Avg. Lead Growth</p>
-              <p className="text-white text-4xl font-extrabold tracking-tight">{avgLeadGrowth}</p>
+          <defs>
+            <linearGradient id="bodyGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#0D47A1" />
+              <stop offset="100%" stopColor="#0066FF" />
+            </linearGradient>
+            <linearGradient id="headGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#0066FF" />
+              <stop offset="100%" stopColor="#00B4FF" />
+            </linearGradient>
+          </defs>
+
+          {/* ground shadow */}
+          <ellipse cx="100" cy="228" rx="46" ry="8" fill="#0A1B3D" opacity="0.12" />
+
+          {/* left arm — gentle idle sway */}
+          <motion.g
+            style={{ transformOrigin: '58px 148px' }}
+            animate={{ rotate: [0, -6, 0] }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <rect x="42" y="146" width="18" height="46" rx="9" fill="url(#bodyGrad)" />
+          </motion.g>
+
+          {/* right arm — a little wave */}
+          <motion.g
+            style={{ transformOrigin: '150px 150px' }}
+            animate={{ rotate: [0, 18, 0, 18, 0] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.2 }}
+          >
+            <rect x="140" y="118" width="18" height="46" rx="9" fill="url(#bodyGrad)" />
+          </motion.g>
+
+          {/* body */}
+          <rect x="58" y="128" width="84" height="92" rx="28" fill="url(#bodyGrad)" />
+
+          {/* little screen/tablet held in front */}
+          <rect x="76" y="150" width="48" height="36" rx="8" fill="#FFFFFF" />
+          <foreignObject x="76" y="150" width="48" height="36">
+            <div className="w-full h-full flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={screenIdx}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-6 h-6 rounded-md flex items-center justify-center"
+                  style={{ backgroundColor: activeScreen.bg }}
+                >
+                  <activeScreen.Icon className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+                </motion.div>
+              </AnimatePresence>
             </div>
-            <span className="flex items-center gap-1 text-emerald-300 text-xs font-bold bg-white/10 backdrop-blur-sm px-2.5 py-1.5 rounded-full border border-white/10">
-              <TrendingUp className="w-3.5 h-3.5" /> Trending up
-            </span>
-          </div>
-          <div className="flex items-end gap-1 h-14">
-            {sparkline.map((h, i) => (
-              <motion.div
-                key={i}
-                initial={{ height: 0 }}
-                whileInView={{ height: `${h}%` }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.4 + i * 0.06, ease: 'easeOut' }}
-                className="flex-1 rounded-full bg-white/60"
-              />
-            ))}
-          </div>
-        </motion.div>
+          </foreignObject>
 
-        {/* glass card: happy clients avatar stack */}
-        <motion.div
-          whileHover={{ scale: 1.04 }}
-          animate={{ y: [0, -6, 0] }}
-          transition={{ y: { duration: 4, repeat: Infinity, ease: 'easeInOut' }, scale: { duration: 0.2 } }}
-          className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/60 shadow-lg p-4 flex flex-col justify-between"
-        >
-          <div className="flex -space-x-2.5 mb-3">
-            {avatars.map(a => (
-              <div key={a.initials} className={`w-8 h-8 rounded-full bg-gradient-to-br ${a.bg} border-2 border-white flex items-center justify-center text-white text-[9px] font-extrabold shadow-sm`}>
-                {a.initials}
-              </div>
-            ))}
-          </div>
-          <div>
-            <p className="text-nikki-navy text-lg font-extrabold leading-none">{happyClients}</p>
-            <p className="text-stone-500 text-[10px] font-semibold mt-1">Happy Clients</p>
-          </div>
-        </motion.div>
+          {/* head */}
+          <circle cx="100" cy="88" r="46" fill="url(#headGrad)" />
 
-        {/* glass card: code snippet */}
-        <motion.div
-          whileHover={{ scale: 1.04 }}
-          animate={{ y: [0, -6, 0] }}
-          transition={{ y: { duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }, scale: { duration: 0.2 } }}
-          className="rounded-2xl bg-nikki-navy backdrop-blur-xl shadow-lg p-4 font-mono"
-        >
-          <div className="flex items-center gap-1.5 mb-2.5">
-            <span className="w-2 h-2 rounded-full bg-red-400/80" />
-            <span className="w-2 h-2 rounded-full bg-amber-300/80" />
-            <span className="w-2 h-2 rounded-full bg-emerald-400/80" />
-          </div>
-          <p className="text-[10px] leading-relaxed">
-            <span className="text-nikki-sky">const</span> <span className="text-white">app</span>
-            <span className="text-stone-400"> = </span><span className="text-emerald-300">ship()</span>
-            <br /><span className="text-stone-500">// zero to launch</span>
-          </p>
-        </motion.div>
+          {/* antenna */}
+          <motion.g
+            style={{ transformOrigin: '100px 44px' }}
+            animate={{ rotate: [-4, 4, -4] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <line x1="100" y1="44" x2="100" y2="26" stroke="#0A1B3D" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="100" cy="21" r="6" fill="#00B4FF" />
+          </motion.g>
 
-        {/* rating chip */}
-        <motion.div
-          whileHover={{ scale: 1.04 }}
-          animate={{ y: [0, -5, 0] }}
-          transition={{ y: { duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }, scale: { duration: 0.2 } }}
-          className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/60 shadow-lg p-4 flex items-center gap-3"
-        >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center shrink-0">
-            <Star className="w-4.5 h-4.5 text-white fill-white" />
-          </div>
-          <div>
-            <p className="text-nikki-navy text-lg font-extrabold leading-none">{clientRating}</p>
-            <p className="text-stone-500 text-[10px] font-semibold mt-1">Client Rating</p>
-          </div>
-        </motion.div>
+          {/* face — blinking eyes */}
+          <motion.g animate={{ scaleY: [1, 1, 0.1, 1] }} transition={{ duration: 3.2, repeat: Infinity, times: [0, 0.9, 0.95, 1] }} style={{ transformOrigin: '100px 88px' }}>
+            <circle cx="84" cy="86" r="7" fill="#FFFFFF" />
+            <circle cx="116" cy="86" r="7" fill="#FFFFFF" />
+            <circle cx="85" cy="87" r="3.2" fill="#0A1B3D" />
+            <circle cx="117" cy="87" r="3.2" fill="#0A1B3D" />
+          </motion.g>
+          {/* smile */}
+          <path d="M 86 102 Q 100 112 114 102" stroke="#FFFFFF" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+          {/* cheeks */}
+          <circle cx="72" cy="98" r="5" fill="#00B4FF" opacity="0.35" />
+          <circle cx="128" cy="98" r="5" fill="#00B4FF" opacity="0.35" />
+        </motion.svg>
+      </motion.div>
 
-        {/* projects chip */}
+      {/* floating service badges */}
+      {badges.map((b) => (
         <motion.div
-          whileHover={{ scale: 1.04 }}
-          animate={{ y: [0, -5, 0] }}
-          transition={{ y: { duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }, scale: { duration: 0.2 } }}
-          className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/60 shadow-lg p-4 flex items-center gap-3"
+          key={b.label}
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 1, scale: 1, y: [0, -10, 0], rotate: [0, -4, 4, 0] }}
+          transition={{
+            opacity: { duration: 0.4, delay: 0.8 + b.delay },
+            scale: { duration: 0.4, delay: 0.8 + b.delay },
+            y: { duration: b.duration, repeat: Infinity, ease: 'easeInOut', delay: b.delay },
+            rotate: { duration: b.duration * 1.3, repeat: Infinity, ease: 'easeInOut', delay: b.delay },
+          }}
+          whileHover={{ scale: 1.15 }}
+          className={`hidden sm:flex absolute ${b.pos} z-20 flex-col items-center gap-1 cursor-default`}
         >
-          <div className="w-9 h-9 rounded-xl bg-nikki-surface-blue flex items-center justify-center shrink-0">
-            <Code2 className="w-4.5 h-4.5 text-nikki-blue" />
+          <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${b.bg} shadow-lg border-4 border-white flex items-center justify-center text-white ${b.mono ? 'font-mono text-sm font-bold' : 'text-xl'}`}>
+            {b.emoji}
           </div>
-          <div>
-            <p className="text-nikki-navy text-lg font-extrabold leading-none">{projectsCompleted}</p>
-            <p className="text-stone-500 text-[10px] font-semibold mt-1">Projects Shipped</p>
-          </div>
+          <span className="text-[10px] font-extrabold text-nikki-navy bg-white px-2 py-0.5 rounded-full shadow-sm border border-nikki-border">{b.label}</span>
         </motion.div>
+      ))}
+
+      {/* two sticker-style stat chips, bottom corners */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.6, rotate: -8 }}
+        animate={{ opacity: 1, scale: 1, rotate: -6 }}
+        transition={{ duration: 0.5, delay: 1.4 }}
+        whileHover={{ rotate: 0, scale: 1.08 }}
+        className="absolute bottom-0 right-0 md:-right-4 z-20 bg-white rounded-2xl shadow-lg border border-nikki-border px-3.5 py-2.5 flex items-center gap-2"
+      >
+        <span className="text-xl">⭐</span>
+        <div>
+          <p className="text-nikki-navy text-sm font-extrabold leading-none">{clientRating}</p>
+          <p className="text-stone-500 text-[9px] font-semibold mt-0.5">Rating</p>
+        </div>
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.6, rotate: 8 }}
+        animate={{ opacity: 1, scale: 1, rotate: 5 }}
+        transition={{ duration: 0.5, delay: 1.6 }}
+        whileHover={{ rotate: 0, scale: 1.08 }}
+        className="absolute bottom-2 left-0 md:-left-4 z-20 bg-white rounded-2xl shadow-lg border border-nikki-border px-3.5 py-2.5 flex items-center gap-2"
+      >
+        <span className="text-xl">🎉</span>
+        <div>
+          <p className="text-nikki-navy text-sm font-extrabold leading-none">{happyClients}</p>
+          <p className="text-stone-500 text-[9px] font-semibold mt-0.5">Happy Clients</p>
+        </div>
       </motion.div>
     </div>
   );
