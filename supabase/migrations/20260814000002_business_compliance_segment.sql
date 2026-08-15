@@ -17,7 +17,13 @@ INSERT INTO segments (slug, name, tagline, description, icon, color, ticket_pref
    'Shield', '#059669', 'BC', 3)
 ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO services (segment_slug, title, description, icon, order_index, highlights, best_for) VALUES
+-- No natural unique key on (segment_slug, title) to hang an ON CONFLICT
+-- off, unlike the segments insert above — guard with an existence check
+-- instead so this stays safe to run more than once.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM services WHERE segment_slug = 'business_compliance') THEN
+    INSERT INTO services (segment_slug, title, description, icon, order_index, highlights, best_for) VALUES
   ('business_compliance', 'Company Registration',
    'Register your Private Limited, LLP, One Person Company, or Partnership — we handle the paperwork, you run the business.',
    'Building2', 1,
@@ -77,3 +83,5 @@ INSERT INTO services (segment_slug, title, description, icon, order_index, highl
    'ClipboardCheck', 10,
    ARRAY['Annual ROC filings (AOC-4, MGT-7)', 'Statutory register maintenance', 'Board resolution drafting', 'Compliance calendar & reminders'],
    'Registered companies and LLPs that need to stay compliant year-round, not just at incorporation.');
+  END IF;
+END $$;
