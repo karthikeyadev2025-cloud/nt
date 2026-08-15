@@ -564,7 +564,7 @@ function Hero({ segments, content }: { segments: Segment[]; content: Record<stri
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-nikki-surface-blue/80 border border-nikki-border text-nikki-navy text-xs font-extrabold mb-6 shadow-sm"
             >
               <span className="w-2 h-2 rounded-full bg-nikki-royal animate-pulse" />
-              <span>Digital Marketing, Custom Software &amp; Business Compliance</span>
+              <span>{content?.hero?.badge || 'Digital Marketing, Custom Software & Business Compliance'}</span>
             </motion.div>
 
             {/* On a slow connection (real-world Indian mobile data, not a lab
@@ -590,7 +590,7 @@ function Hero({ segments, content }: { segments: Segment[]; content: Record<stri
               transition={{ duration: 0.7, delay: 0.2 }}
               className="text-xl md:text-2xl bg-gradient-to-r from-nikki-navy via-nikki-royal to-nikki-blue bg-clip-text text-transparent font-extrabold mb-6"
             >
-              Kite &amp; Tail Digital Marketing • Custom Software • Business Compliance
+              {content?.hero?.tagline || 'Kite & Tail Digital Marketing • Custom Software • Business Compliance'}
             </motion.p>
 
             <motion.p
@@ -599,7 +599,7 @@ function Hero({ segments, content }: { segments: Segment[]; content: Record<stri
               transition={{ duration: 0.7, delay: 0.25 }}
               className="text-stone-700 max-w-2xl mx-auto lg:mx-0 mb-10 text-lg leading-relaxed font-medium"
             >
-              Empowering businesses with data-driven performance advertising, custom software development, and end-to-end business registration &amp; compliance.
+              {content?.hero?.description || 'Empowering businesses with data-driven performance advertising, custom software development, and end-to-end business registration & compliance.'}
             </motion.p>
 
             <motion.div
@@ -841,27 +841,28 @@ const DEFAULT_FALLBACK_SERVICES: Service[] = [
 ];
 
 // ─────────────────────────────────────────────── How We Work (real 4-step engagement flow)
-function HowWeWork() {
+function HowWeWork({ content }: { content: Record<string, Record<string, string>> }) {
+  const c = content?.how_it_works || {};
   const steps = [
     {
       icon: PhoneCall,
-      title: 'Discovery Call',
-      body: 'A free 30-minute call to understand what you actually need — more leads, a working product, or both.',
+      title: c.step1_title || 'Discovery Call',
+      body: c.step1_body || 'A free 30-minute call to understand what you actually need — more leads, a working product, or both.',
     },
     {
       icon: ClipboardCheck,
-      title: 'Proposal & Plan',
-      body: 'A written scope, timeline, and fixed price before any work starts. No surprise invoices later.',
+      title: c.step2_title || 'Proposal & Plan',
+      body: c.step2_body || 'A written scope, timeline, and fixed price before any work starts. No surprise invoices later.',
     },
     {
       icon: Rocket,
-      title: 'Build & Launch',
-      body: 'Kite & Tail runs your campaigns, or Nikki Software Studio ships your product — sometimes both at once.',
+      title: c.step3_title || 'Build & Launch',
+      body: c.step3_body || 'Kite & Tail runs your campaigns, or Nikki Software Studio ships your product — sometimes both at once.',
     },
     {
       icon: LineChart,
-      title: 'Ongoing Growth',
-      body: 'Monthly reporting and support after launch. We stay on as your technology partner, not a one-time vendor.',
+      title: c.step4_title || 'Ongoing Growth',
+      body: c.step4_body || 'Monthly reporting and support after launch. We stay on as your technology partner, not a one-time vendor.',
     },
   ];
 
@@ -869,8 +870,8 @@ function HowWeWork() {
     <section className="py-20 px-4 bg-white border-y border-nikki-border">
       <div className="max-w-6xl mx-auto">
         <Reveal>
-          <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-3 tracking-tight">How We Work</h2>
-          <p className="text-center text-stone-700 mb-16 max-w-2xl mx-auto font-medium">From first call to ongoing growth — the same four steps for every client, every time.</p>
+          <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-3 tracking-tight">{c.heading || 'How We Work'}</h2>
+          <p className="text-center text-stone-700 mb-16 max-w-2xl mx-auto font-medium">{c.subheading || 'From first call to ongoing growth — the same four steps for every client, every time.'}</p>
         </Reveal>
         <div className="relative grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-6">
           {/* connecting line, desktop only */}
@@ -895,16 +896,16 @@ function HowWeWork() {
   );
 }
 
-function AboutSection({ segments }: { segments: Segment[] }) {
-  const countries = ['UAE', 'UK', 'USA', 'Singapore', 'Australia', 'India'];
+function AboutSection({ segments, content }: { segments: Segment[]; content: Record<string, Record<string, string>> }) {
+  const a = content?.about || {};
+  const countries = (a.countries || 'UAE, UK, USA, Singapore, Australia, India').split(',').map(s => s.trim()).filter(Boolean);
   return (
     <section id="about" className="py-20 px-4 bg-white">
       <div className="max-w-5xl mx-auto">
         <Reveal>
           <h2 className="font-poppins text-4xl md:text-5xl font-extrabold text-center text-nikki-navy mb-5 tracking-tight">About Us</h2>
           <p className="text-center text-stone-700 max-w-2xl mx-auto font-medium leading-relaxed mb-6">
-            Specialized divisions under one roof — growing your brand online, building the software
-            that runs your business, and keeping you compliant — so you never juggle separate vendors.
+            {a.lead_text || 'Specialized divisions under one roof — growing your brand online, building the software that runs your business, and keeping you compliant — so you never juggle separate vendors.'}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 mb-14">
             <span className="text-xs font-bold text-stone-500 uppercase tracking-wide mr-1">Serving clients in</span>
@@ -1863,8 +1864,8 @@ export default function PublicSite() {
       <Hero segments={segments} content={content} />
       <ClientLogos />
       <AnimatedStats content={content} divisionCount={segments.length} />
-      <HowWeWork />
-      <AboutSection segments={segments} />
+      <HowWeWork content={content} />
+      <AboutSection segments={segments} content={content} />
       <SegmentSections segments={segments} />
       <Products />
       <Careers segments={segments} />
