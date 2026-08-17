@@ -125,7 +125,7 @@ function buildSections(role: Role): Section[] {
       id: 'products', label: 'Our Products & Segments', icon: Layers,
       body: <>
         <p className="text-sm text-stone-700 mb-4">Every lead belongs to one of two segments. Knowing which one changes what you pitch and how.</p>
-        <Field name="Digital Media (Kite & Tail)">We grow other businesses' brands online — ads, content, SEO. The customer is buying marketing services.</Field>
+        <Field name="Digital Media">We grow other businesses' brands online — ads, content, SEO. The customer is buying marketing services.</Field>
         <Field name="Software Solutions">We build and sell our own SaaS products, plus custom software. The customer is buying a tool or a build.</Field>
 
         <p className="text-xs font-bold uppercase tracking-wide text-stone-500 mt-4 mb-2 flex items-center gap-1.5"><Megaphone className="w-3.5 h-3.5" /> Digital Media — what we offer</p>

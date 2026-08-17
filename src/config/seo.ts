@@ -29,9 +29,7 @@ export const KEYWORDS = {
   brand: [
     'Nikki Technologies', 'nikkitechnologies.com', 'Nikki Tech', 'Niki Tech',
     'Nikkitech', 'Niki Technologies', 'Nikky Tech', 'Nikky Technologies',
-    'Niki Media', 'Nikki Media', 'Kite & Tail', 'Kite and Tail',
-    'Kite & Tail Media', 'Kite & Tail Digital', 'Kite Tail Digital',
-    'Kitetail', 'Kite Tail Media',
+    'Niki Media', 'Nikki Media',
   ],
   india_digital_marketing: [
     'digital marketing agency India', 'digital marketing company India',
@@ -143,7 +141,7 @@ export const ORGANIZATION_SCHEMA = {
   '@type': 'ProfessionalService',
   '@id': `${SITE_URL}/#organization`,
   name: SITE_NAME,
-  alternateName: ['Nikki Tech', 'Kite & Tail Digital', 'Kite & Tail Media', 'Niki Tech', 'Nikkitech'],
+  alternateName: ['Nikki Tech', 'Niki Tech', 'Nikkitech'],
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
   image: `${SITE_URL}/og-image.jpg`,
@@ -240,10 +238,10 @@ export const FAQ_SCHEMA = {
       name: 'What services does Nikki Technologies provide?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Two divisions: Kite & Tail Digital handles performance marketing (Meta and Google ads, SEO, social ' +
-              'media management, brand identity design). The software studio ships custom web and mobile applications, SaaS products, ' +
+        text: 'Three divisions: a digital marketing team handling performance marketing (Meta and Google ads, SEO, social ' +
+              'media management, brand identity design); a software studio shipping custom web and mobile applications, SaaS products, ' +
               'and business automation tools including MyStoreOS (retail billing), Punchly (attendance & payroll), and Hey Nikki ' +
-              '(Telugu voice receptionist).',
+              '(Telugu voice receptionist); and a business compliance team handling company registration, GST, licensing, and annual filings across India.',
       },
     },
   ],
@@ -302,7 +300,7 @@ export const PAGE_CONFIGS: Record<string, PageConfig> = {
       'Join our growing team. Open roles in software engineering (React, TypeScript, Flutter, Android), digital marketing ' +
       '(Meta ads, SEO, content), and design. Hyderabad-based positions plus remote. Apply now or send us a general application.',
     path: '/#careers',
-    keywords: ['careers Nikki Technologies', 'software jobs Hyderabad', 'React developer jobs India', 'digital marketing jobs Hyderabad', 'jobs at Kite Tail Digital', 'remote developer jobs India'],
+    keywords: ['careers Nikki Technologies', 'software jobs Hyderabad', 'React developer jobs India', 'digital marketing jobs Hyderabad', 'remote developer jobs India'],
     breadcrumbs: [{ name: 'Home', path: '/' }, { name: 'Careers', path: '/#careers' }],
   },
   contact: {

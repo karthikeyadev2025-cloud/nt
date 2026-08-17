@@ -154,13 +154,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // ─────────────────────────────────────────────── Client-Facing Services Showcase (Hero Widget)
 function ServicesHeroShowcase(_props: { segments: Segment[] }) {
-  const [activeTab, setActiveTab] = useState<'kite_tail' | 'software' | 'compliance'>('kite_tail');
+  const [activeTab, setActiveTab] = useState<'marketing' | 'software' | 'compliance'>('marketing');
 
   const contentMap = {
-    kite_tail: {
-      title: 'Kite & Tail • Digital Media Marketing & Performance Growth',
-      desc: 'Data-driven marketing campaigns, targeted Google & Meta PPC ads, brand identity, and SEO lead generation by Kite & Tail Media.',
-      badge: 'Kite & Tail Digital Marketing',
+    marketing: {
+      title: 'Digital Marketing • Performance Growth & Brand Building',
+      desc: 'Data-driven marketing campaigns, targeted Google & Meta PPC ads, brand identity, and SEO lead generation.',
+      badge: 'Digital Marketing',
       icon: Megaphone,
       highlights: [
         'Targeted Meta (Instagram/FB) & Google PPC Campaigns',
@@ -217,7 +217,7 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
         </div>
         <div className="flex flex-wrap gap-1.5 bg-stone-100 p-1 rounded-xl border border-nikki-border">
           {([
-            { id: 'kite_tail' as const, label: 'Kite & Tail Digital' },
+            { id: 'marketing' as const, label: 'Digital Marketing' },
             { id: 'software' as const, label: 'Software Studio' },
             { id: 'compliance' as const, label: 'Business Compliance' },
           ]).map(t => (
@@ -230,7 +230,7 @@ function ServicesHeroShowcase(_props: { segments: Segment[] }) {
                   : 'text-stone-700 hover:text-nikki-navy'
               }`}
             >
-              {t.id === 'kite_tail' ? <Megaphone className="w-4 h-4" /> : t.id === 'software' ? <Code2 className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+              {t.id === 'marketing' ? <Megaphone className="w-4 h-4" /> : t.id === 'software' ? <Code2 className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
               <span>{t.label}</span>
             </button>
           ))}
@@ -590,7 +590,7 @@ function Hero({ segments, content }: { segments: Segment[]; content: Record<stri
               transition={{ duration: 0.7, delay: 0.2 }}
               className="text-xl md:text-2xl bg-gradient-to-r from-nikki-navy via-nikki-royal to-nikki-blue bg-clip-text text-transparent font-extrabold mb-6"
             >
-              {content?.hero?.tagline || 'Kite & Tail Digital Marketing • Custom Software • Business Compliance'}
+              {content?.hero?.tagline || 'Digital Marketing • Custom Software • Business Compliance'}
             </motion.p>
 
             <motion.p
@@ -635,7 +635,7 @@ function Hero({ segments, content }: { segments: Segment[]; content: Record<stri
 interface Service { id: string; segment_slug: string; title: string; description: string; icon: string; highlights?: string[] | null; best_for?: string | null; }
 
 const DEFAULT_FALLBACK_SERVICES: Service[] = [
-  // Digital Media / Kite & Tail — mirrors the live-seeded services
+  // Digital Media — mirrors the live-seeded services
   // exactly (same titles, same order) so the fallback and the CMS-
   // managed version never drift into showing different things.
   {
@@ -857,7 +857,7 @@ function HowWeWork({ content }: { content: Record<string, Record<string, string>
     {
       icon: Rocket,
       title: c.step3_title || 'Build & Launch',
-      body: c.step3_body || 'Kite & Tail runs your campaigns, or Nikki Software Studio ships your product — sometimes both at once.',
+      body: c.step3_body || 'Our marketing team runs your campaigns, or Nikki Software Studio ships your product — sometimes both at once.',
     },
     {
       icon: LineChart,
@@ -1562,19 +1562,19 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
 }
 
 const DEFAULT_FALLBACK_TICKET_TYPES = [
-  // Digital Marketing / Kite & Tail Media
-  { id: 'tt-1', segment_slug: 'digital-marketing', name: 'Meta & Google Ads Campaign Issue' },
-  { id: 'tt-2', segment_slug: 'digital-marketing', name: 'Creative Reel / Video Request' },
-  { id: 'tt-3', segment_slug: 'digital-marketing', name: 'SEO & Google Ranking Inquiry' },
-  { id: 'tt-4', segment_slug: 'digital-marketing', name: 'Social Media Account Support' },
-  { id: 'tt-5', segment_slug: 'digital-marketing', name: 'Billing & Invoice Question' },
+  // Digital Marketing
+  { id: 'tt-1', segment_slug: 'digital_media', name: 'Meta & Google Ads Campaign Issue' },
+  { id: 'tt-2', segment_slug: 'digital_media', name: 'Creative Reel / Video Request' },
+  { id: 'tt-3', segment_slug: 'digital_media', name: 'SEO & Google Ranking Inquiry' },
+  { id: 'tt-4', segment_slug: 'digital_media', name: 'Social Media Account Support' },
+  { id: 'tt-5', segment_slug: 'digital_media', name: 'Billing & Invoice Question' },
 
   // Software Development / Nikki Software Studio
-  { id: 'tt-6', segment_slug: 'software-development', name: 'Software Bug & System Error' },
-  { id: 'tt-7', segment_slug: 'software-development', name: 'Feature Enhancement Request' },
-  { id: 'tt-8', segment_slug: 'software-development', name: 'API & Integration Support' },
-  { id: 'tt-9', segment_slug: 'software-development', name: 'Server & Cloud Downtime' },
-  { id: 'tt-10', segment_slug: 'software-development', name: 'Billing & License Inquiry' },
+  { id: 'tt-6', segment_slug: 'software', name: 'Software Bug & System Error' },
+  { id: 'tt-7', segment_slug: 'software', name: 'Feature Enhancement Request' },
+  { id: 'tt-8', segment_slug: 'software', name: 'API & Integration Support' },
+  { id: 'tt-9', segment_slug: 'software', name: 'Server & Cloud Downtime' },
+  { id: 'tt-10', segment_slug: 'software', name: 'Billing & License Inquiry' },
 
   // Business Compliance
   { id: 'tt-11', segment_slug: 'business_compliance', name: 'New Registration / License Application' },
@@ -1690,7 +1690,7 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
   const displayTypes = matchedTypes.length > 0
     ? matchedTypes
     : DEFAULT_FALLBACK_TICKET_TYPES.filter(t =>
-        isMarketingSeg ? t.segment_slug === 'digital-marketing' : isSoftwareSeg ? t.segment_slug === 'software-development' : isComplianceSeg ? t.segment_slug === 'business_compliance' : false
+        isMarketingSeg ? t.segment_slug === 'digital_media' : isSoftwareSeg ? t.segment_slug === 'software' : isComplianceSeg ? t.segment_slug === 'business_compliance' : false
       );
 
   return (
