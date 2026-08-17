@@ -30,7 +30,7 @@ export default function WhatsAppButton() {
 
     const message = `Hi! I found your website *nikkitechnologies.com* and I'd like to know more about your services.
 
-🌐 Website: https://nikkitechnologies.com
+🌐 Website: https://www.nikkitechnologies.com
 
 Please share more information about:
 • Digital marketing services

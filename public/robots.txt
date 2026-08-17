@@ -4,4 +4,4 @@ Disallow: /login
 Disallow: /admin
 Disallow: /portal
 
-Sitemap: https://nikkitechnologies.com/sitemap.xml
+Sitemap: https://www.nikkitechnologies.com/sitemap.xml

@@ -20,7 +20,7 @@
     initial HTML (index.html carries a copy) for Googlebot's first pass.
 */
 
-export const SITE_URL = 'https://nikkitechnologies.com';
+export const SITE_URL = 'https://www.nikkitechnologies.com';
 export const SITE_NAME = 'Nikki Technologies';
 export const PARENT_ORG = 'K² Adexos Global Technologies';
 export const CONTACT_EMAIL = 'support@nikkitechnologies.com';
