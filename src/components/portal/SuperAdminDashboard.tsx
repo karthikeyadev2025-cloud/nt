@@ -2310,8 +2310,9 @@ export default function SuperAdminDashboard() {
           <div className="space-y-1">
             {g.items.map(t => (
               <button key={t.id} onClick={() => goTo(t.id)} onMouseEnter={() => prefetchTab(t.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${tab === t.id ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm' : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'}`}>
-                <t.icon className={`w-4 h-4 shrink-0 ${tab === t.id ? 'text-nikki-blue' : 'text-stone-700'}`} /> {t.label}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all text-left min-w-0 ${tab === t.id ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm' : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'}`}>
+                <t.icon className={`w-4 h-4 shrink-0 ${tab === t.id ? 'text-nikki-blue' : 'text-stone-700'}`} />
+                <span className="truncate" title={t.label}>{t.label}</span>
               </button>
             ))}
           </div>
@@ -2323,7 +2324,7 @@ export default function SuperAdminDashboard() {
   return (
     <div className="min-h-screen bg-stone-50 flex text-nikki-navy" key={refreshKey}>
       <DueAlertBanner alerts={activeAlerts} onDismiss={dismissAlert} onSnooze={snoozeAlert} />
-      <aside className="w-60 shrink-0 border-r border-nikki-border bg-white p-4 hidden md:flex flex-col shadow-sm sticky top-0 h-screen">
+      <aside className="w-64 shrink-0 border-r border-nikki-border bg-white p-4 hidden md:flex flex-col shadow-sm sticky top-0 h-screen">
         <div className="flex items-center gap-2.5 mb-8 px-2">
           <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 shrink-0 object-contain" />
           <div>
