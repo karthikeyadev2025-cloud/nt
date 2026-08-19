@@ -2310,9 +2310,9 @@ export default function SuperAdminDashboard() {
           <div className="space-y-1">
             {g.items.map(t => (
               <button key={t.id} onClick={() => goTo(t.id)} onMouseEnter={() => prefetchTab(t.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all text-left min-w-0 ${tab === t.id ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm' : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'}`}>
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] font-semibold transition-all text-left ${tab === t.id ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm' : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'}`}>
                 <t.icon className={`w-4 h-4 shrink-0 ${tab === t.id ? 'text-nikki-blue' : 'text-stone-700'}`} />
-                <span className="truncate" title={t.label}>{t.label}</span>
+                <span className="flex-1 min-w-0 truncate whitespace-nowrap text-left" title={t.label}>{t.label}</span>
               </button>
             ))}
           </div>
