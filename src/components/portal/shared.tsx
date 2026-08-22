@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock, MessageCircle, Download, ScanLine } from 'lucide-react';
+import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock, MessageCircle, Download, ScanLine, PhoneCall, PhoneIncoming, CalendarDays, RefreshCw, StickyNote, CircleDashed, type LucideIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -17,8 +17,9 @@ import CameraCapture from '../CameraCapture';
 import { AttendanceDetailsModal } from './payroll';
 import { LeadMeetingsTab, type MeetingRow } from './meetings';
 import { rpcCall } from './meetings-utils';
-import { cachedQuery, invalidateQueryCache } from '../../lib/cachedQuery';
-import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
+import { cachedQuery } from '../../lib/cachedQuery';
+import { isDiscontinuedSegment } from '../../lib/useSegments';
+import { invalidate } from '../../lib/cacheBus';
 
 export const inputCls =
   'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-royal focus:ring-2 focus:ring-nikki-royal/20 focus:outline-none transition-all placeholder-stone-500';
@@ -45,7 +46,7 @@ export function SegmentTabs({
   segments, value, onChange, includeAll = true,
 }: { segments: Segment[]; value: string; onChange: (s: string) => void; includeAll?: boolean }) {
   const { user, canAccessSegment } = useAuth();
-  const visible = segments.filter(s => canAccessSegment(s.slug) && !s.slug.toLowerCase().includes('cctv') && !s.name.toLowerCase().includes('cctv'));
+  const visible = segments.filter(s => canAccessSegment(s.slug) && !isDiscontinuedSegment(s));
   const showAll = includeAll && (user?.role === 'super_admin' || user?.segments.includes('all'));
   return (
     <div className="flex flex-wrap gap-2 mb-5">
@@ -187,7 +188,10 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
     // unassignedTickets, or overdueTickets). Bust the counter cache so the
     // ActionCentre reflects it on the next render rather than up to its
     // TTL later. Prefix match: covers every user's cached counters.
-    invalidateRpcCache('get_dashboard_counts');
+    // Also drops the `tickets:<filters>` list itself and the overdue/status
+    // views — previously only the counters were busted, so load() below
+    // re-served the pre-update ticket row from cache.
+    invalidate('tickets');
     load();
     if (openTicket?.id === id) setOpenTicket({ ...openTicket, ...patch } as SupportTicket);
   }
@@ -425,11 +429,13 @@ const stageColors: Record<string, string> = {
 type TodoItemType = 'followup' | 'callback' | 'appointment' | 'meeting';
 type TodoItem = { key: string; leadId: string; customerName: string; phone: string; type: TodoItemType; dueAt: string; note?: string };
 
-const TODO_TYPE_META: Record<TodoItemType, { label: string; icon: string }> = {
-  followup: { label: 'Follow-up', icon: '📞' },
-  callback: { label: 'Callback', icon: '☎️' },
-  appointment: { label: 'Appointment', icon: '📅' },
-  meeting: { label: 'Meeting', icon: '🗓️' },
+// See the note on ALERT_TYPE_META in portal-shell.tsx — emoji replaced with
+// the app's own icon set for consistent rendering and screen-reader output.
+const TODO_TYPE_META: Record<TodoItemType, { label: string; icon: LucideIcon; tone: string }> = {
+  followup: { label: 'Follow-up', icon: PhoneCall, tone: 'text-nikki-blue' },
+  callback: { label: 'Callback', icon: PhoneIncoming, tone: 'text-nikki-royal' },
+  appointment: { label: 'Appointment', icon: CalendarClock, tone: 'text-emerald-700' },
+  meeting: { label: 'Meeting', icon: CalendarDays, tone: 'text-purple-700' },
 };
 
 export function MyLeadsToDoList() {
@@ -502,7 +508,7 @@ export function MyLeadsToDoList() {
         remark: `${TODO_TYPE_META[item.type].label} marked done from To-Do list.`,
       } as never).then(() => {}, () => {});
     }
-    invalidateQueryCache('my_todo:');
+    invalidate('leads');
     setItems(prev => prev?.filter(i => i.key !== item.key) ?? null);
   }
 
@@ -524,7 +530,10 @@ export function MyLeadsToDoList() {
 
   const row = (item: TodoItem, tone: 'overdue' | 'today' | 'upcoming') => (
     <div key={item.key} className={`flex items-center gap-2.5 py-2 px-2.5 rounded-lg ${tone === 'overdue' ? 'bg-red-50' : tone === 'today' ? 'bg-amber-50' : 'bg-stone-50'}`}>
-      <span className="text-base shrink-0">{TODO_TYPE_META[item.type].icon}</span>
+      {(() => {
+        const Icon = TODO_TYPE_META[item.type].icon;
+        return <Icon className={`w-4 h-4 shrink-0 ${TODO_TYPE_META[item.type].tone}`} aria-hidden="true" />;
+      })()}
       <div className="min-w-0 flex-1">
         <p className="text-nikki-navy text-sm font-semibold truncate">{item.customerName}</p>
         <p className="text-stone-700 text-xs">
@@ -575,7 +584,7 @@ export function MyLeadsToDoList() {
         </div>
       )}
       {rescheduleFor && (
-        <RescheduleModal lead={rescheduleFor} onClose={() => setRescheduleFor(null)} onRescheduled={() => { invalidateQueryCache('my_todo:'); load(); }} />
+        <RescheduleModal lead={rescheduleFor} onClose={() => setRescheduleFor(null)} onRescheduled={() => { invalidate('leads'); load(); }} />
       )}
     </div>
   );
@@ -1227,6 +1236,16 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   const [assignFilter, setAssignFilter] = useState<'all' | 'mine' | 'assigned' | 'unassigned'>('all');
   const [staffFilter, setStaffFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  // Debounced copy of searchQuery. The search is now a database query (see
+  // load() below), so firing it per keystroke would mean a round trip for
+  // every letter typed.
+  const [searchTerm, setSearchTerm] = useState('');
+  const [leadLimit, setLeadLimit] = useState(400);
+  const [leadsTruncated, setLeadsTruncated] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSearchTerm(searchQuery.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   const { user, hasPermission } = useAuth();
   const toast = useToast();
@@ -1285,8 +1304,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     setBulkBusy(false);
     setSelectedIds([]);
     setBulkAssignee('');
-    invalidateQueryCache('leads:');
-    invalidateRpcCache('get_dashboard_counts');
+    invalidate('leads');
     load();
   }
 
@@ -1304,8 +1322,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     setBulkBusy(false);
     setSelectedIds([]);
     setBulkStage('');
-    invalidateQueryCache('leads:');
-    invalidateRpcCache('get_dashboard_counts');
+    invalidate('leads');
     load();
   }
 
@@ -1319,8 +1336,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     toast.success(`${selectedIds.length} leads deleted successfully`);
     setBulkBusy(false);
     setSelectedIds([]);
-    invalidateQueryCache('leads:');
-    invalidateRpcCache('get_dashboard_counts');
+    invalidate('leads');
     load();
   }
 
@@ -1343,8 +1359,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     toast.success('Lead deleted successfully');
     setOpenLead(null);
     setEditingLead(null);
-    invalidateQueryCache('leads:');
-    invalidateRpcCache('get_dashboard_counts');
+    invalidate('leads');
     load();
   }
 
@@ -1385,27 +1400,51 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     toast.success('Lead details updated');
     if (openLead?.id === editingLead.id) setOpenLead({ ...openLead, ...editingLead });
     setEditingLead(null);
-    invalidateQueryCache('leads:');
-    invalidateRpcCache('get_dashboard_counts');
+    invalidate('leads');
     load();
   }
 
   const load = useCallback(async () => {
-    const cacheKey = `leads:${segFilter}:${stageFilter}`;
+    // ── Why search and dates are applied HERE and not in filteredLeads ──
+    // This query fetches the newest N leads, and search/date filtering used
+    // to happen purely client-side over whatever had been fetched. So
+    // searching for a customer from six months ago returned "no leads
+    // found" — the row existed, was readable, and simply wasn't among the
+    // 400 rows in memory. Same for a date range pointing anywhere outside
+    // that window. The CRM was quietly lying about the operator's own data,
+    // and the more leads the business had, the more it lied.
+    //
+    // Search and dates are now real query predicates, so they cover every
+    // lead in the table rather than the tail end of it.
+    const cacheKey = `leads:${segFilter}:${stageFilter}:${searchTerm}:${dateFrom}:${dateTo}:${leadLimit}`;
     try {
       const data = await cachedQuery(cacheKey, async () => {
-        let q = supabase.from('marketing_leads').select('*').order('created_at', { ascending: false }).limit(400);
+        let q = supabase.from('marketing_leads').select('*').order('created_at', { ascending: false }).limit(leadLimit);
         if (segFilter) q = q.eq('segment_slug', segFilter);
         if (stageFilter) q = q.eq('stage', stageFilter);
+        if (dateFrom) q = q.gte('created_at', dateFrom);
+        if (dateTo) q = q.lte('created_at', dateTo + 'T23:59:59');
+        if (searchTerm) {
+          // PostgREST's .or() takes a comma-separated filter list, so a
+          // comma, parenthesis or backslash typed into the search box would
+          // otherwise be parsed as filter syntax rather than as text.
+          const safe = searchTerm.replace(/[\\,()]/g, ' ').trim();
+          if (safe) {
+            q = q.or(`customer_name.ilike.%${safe}%,phone.ilike.%${safe}%,interested_in.ilike.%${safe}%`);
+          }
+        }
         const { data, error } = await q;
         if (error) throw error;
         return data as Lead[];
       });
-      if (data) setLeads(data);
+      if (data) {
+        setLeads(data);
+        setLeadsTruncated(data.length >= leadLimit);
+      }
     } catch (err) {
       toast.error(`Couldn't load leads: ${(err instanceof Error ? err.message : String(err))}`);
     }
-  }, [segFilter, stageFilter, toast]);
+  }, [segFilter, stageFilter, searchTerm, dateFrom, dateTo, leadLimit, toast]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (leads.length === 0) { setFollowupCounts({}); return; }
@@ -1457,8 +1496,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
     const { error } = await supabase.from('marketing_leads').update({ ...patch, updated_at: new Date().toISOString() } as never).eq('id', id);
     if (error) { toast.error(`Update failed: ${describeDbError(error)}`); return; }
     toast.success('Lead updated');
-    invalidateQueryCache('leads:');
-    invalidateRpcCache('get_dashboard_counts');
+    invalidate('leads');
     load();
     if (openLead?.id === id) setOpenLead({ ...openLead, ...patch } as Lead);
   }
@@ -1592,24 +1630,39 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       if (assignFilter === 'unassigned' && l.assigned_to) return false;
       if (assignFilter === 'mine' && l.assigned_to !== user?.id) return false;
       if (staffFilter && l.assigned_to !== staffFilter) return false;
-      if (dateFrom && (!l.created_at || l.created_at < dateFrom)) return false;
-      if (dateTo && (!l.created_at || l.created_at > dateTo + 'T23:59:59')) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const nameMatch = (l.customer_name || '').toLowerCase().includes(q);
-        const phoneMatch = (l.phone || '').toLowerCase().includes(q);
-        const notesMatch = (l.interested_in || '').toLowerCase().includes(q);
-        if (!nameMatch && !phoneMatch && !notesMatch) return false;
-      }
+      // Search and date range are applied by the query in load() so they
+      // cover the whole table, not just the rows already fetched. Only
+      // assignment filters stay client-side: those operate on a field
+      // already present on every loaded row and need no round trip.
       return true;
     });
-  }, [leads, assignFilter, staffFilter, searchQuery, dateFrom, dateTo, user?.id]);
+  }, [leads, assignFilter, staffFilter, user?.id]);
 
-  const funnel = useMemo(() => {
-    const f: Record<string, number> = {};
-    filteredLeads.forEach(l => { f[l.stage] = (f[l.stage] || 0) + 1; });
-    return f;
-  }, [filteredLeads]);
+  // Stage counts come from the database, NOT from filteredLeads.
+  //
+  // Counting the in-memory array meant the chips described whatever slice
+  // was currently loaded: clicking one stage narrowed the query to it, so
+  // every other chip read (0), and even unfiltered the totals stopped at the
+  // 400-row limit. The stage filter is deliberately NOT passed to the RPC —
+  // the whole point of these numbers is to stay comparable while you drill
+  // into one of them.
+  const [funnel, setFunnel] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let cancelled = false;
+    (supabase.rpc('get_lead_stage_counts' as never, {
+      _segment_slug: segFilter || null,
+      _search: searchTerm || null,
+      _from: dateFrom || null,
+      _to: dateTo ? dateTo + 'T23:59:59' : null,
+    } as never) as unknown as Promise<{ data: { stage: string; count: number }[] | null; error: unknown }>)
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setFunnel(Object.fromEntries(data.map(r => [r.stage, Number(r.count)])));
+      })
+      .catch(() => { /* chips fall back to 0; the list itself still loads */ });
+    return () => { cancelled = true; };
+    // Intentionally excludes stageFilter — see the note above.
+  }, [segFilter, searchTerm, dateFrom, dateTo, leads]);
 
   return (
     <div>
@@ -1678,7 +1731,9 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
 
         {/* Stage Filter Chips */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <button onClick={() => setStageFilter('')} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === '' ? 'bg-nikki-navy text-white' : 'bg-stone-100 text-stone-700 hover:bg-nikki-border'}`}>All Stages</button>
+          <button onClick={() => setStageFilter('')} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === '' ? 'bg-nikki-navy text-white' : 'bg-stone-100 text-stone-700 hover:bg-nikki-border'}`}>
+            All Stages ({Object.values(funnel).reduce((a, b) => a + b, 0)})
+          </button>
           {stages.map(s => (
             <button key={s} onClick={() => setStageFilter(s)} className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${stageFilter === s ? 'bg-nikki-navy text-white' : 'bg-stone-100 text-stone-700 hover:bg-nikki-border'}`}>
               {stageLabel(s)} ({funnel[s] || 0})
@@ -1870,7 +1925,38 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
             </div>
           );
         })}
-        {filteredLeads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No matching leads found.</p>}
+        {filteredLeads.length === 0 && (
+          <div className="text-center py-10">
+            <p className="text-stone-700 text-sm">
+              {searchTerm || segFilter || stageFilter || dateFrom || dateTo || assignFilter !== 'all' || staffFilter
+                ? 'No leads match these filters.'
+                : 'No leads yet. They appear here as they come in from the website, imports, or field staff.'}
+            </p>
+            {(searchTerm || segFilter || stageFilter || dateFrom || dateTo || assignFilter !== 'all' || staffFilter) && (
+              <button
+                className="text-nikki-blue text-sm font-semibold mt-2"
+                onClick={() => {
+                  setSearchQuery(''); setSegFilter(''); setStageFilter('');
+                  setDateFrom(''); setDateTo(''); setAssignFilter('all'); setStaffFilter('');
+                }}>
+                Clear all filters
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* The limit used to be invisible: you saw 400 rows and had no way to
+            tell whether that was all of them. */}
+        {leadsTruncated && (
+          <div className="mt-4 text-center">
+            <p className="text-stone-600 text-xs mb-2">
+              Showing the {leads.length} most recent matching leads — there may be older ones.
+            </p>
+            <button className="text-nikki-blue text-sm font-semibold" onClick={() => setLeadLimit(l => l + 400)}>
+              Load 400 more
+            </button>
+          </div>
+        )}
       </div>
       )}
 
@@ -1949,7 +2035,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
           defaultSource="field"
           staffList={staff}
           onClose={() => setShowAdd(false)}
-          onCreated={() => { invalidateQueryCache('leads:'); invalidateRpcCache('get_dashboard_counts'); load(); }}
+          onCreated={() => { invalidate('leads'); load(); }}
         />
       )}
 
@@ -2035,15 +2121,16 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   history below. */}
               {(() => {
                 const candidates = [
-                  openLead.next_followup_at && { type: 'Follow-up', at: openLead.next_followup_at, icon: '📞' },
-                  openLead.callback_at && { type: 'Callback', at: openLead.callback_at, icon: '☎️' },
-                  openLead.appointment_at && { type: 'Appointment', at: openLead.appointment_at, icon: '📅' },
-                  nextMeeting && { type: nextMeeting.meeting_type_name || 'Meeting', at: nextMeeting.scheduled_at, icon: '🗓️' },
-                ].filter(Boolean) as { type: string; at: string; icon: string }[];
+                  openLead.next_followup_at && { type: 'Follow-up', at: openLead.next_followup_at, icon: PhoneCall },
+                  openLead.callback_at && { type: 'Callback', at: openLead.callback_at, icon: PhoneIncoming },
+                  openLead.appointment_at && { type: 'Appointment', at: openLead.appointment_at, icon: CalendarClock },
+                  nextMeeting && { type: nextMeeting.meeting_type_name || 'Meeting', at: nextMeeting.scheduled_at, icon: CalendarDays },
+                ].filter(Boolean) as { type: string; at: string; icon: LucideIcon }[];
                 if (candidates.length === 0) {
                   return (
                     <div className="px-3 py-2 rounded-lg bg-stone-50 border border-nikki-border text-xs text-stone-700 flex items-center gap-2">
-                      <span>⚪</span> Nothing scheduled next — no follow-up, callback, or appointment set.
+                      <CircleDashed className="w-3.5 h-3.5 shrink-0 text-stone-400" aria-hidden="true" />
+                      Nothing scheduled next — no follow-up, callback, or appointment set.
                     </div>
                   );
                 }
@@ -2052,7 +2139,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 const overdue = new Date(next.at) < new Date();
                 return (
                   <div className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-2 ${overdue ? 'bg-red-50 border-red-200 text-red-700' : 'bg-nikki-surface-blue border-nikki-border text-nikki-navy'}`}>
-                    <span className="text-base">{next.icon}</span>
+                    <next.icon className="w-4 h-4 shrink-0" aria-hidden="true" />
                     <span>Next: {next.type} — {new Date(next.at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}{overdue ? ' (overdue)' : ''}</span>
                   </div>
                 );
@@ -2066,10 +2153,19 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                   const isReassign = r.remark.startsWith('Reassigned:');
                   const isAppt = r.remark.startsWith('Appointment');
                   const isSystem = isStage || isReassign || isAppt;
-                  const icon = isStage ? '🔄' : isReassign ? '👤' : isAppt ? '📅' : r.call_type === 'review' ? '👀' : r.call_type === 'visit' ? '📍' : r.call_type === 'whatsapp' ? '💬' : r.call_type === 'email' ? '✉️' : r.call_type === 'note' ? '📝' : '📞';
+                  // These were emoji crammed into a 14px dot at 8px font size —
+                  // illegible at that size, and each one announced by name to a
+                  // screen reader mid-sentence. Now a properly sized icon in a
+                  // slightly larger marker.
+                  const Icon = isStage ? RefreshCw : isReassign ? User : isAppt ? CalendarClock
+                    : r.call_type === 'review' ? Eye : r.call_type === 'visit' ? MapPin
+                    : r.call_type === 'whatsapp' ? MessageCircle : r.call_type === 'email' ? Mail
+                    : r.call_type === 'note' ? StickyNote : PhoneCall;
                   return (
                     <div key={r.id} className="relative mb-3">
-                      <span className="absolute -left-5 top-0.5 w-3.5 h-3.5 rounded-full bg-white border-2 border-stone-300 flex items-center justify-center text-[8px] leading-none">{icon}</span>
+                      <span className="absolute -left-5 top-0.5 w-4 h-4 rounded-full bg-white border border-stone-300 flex items-center justify-center text-stone-600">
+                        <Icon className="w-2.5 h-2.5" aria-hidden="true" />
+                      </span>
                       <span className="text-stone-700 text-xs">
                         {new Date(r.created_at ?? '').toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''}{!isSystem && ` • ${r.call_type}`}
                       </span>
@@ -2111,8 +2207,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
           onClose={() => setLogOutcomeLead(null)}
           onDone={() => {
             setLogOutcomeLead(null);
-            invalidateQueryCache('leads:');
-    invalidateRpcCache('get_dashboard_counts');
+            invalidate('leads');
             load();
           }}
         />
@@ -2122,7 +2217,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
         <RescheduleModal
           lead={rescheduleLead}
           onClose={() => setRescheduleLead(null)}
-          onRescheduled={() => { invalidateQueryCache('leads:'); load(); }}
+          onRescheduled={() => { invalidate('leads'); load(); }}
         />
       )}
 

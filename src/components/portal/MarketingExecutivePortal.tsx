@@ -10,6 +10,7 @@ import { cachedQuery } from '../../lib/cachedQuery';
 import { istDateStr } from '../../lib/dates';
 import { cardCls, btnCls, MyLeadsToDoList } from './shared';
 import { PortalShell, type PortalTab } from './portal-shell';
+import { useUrlTab } from '../../lib/useUrlTab';
 import { ExecutiveFieldVisits } from './leads-workflow';
 import { TasksBoard } from './tasks';
 import { AnnouncementsFeed, ShiftSwapBoard } from './features';
@@ -208,12 +209,14 @@ export default function MarketingExecutivePortal() {
     { id: 'swap', label: 'Shift Swap', icon: Repeat, show: true },
   ], []);
 
-  const [tab, setTab] = useState('home');
+  // URL-synced so tabs are linkable, survive refresh, and back works.
+  const [tab, setTab] = useUrlTab(tabs.map(t => t.id), 'home');
   const mySegNames = user?.segments.includes('all')
     ? 'All Segments'
     : segments.filter(s => user?.segments.includes(s.slug)).map(s => s.name).join(', ') || '—';
 
-  const navigate = useCallback((t: string) => { if (tabs.some(x => x.id === t)) setTab(t); }, [tabs]);
+  // setTab is the stable navigate() from useUrlTab (useCallback on [param]).
+  const navigate = useCallback((t: string) => { if (tabs.some(x => x.id === t)) setTab(t); }, [tabs, setTab]);
 
   return (
     <PortalShell tabs={tabs} activeTab={tab} onTabChange={setTab} brandLabel="Field Portal" subLabel={mySegNames}>

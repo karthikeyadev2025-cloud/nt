@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { logLogin, logLoginFailed, logLogout } from '../lib/securityLogger';
 import { beginSession, heartbeatSession, endSession, SESSION_HEARTBEAT_MS, getCurrentSessionRowId } from '../lib/sessionTracker';
 import { withTimeout } from '../lib/withTimeout';
+import { clearAllCaches } from '../lib/cacheBus';
 
 // ═══════════════════════════════════════════════════════════════════════
 // SIMPLIFIED DESIGN — rewritten after a full day of finding that layered,
@@ -229,6 +230,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function clearLocalSession() {
     setUser(null);
     setPermissions({});
+    // Every cachedQuery/cachedRpc entry was fetched under the outgoing
+    // user's RLS scope. Dropping the session without dropping the cache
+    // left those rows readable by whoever signed in next on this browser.
+    clearAllCaches();
     try {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(SESSION_KEY + '_perms');
@@ -419,6 +424,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       logLogin(data.user.email || cleanEmail);
 
+      // Belt and braces: if the previous session ended by tab-close or
+      // token expiry rather than an explicit signOut, its cached rows are
+      // still in sessionStorage. Never let them serve this new user.
+      clearAllCaches();
+
       let appUser: AppUser | null = null;
       try {
         appUser = await loadUser(data.user.id);
@@ -447,7 +457,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const keys: string[] = [];
         for (let i = 0; i < storage.length; i++) {
           const k = storage.key(i);
-          if (k && (k.startsWith('sb-') || k === 'nkt_session_row_id')) keys.push(k);
+          // nkt_query_cache / nkt_rpc_cache hold RLS-scoped rows (staff
+          // list with salary_structure, payslips, HR records) and survive
+          // the same-tab navigation below, so they must go too.
+          if (k && (k.startsWith('sb-') || k.startsWith('nkt_'))) keys.push(k);
         }
         keys.forEach(k => { try { storage.removeItem(k); } catch { /* ignore */ } });
       };

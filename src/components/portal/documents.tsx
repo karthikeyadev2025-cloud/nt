@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FileText, CheckCircle2, Printer, PenLine, RotateCcw, ShieldCheck, X, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { invalidate } from '../../lib/cacheBus';
 import type { Database } from '../../lib/database.types';
 
 type EmployeeDoc = Database['public']['Tables']['employee_documents']['Row'];
@@ -272,6 +273,7 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
     const { error } = await supabase.from('employee_documents').update(patch).eq('id', id);
     if (error) { toast.error(`Couldn't save signature: ${error.message}`); return; }
     toast.success('Document signed');
+    invalidate('documents');
     await load();
     setOpen((prev) => prev ? { ...prev, ...patch } : prev);
   }
@@ -281,6 +283,7 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
     const { error } = await supabase.from('employee_documents').update(patch).eq('id', id);
     if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
     toast.success('Acknowledged');
+    invalidate('documents');
     await load();
     setOpen((prev) => prev ? { ...prev, ...patch } : prev);
   }

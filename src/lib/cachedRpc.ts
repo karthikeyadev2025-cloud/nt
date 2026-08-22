@@ -35,7 +35,7 @@ function syncToSessionStorage() {
         count++;
       }
     });
-    sessionStorage.setItem('nkt_rpc_cache', JSON.stringify(obj));
+    sessionStorage.setItem(RPC_CACHE_STORAGE_KEY, JSON.stringify(obj));
   } catch {
     /* ignore storage quota */
   }
@@ -70,14 +70,33 @@ export async function cachedRpc<T>(
   }
 }
 
+export const RPC_CACHE_STORAGE_KEY = 'nkt_rpc_cache';
+
+/** Full wipe of the RPC cache — memory and the sessionStorage backup. See
+ *  clearQueryCache() in cachedQuery.ts for why sign-out needs both. */
+export function clearRpcCache() {
+  recent.clear();
+  inFlight.clear();
+  try {
+    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(RPC_CACHE_STORAGE_KEY);
+  } catch { /* storage restricted */ }
+}
+
 // Removes every cached entry whose key starts with the given prefix, from
 // both the in-memory cache and its sessionStorage backup. Call this right
 // after any action that changes data the cache might be holding stale —
 // e.g. after a bulk lead upload, so the next dashboard view reflects the
 // new leads immediately instead of serving up to 5 minutes of stale counts.
-export function invalidateQueryCache(keyPrefix: string) {
+export function invalidateRpcCache(keyPrefix: string) {
   const keysToRemove: string[] = [];
   recent.forEach((_, k) => { if (k.startsWith(keyPrefix)) keysToRemove.push(k); });
   keysToRemove.forEach(k => recent.delete(k));
   if (keysToRemove.length > 0) syncToSessionStorage();
 }
+
+// NOTE: this module used to also export `invalidateQueryCache` — the exact
+// same name cachedQuery.ts exports, for a DIFFERENT cache. Importing the
+// wrong one silently no-opped, which is how several write paths ended up
+// "invalidating" nothing at all. Every call site now goes through
+// lib/cacheBus's invalidate(), which clears both caches; don't reintroduce
+// a same-named export here.

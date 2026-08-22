@@ -10,6 +10,7 @@ import { cachedQuery } from '../../lib/cachedQuery';
 import { istDateStr } from '../../lib/dates';
 import { cardCls, btnCls, MyLeadsToDoList } from './shared';
 import { PortalShell, type PortalTab } from './portal-shell';
+import { useUrlTab } from '../../lib/useUrlTab';
 import { TelecallerQueue } from './leads-workflow';
 import { TasksBoard } from './tasks';
 import { AnnouncementsFeed, ShiftSwapBoard } from './features';
@@ -196,7 +197,8 @@ export default function TelecallerPortal() {
     { id: 'swap', label: 'Shift Swap', icon: Repeat, show: true },
   ], []);
 
-  const [tab, setTab] = useState('home');
+  // URL-synced so tabs are linkable, survive refresh, and back works.
+  const [tab, setTab] = useUrlTab(tabs.map(t => t.id), 'home');
   // Home's "+ Add Lead" quick action jumps to the queue tab AND opens the
   // modal there in one tap — a nonce (not a boolean) so tapping it twice
   // in a row, even after closing the modal, re-triggers the open.
@@ -209,7 +211,8 @@ export default function TelecallerPortal() {
     if (!tabs.some(x => x.id === t)) return;
     setTab(t);
     if (openAddLead) setAddLeadSignal(s => s + 1);
-  }, [tabs]);
+    // setTab is the stable navigate() from useUrlTab (useCallback on [param]).
+  }, [tabs, setTab]);
 
   return (
     <PortalShell tabs={tabs} activeTab={tab} onTabChange={setTab} brandLabel="Telecaller Portal" subLabel={mySegNames}>

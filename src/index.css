@@ -30,6 +30,31 @@
     scroll-behavior: smooth;
   }
 
+  /*
+    ── Keyboard focus ──────────────────────────────────────────────
+    Priority 1 (Accessibility). Buttons here are styled with utility
+    classes that set their own background/border on :hover, and the
+    browser default outline is invisible against several of them — so
+    a keyboard user tabbing through the sidebar, the segment chips or
+    a modal had no reliable indication of where they were.
+
+    :focus-visible (not :focus) so a mouse click doesn't leave a ring
+    behind, which is the reason people disable focus styles in the
+    first place. Applied globally, once, rather than per-component:
+    there are 800+ interactive elements in this app and a per-button
+    rule is a rule that gets forgotten on button 801.
+  */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--nikki-blue);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+
+  /* Never remove the ring without replacing it. */
+  :where(a, button, input, select, textarea):focus:not(:focus-visible) {
+    outline: none;
+  }
+
   html {
     scroll-padding-top: 80px;
     color-scheme: light;
@@ -87,6 +112,11 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      /* scroll-behavior: smooth is set in @layer base above and was NOT
+         being reset here, so anchor jumps and scroll-to-top still animated
+         for users who had explicitly asked the OS for reduced motion —
+         the exact trigger this setting exists to avoid. */
+      scroll-behavior: auto !important;
     }
   }
 }

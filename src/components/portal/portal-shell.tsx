@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { LogOut, Menu, X, Bell, BellOff, MessageCircle, type LucideIcon } from 'lucide-react';
+import { LogOut, Menu, X, Bell, BellOff, MessageCircle, ChevronLeft, ChevronRight, PhoneCall, PhoneIncoming, CalendarClock, CalendarDays, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationBell } from './features';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
@@ -13,11 +13,17 @@ export type PortalTab = { id: string; label: string; icon: LucideIcon; show: boo
 // Deliberately minimal: Call + Dismiss only. The full to-do list (My
 // To-Do on Home) is where Mark Done / Reschedule live — this banner's
 // job is just to interrupt at the right moment, not duplicate that UI.
-const ALERT_TYPE_META: Record<string, { label: string; icon: string }> = {
-  followup: { label: 'Follow-up in 15 min', icon: '📞' },
-  callback: { label: 'Callback in 15 min', icon: '☎️' },
-  appointment: { label: 'Appointment in 15 min', icon: '📅' },
-  meeting: { label: 'Meeting in 15 min', icon: '🗓️' },
+// Emoji are not icons: they render as a different picture per OS and font,
+// carry no consistent weight or optical size next to the lucide set used
+// everywhere else, and a screen reader announces the raw emoji name
+// ("telephone receiver") in the middle of the sentence. These now use the
+// same icon family and colour tokens as the rest of the app, and are
+// aria-hidden since the adjacent label already says what they mean.
+const ALERT_TYPE_META: Record<string, { label: string; icon: LucideIcon; tone: string }> = {
+  followup: { label: 'Follow-up in 15 min', icon: PhoneCall, tone: 'text-nikki-blue' },
+  callback: { label: 'Callback in 15 min', icon: PhoneIncoming, tone: 'text-nikki-royal' },
+  appointment: { label: 'Appointment in 15 min', icon: CalendarClock, tone: 'text-emerald-700' },
+  meeting: { label: 'Meeting in 15 min', icon: CalendarDays, tone: 'text-purple-700' },
 };
 
 export function DueAlertBanner({ alerts, onDismiss, onSnooze }: { alerts: ReturnType<typeof useDueLeadAlerts>['activeAlerts']; onDismiss: (key: string) => void; onSnooze: (key: string, minutes?: number) => void }) {
@@ -27,7 +33,15 @@ export function DueAlertBanner({ alerts, onDismiss, onSnooze }: { alerts: Return
       {alerts.map(a => (
         <div key={a.key} className="bg-white border-2 border-nikki-royal rounded-2xl shadow-2xl p-3.5 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
-            <span className="text-2xl shrink-0">{ALERT_TYPE_META[a.type]?.icon}</span>
+            {(() => {
+              const meta = ALERT_TYPE_META[a.type];
+              if (!meta) return null;
+              return (
+                <span className={`shrink-0 w-9 h-9 rounded-xl bg-nikki-surface-blue flex items-center justify-center ${meta.tone}`}>
+                  <meta.icon className="w-5 h-5" aria-hidden="true" />
+                </span>
+              );
+            })()}
             <div className="min-w-0 flex-1">
               <p className="text-nikki-navy text-sm font-bold truncate">{ALERT_TYPE_META[a.type]?.label}: {a.customerName}</p>
               <p className="text-stone-700 text-xs">{a.phone}</p>
@@ -93,10 +107,18 @@ export function PortalShell({
           </div>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-stone-700 hover:text-stone-700 p-1 rounded-lg hover:bg-stone-100 transition-colors"
+            className="text-stone-700 hover:text-nikki-navy p-2 rounded-lg hover:bg-stone-100 transition-colors"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!collapsed}
           >
-            {collapsed ? '→' : '←'}
+            {/* Was a literal '→'/'←' text character — an arrow glyph is not
+                an icon: it renders at the font's whim, ignores the icon
+                sizing used everywhere else, and reads as punctuation to a
+                screen reader. */}
+            {collapsed
+              ? <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              : <ChevronLeft className="w-4 h-4" aria-hidden="true" />}
           </button>
         </div>
 
@@ -107,7 +129,8 @@ export function PortalShell({
               <button
                 key={t.id}
                 onClick={() => onTabChange(t.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                aria-current={active ? 'page' : undefined}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all ${
                   active
                     ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm font-semibold'
                     : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'
@@ -143,7 +166,7 @@ export function PortalShell({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="border-b border-nikki-border px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileNavOpen(true)} className="md:hidden p-1 -ml-1 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <div className="md:hidden shrink-0">
               <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 object-contain" />
             </div>
@@ -158,11 +181,13 @@ export function PortalShell({
             <button
               onClick={() => { setSoundEnabled(!soundEnabled); if (notifPermission === 'default') requestNotificationPermission(); }}
               title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}
+              aria-label={soundEnabled ? 'Mute sound alerts' : 'Enable sound alerts'}
+              aria-pressed={soundEnabled}
               className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-400 hover:bg-stone-100'}`}>
               {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
             </button>
             <NotificationBell onNavigate={(t) => { if (visibleTabs.some(x => x.id === t)) onTabChange(t); }} />
-            <button onClick={signOut} className="md:hidden text-stone-700 hover:text-red-700"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} aria-label="Sign out" className="md:hidden text-stone-700 hover:text-red-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
@@ -178,7 +203,7 @@ export function PortalShell({
                     <p className="text-stone-700 text-[11px] font-mono truncate">{subLabel}</p>
                   </div>
                 </div>
-                <button onClick={() => setMobileNavOpen(false)} className="p-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
+                <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="p-2.5 -m-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
               </div>
               <nav className="flex-1 space-y-1">
                 {visibleTabs.map(t => {
@@ -187,7 +212,8 @@ export function PortalShell({
                     <button
                       key={t.id}
                       onClick={() => { onTabChange(t.id); setMobileNavOpen(false); }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      aria-current={active ? 'page' : undefined}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all ${
                         active
                           ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm font-semibold'
                           : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'

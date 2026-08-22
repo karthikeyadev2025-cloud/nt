@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Bell, Megaphone, Repeat, Landmark, Printer, TrendingUp, Flame, Cake, Download, ExternalLink } from 'lucide-react';
+import { Bell, Megaphone, Repeat, Landmark, Printer, TrendingUp, Flame, Cake, Download, ExternalLink, Search, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { invalidate } from '../../lib/cacheBus';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls } from './shared';
+import { describeReadError } from './shared-utils';
 import { istDateStr, istDateStrDaysAgo } from '../../lib/dates';
 import type { Segment, Database } from '../../lib/database.types';
 
@@ -23,6 +25,10 @@ const NOTIF_TAB: Record<string, string> = {
   leave_decision: 'my_requests', advance_decision: 'my_requests',
   photo_change: 'my_profile', promotion: 'my_profile',
   announcement: 'overview',
+  // Without an entry here a notification is inert: clicking it marks it read
+  // and does nothing else, so you're told an application arrived and then
+  // left to find the Careers tab yourself.
+  career_application: 'careers',
 };
 
 export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) => void }) {
@@ -51,6 +57,10 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
 
   async function markRead(id: string) {
     await supabase.from('notifications').update({ read_at: new Date().toISOString() } as never).eq('id', id);
+    // The optimistic setItems below fixes THIS mount only. The cached
+    // 'notifications:<uid>' entry still holds the unread row, so the badge
+    // count came back on the next remount / 60s poll.
+    invalidate('notifications');
     setItems(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
   }
 
@@ -63,6 +73,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
     const unread = items.filter(n => !n.read_at).map(n => n.id);
     if (!unread.length) return;
     await supabase.from('notifications').update({ read_at: new Date().toISOString() } as never).in('id', unread);
+    invalidate('notifications');
     load();
   }
 
@@ -137,7 +148,10 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
   const [form, setForm] = useState({ segment_slug: '', title: '', body: '', is_pinned: false });
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+    // An approval/announcement queue that empties itself on a failed read is
+    // worse than an error: staff conclude there's nothing to action.
+    const { data, error } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+    if (error) console.error(describeReadError(error, 'announcements'));
     if (data) setItems(data);
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -147,6 +161,7 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
     const { error } = await supabase.from('announcements').insert({ ...form, segment_slug: form.segment_slug || null, created_by: user.id } as never);
     if (error) { toast.error(`Couldn't post: ${error.message}`); return; }
     toast.success('Announcement posted and staff notified');
+    invalidate('announcements');
     setForm({ segment_slug: '', title: '', body: '', is_pinned: false });
     load();
   }
@@ -155,6 +170,7 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
     const { error } = await supabase.from('announcements').delete().eq('id', id);
     if (error) { toast.error(`Couldn't delete: ${error.message}`); return; }
     toast.success('Announcement deleted');
+    invalidate('announcements');
     load();
   }
 
@@ -207,7 +223,8 @@ export function ShiftSwapBoard() {
     if (m) setMine(m);
     if (c) setColleagues(c);
     if (hasPermission('approve_leaves')) {
-      const { data: p } = await supabase.from('shift_swap_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+      const { data: p, error: pErr } = await supabase.from('shift_swap_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+      if (pErr) console.error(describeReadError(pErr, 'shift swap requests'));
       if (p) setPending(p);
     }
   }, [user, hasPermission]);
@@ -351,7 +368,8 @@ export function BankChangeApprovals() {
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('bank_change_requests').select('*').order('created_at', { ascending: false }).limit(100);
+    const { data, error } = await supabase.from('bank_change_requests').select('*').order('created_at', { ascending: false }).limit(100);
+    if (error) console.error(describeReadError(error, 'bank change requests'));
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
     if (users) setStaffNames(Object.fromEntries(users.map((u: { id: string; full_name: string }) => [u.id, u.full_name])));
@@ -362,6 +380,7 @@ export function BankChangeApprovals() {
     const { error } = await supabase.from('bank_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() } as never).eq('id', id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(`Bank change ${status}`);
+    invalidate('staff');
     load();
   }
 
@@ -598,15 +617,54 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
   const [openApp, setOpenApp] = useState<CareerApplication | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [fileUrls, setFileUrls] = useState<{ resume?: string; photo?: string }>({});
+  // Search across name / phone / email / position — an applications list you
+  // can only filter by status is unusable the moment there are more than a
+  // screenful, which is when you actually need to find someone.
+  const [q, setQ] = useState('');
+  const [jobFilter, setJobFilter] = useState('');
+  const [loading, setLoading] = useState(true);
+  // The read genuinely failing and there genuinely being no applications used
+  // to look identical on screen: both showed "No applications yet."
+  const [loadError, setLoadError] = useState('');
+  const [truncated, setTruncated] = useState(false);
+  const [limit, setLimit] = useState(200);
 
   const load = useCallback(async () => {
-    const [{ data: j }, { data: a }] = await Promise.all([
+    setLoading(true);
+    const [{ data: j, error: jErr }, { data: a, error: aErr }] = await Promise.all([
       supabase.from('job_postings').select('*').order('created_at', { ascending: false }),
-      supabase.from('career_applications').select('*').order('created_at', { ascending: false }).limit(200),
+      supabase.from('career_applications').select('*').order('created_at', { ascending: false }).limit(limit),
     ]);
+    setLoading(false);
+
+    // ── Why this matters ──────────────────────────────────────────────
+    // Both errors were previously discarded: the code did `if (a) setApps(a)`
+    // and nothing else. When the SELECT was refused — most commonly because
+    // the signed-in user has manage_careers but NOT view_careers, or is
+    // segment-scoped and the application carries a segment_slug they can't
+    // reach — Supabase returns data: null with an error, so setApps was never
+    // called, the list stayed empty, and the screen said "No applications
+    // yet." An application that had in fact been submitted successfully was
+    // indistinguishable from none at all, with nothing anywhere pointing at
+    // the permission as the cause.
+    if (aErr || jErr) {
+      const e = aErr || jErr;
+      const denied = e?.code === '42501' || /permission|policy|denied/i.test(e?.message || '');
+      setLoadError(denied
+        ? "You don't have permission to read job applications. This needs the 'view_careers' or 'manage_careers' permission, and if your account is scoped to specific segments you'll only see applications for those segments. Ask a super admin to check Access Control."
+        : `Couldn't load applications: ${e?.message || 'unknown error'}`);
+    } else {
+      setLoadError('');
+    }
+
     if (j) setJobs(j);
-    if (a) setApps(a);
-  }, []);
+    if (a) {
+      setApps(a);
+      // A silent .limit() means the oldest applications simply aren't there,
+      // with no way to tell from the UI. Say so, and offer to fetch more.
+      setTruncated(a.length >= limit);
+    }
+  }, [limit]);
   useEffect(() => { load(); }, [load]);
 
   async function saveJob() {
@@ -656,14 +714,37 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
   }
 
   const jobTitle = (id: string) => jobs.find(j => j.id === id)?.title || 'General Application';
-  const filteredApps = statusFilter ? apps.filter(a => a.status === statusFilter) : apps;
+
+  const needle = q.trim().toLowerCase();
+  const filteredApps = apps.filter(a => {
+    if (statusFilter && a.status !== statusFilter) return false;
+    // 'general' = applications not tied to a specific posting. Those were the
+    // hardest to find before: they have no job to filter by and often no
+    // position text either.
+    if (jobFilter === 'general' && a.job_posting_id) return false;
+    if (jobFilter && jobFilter !== 'general' && a.job_posting_id !== jobFilter) return false;
+    if (!needle) return true;
+    return [a.name, a.phone, a.email, a.position, a.experience, jobTitle(a.job_posting_id || '')]
+      .some(v => (v || '').toLowerCase().includes(needle));
+  });
   const counts = Object.fromEntries(APP_STATUSES.map(s => [s, apps.filter(a => a.status === s).length]));
+  const newCount = apps.filter(a => a.status === 'new').length;
 
   return (
     <div>
       <div className="flex gap-2 mb-5">
         <button onClick={() => setTab('jobs')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'jobs' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Job Postings</button>
-        <button onClick={() => setTab('applications')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'applications' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Applications ({apps.length})</button>
+        <button onClick={() => setTab('applications')} className={`px-3 py-1.5 rounded-lg text-sm border inline-flex items-center gap-2 ${tab === 'applications' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
+          Applications ({apps.length})
+          {/* The count that actually needs acting on is the unreviewed one —
+              a total of 340 tells you nothing about whether anything is
+              waiting for you. */}
+          {newCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-nikki-blue text-white text-[11px] font-bold leading-none">
+              {newCount} new
+            </span>
+          )}
+        </button>
       </div>
 
       {tab === 'jobs' && (
@@ -695,6 +776,30 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
 
       {tab === 'applications' && (
         <div>
+          {loadError && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+              <span>{loadError}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2 mb-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" aria-hidden="true" />
+              <input
+                className={inputCls + ' pl-9'}
+                placeholder="Search name, phone, email or position"
+                aria-label="Search applications"
+                value={q}
+                onChange={e => setQ(e.target.value)} />
+            </div>
+            <select className={inputCls + ' sm:w-56'} aria-label="Filter by job posting" value={jobFilter} onChange={e => setJobFilter(e.target.value)}>
+              <option value="">All roles</option>
+              <option value="general">General applications</option>
+              {jobs.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
+            </select>
+          </div>
+
           <div className="flex flex-wrap gap-2 mb-4">
             <button onClick={() => setStatusFilter('')} className={`px-3 py-1 rounded-lg text-xs border ${statusFilter === '' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>All ({apps.length})</button>
             {APP_STATUSES.map(s => (
@@ -711,8 +816,38 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
                 <span className={`text-xs px-2 py-0.5 rounded capitalize ${APP_STATUS_COLORS[a.status]}`}>{a.status}</span>
               </div>
             ))}
-            {filteredApps.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No applications yet.</p>}
+            {/* Three genuinely different situations that all used to render
+                the same "No applications yet." line. */}
+            {loading && filteredApps.length === 0 && (
+              <p className="text-stone-700 text-sm text-center py-10">Loading applications…</p>
+            )}
+            {!loading && apps.length === 0 && !loadError && (
+              <p className="text-stone-700 text-sm text-center py-10">
+                No applications received yet. They'll appear here as soon as someone applies through the Careers page.
+              </p>
+            )}
+            {!loading && apps.length > 0 && filteredApps.length === 0 && (
+              <div className="text-center py-10">
+                <p className="text-stone-700 text-sm">No applications match these filters.</p>
+                <button
+                  className="text-nikki-blue text-sm font-semibold mt-2"
+                  onClick={() => { setQ(''); setStatusFilter(''); setJobFilter(''); }}>
+                  Clear filters
+                </button>
+              </div>
+            )}
           </div>
+
+          {truncated && (
+            <div className="mt-4 text-center">
+              <p className="text-stone-600 text-xs mb-2">
+                Showing the {apps.length} most recent applications — older ones aren't loaded.
+              </p>
+              <button className="text-nikki-blue text-sm font-semibold" onClick={() => setLimit(l => l + 200)}>
+                Load 200 more
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -860,7 +995,8 @@ export function PhotoChangeApprovals() {
   const [names, setNames] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('photo_change_requests').select('*').order('created_at', { ascending: false }).limit(100);
+    const { data, error } = await supabase.from('photo_change_requests').select('*').order('created_at', { ascending: false }).limit(100);
+    if (error) console.error(describeReadError(error, 'photo change requests'));
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
     if (users) setNames(Object.fromEntries(users.map(u => [u.id, u.full_name])));
@@ -871,6 +1007,7 @@ export function PhotoChangeApprovals() {
     const { error } = await supabase.from('photo_change_requests').update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() } as never).eq('id', id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(`Photo ${status}`);
+    invalidate('staff');
     load();
   }
 

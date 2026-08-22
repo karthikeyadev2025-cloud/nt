@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { LogOut, LayoutDashboard, Clock, CalendarDays, Calendar, IndianRupee, Ticket, ClipboardList, Users2, MapPin, FileText, Repeat, CreditCard, Image as ImageIcon, X, Menu, Key, BookOpen } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { invalidate } from '../../lib/cacheBus';
+import { useUrlTab } from '../../lib/useUrlTab';
 import type { Database, Tables } from '../../lib/database.types';
 
 type LeaveRequest = Database['public']['Tables']['leave_requests']['Row'];
@@ -464,10 +466,15 @@ export function MyAttendance() {
       // ignoreDuplicates means the row already existed — no new row was
       // returned. That's not a failure; someone just already checked in today.
       toast.info("You're already checked in today.");
+      invalidate('attendance');
       load();
       return;
     }
     toast.success(inserted.is_late ? `Checked in — ${inserted.minutes_late} min late` : 'Checked in');
+    // `my_attendance:<uid>:<date>` is cached for 5 minutes and load() reads
+    // straight through it — so the card kept showing "not checked in" right
+    // after a successful check-in, and people checked in twice.
+    invalidate('attendance');
     load();
   }
 
@@ -493,6 +500,7 @@ export function MyAttendance() {
     setBusy(false);
     if (error) { toast.error(`Check-out failed: ${error.message}`); return; }
     toast.success('Checked out');
+    invalidate('attendance');
     load();
   }
 
@@ -696,6 +704,7 @@ export function MyRequests() {
     setBusyLeave(false);
     if (error) { toast.error(`Couldn't submit leave: ${error.message}`); return; }
     toast.success('Leave request submitted');
+    invalidate('requests');
     setLeaveForm({ from_date: '', to_date: '', leave_type: 'casual', reason: '' });
     load();
   }
@@ -709,6 +718,7 @@ export function MyRequests() {
     setBusyAdv(false);
     if (error) { toast.error(`Couldn't submit request: ${error.message}`); return; }
     toast.success('Advance request submitted');
+    invalidate('requests');
     setAdvForm({ amount: '', reason: '' });
     load();
   }
@@ -876,7 +886,8 @@ export default function StaffPortal() {
     ...secondaryTabs,
   ];
 
-  const [tab, setTab] = useState(tabs[0]?.id || 'home');
+  // URL-synced so tabs are linkable, survive refresh, and back works.
+  const [tab, setTab] = useUrlTab(tabs.map(t => t.id), tabs[0]?.id || 'home');
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -952,7 +963,7 @@ export default function StaffPortal() {
         {/* Top Header */}
         <header className="border-b border-nikki-border px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileNavOpen(true)} className="md:hidden p-1 -ml-1 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <div className="md:hidden shrink-0">
               <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 object-contain" />
             </div>
@@ -965,7 +976,7 @@ export default function StaffPortal() {
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
-            <button onClick={signOut} className="md:hidden text-stone-700 hover:text-red-700"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} aria-label="Sign out" className="md:hidden text-stone-700 hover:text-red-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
@@ -986,7 +997,7 @@ export default function StaffPortal() {
                     <p className="text-stone-700 text-[11px] font-mono truncate">Enterprise Portal</p>
                   </div>
                 </div>
-                <button onClick={() => setMobileNavOpen(false)} className="p-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
+                <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="p-2.5 -m-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
               </div>
               <nav className="flex-1 space-y-1">
                 {tabs.map(t => {

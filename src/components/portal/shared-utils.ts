@@ -21,6 +21,40 @@ export function describeDbError(error: { message: string; code?: string; details
   return parts.join(' ');
 }
 
+/**
+ * Read-side counterpart to describeDbError.
+ *
+ * Across this codebase, list loads were written as:
+ *
+ *     const { data } = await supabase.from('x').select('*');
+ *     if (data) setRows(data);
+ *
+ * The error is discarded, so a refused or failed SELECT returns data: null,
+ * setRows is never called, and the screen renders its "nothing here yet"
+ * empty state. A permission problem, a dropped connection and a genuinely
+ * empty table all look identical to the user — and the empty state actively
+ * asserts the wrong one. That single pattern is behind most "it's not
+ * showing up in the admin panel" reports.
+ *
+ * Returns null when there's no error, or a message to show the user.
+ * `subject` is the plural noun for the thing being loaded ("applications",
+ * "leads", "staff records") so the message reads naturally.
+ */
+export function describeReadError(
+  error: { message: string; code?: string; details?: string | null; hint?: string | null } | null | undefined,
+  subject: string,
+): string | null {
+  if (!error) return null;
+  console.error(`Supabase read error loading ${subject}:`, error);
+  // 42501 is Postgres insufficient_privilege; PostgREST also surfaces RLS
+  // refusals as ordinary messages, hence the text check alongside it.
+  const denied = error.code === '42501' || /permission|policy|denied|not allowed/i.test(error.message || '');
+  if (denied) {
+    return `You don't have permission to view ${subject}. If your account is scoped to specific segments, you'll only see ${subject} for those segments. Ask a super admin to check Access Control.`;
+  }
+  return `Couldn't load ${subject}: ${error.message}`;
+}
+
 // Name shown for a staff member who might have left the company. Data is
 // never touched by this — full_name stays exactly what it always was in
 // the database; this only changes what's *displayed*, and only to

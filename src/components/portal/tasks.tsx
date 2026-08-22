@@ -6,6 +6,7 @@ type OfficeTask = Database['public']['Tables']['office_tasks']['Row'];
 type StaffOption = Pick<Database['public']['Tables']['app_users']['Row'], 'id' | 'full_name' | 'role' | 'segments'>;
 import { CheckCircle2, Circle, Clock3, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { invalidate } from '../../lib/cacheBus';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { cachedQuery } from '../../lib/cachedQuery';
@@ -113,6 +114,9 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
     setBusy('');
     if (error) { toast.error(`Couldn't create task: ${error.message}`); return; }
     toast.success(form.assigned_to ? 'Task assigned — they have been notified' : 'Task created');
+    // load() reads through the cached `tasks:<filters>` key, so a newly
+    // created task was invisible until the entry aged out.
+    invalidate('tasks', 'notifications');
     setShowNew(false);
     setForm({ title: '', description: '', assigned_to: '', due_date: '', priority: 'medium', segment_slug: '', category: '' });
     load();
@@ -126,6 +130,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
     setBusy('');
     if (error) { toast.error(error.message); return; }
     toast.success(status === 'completed' ? 'Marked complete' : `Moved to ${STATUS_META[status]?.label || status}`);
+    invalidate('tasks');
     load();
   }
 
@@ -135,6 +140,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
     setBusy('');
     if (error) { toast.error(error.message); return; }
     toast.success('Task reassigned');
+    invalidate('tasks', 'notifications');
     load();
   }
 

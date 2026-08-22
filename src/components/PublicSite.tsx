@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useSegments, useSiteContent } from '../lib/useSegments';
+import { useSegments, isDiscontinuedSegment, useSiteContent } from '../lib/useSegments';
 import type { Segment, Product, ProductFeature } from '../lib/database.types';
 import WhatsAppButton from './WhatsAppButton';
 import SEOHead from './SEOHead';
@@ -1300,14 +1300,26 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
       let resume_url = '';
       let photo_url = '';
       const stamp = Date.now();
+      // Only spaces were being replaced. Supabase storage keys reject a
+      // number of other characters, and Indian applicants' CVs routinely
+      // arrive named things like "Resume (final) #2.pdf" — the upload then
+      // failed and took the whole application down with it. Keep the
+      // extension, strip everything else unsafe.
+      const safeName = (f: File) => {
+        const dot = f.name.lastIndexOf('.');
+        const ext = dot > -1 ? f.name.slice(dot).replace(/[^.a-zA-Z0-9]/g, '') : '';
+        const base = (dot > -1 ? f.name.slice(0, dot) : f.name)
+          .replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60) || 'file';
+        return base + ext;
+      };
       if (resume) {
-        const path = `resumes/${stamp}-${resume.name.replace(/\s+/g, '_')}`;
+        const path = `resumes/${stamp}-${safeName(resume)}`;
         const { error: upErr } = await supabase.storage.from('career-uploads').upload(path, resume);
         if (upErr) throw upErr;
         resume_url = path;
       }
       if (photo) {
-        const path = `photos/${stamp}-${photo.name.replace(/\s+/g, '_')}`;
+        const path = `photos/${stamp}-${safeName(photo)}`;
         const { error: upErr } = await supabase.storage.from('career-uploads').upload(path, photo);
         if (upErr) throw upErr;
         photo_url = path;
@@ -1321,6 +1333,14 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
         resume_url, photo_url, question_answers,
       });
       if (insErr) throw insErr;
+
+      // Staff notification is NOT sent from here. This form runs anonymously,
+      // and the notifications table is INSERT-only for authenticated users
+      // (and anon can't read app_users to work out who to notify anyway), so
+      // a client-side call would silently fail for every real applicant.
+      // It's a SECURITY DEFINER trigger on career_applications instead —
+      // see migration 20260716000002_career_application_notify.sql.
+
       setDone(true);
     } catch (e) {
       setError((e instanceof Error ? e.message : String(e)) || 'Something went wrong. Please try again.');
@@ -1399,11 +1419,19 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
 
 function Careers({ segments }: { segments: Segment[] }) {
   const [jobs, setJobs] = useState<JobPosting[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [jobsError, setJobsError] = useState('');
   const [applyJob, setApplyJob] = useState<JobPosting | 'general' | null>(null);
 
   useEffect(() => {
+    // The error was discarded here too, so a failed read rendered as
+    // "no open roles" — telling candidates the company isn't hiring.
     supabase.from('job_postings').select('*').eq('status', 'open').order('created_at', { ascending: false })
-      .then(({ data }) => { if (data) setJobs(data as JobPosting[]); });
+      .then(({ data, error }) => {
+        setJobsError(error ? "Couldn't load open roles right now." : '');
+        if (data) setJobs(data as JobPosting[]);
+        setJobsLoading(false);
+      });
   }, []);
 
   // JobPosting JSON-LD per open role, so Google For Jobs can index each
@@ -1445,7 +1473,19 @@ function Careers({ segments }: { segments: Segment[] }) {
           </p>
         </header>
 
-        {jobs.length === 0 && (
+        {/* "Loading", "genuinely no roles" and "the read failed" are three
+            different things. Previously all three rendered as "No open
+            positions right now", which tells a candidate the company isn't
+            hiring when in fact the query errored. */}
+        {jobsLoading && (
+          <p className="text-stone-700 text-center mb-10 font-medium">Loading open roles…</p>
+        )}
+        {!jobsLoading && jobsError && (
+          <p className="text-stone-700 text-center mb-10 font-medium">
+            {jobsError} You can still send a general application below.
+          </p>
+        )}
+        {!jobsLoading && !jobsError && jobs.length === 0 && (
           <p className="text-stone-700 text-center mb-10 font-medium">No open positions right now — check back soon, or apply generally below.</p>
         )}
 
@@ -1585,7 +1625,7 @@ const DEFAULT_FALLBACK_TICKET_TYPES = [
 ];
 
 function RaiseTicket({ segments }: { segments: Segment[] }) {
-  const cleanSegments = segments.filter(s => !s.slug.toLowerCase().includes('cctv') && !s.name.toLowerCase().includes('cctv'));
+  const cleanSegments = segments.filter(s => !isDiscontinuedSegment(s));
   const [mode, setMode] = useState<'raise' | 'track'>('raise');
   const [form, setForm] = useState({ segment_slug: '', ticket_type: '', subject: '', description: '', customer_name: '', customer_phone: '', customer_email: '' });
   const [types, setTypes] = useState<{ id: string; segment_slug: string | null; name: string }[]>([]);
