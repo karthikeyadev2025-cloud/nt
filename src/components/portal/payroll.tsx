@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FileText, Plus, X, MapPin, Image as ImageIcon, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { invalidate } from '../../lib/cacheBus';
 import type { Database, Tables } from '../../lib/database.types';
 
 type Payslip = Database['public']['Tables']['payslips']['Row'];
@@ -53,6 +54,9 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
     }
     if (error) { toast.error(error.message); return; }
     toast.success(editing.id ? 'Shift updated' : 'Shift created');
+    // Shift times feed late-tracking and the attendance summary, not just
+    // this table — invalidate both, then reload.
+    invalidate('shifts');
     setEditing(null); load();
   }
 
@@ -68,6 +72,7 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
     const { error } = await supabase.from('staff_shifts').insert({ staff_user_id: assignStaffId, shift_id: assigningFor.id } as never);
     if (error) { toast.error(error.message); return; }
     toast.success('Shift assigned');
+    invalidate('shifts', 'attendance');
     setAssigningFor(null); setAssignStaffId(''); load();
   }
 
@@ -302,6 +307,7 @@ export function PayslipManager() {
     }, { onConflict: 'staff_user_id,period_year,period_month' });
     if (error) { toast.error(`Couldn't generate: ${error.message}`); return; }
     toast.success('Payslip generated');
+    invalidate('payroll');
     setShowGen(false);
     load();
   }
@@ -321,6 +327,10 @@ export function PayslipManager() {
     } as never);
     if (error) { toast.error(`Couldn't record payment: ${error.message}`); return; }
     toast.success('Payment recorded');
+    // Recording a payment changes the payslip's paid/partial status, which
+    // load() re-reads from 'payslip_manager_data' — stale without this, so
+    // a fully-paid payslip kept showing as unpaid.
+    invalidate('payroll');
     const { data } = await supabase.from('payslips').select('*').eq('id', openSlip.id).single();
     if (data) { setOpenSlip(data); openPayments(data); }
     load();

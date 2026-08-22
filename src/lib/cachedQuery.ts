@@ -30,7 +30,7 @@ function syncToSessionStorage() {
         count++;
       }
     });
-    sessionStorage.setItem('nkt_query_cache', JSON.stringify(obj));
+    sessionStorage.setItem(QUERY_CACHE_STORAGE_KEY, JSON.stringify(obj));
   } catch {
     /* ignore storage quota */
   }
@@ -66,6 +66,25 @@ export async function cachedQuery<T>(
   } finally {
     inFlightQueries.delete(key);
   }
+}
+
+export const QUERY_CACHE_STORAGE_KEY = 'nkt_query_cache';
+
+/**
+ * Wipes the query cache completely — memory AND the sessionStorage backup.
+ *
+ * invalidateQueryCache() alone is NOT enough at sign-out: sessionStorage
+ * survives the same-tab navigation signOut performs, so the next person to
+ * sign in on a shared machine would hydrate the previous user's cached rows
+ * (staff list with salary_structure, payslips, HR records) before their own
+ * RLS-scoped fetches came back.
+ */
+export function clearQueryCache() {
+  queryCache.clear();
+  inFlightQueries.clear();
+  try {
+    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(QUERY_CACHE_STORAGE_KEY);
+  } catch { /* storage restricted */ }
 }
 
 export function invalidateQueryCache(keyPrefix?: string) {

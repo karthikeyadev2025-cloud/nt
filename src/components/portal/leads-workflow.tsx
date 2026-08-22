@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin, MessageCircle, Download } from 'lucide-react';
 import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
-import { invalidateQueryCache } from '../../lib/cachedQuery';
-import { invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
+import { invalidate } from '../../lib/cacheBus';
 import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -197,6 +196,9 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     setBusy(false);
     if (remarkErr) {
       toast.error(`Outcome saved, but your call note failed to save: ${remarkErr.message}. Please add it again.`);
+      // The stage/assignment update above DID commit, so the cache is stale
+      // regardless of the remark failing — drop it before reloading.
+      invalidate('leads');
       // Keep the modal open with the typed remark intact so nothing is lost —
       // only the outcome/stage already committed above.
       load();
@@ -210,6 +212,10 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     );
     setActive(null);
     setAppointmentDate(''); setAppointmentNote('');
+    // A call outcome moves the lead's stage and can book an appointment, so
+    // the queue, the telecaller's own stats, the to-do list and the funnel
+    // charts are all stale — not just the `leads:` list this view reads.
+    invalidate('leads');
     load();
   }
 
@@ -226,6 +232,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       await supabase.from('lead_remarks').insert({ lead_id: active.id, user_id: user.id, call_type: 'note', remark: `[Requested handoff to executive] ${remark}` } as never);
     }
     toast.success('Handoff requested — awaiting manager/admin approval');
+    invalidate('leads');
     setActive(null);
     load();
   }
@@ -413,6 +420,8 @@ export function TransferApprovals() {
     if (err2) { toast.error(`Saved, but cleanup failed: ${err2.message}`); return; }
 
     toast.success(approve ? 'Handoff approved' : 'Handoff rejected — lead returned to their queue');
+    // Reassigns the lead, so BOTH executives' queues change, not just this list.
+    invalidate('leads', 'notifications');
     load();
   }
 
@@ -804,8 +813,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
     setBusy(false);
     const skippedNote = skipped > 0 ? ` (${skipped} duplicate${skipped > 1 ? 's' : ''} skipped)` : '';
     toast.success(`${finalPayload.length} leads imported successfully${assignTo ? ' and assigned' : ''}${skippedNote}`);
-    invalidateQueryCache('leads:');
-    invalidateRpcCache('get_dashboard_counts');
+    invalidate('leads', 'notifications');
     setRows([]); setFileName(''); setParseInfo(null); setRawJson([]);
     if (fileRef.current) fileRef.current.value = '';
   }
@@ -1102,6 +1110,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
     setBusy(false);
     if (error) { toast.error(`Couldn't assign: ${error.message}`); return; }
     toast.success(toId === user?.id ? `${ids.length} lead(s) claimed — now in your queue` : `${ids.length} lead(s) assigned`);
+    invalidate('leads', 'notifications');
     load();
     onChanged?.();
   }
@@ -1230,6 +1239,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
       body: `${new Date(apptAt).toLocaleString('en-IN')} — you are attending this appointment.`, link: '/portal',
     } as never);
     toast.success('Executive assigned — they have been notified');
+    invalidate('leads', 'notifications');
     load();
   }
 
@@ -1463,10 +1473,21 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       // Restricted field staff only get a yes/no existence check (no lead-book
       // details); full-view staff get the detailed list. Try detailed first,
       // fall back to the boolean so the warning still fires either way.
-      const { data: dupes } = await supabase.rpc('find_duplicate_leads', { _phone: phone, _segment_slug: newLead.segment_slug });
+      const { data: dupes, error: dupErr } = await supabase.rpc('find_duplicate_leads', { _phone: phone, _segment_slug: newLead.segment_slug });
       if (dupes && dupes.length > 0) { setDuplicateInfo(dupes); return; }
-      const { data: exists } = await supabase.rpc('lead_phone_exists', { _phone: phone, _segment_slug: newLead.segment_slug });
+      const { data: exists, error: existsErr } = await supabase.rpc('lead_phone_exists', { _phone: phone, _segment_slug: newLead.segment_slug });
       if (exists) { setDuplicateInfo([{ id: 'exists', customer_name: 'An active lead with this number already exists', stage: '', assignee_name: '' }]); return; }
+      // Both checks failing used to be indistinguishable from both checks
+      // passing: the errors were discarded, `dupes` and `exists` came back
+      // null, and the insert went ahead as if the number were new. Duplicate
+      // leads then entered the pipeline silently, which is how the same
+      // customer ends up being called by two different executives. Fail
+      // loudly instead — the operator can retry, and a genuine duplicate is
+      // far more expensive than one extra tap.
+      if (dupErr && existsErr) {
+        toast.error("Couldn't check whether this number is already in the system. Please try again.");
+        return;
+      }
     }
 
     const { error } = await supabase.from('marketing_leads').insert({
@@ -1475,6 +1496,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     } as never);
     if (error) { toast.error(`Couldn't add lead: ${error.message}`); return; }
     toast.success('Lead added to your queue');
+    invalidate('leads');
     setShowAddLead(false);
     setDuplicateInfo(null);
     setNewLead({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
@@ -1980,6 +2002,10 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
     setBusy(false);
     if (error) { toast.error(`Couldn't reassign: ${error.message}`); return; }
     toast.success(`${selected.size} lead(s) reassigned`);
+    // This screen deliberately clears itself instead of reloading, so
+    // invalidation is the only thing that stops every OTHER view (queues,
+    // CRM board, dashboard counts) from serving the pre-reassignment rows.
+    invalidate('leads', 'notifications');
     setFromId(''); setToId(''); setLeads([]); setSelected(new Set());
   }
 

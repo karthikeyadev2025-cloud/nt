@@ -3,14 +3,17 @@ import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
   Landmark, Megaphone, Briefcase, Image as ImageIcon, Shield,
-  Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key, Bell, BellOff, TrendingUp, PartyPopper, BookOpen,
+  Clock, CalendarDays, CreditCard, Repeat, Menu, X, Key, Bell, BellOff, TrendingUp, PartyPopper, BookOpen, AlertTriangle,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cachedRpc } from '../../lib/cachedRpc';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSegments } from '../../lib/useSegments';
+import { useSegments, assignableSegments } from '../../lib/useSegments';
+import { invalidate } from '../../lib/cacheBus';
+import { describeReadError } from './shared-utils';
+import { useUrlTab } from '../../lib/useUrlTab';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
 import type { Segment, Product, ProductFeature, Tables } from '../../lib/database.types';
 import { TicketsBoard, HRBoard, inputCls, btnCls, cardCls, SegmentTabs, MyLeadsToDoList } from './shared';
@@ -222,6 +225,13 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
   const [stats, setStats] = useState<Record<string, { tickets: number; openTickets: number; leads: number; won: number; staff: number }>>({});
   const [showSecondary, setShowSecondary] = useState(false);
   const [range, setRange] = useState('all');
+  // Segment scope for this whole panel. The dashboard loads segments with
+  // includeRetired=true (it still has to manage work belonging to shut-down
+  // verticals), so Overview was rendering every retired segment as an
+  // ordinary row of zeros with nothing marking it as retired — the main
+  // reason this list read as cluttered and hard to act on. Default is
+  // 'active': retired segments are available on demand, not by default.
+  const [scope, setScope] = useState<'active' | 'all' | string>('active');
 
   useEffect(() => {
     const t = setTimeout(() => setShowSecondary(true), 600);
@@ -261,6 +271,19 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
     })();
   }, [segments, range]);
 
+  // Retired segments are hidden unless explicitly asked for, EXCEPT when
+  // they still carry live work — a retired vertical with open tickets or
+  // unresolved leads is exactly the thing an admin must not lose sight of,
+  // so it stays visible (clearly badged) until it's genuinely wound down.
+  const visibleSegments = segments.filter(seg => {
+    if (scope === 'all') return true;
+    if (scope !== 'active') return seg.slug === scope;
+    if (seg.active !== false) return true;
+    const st = stats[seg.slug];
+    return !!st && (st.openTickets > 0 || st.leads > st.won || st.staff > 0);
+  });
+  const retiredCount = segments.filter(s => s.active === false).length;
+
   return (
     <div className="space-y-4">
       <ActionCentre onGo={onGo} />
@@ -284,6 +307,22 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
         <div className="flex items-center justify-between px-4 py-2.5 flex-wrap gap-2 border-b border-stone-100">
           <h3 className="text-nikki-navy text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" /> SEGMENTS</h3>
           <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Scope first, then date range — scope decides WHICH rows you
+                see, range decides what the numbers on them mean. */}
+            <select
+              value={scope}
+              onChange={e => setScope(e.target.value)}
+              aria-label="Segment scope"
+              className="px-2 py-1 rounded-md text-[11px] font-bold bg-stone-100 text-stone-700 border border-nikki-border hover:bg-nikki-border">
+              <option value="active">Active segments</option>
+              {retiredCount > 0 && <option value="all">All (incl. {retiredCount} retired)</option>}
+              {segments.map(s => (
+                <option key={s.slug} value={s.slug}>
+                  Only: {s.name}{s.active === false ? ' (retired)' : ''}
+                </option>
+              ))}
+            </select>
+            <span className="w-px h-4 bg-stone-300" aria-hidden="true" />
             {OVERVIEW_RANGES.map(r => (
               <button key={r.key} onClick={() => setRange(r.key)}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${range === r.key ? 'bg-nikki-blue text-white' : 'bg-stone-100 text-stone-700 hover:bg-nikki-border'}`}>
@@ -293,8 +332,14 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
           </div>
         </div>
         <div className="divide-y divide-stone-100">
-          {segments.map(seg => {
+          {visibleSegments.length === 0 && (
+            <p className="px-4 py-6 text-center text-stone-500 text-sm">
+              No segments match this scope.
+            </p>
+          )}
+          {visibleSegments.map(seg => {
             const st = stats[seg.slug] || { tickets: 0, openTickets: 0, leads: 0, won: 0, staff: 0 };
+            const retired = seg.active === false;
             const winRate = st.leads > 0 ? Math.round((st.won / st.leads) * 100) : 0;
             const statBtn = (value: number, label: string, tone: string, onClick: () => void) => (
               <button onClick={onClick} className="text-left rounded-md px-2 py-1 hover:bg-stone-50 transition-colors">
@@ -304,7 +349,14 @@ function Overview({ segments, onAddStaff, onGo }: { segments: Segment[]; onAddSt
             );
             return (
               <div key={seg.slug} className="flex items-center gap-3 px-4 py-2 flex-wrap" style={{ borderLeft: `3px solid ${seg.color ?? '#78716c'}` }}>
-                <span className="text-nikki-navy font-bold text-sm w-28 shrink-0 truncate">{seg.name}</span>
+                <span className="text-nikki-navy font-bold text-sm w-28 shrink-0 truncate" title={seg.name}>{seg.name}</span>
+                {retired && (
+                  <span
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-stone-200 text-stone-600 shrink-0"
+                    title="Retired — hidden from the public website. Shown here because it still has live work to wind down.">
+                    RETIRED
+                  </span>
+                )}
                 <div className="flex items-center flex-wrap flex-1">
                   {statBtn(st.openTickets, 'open tickets', 'text-nikki-navy', () => onGo('tickets', { segFilter: seg.slug, ticketStatus: 'open' }))}
                   {statBtn(st.leads, 'leads', 'text-nikki-navy', () => onGo('crm', { segFilter: seg.slug }))}
@@ -547,6 +599,11 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       toast.success(`${form.full_name} onboarded successfully`);
     }
     setBusy(false);
+    // A brand-new employee touches every staff-derived list (Access
+    // Control, HR, assignee pickers, headcount on Overview). onDone()
+    // calls load(), but load() reads through the cache — so without this
+    // the person just onboarded didn't show up for up to 5 minutes.
+    invalidate('staff', 'documents', 'shifts');
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* storage disabled or full */ }
     onDone();
   }
@@ -663,8 +720,8 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
               <p className="text-stone-700 text-sm font-medium mb-2">Segment Access</p>
               <p className="text-stone-500 text-xs mb-2">Pick one or more specific segments, or "ALL SEGMENTS" for unrestricted access — picking one clears the other.</p>
               <div className="flex flex-wrap gap-2">
-                {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
-                  <button key={s.slug} onClick={() => toggleSeg(s.slug)}
+                {[...assignableSegments(segments).map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
+                  <button key={s.slug} type="button" onClick={() => toggleSeg(s.slug)}
                     className={`px-3 py-1 rounded-full text-xs border ${form.segments.includes(s.slug) ? 'bg-nikki-royal text-stone-950 border-nikki-royal' : 'border-nikki-border text-stone-700'}`}>
                     {s.name}
                   </button>
@@ -864,6 +921,18 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 }
 
 // ─────────────────────────────────────── Access Control (users × segments × permissions)
+
+// Single source of truth for the columns AccessControl reads. This is
+// shared with prefetchTab() below because both write the SAME cache key
+// ('access_control_users'): the prefetch used to select a shorter list, so
+// hovering the nav item populated the cache with rows missing exit_date,
+// exit_reason and staff_code, and the offboarding UI then mis-rendered
+// exactly as it had before that bug was fixed. Two writers, one key —
+// they must select identically.
+// Kept as a single string literal (not a concatenation): supabase-js infers
+// the row type from the literal type of the select string, and splitting it
+// across a `+` widens it to plain `string` and loses that inference.
+const ACCESS_USER_COLS = 'id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at, exit_date, exit_reason, staff_code';
 // The salary_structure column is `Json` in DB types but this app uses a
 // consistent narrow shape. Widening once here saves scattered casts.
 type SalaryStructure = {
@@ -962,6 +1031,10 @@ function RolesOverview({ staffCountByRole }: { staffCountByRole: Record<string, 
 
 function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segment[]; openSignal?: number; focusStaffId?: string }) {
   const [users, setUsers] = useState<AccessUser[]>([]);
+  // Surfaced instead of silently rendering an empty list — see
+  // describeReadError in shared-utils.
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [editing, setEditing] = useState<AccessUser | null>(null);
   const [snapshot, setSnapshot] = useState<{ designation: string; ctc: number } | null>(null);
   const [showOnboard, setShowOnboard] = useState(false);
@@ -1004,7 +1077,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
     // in the select list, editing.exit_date was always undefined, and the
     // ternary at the bottom of the edit modal always rendered "Offboard
     // this employee" even for staff who had already been offboarded.
-    const COLS = 'id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at, exit_date, exit_reason, staff_code';
+    const COLS = ACCESS_USER_COLS;
     try {
       const data = await cachedQuery('access_control_users', async () => {
         const { data, error } = await supabase.from('app_users').select(COLS).order('created_at', { ascending: false });
@@ -1012,8 +1085,13 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
         return data;
       });
       if (data) setUsers(data as AccessUser[]);
+      setLoadError(null);
     } catch {
-      const { data } = await supabase.from('app_users').select(COLS).order('created_at', { ascending: false });
+      // Uncached retry. If this fails too it's a real problem, not a cache
+      // quirk — previously the error was dropped here and the screen simply
+      // showed no staff, which reads as "this company has no employees".
+      const { data, error } = await supabase.from('app_users').select(COLS).order('created_at', { ascending: false });
+      setLoadError(describeReadError(error, 'staff records'));
       if (data) setUsers(data as AccessUser[]);
     }
   }
@@ -1079,6 +1157,10 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
     }
     setEditing(null);
     setSnapshot(null);
+    // Without this, load() below re-reads 'access_control_users' straight
+    // out of the 5-minute cache and shows the pre-save row — which is why
+    // role/segment edits looked like they hadn't saved.
+    invalidate('staff');
     load();
   }
 
@@ -1098,6 +1180,12 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
 
   return (
     <div>
+      {loadError && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+          <span>{loadError}</span>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-5">
         <p className="text-stone-700 text-sm">Onboard staff, assign segment access and function permissions — no code needed.</p>
         <div className="flex items-center gap-4">
@@ -1208,10 +1296,11 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
               <p className="text-stone-700 text-sm font-medium mb-2">Segment Access</p>
               <p className="text-stone-500 text-xs mb-2">Pick one or more specific segments, or "ALL SEGMENTS" for unrestricted access — picking one clears the other.</p>
               <div className="flex flex-wrap gap-2">
-                {[...segments.map(s => ({ slug: s.slug, name: s.name })), { slug: 'all', name: 'ALL SEGMENTS' }].map(s => (
-                  <button key={s.slug} onClick={() => toggleSeg(editing, setEditing, s.slug)}
-                    className={`px-3 py-1 rounded-full text-xs border ${(editing.segments || []).includes(s.slug) ? 'bg-nikki-royal text-stone-950 border-nikki-royal' : 'border-nikki-border text-stone-700'}`}>
-                    {s.name}
+                {[...assignableSegments(segments, editing.segments || []).map(s => ({ slug: s.slug, name: s.name, retired: s.active === false })), { slug: 'all', name: 'ALL SEGMENTS', retired: false }].map(s => (
+                  <button key={s.slug} type="button" onClick={() => toggleSeg(editing, setEditing, s.slug)}
+                    title={s.retired ? 'Retired segment — shown only because this employee is still assigned to it. Removing it here is permanent.' : undefined}
+                    className={`px-3 py-1 rounded-full text-xs border ${(editing.segments || []).includes(s.slug) ? 'bg-nikki-royal text-stone-950 border-nikki-royal' : 'border-nikki-border text-stone-700'} ${s.retired ? 'opacity-70 italic' : ''}`}>
+                    {s.name}{s.retired && ' (retired)'}
                   </button>
                 ))}
               </div>
@@ -1383,12 +1472,20 @@ function ApprovalsSection() {
 // ─────────────────────────────────────── Segments Manager
 function SegmentsManager({ onChanged }: { onChanged: () => void }) {
   const [rows, setRows] = useState<Segment[]>([]);
+  // Surfaced instead of silently rendering an empty list — see
+  // describeReadError in shared-utils.
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [editing, setEditing] = useState<Partial<Segment> | null>(null);
   const [usage, setUsage] = useState<Record<string, { staff: number; leads: number; tickets: number }>>({});
   const toast = useToast();
 
   async function load() {
-    const { data } = await supabase.from('segments').select('*').order('order_index');
+    // Segments failing silently is the worst of these: every segment filter
+    // and segment-scoped screen in the dashboard then renders empty too, so
+    // the whole app looks broken rather than the one failing read.
+    const { data, error } = await supabase.from('segments').select('*').order('order_index');
+    setLoadError(describeReadError(error, 'segments'));
     if (data) setRows(data as Segment[]);
 
     // Live dependency counts — retiring a segment must never silently strand data.
@@ -1423,6 +1520,10 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
     const { error } = await supabase.from('segments').update({ active: !seg.active } as never).eq('id', seg.id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(retiring ? `${seg.name} retired — hidden from the website` : `${seg.name} reactivated`);
+    // useSegments() caches 'app_segments:*' for 5 minutes, so retiring a
+    // segment previously left it showing everywhere (sidebar filters,
+    // assignment chips, the public site) until the cache aged out.
+    invalidate('segments');
     load(); onChanged();
   }
 
@@ -1437,11 +1538,18 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
     }
     if (error) { toast.error(`Couldn't save segment: ${error.message}`); return; }
     toast.success(editing.id ? 'Segment updated' : 'Segment created');
+    invalidate('segments');
     setEditing(null); load(); onChanged();
   }
 
   return (
     <div>
+      {loadError && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+          <span>{loadError}</span>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-5">
         <p className="text-stone-700 text-sm">Add a new business vertical anytime — tickets, leads, staff scoping pick it up automatically.</p>
         <button className={btnCls} onClick={() => setEditing({ slug: '', name: '', tagline: '', description: '', icon: 'Layers', color: '#0ea5e9', ticket_prefix: '', order_index: rows.length + 1, active: true })}>+ New Segment</button>
@@ -1498,11 +1606,16 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
 // ─────────────────────────────────────── Products Manager (no-code add)
 function ProductsManager({ segments }: { segments: Segment[] }) {
   const [rows, setRows] = useState<Product[]>([]);
+  // Surfaced instead of silently rendering an empty list — see
+  // describeReadError in shared-utils.
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [editing, setEditing] = useState<(Partial<Product> & { features?: ProductFeature[] }) | null>(null);
   const toast = useToast();
 
   async function load() {
-    const { data } = await supabase.from('products').select('*').order('order_index');
+    const { data, error } = await supabase.from('products').select('*').order('order_index');
+    setLoadError(describeReadError(error, 'products'));
     if (data) setRows(data as Product[]);
   }
   useEffect(() => { load(); }, []);
@@ -1535,6 +1648,12 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
 
   return (
     <div>
+      {loadError && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+          <span>{loadError}</span>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-5">
         <p className="text-stone-700 text-sm">Add any new software product without code — it appears on the website instantly.</p>
         <button className={btnCls} onClick={() => setEditing({ segment_slug: 'software', slug: '', name: '', tagline: '', description: '', external_url: '', demo_cta: 'Visit Website', status: 'active', order_index: rows.length + 1, features: [] })}>+ Add Product</button>
@@ -1966,6 +2085,10 @@ function ContentManager() {
   async function save(row: { id: string; value: string }) {
     const { error } = await supabase.from('site_content').update({ value: row.value, updated_at: new Date().toISOString() } as never).eq('id', row.id);
     if (error) { toast.error(`Couldn't save: ${error.message}`); return; }
+    // The public site reads this through useSiteContent()'s cached
+    // 'site_content_data' key — without invalidating, edited copy didn't
+    // show on the website until the cache expired.
+    invalidate('siteContent');
     setSaved(row.id);
     setTimeout(() => setSaved(''), 1500);
   }
@@ -2068,6 +2191,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       stampCompanySignature(user.id, upserted.map(d => d.id)).catch(() => {});
     }
     toast.success(`${docs.length} document(s) issued to ${issueFor.full_name}`);
+    invalidate('documents');
     setIssueFor(null); load();
   }
 
@@ -2171,7 +2295,6 @@ type Tab = 'overview' | 'tasks' | 'tickets' | 'crm' | 'training' | 'hr' | 'acces
 export default function SuperAdminDashboard() {
   const { user, signOut, hasPermission } = useAuth();
   const { segments } = useSegments(true);
-  const [tab, setTab] = useState<Tab>('overview');
   const [onboardSignal, setOnboardSignal] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const [focus, setFocus] = useState<{ kind: 'staff' | 'lead' | 'ticket'; id: string } | null>(null);
@@ -2273,10 +2396,16 @@ export default function SuperAdminDashboard() {
 
   const tabs = tabGroups.flatMap(g => g.items);
 
+  // Tab lives in the URL (?tab=hr) so screens are linkable, survive a
+  // refresh, and the back button steps through them. Declared here rather
+  // than at the top of the component because it needs the permission-filtered
+  // id list to reject a deep link the current user can't open.
+  const [tab, setTab] = useUrlTab<Tab>(tabs.map(t => t.id), 'overview');
+
   function prefetchTab(targetTab: Tab) {
     if (targetTab === 'access') {
       cachedQuery('access_control_users', async () => {
-        const { data } = await supabase.from('app_users').select('id, email, full_name, role, segments, phone, designation, is_active, must_change_password, permission_overrides, salary_structure, joining_date, employment_type, reporting_time, created_at').order('created_at', { ascending: false });
+        const { data } = await supabase.from('app_users').select(ACCESS_USER_COLS).order('created_at', { ascending: false });
         return data || [];
       }).catch(() => {});
     } else if (targetTab === 'crm') {
@@ -2285,8 +2414,11 @@ export default function SuperAdminDashboard() {
         return data || [];
       }).catch(() => {});
     } else if (targetTab === 'hr') {
-      cachedQuery('hr_staff_users', async () => {
-        const { data } = await supabase.from('app_users').select('id, full_name, role, segments, phone, is_active, email').eq('is_active', true).neq('role', 'super_admin').order('full_name');
+      // Key and shape must match HRBoard's own read in shared.tsx exactly,
+      // or this is a wasted round-trip that warms a key nobody reads —
+      // which is what 'hr_staff_users' (vs the real 'hr_app_users') was.
+      cachedQuery('hr_app_users', async () => {
+        const { data } = await supabase.from('app_users').select('*').neq('role', 'super_admin').order('full_name');
         return data || [];
       }).catch(() => {});
     } else if (targetTab === 'tickets') {
@@ -2305,12 +2437,17 @@ export default function SuperAdminDashboard() {
   const navGroups = (
     <>
       {tabGroups.map(g => (
-        <div key={g.label} className="mb-5">
-          <p className="px-3 pb-1.5 text-[10px] font-bold tracking-wider text-stone-700 uppercase">{g.label}</p>
+        <div key={g.label} className="mb-5" role="group" aria-labelledby={`navgrp-${g.label.replace(/\s+/g, '-')}`}>
+          {/* 10px was below the 12px floor for legible UI text; the group
+              label is also now programmatically tied to the buttons under
+              it, so the sections are real structure rather than a visual
+              hint a screen-reader user never receives. */}
+          <p id={`navgrp-${g.label.replace(/\s+/g, '-')}`} className="px-3 pb-1.5 text-xs font-bold tracking-wider text-stone-600 uppercase">{g.label}</p>
           <div className="space-y-1">
             {g.items.map(t => (
               <button key={t.id} onClick={() => goTo(t.id)} onMouseEnter={() => prefetchTab(t.id)}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] font-semibold transition-all text-left ${tab === t.id ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm' : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'}`}>
+                aria-current={tab === t.id ? 'page' : undefined}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 min-h-[44px] rounded-xl text-[13px] font-semibold transition-all text-left ${tab === t.id ? 'bg-nikki-surface-blue border border-nikki-border text-nikki-navy shadow-sm' : 'text-stone-700 hover:text-nikki-navy hover:bg-stone-100 border border-transparent'}`}>
                 <t.icon className={`w-4 h-4 shrink-0 ${tab === t.id ? 'text-nikki-blue' : 'text-stone-700'}`} />
                 <span className="flex-1 min-w-0 truncate whitespace-nowrap text-left" title={t.label}>{t.label}</span>
               </button>
@@ -2352,7 +2489,7 @@ export default function SuperAdminDashboard() {
                   <p className="text-stone-700 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
                 </div>
               </div>
-              <button onClick={() => setMobileNavOpen(false)} className="p-1 text-stone-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="p-2.5 -m-1 text-stone-700"><X className="w-5 h-5" /></button>
             </div>
             <nav className="flex-1">{navGroups}</nav>
             <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-nikki-border pt-3">
@@ -2365,7 +2502,7 @@ export default function SuperAdminDashboard() {
       <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileNavOpen(true)} className="md:hidden p-1.5 -ml-1.5 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <h1 className="text-3xl font-extrabold text-nikki-navy tracking-tight truncate">{tabs.find(t => t.id === tab)?.label}</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -2373,6 +2510,8 @@ export default function SuperAdminDashboard() {
             <button
               onClick={() => { setSoundEnabled(!soundEnabled); if (notifPermission === 'default') requestNotificationPermission(); }}
               title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}
+              aria-label={soundEnabled ? 'Mute sound alerts' : 'Enable sound alerts'}
+              aria-pressed={soundEnabled}
               className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-400 hover:bg-stone-100'}`}>
               {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
             </button>
@@ -2381,7 +2520,7 @@ export default function SuperAdminDashboard() {
               <Key className="w-3.5 h-3.5 text-nikki-blue" />
               <span className="hidden sm:inline">{user?.full_name}</span>
             </button>
-            <button onClick={signOut} className="md:hidden text-stone-700"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} aria-label="Sign out" className="md:hidden text-stone-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
           </div>
         </div>
 

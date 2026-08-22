@@ -7,7 +7,8 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
-import { cachedRpc, invalidateQueryCache as invalidateRpcCache } from '../../lib/cachedRpc';
+import { cachedRpc } from '../../lib/cachedRpc';
+import { invalidate } from '../../lib/cacheBus';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { rpcCall } from './meetings-utils';
@@ -167,7 +168,7 @@ export function ScheduleMeetingModal({
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     if (data && !data.ok && data.message) { setConflictWarn(data.message); return; }
-    invalidateRpcCache('list_meetings');
+    invalidate('meetings', 'leads');
     toast.success('Meeting scheduled — attendees have been notified');
     onSaved(); onClose();
   }
@@ -349,7 +350,7 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
         if (r2.error) { toast.error(r2.error.message); return; }
       } else return;
     }
-    invalidateRpcCache('list_meetings'); toast.success('Meeting rescheduled'); onChanged(); onClose();
+    invalidate('meetings', 'leads'); toast.success('Meeting rescheduled'); onChanged(); onClose();
   }
 
   async function cancel() {
@@ -359,7 +360,7 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
     const { error } = await rpcCall('cancel_meeting', { p_meeting_id: meeting.id, p_reason: reason });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    invalidateRpcCache('list_meetings'); toast.success('Meeting cancelled — attendees notified'); onChanged(); onClose();
+    invalidate('meetings', 'leads'); toast.success('Meeting cancelled — attendees notified'); onChanged(); onClose();
   }
 
   async function saveOutcome() {
@@ -368,7 +369,7 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
     const { error } = await rpcCall('record_meeting_outcome', { p_meeting_id: meeting.id, p_outcome: outcome, p_notes: notes, p_next_step: nextStep });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    invalidateRpcCache('list_meetings'); toast.success('Outcome recorded'); onChanged(); onClose();
+    invalidate('meetings', 'leads'); toast.success('Outcome recorded'); onChanged(); onClose();
   }
 
   return (

@@ -42,6 +42,36 @@ const DEFAULT_FALLBACK_SEGMENTS: Segment[] = [
   },
 ];
 
+/**
+ * Nikki Technologies exited the CCTV vertical, but old rows may still be
+ * present in `segments` and in `site_content` copy. Rather than repeating
+ * this substring check inline in four different files (which is how it
+ * drifted — the public site, the portal segment tabs and this hook each had
+ * their own copy), it lives here once and everything imports it.
+ *
+ * This is a data-cleanup shim, not a permanent rule: once the CCTV rows are
+ * removed or deactivated in the database, delete this and its call sites.
+ */
+export function isDiscontinuedSegment(s: { slug: string; name: string }): boolean {
+  return s.slug.toLowerCase().includes('cctv') || s.name.toLowerCase().includes('cctv');
+}
+
+/**
+ * Segments a person can be newly ASSIGNED to — active only.
+ *
+ * The admin dashboard calls useSegments(true) because it must still manage
+ * work belonging to retired segments. But that same array was being handed
+ * to the onboarding wizard and the Access Control edit modal as the list of
+ * choices, so a retired segment appeared as a perfectly normal chip and you
+ * could put a brand-new hire into a vertical the company had shut down.
+ *
+ * `alreadyAssigned` keeps any retired slug a person is CURRENTLY on visible,
+ * so editing someone doesn't silently strip their existing access.
+ */
+export function assignableSegments(segments: Segment[], alreadyAssigned: string[] = []): Segment[] {
+  return segments.filter(s => s.active !== false || alreadyAssigned.includes(s.slug));
+}
+
 export function useSegments(includeRetired = false) {
   const [segments, setSegments] = useState<Segment[]>(DEFAULT_FALLBACK_SEGMENTS);
   const [loading, setLoading] = useState(true);
@@ -59,9 +89,7 @@ export function useSegments(includeRetired = false) {
     }).then(data => {
       if (!mounted) return;
       if (data && data.length > 0) {
-        const cleanSegments = (data as Segment[]).filter(
-          s => !s.slug.toLowerCase().includes('cctv') && !s.name.toLowerCase().includes('cctv')
-        );
+        const cleanSegments = (data as Segment[]).filter(s => !isDiscontinuedSegment(s));
         setSegments(cleanSegments.length > 0 ? cleanSegments : DEFAULT_FALLBACK_SEGMENTS);
       } else {
         setSegments(DEFAULT_FALLBACK_SEGMENTS);

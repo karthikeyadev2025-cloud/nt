@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CalendarCheck, CalendarX, UserMinus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { invalidate } from '../../lib/cacheBus';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { cachedQuery } from '../../lib/cachedQuery';
@@ -52,6 +53,7 @@ export function MyRegularizations() {
     setBusy(false);
     if (error) { toast.error(`Couldn't submit: ${error.message}`); return; }
     toast.success('Correction request submitted for approval');
+    invalidate('attendance');
     setForm({ attendance_date: '', requested_check_in: '', requested_check_out: '', reason: '' });
     load();
   }
@@ -121,6 +123,9 @@ export function RegularizationApprovals() {
       .update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
     toast.success(`Correction ${status}`);
+    // Approving a correction rewrites the underlying attendance record, so
+    // the summary/trend/punctuality reads must drop too, not just this list.
+    invalidate('attendance');
     load();
   }
 
@@ -173,6 +178,7 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
     const { error } = await supabase.from('holidays').insert({ ...form, segment_slug: form.segment_slug || null });
     if (error) { toast.error(error.message); return; }
     toast.success('Holiday added');
+    invalidate('holidays');
     setForm({ holiday_date: '', name: '', segment_slug: '', is_optional: false });
     load();
   }
@@ -181,6 +187,7 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
     if (!confirm('Remove this holiday?')) return;
     const { error } = await supabase.from('holidays').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
+    invalidate('holidays');
     load();
   }
 
@@ -269,6 +276,10 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: { id: stri
     setBusy(false);
     if (error) { toast.error(`Couldn't offboard: ${error.message}`); return; }
     toast.success(`${staffMember.full_name} offboarded`);
+    // This writes app_users. onDone() is AccessControl's load(), which
+    // reads the cached staff list — so the offboarded employee kept
+    // showing as active and the modal kept offering "Offboard" again.
+    invalidate('staff');
     onDone();
   }
 
