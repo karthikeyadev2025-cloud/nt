@@ -5,7 +5,7 @@ import { invalidate } from '../../lib/cacheBus';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { cachedQuery } from '../../lib/cachedQuery';
-import { inputCls, btnCls, cardCls } from './shared';
+import { inputCls, btnCls, cardCls, SubTabs } from './shared';
 import { describeReadError } from './shared-utils';
 import { istDateStr, istDateStrDaysAgo } from '../../lib/dates';
 import type { Segment, Database } from '../../lib/database.types';
@@ -732,20 +732,15 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
 
   return (
     <div>
-      <div className="flex gap-2 mb-5">
-        <button onClick={() => setTab('jobs')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'jobs' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Job Postings</button>
-        <button onClick={() => setTab('applications')} className={`px-3 py-1.5 rounded-lg text-sm border inline-flex items-center gap-2 ${tab === 'applications' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
-          Applications ({apps.length})
-          {/* The count that actually needs acting on is the unreviewed one —
-              a total of 340 tells you nothing about whether anything is
-              waiting for you. */}
-          {newCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-nikki-blue text-white text-[11px] font-bold leading-none">
-              {newCount} new
-            </span>
-          )}
-        </button>
-      </div>
+      {/* Applications carries the count that actually needs acting on. */}
+      <SubTabs
+        value={tab}
+        onChange={k => setTab(k as typeof tab)}
+        primary={[
+          { key: 'jobs',         label: 'Job Postings' },
+          { key: 'applications', label: 'Applications', badge: newCount },
+        ]}
+      />
 
       {tab === 'jobs' && (
         <div>
