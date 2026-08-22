@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock, MessageCircle, Download, ScanLine, PhoneCall, PhoneIncoming, CalendarDays, RefreshCw, StickyNote, CircleDashed, type LucideIcon } from 'lucide-react';
+import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock, MessageCircle, Download, ScanLine, PhoneCall, PhoneIncoming, CalendarDays, RefreshCw, StickyNote, CircleDashed, ChevronDown, Search, LayoutGrid, List as ListIcon, type LucideIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -1241,6 +1241,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   // every letter typed.
   const [searchTerm, setSearchTerm] = useState('');
   const [leadLimit, setLeadLimit] = useState(400);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [leadsTruncated, setLeadsTruncated] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setSearchTerm(searchQuery.trim()), 350);
@@ -1672,16 +1673,24 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
         <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
           {/* List / Kanban toggle */}
           <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl shrink-0">
-            <button onClick={() => setViewMode('list')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>☰ List</button>
-            <button onClick={() => setViewMode('kanban')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'kanban' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>▦ Kanban</button>
+            <button onClick={() => setViewMode('list')} aria-pressed={viewMode === 'list'} className={`px-2.5 py-1.5 min-h-[32px] rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 ${viewMode === 'list' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>
+              <ListIcon className="w-3.5 h-3.5" aria-hidden="true" /> List
+            </button>
+            <button onClick={() => setViewMode('kanban')} aria-pressed={viewMode === 'kanban'} className={`px-2.5 py-1.5 min-h-[32px] rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 ${viewMode === 'kanban' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>
+              <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" /> Kanban
+            </button>
           </div>
-          <input
-            type="text"
-            className={inputCls + ' text-xs py-2 w-full sm:w-64 bg-white shadow-sm'}
-            placeholder="🔍 Search leads by name, phone..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" aria-hidden="true" />
+            <input
+              type="text"
+              aria-label="Search leads"
+              className={inputCls + ' text-xs py-2 pl-8 w-full bg-white shadow-sm'}
+              placeholder="Search leads by name, phone..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
           <button
             className="px-3 py-2 rounded-lg bg-white border border-stone-300 hover:border-nikki-sky text-stone-700 text-xs font-semibold shrink-0 inline-flex items-center gap-1.5"
             onClick={() => exportLeadsToExcel(filteredLeads, `leads-${segFilter || 'all'}-${new Date().toISOString().slice(0, 10)}.xlsx`, staffById)}>
@@ -1713,6 +1722,27 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Date range and staff picker are secondary: most sessions never
+                touch them, but they occupied two full rows of the filter card
+                on every visit. Collapsed behind a toggle that shows a dot when
+                something inside is actually applied, so a hidden filter can
+                never silently narrow your results. */}
+            <button
+              onClick={() => setShowMoreFilters(v => !v)}
+              aria-expanded={showMoreFilters}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border inline-flex items-center gap-1.5 ${
+                dateFrom || dateTo || staffFilter
+                  ? 'border-nikki-royal text-nikki-blue bg-nikki-surface-blue'
+                  : 'border-nikki-border text-stone-700 hover:bg-stone-50'}`}>
+              Date &amp; staff
+              {(dateFrom || dateTo || staffFilter) && <span className="w-1.5 h-1.5 rounded-full bg-nikki-blue" aria-hidden="true" />}
+              <ChevronDown className={`w-3 h-3 transition-transform ${showMoreFilters ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        {showMoreFilters && (
+          <div className="flex items-center gap-2 flex-wrap pb-2 border-b border-stone-100">
             {/* Date range filter */}
             <div className="flex items-center gap-1">
               <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border'} value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
@@ -1722,12 +1752,16 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-stone-500 hover:text-stone-800 text-xs px-1" title="Clear date range">✕</button>
               )}
             </div>
-            <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border font-semibold'} value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
+            <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border font-semibold'} aria-label="Filter by staff member" value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
               <option value="">Filter by Staff Member...</option>
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
             </select>
+            {(dateFrom || dateTo || staffFilter) && (
+              <button onClick={() => { setDateFrom(''); setDateTo(''); setStaffFilter(''); }}
+                className="text-nikki-blue text-xs font-semibold px-1">Clear</button>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Stage Filter Chips */}
         <div className="flex flex-wrap items-center gap-1.5">

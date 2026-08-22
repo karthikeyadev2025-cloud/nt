@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin, MessageCircle, Download } from 'lucide-react';
+import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2, XCircle, Camera, MapPin, MessageCircle, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
 import { invalidate } from '../../lib/cacheBus';
@@ -1302,68 +1302,120 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
 export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initialStageFilter, filterNonce }: { segments: Segment[]; focusLeadId?: string; initialSegFilter?: string; initialStageFilter?: string; filterNonce?: number }) {
   const { hasPermission, user } = useAuth();
   const [sub, setSub] = useState<'board' | 'appointments' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity' | 'duplicates' | 'change_requests'>('board');
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState<string | null>(null);
   const showBulk = hasPermission('bulk_assign_leads');
   const showTransfers = hasPermission('approve_transfers');
   const isSuperAdmin = user?.role === 'super_admin';
-  // A staff member without any admin-ish permission is a "restricted" user
-  // in this context — they should see only the two views they actually
-  // work in (their board, their appointments) and everything else is
-  // tucked behind a compact "More" menu so it isn't visual noise.
-  const isRestricted = !showBulk && !showTransfers && !hasPermission('full_leads_view');
+  // Note: there is no longer a "restricted user" branch here. Everyone now
+  // gets the same grouped layout, and permissions decide which ENTRIES
+  // exist rather than which layout you get. A restricted user simply ends
+  // up with fewer menus (often just "Find Leads"), which falls out of the
+  // .filter(when) calls below without a second code path to maintain.
 
   // A search result forces the board sub-tab so the record can be opened there.
   useEffect(() => { if (focusLeadId) setSub('board'); }, [focusLeadId]);
   // A drill-down filter from Overview does the same.
   useEffect(() => { if (filterNonce) setSub('board'); }, [filterNonce]);
 
-  // Options that live behind the "More" menu when restricted, and inline for managers.
-  const secondaryTabs = [
-    { key: 'pool' as const,        label: 'Unassigned Pool', when: true },
-    { key: 'activity' as const,    label: 'Team Activity',   when: true },
-    { key: 'bulk' as const,        label: 'Bulk Upload',     when: showBulk },
-    { key: 'reassign' as const,    label: 'Reassign Leads',  when: showBulk },
-    { key: 'duplicates' as const,  label: 'Duplicate Leads', when: showBulk },
-    { key: 'transfers' as const,   label: 'Handoff Approvals', when: showTransfers },
-    { key: 'change_requests' as const, label: 'Edit/Delete Approvals', when: isSuperAdmin },
+  // ── Why this is grouped rather than one flat row ──────────────────
+  // These used to render inline for anyone who wasn't "restricted", so a
+  // super admin — the person with the MOST entries — got all nine as equal
+  // buttons and they wrapped onto a second line. The help was backwards:
+  // the more access you had, the more cluttered the page became, and
+  // "Leads Board" (used constantly) sat visually level with "Edit/Delete
+  // Approvals" (used rarely).
+  //
+  // Now everything past the two daily views is grouped by what it's FOR,
+  // behind labelled menus. Two menus of five beats one row of nine,
+  // because the label tells you which one to open.
+  const workTabs = [
+    { key: 'pool' as const,       label: 'Unassigned Pool', hint: 'Claim leads nobody owns' },
+    { key: 'activity' as const,   label: 'Team Activity',   hint: "What everyone logged today" },
+  ];
+  const manageTabs = [
+    { key: 'bulk' as const,       label: 'Bulk Upload',     hint: 'Import leads from a spreadsheet', when: showBulk },
+    { key: 'reassign' as const,   label: 'Reassign Leads',  hint: 'Move leads between staff', when: showBulk },
+    { key: 'duplicates' as const, label: 'Duplicate Leads', hint: 'Find and merge repeats', when: showBulk },
+  ].filter(t => t.when);
+  const approvalTabs = [
+    { key: 'transfers' as const,       label: 'Handoff Approvals',     hint: 'Staff-to-staff lead handoffs', when: showTransfers },
+    { key: 'change_requests' as const, label: 'Edit/Delete Approvals', hint: 'Requests to change lead records', when: isSuperAdmin },
   ].filter(t => t.when);
 
+  const menus = [
+    { id: 'work',      label: 'Find Leads', items: workTabs },
+    { id: 'manage',    label: 'Manage',     items: manageTabs },
+    { id: 'approvals', label: 'Approvals',  items: approvalTabs },
+  ].filter(m => m.items.length > 0);
+
+  const secondaryTabs = [...workTabs, ...manageTabs, ...approvalTabs];
+
+  // The two views people actually live in, as a segmented control — one
+  // visual unit that reads as "which mode am I in", distinct from the
+  // menus beside it which read as "go somewhere else".
   const primaryBtn = (k: typeof sub, label: string) => (
     <button key={k} onClick={() => setSub(k)}
-      className={`px-3 py-1.5 rounded-lg text-sm border ${sub === k ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
+      aria-current={sub === k ? 'page' : undefined}
+      className={`px-3.5 py-1.5 min-h-[36px] rounded-lg text-sm font-semibold transition-all ${
+        sub === k ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-600 hover:text-nikki-navy'}`}>
       {label}
     </button>
   );
 
+  const activeSecondary = secondaryTabs.find(t => t.key === sub);
+
   return (
     <div>
       <div className="flex gap-2 mb-5 flex-wrap items-center">
-        {primaryBtn('board', 'Leads Board')}
-        {primaryBtn('appointments', 'Appointments')}
-        {/* Managers/admins see everything inline. Restricted staff get a
-            compact "More" popover so they aren't overwhelmed by tools they
-            wouldn't normally use. */}
-        {!isRestricted && secondaryTabs.map(t => primaryBtn(t.key, t.label))}
-        {isRestricted && secondaryTabs.length > 0 && (
-          <div className="relative">
-            <button
-              onClick={() => setMoreOpen(v => !v)}
-              onBlur={() => setTimeout(() => setMoreOpen(false), 150)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${['pool','activity','bulk','reassign','duplicates','transfers'].includes(sub) ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
-              More ▾
-            </button>
-            {moreOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-nikki-border rounded-lg shadow-lg z-10 py-1 min-w-[180px]">
-                {secondaryTabs.map(t => (
-                  <button key={t.key}
-                    onMouseDown={() => { setSub(t.key); setMoreOpen(false); }}
-                    className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-stone-50 ${sub === t.key ? 'text-nikki-blue font-semibold' : 'text-stone-700'}`}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl">
+          {primaryBtn('board', 'Leads Board')}
+          {primaryBtn('appointments', 'Appointments')}
+        </div>
+
+        {menus.map(m => {
+          const isActive = m.items.some(t => t.key === sub);
+          return (
+            <div key={m.id} className="relative">
+              <button
+                onClick={() => setMoreOpen(moreOpen === m.id ? null : m.id)}
+                onBlur={() => setTimeout(() => setMoreOpen(cur => (cur === m.id ? null : cur)), 150)}
+                aria-expanded={moreOpen === m.id}
+                aria-haspopup="menu"
+                className={`px-3.5 py-1.5 min-h-[36px] rounded-xl text-sm font-semibold border inline-flex items-center gap-1.5 transition-colors ${
+                  isActive
+                    ? 'border-nikki-royal text-nikki-blue bg-nikki-surface-blue'
+                    : 'border-nikki-border text-stone-700 hover:border-stone-300 hover:bg-stone-50'}`}>
+                {m.label}
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${moreOpen === m.id ? 'rotate-180' : ''}`} aria-hidden="true" />
+              </button>
+              {moreOpen === m.id && (
+                <div role="menu" className="absolute top-full left-0 mt-1.5 bg-white border border-nikki-border rounded-xl shadow-xl z-20 py-1.5 min-w-[240px]">
+                  {m.items.map(t => (
+                    <button key={t.key} role="menuitem"
+                      onMouseDown={() => { setSub(t.key); setMoreOpen(null); }}
+                      className={`block w-full text-left px-3 py-2 hover:bg-stone-50 ${sub === t.key ? 'bg-nikki-surface-blue' : ''}`}>
+                      <span className={`block text-sm ${sub === t.key ? 'text-nikki-blue font-bold' : 'text-nikki-navy font-semibold'}`}>{t.label}</span>
+                      {/* One line saying what the screen is for. These names
+                          are not self-explanatory to a new staff member —
+                          "Duplicate Leads" could mean find them or create
+                          them. */}
+                      <span className="block text-[11px] text-stone-500 mt-0.5">{t.hint}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Where you are, when it isn't one of the two primary views —
+            otherwise opening a menu item left no visible trace of which
+            screen you'd landed on. */}
+        {activeSecondary && (
+          <span className="ml-1 inline-flex items-center gap-1.5 text-sm text-stone-500">
+            <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+            <span className="font-semibold text-nikki-navy">{activeSecondary.label}</span>
+          </span>
         )}
       </div>
       {sub === 'board' && <LeadsBoard segments={segments} focusLeadId={focusLeadId} initialSegFilter={initialSegFilter} initialStageFilter={initialStageFilter} filterNonce={filterNonce} />}
