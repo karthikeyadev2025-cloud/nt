@@ -13,6 +13,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSegments, assignableSegments } from '../../lib/useSegments';
 import { invalidate } from '../../lib/cacheBus';
 import { describeReadError } from './shared-utils';
+import { SubTabs } from './shared';
 import { useUrlTab } from '../../lib/useUrlTab';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
 import type { Segment, Product, ProductFeature, Tables } from '../../lib/database.types';
@@ -1368,8 +1369,14 @@ function TicketsSection({ segments, focusId, initialSegFilter, initialStatus, fi
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setSub('queue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'queue' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>All Tickets</button>
-        <button onClick={() => setSub('overdue')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'overdue' ? 'border-red-500 text-red-700' : 'border-nikki-border text-stone-700'}`}>Overdue (SLA)</button>
+        <SubTabs
+          value={sub}
+          onChange={k => setSub(k as typeof sub)}
+          primary={[
+            { key: 'queue',   label: 'All Tickets' },
+            { key: 'overdue', label: 'Overdue (SLA)' },
+          ]}
+        />
       </div>
       {sub === 'queue' && <TicketsBoard segments={segments} focusId={focusId} initialSegFilter={initialSegFilter} initialStatus={initialStatus} filterNonce={filterNonce} />}
       {sub === 'overdue' && <OverdueTickets segments={segments} />}
@@ -1432,16 +1439,37 @@ function HRSection({ segments }: { segments: Segment[] }) {
   const canApprove = isSA || hasPermission('approve_leaves');
   return (
     <div>
-      <div className="flex gap-2 mb-5 flex-wrap">
-        <button onClick={() => setSub('core')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'core' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Staff & Leaves</button>
-        {canApprove && <button onClick={() => setSub('corrections')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'corrections' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Attendance Corrections</button>}
-        {canSummary && <button onClick={() => setSub('dangling')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'dangling' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Unclosed Days</button>}
-        {canShifts && <button onClick={() => setSub('shifts')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'shifts' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Shifts</button>}
-        {canPayroll && <button onClick={() => setSub('payslips')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'payslips' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Payslips</button>}
-        {canSummary && <button onClick={() => setSub('summary')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'summary' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Attendance Summary</button>}
-        {canPolicy && <button onClick={() => setSub('policy')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'policy' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Leave Policy</button>}
-        {canPolicy && <button onClick={() => setSub('holidays')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'holidays' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Holidays</button>}
-      </div>
+      {/* Eight hand-written buttons on one wrapping row became one primary
+          view plus three menus grouped by what the screen is FOR. */}
+      <SubTabs
+        value={sub}
+        onChange={k => setSub(k as typeof sub)}
+        primary={[{ key: 'core', label: 'Staff & Leaves' }]}
+        groups={[
+          {
+            label: 'Attendance',
+            items: [
+              { key: 'corrections', label: 'Attendance Corrections', hint: 'Approve time-fix requests', when: canApprove },
+              { key: 'dangling',    label: 'Unclosed Days',          hint: 'Checked in but never out', when: canSummary },
+              { key: 'summary',     label: 'Attendance Summary',     hint: 'Per-staff monthly totals', when: canSummary },
+            ],
+          },
+          {
+            label: 'Payroll',
+            items: [
+              { key: 'shifts',   label: 'Shifts',   hint: 'Define timings and assign staff', when: canShifts },
+              { key: 'payslips', label: 'Payslips', hint: 'Generate and record payments', when: canPayroll },
+            ],
+          },
+          {
+            label: 'Policy',
+            items: [
+              { key: 'policy',   label: 'Leave Policy', hint: 'Annual entitlements per leave type', when: canPolicy },
+              { key: 'holidays', label: 'Holidays',     hint: 'Company and segment holiday calendar', when: canPolicy },
+            ],
+          },
+        ]}
+      />
       {sub === 'core' && <HRBoard segments={segments} />}
       {sub === 'corrections' && canApprove && <RegularizationApprovals />}
       {sub === 'dangling' && canSummary && <DanglingCheckins />}
@@ -1460,8 +1488,14 @@ function ApprovalsSection() {
   return (
     <div>
       <div className="flex gap-2 mb-5">
-        <button onClick={() => setSub('bank')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'bank' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Bank Details</button>
-        <button onClick={() => setSub('photo')} className={`px-3 py-1.5 rounded-lg text-sm border ${sub === 'photo' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Profile Photos</button>
+        <SubTabs
+          value={sub}
+          onChange={k => setSub(k as typeof sub)}
+          primary={[
+            { key: 'bank',  label: 'Bank Details' },
+            { key: 'photo', label: 'Profile Photos' },
+          ]}
+        />
       </div>
       {sub === 'bank' && <BankChangeApprovals />}
       {sub === 'photo' && <PhotoChangeApprovals />}
@@ -1940,12 +1974,18 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
 
   return (
     <div>
-      <div className="flex gap-2 mb-5">
-        <button onClick={() => setTab('gallery')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'gallery' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Gallery ({gallery.length})</button>
-        <button onClick={() => setTab('team')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'team' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Team ({team.length})</button>
-        <button onClick={() => setTab('testimonials')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'testimonials' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Testimonials ({testimonials.length})</button>
-        <button onClick={() => setTab('logos')} className={`px-3 py-1.5 rounded-lg text-sm border ${tab === 'logos' ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>Client Logos ({logos.length})</button>
-      </div>
+      {/* Four peer views with no hierarchy between them — all primary, no
+          menus. The counts move to badges so the labels stay scannable. */}
+      <SubTabs
+        value={tab}
+        onChange={k => setTab(k as typeof tab)}
+        primary={[
+          { key: 'gallery',      label: 'Gallery',      badge: gallery.length },
+          { key: 'team',         label: 'Team',         badge: team.length },
+          { key: 'testimonials', label: 'Testimonials', badge: testimonials.length },
+          { key: 'logos',        label: 'Client Logos', badge: logos.length },
+        ]}
+      />
 
       {tab === 'gallery' && (
         <div>

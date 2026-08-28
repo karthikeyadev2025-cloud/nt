@@ -3,13 +3,14 @@ import { Phone, Upload, FileSpreadsheet, ArrowRightLeft, PhoneCall, CheckCircle2
 import CameraCapture from '../CameraCapture';
 import { supabase } from '../../lib/supabase';
 import { invalidate } from '../../lib/cacheBus';
+import { SubTabs } from './shared';
 import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
 import { stageLabel, describeDbError } from './shared-utils';
 import { normalizePhone, waLink } from '../../lib/phone';
-import { enqueue, flushQueue, listQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
+import { enqueue, flushQueue, listQueued, listDropped, retryDropped, removeQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
 import { exportLeadsToExcel } from '../../lib/exportLeads';
 import { MyCallsChart } from './performance';
@@ -179,28 +180,43 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       patch.appointment_note = appointmentNote;
       patch.appointment_set_by = user.id;
     }
-    const { error: updErr } = await supabase.from('marketing_leads').update(patch).eq('id', active.id);
-    if (updErr) { toast.error(`Couldn't save: ${updErr.message}`); setBusy(false); return; }
-
-    // This remark is the actual substance of the call — what was said, why
-    // this outcome was picked. It was previously fire-and-forget: if it
-    // failed, the lead's stage/assignment had already changed above, the
-    // modal closed, and a success toast showed anyway, silently losing the
-    // one thing the telecaller actually typed with no way to notice.
+    // ── Order matters. The remark MUST be written before the lead update.
+    //
+    // The patch above can set assigned_to = null and stage = won/lost. The
+    // "staff add remarks" INSERT policy mirrors lead visibility:
+    //   assigned_to = auth.uid()
+    //   OR created_by = auth.uid()
+    //   OR (full_leads_view AND same segment)
+    //   OR (assigned_to IS NULL AND stage NOT IN ('won','lost') AND same segment)
+    // A telecaller has full_leads_view = false and rarely created the lead, so
+    // the moment that update lands every branch fails and Postgres rejects the
+    // insert (42501). Converted/Closed and Not Interested silently lost the
+    // note; Not Answered survived only because its stage isn't won/lost, which
+    // is what made the bug look intermittent.
+    //
+    // Writing the remark first means the lead is still assigned to this caller
+    // when the policy is evaluated, so the note always lands.
     const { error: remarkErr } = await supabase.from('lead_remarks').insert({
       lead_id: active.id, user_id: user.id, call_type: 'outgoing',
       remark: `[${OUTCOMES.find(o => o.value === outcome)?.label}] ${remark}`
         + (isAppointment ? ` — appointment ${new Date(appointmentDate).toLocaleString('en-IN')}` : ''),
     } as never);
-
-    setBusy(false);
     if (remarkErr) {
-      toast.error(`Outcome saved, but your call note failed to save: ${remarkErr.message}. Please add it again.`);
-      // The stage/assignment update above DID commit, so the cache is stale
-      // regardless of the remark failing — drop it before reloading.
+      // Nothing has been committed yet, so this is fully recoverable. Keep the
+      // modal open with the typed text intact rather than moving the stage on
+      // and stranding the caller with a note they can no longer save.
+      setBusy(false);
+      toast.error(`Couldn't save your call note: ${remarkErr.message}. Nothing was changed — please try again.`);
+      return;
+    }
+
+    const { error: updErr } = await supabase.from('marketing_leads').update(patch).eq('id', active.id);
+    setBusy(false);
+    if (updErr) {
+      // The note is already safe. Only the stage/assignment failed, so say
+      // exactly that and leave the modal open to retry.
+      toast.error(`Your note was saved, but the outcome didn't apply: ${updErr.message}. Please try again.`);
       invalidate('leads');
-      // Keep the modal open with the typed remark intact so nothing is lost —
-      // only the outcome/stage already committed above.
       load();
       return;
     }
@@ -1302,70 +1318,64 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
 export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initialStageFilter, filterNonce }: { segments: Segment[]; focusLeadId?: string; initialSegFilter?: string; initialStageFilter?: string; filterNonce?: number }) {
   const { hasPermission, user } = useAuth();
   const [sub, setSub] = useState<'board' | 'appointments' | 'pool' | 'bulk' | 'reassign' | 'transfers' | 'activity' | 'duplicates' | 'change_requests'>('board');
-  const [moreOpen, setMoreOpen] = useState(false);
   const showBulk = hasPermission('bulk_assign_leads');
   const showTransfers = hasPermission('approve_transfers');
   const isSuperAdmin = user?.role === 'super_admin';
-  // A staff member without any admin-ish permission is a "restricted" user
-  // in this context — they should see only the two views they actually
-  // work in (their board, their appointments) and everything else is
-  // tucked behind a compact "More" menu so it isn't visual noise.
-  const isRestricted = !showBulk && !showTransfers && !hasPermission('full_leads_view');
+  // Note: there is no longer a "restricted user" branch here. Everyone now
+  // gets the same grouped layout, and permissions decide which ENTRIES
+  // exist rather than which layout you get. A restricted user simply ends
+  // up with fewer menus (often just "Find Leads"), which falls out of the
+  // .filter(when) calls below without a second code path to maintain.
 
   // A search result forces the board sub-tab so the record can be opened there.
   useEffect(() => { if (focusLeadId) setSub('board'); }, [focusLeadId]);
   // A drill-down filter from Overview does the same.
   useEffect(() => { if (filterNonce) setSub('board'); }, [filterNonce]);
 
-  // Options that live behind the "More" menu when restricted, and inline for managers.
-  const secondaryTabs = [
-    { key: 'pool' as const,        label: 'Unassigned Pool', when: true },
-    { key: 'activity' as const,    label: 'Team Activity',   when: true },
-    { key: 'bulk' as const,        label: 'Bulk Upload',     when: showBulk },
-    { key: 'reassign' as const,    label: 'Reassign Leads',  when: showBulk },
-    { key: 'duplicates' as const,  label: 'Duplicate Leads', when: showBulk },
-    { key: 'transfers' as const,   label: 'Handoff Approvals', when: showTransfers },
-    { key: 'change_requests' as const, label: 'Edit/Delete Approvals', when: isSuperAdmin },
+  // ── Why this is grouped rather than one flat row ──────────────────
+  // These used to render inline for anyone who wasn't "restricted", so a
+  // super admin — the person with the MOST entries — got all nine as equal
+  // buttons and they wrapped onto a second line. The help was backwards:
+  // the more access you had, the more cluttered the page became, and
+  // "Leads Board" (used constantly) sat visually level with "Edit/Delete
+  // Approvals" (used rarely).
+  //
+  // Now everything past the two daily views is grouped by what it's FOR,
+  // behind labelled menus. Two menus of five beats one row of nine,
+  // because the label tells you which one to open.
+  const workTabs = [
+    { key: 'pool' as const,       label: 'Unassigned Pool', hint: 'Claim leads nobody owns' },
+    { key: 'activity' as const,   label: 'Team Activity',   hint: "What everyone logged today" },
+  ];
+  const manageTabs = [
+    { key: 'bulk' as const,       label: 'Bulk Upload',     hint: 'Import leads from a spreadsheet', when: showBulk },
+    { key: 'reassign' as const,   label: 'Reassign Leads',  hint: 'Move leads between staff', when: showBulk },
+    { key: 'duplicates' as const, label: 'Duplicate Leads', hint: 'Find and merge repeats', when: showBulk },
+  ].filter(t => t.when);
+  const approvalTabs = [
+    { key: 'transfers' as const,       label: 'Handoff Approvals',     hint: 'Staff-to-staff lead handoffs', when: showTransfers },
+    { key: 'change_requests' as const, label: 'Edit/Delete Approvals', hint: 'Requests to change lead records', when: isSuperAdmin },
   ].filter(t => t.when);
 
-  const primaryBtn = (k: typeof sub, label: string) => (
-    <button key={k} onClick={() => setSub(k)}
-      className={`px-3 py-1.5 rounded-lg text-sm border ${sub === k ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
-      {label}
-    </button>
-  );
+  const menus = [
+    { id: 'work',      label: 'Find Leads', items: workTabs },
+    { id: 'manage',    label: 'Manage',     items: manageTabs },
+    { id: 'approvals', label: 'Approvals',  items: approvalTabs },
+  ].filter(m => m.items.length > 0);
+
+
 
   return (
     <div>
-      <div className="flex gap-2 mb-5 flex-wrap items-center">
-        {primaryBtn('board', 'Leads Board')}
-        {primaryBtn('appointments', 'Appointments')}
-        {/* Managers/admins see everything inline. Restricted staff get a
-            compact "More" popover so they aren't overwhelmed by tools they
-            wouldn't normally use. */}
-        {!isRestricted && secondaryTabs.map(t => primaryBtn(t.key, t.label))}
-        {isRestricted && secondaryTabs.length > 0 && (
-          <div className="relative">
-            <button
-              onClick={() => setMoreOpen(v => !v)}
-              onBlur={() => setTimeout(() => setMoreOpen(false), 150)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${['pool','activity','bulk','reassign','duplicates','transfers'].includes(sub) ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>
-              More ▾
-            </button>
-            {moreOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-nikki-border rounded-lg shadow-lg z-10 py-1 min-w-[180px]">
-                {secondaryTabs.map(t => (
-                  <button key={t.key}
-                    onMouseDown={() => { setSub(t.key); setMoreOpen(false); }}
-                    className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-stone-50 ${sub === t.key ? 'text-nikki-blue font-semibold' : 'text-stone-700'}`}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <SubTabs
+        value={sub}
+        onChange={k => setSub(k as typeof sub)}
+        primary={[
+          { key: 'board', label: 'Leads Board' },
+          { key: 'appointments', label: 'Appointments' },
+        ]}
+        groups={menus.map(m => ({ label: m.label, items: m.items }))}
+      />
       {sub === 'board' && <LeadsBoard segments={segments} focusLeadId={focusLeadId} initialSegFilter={initialSegFilter} initialStageFilter={initialStageFilter} filterNonce={filterNonce} />}
       {sub === 'appointments' && <AppointmentsBoard segments={segments} />}
       {sub === 'pool' && <UnassignedLeadsPool segments={segments} />}
@@ -1411,6 +1421,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [apptAt, setApptAt] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingItems, setPendingItems] = useState<QueuedVisit[]>([]);
+  const [droppedItems, setDroppedItems] = useState<QueuedVisit[]>([]);
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const [syncing, setSyncing] = useState(false);
   const [newLead, setNewLead] = useState({ customer_name: '', phone: '', segment_slug: '', interested_in: '' });
@@ -1439,6 +1450,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     const refresh = async () => {
       setPendingCount(await queueCount());
       setPendingItems(await listQueued());
+      setDroppedItems(await listDropped());
     };
     refresh();
     const stop = startAutoFlush(supabase, result => {
@@ -1458,6 +1470,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     setSyncing(false);
     setPendingCount(r.remaining);
     setPendingItems(await listQueued());
+    setDroppedItems(await listDropped());
     if (r.synced > 0) { toast.success(`${r.synced} visit(s) synced`); load(); }
     else if (r.remaining > 0) toast.error(`Still offline — ${r.remaining} visit(s) waiting`);
   }
@@ -1514,6 +1527,12 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     setCollectedPhone(lead.phone === 'Pending Collection' ? '' : (lead.phone || ''));
     setNextFollowup(lead.next_followup_at ? new Date(lead.next_followup_at ?? '').toISOString().slice(0,16) : '');
     setApptAt(lead.appointment_at ? new Date(lead.appointment_at ?? '').toISOString().slice(0,16) : '');
+    // Clear first. These were previously left untouched on an empty/failed
+    // fetch, so the modal kept rendering the *previous* lead's notes and photos
+    // under the new lead's name — wrong history, and one customer's visit notes
+    // shown on another customer's record.
+    setRemarks([]);
+    setPhotoUrls({});
     const { data } = await supabase.from('lead_remarks').select('*').eq('lead_id', lead.id).order('created_at', { ascending: false });
     if (!data) return;
     setRemarks(data);
@@ -1674,6 +1693,25 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
         </div>
       )}
 
+      {droppedItems.length > 0 && (
+        <div className="mb-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3">
+          <p className="text-red-800 text-sm font-medium">
+            {droppedItems.length} visit{droppedItems.length === 1 ? '' : 's'} could not be saved to the server
+          </p>
+          <p className="text-red-700 text-xs mt-0.5">
+            The notes are still on this phone. Open the lead to read them back and re-enter, or tap Try again.
+          </p>
+          <div className="mt-2 space-y-1">
+            {droppedItems.slice(0, 5).map(p => (
+              <p key={p.id} className="text-red-800 text-[11px]">
+                {p.leadName} — {new Date(p.occurredAt ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                {p.lastError ? ` • ${p.lastError}` : ''}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-nikki-navy font-semibold text-sm">My Field Leads ({leads.length})</h3>
         <button className="text-nikki-blue text-xs font-medium" onClick={() => { setDuplicateInfo(null); setShowAddLead(true); }}>+ Add Lead</button>
@@ -1789,6 +1827,48 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               )}
               <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>{busy ? 'Saving…' : 'Save Visit'}</button>
             </div>
+
+            {/* Visits that haven't reached the server yet live only in
+                IndexedDB, so they used to be completely absent from this
+                panel — the executive typed a summary, saw it vanish, and had
+                no way to confirm it still existed. Show them first, clearly
+                marked, so "saved on your phone" is something you can actually
+                see on the record it belongs to. */}
+            {(() => {
+              const unsent = [...pendingItems, ...droppedItems].filter(p => p.leadId === active.id);
+              if (unsent.length === 0) return null;
+              return (
+                <div className="border-t border-stone-800 pt-3 space-y-2">
+                  <p className="text-stone-700 text-xs font-medium">Not yet synced</p>
+                  {unsent.map(p => (
+                    <div key={p.id} className={`text-xs rounded-lg border px-2.5 py-2 ${p.droppedAt ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
+                      <p className={`font-medium ${p.droppedAt ? 'text-red-800' : 'text-amber-800'}`}>
+                        {p.droppedAt ? '⚠ Could not be saved' : '⏳ Waiting to sync'}
+                        {' • '}
+                        {new Date(p.occurredAt ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </p>
+                      <p className="text-stone-700 mt-1 whitespace-pre-wrap">{p.remark}</p>
+                      {p.address && <p className="text-stone-700 mt-1">📍 {p.address}</p>}
+                      {p.droppedAt && (
+                        <>
+                          <p className="text-red-700 mt-1">Copy this note before dismissing — it is stored only on this phone.</p>
+                          <div className="flex gap-2 mt-1.5">
+                            <button className="px-2 py-1 rounded border border-red-300 text-red-800"
+                              onClick={async () => { await retryDropped(p.id); setDroppedItems(await listDropped()); setPendingItems(await listQueued()); setPendingCount(await queueCount()); syncNow(); }}>
+                              Try again
+                            </button>
+                            <button className="px-2 py-1 rounded border border-stone-300 text-stone-700"
+                              onClick={async () => { await removeQueued(p.id); setDroppedItems(await listDropped()); }}>
+                              Dismiss
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             {remarks.length > 0 && (
               <div className="border-t border-stone-800 pt-3 space-y-2">

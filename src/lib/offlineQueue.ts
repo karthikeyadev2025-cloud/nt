@@ -40,6 +40,11 @@ export type QueuedVisit = {
   attempts: number;
   lastError?: string;
   queuedAt: string;
+  // Set when the item has exhausted its retries. The row stays in IndexedDB
+  // so the executive can still read back what they typed and re-enter it —
+  // deleting it outright was silent data loss for the hardest-to-recapture
+  // data in the app.
+  droppedAt?: string;
 };
 
 function openDb(): Promise<IDBDatabase> {
@@ -70,22 +75,60 @@ export async function enqueue(item: Omit<QueuedVisit, 'attempts' | 'queuedAt'>):
   await tx('readwrite', s => s.put({ ...item, attempts: 0, queuedAt: new Date().toISOString() }));
 }
 
-export async function listQueued(): Promise<QueuedVisit[]> {
+async function listAll(): Promise<QueuedVisit[]> {
   const all = await tx<QueuedVisit[]>('readonly', s => s.getAll() as IDBRequest<QueuedVisit[]>);
   return (all || []).sort((a, b) => a.queuedAt.localeCompare(b.queuedAt));
+}
+
+/** Items still eligible for sync. Excludes anything already given up on. */
+export async function listQueued(): Promise<QueuedVisit[]> {
+  return (await listAll()).filter(i => !i.droppedAt);
+}
+
+/**
+ * Items that exhausted their retries. These are never sent again — they exist
+ * only so the executive can read their own notes back and re-enter them.
+ */
+export async function listDropped(): Promise<QueuedVisit[]> {
+  return (await listAll()).filter(i => !!i.droppedAt);
 }
 
 export async function removeQueued(id: string): Promise<void> {
   await tx('readwrite', s => s.delete(id));
 }
 
+/** Put a dropped item back in the sync queue with a clean attempt count. */
+export async function retryDropped(id: string): Promise<void> {
+  const all = await listAll();
+  const item = all.find(i => i.id === id);
+  if (!item) return;
+  const { droppedAt: _droppedAt, ...rest } = item;
+  void _droppedAt;
+  await tx('readwrite', s => s.put({ ...rest, attempts: 0, lastError: undefined }));
+}
+
 async function markFailed(item: QueuedVisit, message: string): Promise<void> {
   await tx('readwrite', s => s.put({ ...item, attempts: item.attempts + 1, lastError: message }));
 }
 
+async function markDropped(item: QueuedVisit, message: string): Promise<void> {
+  await tx('readwrite', s => s.put({
+    ...item, attempts: item.attempts + 1, lastError: message, droppedAt: new Date().toISOString(),
+  }));
+}
+
+/** Count of items still waiting to sync — dropped items are not "pending". */
 export async function queueCount(): Promise<number> {
   try {
-    return await tx<number>('readonly', s => s.count());
+    return (await listQueued()).length;
+  } catch {
+    return 0;
+  }
+}
+
+export async function droppedCount(): Promise<number> {
+  try {
+    return (await listDropped()).length;
   } catch {
     return 0;
   }
@@ -97,7 +140,7 @@ export async function queueCount(): Promise<number> {
 // because they never reach the server.
 const MAX_ATTEMPTS = 8;
 
-export type FlushResult = { synced: number; failed: number; remaining: number };
+export type FlushResult = { synced: number; failed: number; remaining: number; dropped: number };
 
 /**
  * Replay queued visits. Safe to call repeatedly and concurrently-ish: each
@@ -106,7 +149,7 @@ export type FlushResult = { synced: number; failed: number; remaining: number };
  */
 export async function flushQueue(supabase: SupabaseClient): Promise<FlushResult> {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    return { synced: 0, failed: 0, remaining: await queueCount() };
+    return { synced: 0, failed: 0, remaining: await queueCount(), dropped: await droppedCount() };
   }
 
   const items = await listQueued();
@@ -162,8 +205,13 @@ export async function flushQueue(supabase: SupabaseClient): Promise<FlushResult>
       const message = err instanceof Error ? err.message : String(err);
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
       if (!offline && item.attempts + 1 >= MAX_ATTEMPTS) {
-        console.error('Dropping unsyncable visit after repeated failures', item.id, message);
-        await removeQueued(item.id);
+        // Park it, don't delete it. The server has rejected this on its own
+        // terms (bad data, permission, a lead that moved to someone else) and
+        // will keep doing so — but the notes, GPS and photo are the hardest
+        // things in this app to recapture, so the executive gets to read them
+        // back and re-enter them rather than losing them without a word.
+        console.error('Parking unsyncable visit after repeated failures', item.id, message);
+        await markDropped(item, message);
       } else {
         await markFailed(item, message);
       }
@@ -174,7 +222,7 @@ export async function flushQueue(supabase: SupabaseClient): Promise<FlushResult>
     }
   }
 
-  return { synced, failed, remaining: await queueCount() };
+  return { synced, failed, remaining: await queueCount(), dropped: await droppedCount() };
 }
 
 /**
@@ -188,7 +236,7 @@ export function startAutoFlush(supabase: SupabaseClient, onChange?: (r: FlushRes
     if (stopped) return;
     try {
       const result = await flushQueue(supabase);
-      if (onChange && (result.synced > 0 || result.failed > 0)) onChange(result);
+      if (onChange && (result.synced > 0 || result.failed > 0 || result.dropped > 0)) onChange(result);
     } catch (e) {
       console.warn('Queue flush error', e);
     }

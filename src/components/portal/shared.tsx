@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock, MessageCircle, Download, ScanLine, PhoneCall, PhoneIncoming, CalendarDays, RefreshCw, StickyNote, CircleDashed, type LucideIcon } from 'lucide-react';
+import { MapPin, Eye, X, User, Phone, Mail, Tag, Radio, UserCheck, Users, Check, Loader2, AlertTriangle, Plus, Camera, CalendarClock, MessageCircle, Download, ScanLine, PhoneCall, PhoneIncoming, CalendarDays, RefreshCw, StickyNote, CircleDashed, ChevronDown, ChevronRight, Search, LayoutGrid, List as ListIcon, type LucideIcon } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
@@ -41,6 +41,118 @@ import {
   CALL_OUTCOMES, VISIT_OUTCOMES,
   type StaffNameInfo,
 } from './shared-utils';
+
+/**
+ * ═══════════════════════════════════════════════════════════════════
+ * SubTabs — the single sub-navigation control for every admin screen.
+ * ═══════════════════════════════════════════════════════════════════
+ *
+ * Why this exists: every screen used to hand-write its own row of tab
+ * buttons, repeating the same 140-character className per button. HR wrote
+ * it eight times, the CRM nine, Site Media four. Consequences:
+ *
+ *   • Any screen with more than ~5 tabs wrapped onto a second line, and the
+ *     more permissions you had the worse it got — admins saw the most
+ *     buttons and so the messiest header.
+ *   • Every tab looked equally important, so a screen you open daily sat
+ *     level with one you touch monthly.
+ *   • Fixing the layout meant editing every screen separately, which is why
+ *     they drifted apart in the first place.
+ *
+ * The API takes `primary` (the one or two views people live in, rendered as
+ * a segmented control) and `groups` (everything else, behind labelled
+ * menus). Permissions decide which ITEMS exist — pass `when: false` and the
+ * item disappears — never which layout you get, so there is only ever one
+ * code path to maintain.
+ */
+export type SubTabItem = { key: string; label: string; hint?: string; badge?: number; when?: boolean };
+export type SubTabGroup = { label: string; items: SubTabItem[] };
+
+export function SubTabs({ primary, groups = [], value, onChange, className = '' }: {
+  primary: SubTabItem[];
+  groups?: SubTabGroup[];
+  value: string;
+  onChange: (key: string) => void;
+  className?: string;
+}) {
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const shownPrimary = primary.filter(t => t.when !== false);
+  const shownGroups = groups
+    .map(g => ({ ...g, items: g.items.filter(t => t.when !== false) }))
+    .filter(g => g.items.length > 0);
+
+  const allSecondary = shownGroups.flatMap(g => g.items);
+  const activeSecondary = allSecondary.find(t => t.key === value);
+
+  return (
+    <div className={`flex gap-2 mb-5 flex-wrap items-center ${className}`}>
+      {shownPrimary.length > 0 && (
+        <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl">
+          {shownPrimary.map(t => (
+            <button key={t.key} onClick={() => onChange(t.key)}
+              aria-current={value === t.key ? 'page' : undefined}
+              className={`px-3.5 py-1.5 min-h-[36px] rounded-lg text-sm font-semibold transition-all inline-flex items-center gap-1.5 ${
+                value === t.key ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-600 hover:text-nikki-navy'}`}>
+              {t.label}
+              {!!t.badge && <span className="px-1.5 py-0.5 rounded-full bg-nikki-blue text-white text-[10px] font-bold leading-none">{t.badge}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {shownGroups.map(g => {
+        const isActive = g.items.some(t => t.key === value);
+        // A group's badge is the sum of its items' — so a pending approval
+        // is visible without opening the menu to look for it.
+        const groupBadge = g.items.reduce((n, t) => n + (t.badge || 0), 0);
+        return (
+          <div key={g.label} className="relative">
+            <button
+              onClick={() => setOpenMenu(openMenu === g.label ? null : g.label)}
+              onBlur={() => setTimeout(() => setOpenMenu(cur => (cur === g.label ? null : cur)), 150)}
+              aria-expanded={openMenu === g.label}
+              aria-haspopup="menu"
+              className={`px-3.5 py-1.5 min-h-[36px] rounded-xl text-sm font-semibold border inline-flex items-center gap-1.5 transition-colors ${
+                isActive
+                  ? 'border-nikki-royal text-nikki-blue bg-nikki-surface-blue'
+                  : 'border-nikki-border text-stone-700 hover:border-stone-300 hover:bg-stone-50'}`}>
+              {g.label}
+              {groupBadge > 0 && <span className="px-1.5 py-0.5 rounded-full bg-amber-600 text-white text-[10px] font-bold leading-none">{groupBadge}</span>}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openMenu === g.label ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+            {openMenu === g.label && (
+              <div role="menu" className="absolute top-full left-0 mt-1.5 bg-white border border-nikki-border rounded-xl shadow-xl z-20 py-1.5 min-w-[240px]">
+                {g.items.map(t => (
+                  <button key={t.key} role="menuitem"
+                    onMouseDown={() => { onChange(t.key); setOpenMenu(null); }}
+                    className={`block w-full text-left px-3 py-2 hover:bg-stone-50 ${value === t.key ? 'bg-nikki-surface-blue' : ''}`}>
+                    <span className={`flex items-center gap-2 text-sm ${value === t.key ? 'text-nikki-blue font-bold' : 'text-nikki-navy font-semibold'}`}>
+                      {t.label}
+                      {!!t.badge && <span className="px-1.5 py-0.5 rounded-full bg-amber-600 text-white text-[10px] font-bold leading-none">{t.badge}</span>}
+                    </span>
+                    {/* One line saying what the screen is for. These names
+                        aren't self-explanatory to someone new — "Unclosed
+                        Days" or "Duplicate Leads" could mean several things. */}
+                    {t.hint && <span className="block text-[11px] text-stone-500 mt-0.5">{t.hint}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Opening a menu item otherwise left no visible trace of where you
+          landed, since the menu button itself keeps its own label. */}
+      {activeSecondary && (
+        <span className="ml-1 inline-flex items-center gap-1.5 text-sm text-stone-500">
+          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+          <span className="font-semibold text-nikki-navy">{activeSecondary.label}</span>
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function SegmentTabs({
   segments, value, onChange, includeAll = true,
@@ -1241,6 +1353,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   // every letter typed.
   const [searchTerm, setSearchTerm] = useState('');
   const [leadLimit, setLeadLimit] = useState(400);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [leadsTruncated, setLeadsTruncated] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setSearchTerm(searchQuery.trim()), 350);
@@ -1672,16 +1785,24 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
         <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
           {/* List / Kanban toggle */}
           <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl shrink-0">
-            <button onClick={() => setViewMode('list')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>☰ List</button>
-            <button onClick={() => setViewMode('kanban')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${viewMode === 'kanban' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>▦ Kanban</button>
+            <button onClick={() => setViewMode('list')} aria-pressed={viewMode === 'list'} className={`px-2.5 py-1.5 min-h-[32px] rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 ${viewMode === 'list' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>
+              <ListIcon className="w-3.5 h-3.5" aria-hidden="true" /> List
+            </button>
+            <button onClick={() => setViewMode('kanban')} aria-pressed={viewMode === 'kanban'} className={`px-2.5 py-1.5 min-h-[32px] rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 ${viewMode === 'kanban' ? 'bg-white text-nikki-navy shadow-sm' : 'text-stone-700'}`}>
+              <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" /> Kanban
+            </button>
           </div>
-          <input
-            type="text"
-            className={inputCls + ' text-xs py-2 w-full sm:w-64 bg-white shadow-sm'}
-            placeholder="🔍 Search leads by name, phone..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" aria-hidden="true" />
+            <input
+              type="text"
+              aria-label="Search leads"
+              className={inputCls + ' text-xs py-2 pl-8 w-full bg-white shadow-sm'}
+              placeholder="Search leads by name, phone..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
           <button
             className="px-3 py-2 rounded-lg bg-white border border-stone-300 hover:border-nikki-sky text-stone-700 text-xs font-semibold shrink-0 inline-flex items-center gap-1.5"
             onClick={() => exportLeadsToExcel(filteredLeads, `leads-${segFilter || 'all'}-${new Date().toISOString().slice(0, 10)}.xlsx`, staffById)}>
@@ -1713,6 +1834,27 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Date range and staff picker are secondary: most sessions never
+                touch them, but they occupied two full rows of the filter card
+                on every visit. Collapsed behind a toggle that shows a dot when
+                something inside is actually applied, so a hidden filter can
+                never silently narrow your results. */}
+            <button
+              onClick={() => setShowMoreFilters(v => !v)}
+              aria-expanded={showMoreFilters}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border inline-flex items-center gap-1.5 ${
+                dateFrom || dateTo || staffFilter
+                  ? 'border-nikki-royal text-nikki-blue bg-nikki-surface-blue'
+                  : 'border-nikki-border text-stone-700 hover:bg-stone-50'}`}>
+              Date &amp; staff
+              {(dateFrom || dateTo || staffFilter) && <span className="w-1.5 h-1.5 rounded-full bg-nikki-blue" aria-hidden="true" />}
+              <ChevronDown className={`w-3 h-3 transition-transform ${showMoreFilters ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        {showMoreFilters && (
+          <div className="flex items-center gap-2 flex-wrap pb-2 border-b border-stone-100">
             {/* Date range filter */}
             <div className="flex items-center gap-1">
               <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border'} value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
@@ -1722,12 +1864,16 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-stone-500 hover:text-stone-800 text-xs px-1" title="Clear date range">✕</button>
               )}
             </div>
-            <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border font-semibold'} value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
+            <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border font-semibold'} aria-label="Filter by staff member" value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
               <option value="">Filter by Staff Member...</option>
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
             </select>
+            {(dateFrom || dateTo || staffFilter) && (
+              <button onClick={() => { setDateFrom(''); setDateTo(''); setStaffFilter(''); }}
+                className="text-nikki-blue text-xs font-semibold px-1">Clear</button>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Stage Filter Chips */}
         <div className="flex flex-wrap items-center gap-1.5">
@@ -2684,12 +2830,17 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   return (
     <div>
       <SegmentTabs segments={segments} value={segFilter} onChange={setSegFilter} />
-      <div className="flex gap-2 mb-5">
-        {visibleTabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${tab === t.id ? 'border-nikki-royal text-nikki-blue' : 'border-nikki-border text-stone-700'}`}>{t.id}</button>
-        ))}
-      </div>
+      {/* Labels were the raw state ids run through `capitalize`, so this row
+          read "Staff / Attendance / Leaves / Advances" only by luck of the
+          ids matching English words. Named properly now. */}
+      <SubTabs
+        value={tab}
+        onChange={k => setTab(k as typeof tab)}
+        primary={visibleTabs.map(t => ({
+          key: t.id,
+          label: { staff: 'Staff', attendance: 'Attendance', leaves: 'Leave Requests', advances: 'Salary Advances' }[t.id as string] || t.id,
+        }))}
+      />
 
       {tab === 'staff' && (
         <div className="space-y-2">
