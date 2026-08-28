@@ -35,3 +35,9 @@ COMMENT ON COLUMN lead_remarks.occurred_at IS
 
 -- Backfill so existing history sorts consistently with new rows.
 UPDATE lead_remarks SET occurred_at = created_at WHERE occurred_at IS NULL;
+
+-- The schema cache PostgREST serves is separate from the catalog. Without
+-- this, client_ref/occurred_at exist in Postgres but PostgREST keeps
+-- rejecting inserts that reference them with PGRST204 — which is exactly
+-- how offline field visits fail while every other remark path works.
+NOTIFY pgrst, 'reload schema';
