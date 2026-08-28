@@ -1683,10 +1683,19 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
           {pendingItems.length > 0 && (
             <div className="mt-2 pt-2 border-t border-nikki-border/60 space-y-1">
               {pendingItems.slice(0, 5).map(p => (
-                <p key={p.id} className="text-stone-700 text-[11px]">
-                  {p.leadName} — {new Date(p.occurredAt ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
-                  {p.photo ? ' • photo' : ''}{p.attempts > 0 ? ` • ${p.attempts} attempt(s)` : ''}
-                </p>
+                <div key={p.id} className="text-[11px]">
+                  <p className="text-stone-700">
+                    {p.leadName} — {new Date(p.occurredAt ?? '').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                    {p.photo ? ' • photo' : ''}{p.attempts > 0 ? ` • ${p.attempts} attempt(s)` : ''}
+                  </p>
+                  {/* The reason was recorded but never rendered, so a visit
+                      that kept failing looked identical to one simply waiting
+                      for signal — and diagnosing it meant opening DevTools.
+                      Show it as soon as a retry has actually failed. */}
+                  {p.attempts > 0 && p.lastError && (
+                    <p className="text-amber-800 break-words">⚠ {p.lastError}</p>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -1849,6 +1858,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                       </p>
                       <p className="text-stone-700 mt-1 whitespace-pre-wrap">{p.remark}</p>
                       {p.address && <p className="text-stone-700 mt-1">📍 {p.address}</p>}
+                      {p.attempts > 0 && p.lastError && (
+                        <p className={`mt-1 break-words ${p.droppedAt ? 'text-red-700' : 'text-amber-800'}`}>
+                          ⚠ {p.lastError}
+                        </p>
+                      )}
                       {p.droppedAt && (
                         <>
                           <p className="text-red-700 mt-1">Copy this note before dismissing — it is stored only on this phone.</p>

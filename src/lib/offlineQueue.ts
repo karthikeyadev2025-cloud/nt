@@ -185,7 +185,10 @@ export async function flushQueue(supabase: SupabaseClient): Promise<FlushResult>
         occurred_at: item.occurredAt,
       });
       const isDuplicate = remErr && (remErr.code === '23505' || /duplicate key/i.test(remErr.message || ''));
-      if (remErr && !isDuplicate) throw new Error(remErr.message);
+      // Keep the code. PGRST204 (schema cache missing a column) and 42501
+      // (RLS refused the row) look the same to a user but need opposite
+      // fixes, and the code is the fastest way to tell them apart.
+      if (remErr && !isDuplicate) throw new Error(remErr.code ? `${remErr.code}: ${remErr.message}` : remErr.message);
 
       // 3. Lead patch. Only the fields this visit actually changed, so we
       //    don't clobber concurrent edits by a manager.
