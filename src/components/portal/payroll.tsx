@@ -560,7 +560,7 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                               photoUrls[log.check_in_selfie_url] ? (
                                 <div className="mt-2">
                                   <p className="text-[11px] text-stone-500 mb-1">Check-in Photo:</p>
-                                  <button onClick={() => setPreviewImage(photoUrls[log.check_in_selfie_url!])} className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
+                                  <button onClick={() => setPreviewImage(photoUrls[log.check_in_selfie_url!])} aria-label="View check-in selfie full size" className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
                                     <img src={photoUrls[log.check_in_selfie_url!]} alt="Check in selfie" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                       <ImageIcon className="w-6 h-6 text-white" />
@@ -596,7 +596,7 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                               photoUrls[log.check_out_selfie_url] ? (
                                 <div className="mt-2">
                                   <p className="text-[11px] text-stone-500 mb-1">Check-out Photo:</p>
-                                  <button onClick={() => setPreviewImage(photoUrls[log.check_out_selfie_url!])} className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
+                                  <button onClick={() => setPreviewImage(photoUrls[log.check_out_selfie_url!])} aria-label="View check-out selfie full size" className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
                                     <img src={photoUrls[log.check_out_selfie_url!]} alt="Check out selfie" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                       <ImageIcon className="w-6 h-6 text-white" />

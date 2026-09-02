@@ -469,7 +469,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
                 <h3 className="text-nikki-navy text-lg font-semibold">{openTicket.subject}</h3>
                 <p className="text-stone-700 text-sm">{openTicket.customer_name} • {openTicket.customer_phone} {openTicket.customer_email && `• ${openTicket.customer_email}`}</p>
               </div>
-              <button className="text-stone-700 hover:text-nikki-navy" onClick={() => setOpenTicket(null)}>✕</button>
+              <button aria-label="Close ticket details" className="icon-btn text-stone-700 hover:text-nikki-navy" onClick={() => setOpenTicket(null)}><span aria-hidden="true">✕</span></button>
             </div>
             <p className="text-stone-700 text-sm mb-4 whitespace-pre-wrap">{openTicket.description}</p>
             {hasPermission('manage_tickets') && (
@@ -666,11 +666,11 @@ export function MyLeadsToDoList() {
         </a>
       )}
       {item.type === 'appointment' ? (
-        <button onClick={() => setRescheduleFor({ id: item.leadId, appointment_at: item.dueAt, appointment_note: item.note || '', customer_name: item.customerName } as Lead)} className="p-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 shrink-0" title="Reschedule">
+        <button onClick={() => setRescheduleFor({ id: item.leadId, appointment_at: item.dueAt, appointment_note: item.note || '', customer_name: item.customerName } as Lead)} className="icon-btn p-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 shrink-0" title="Reschedule">
           <CalendarClock className="w-3.5 h-3.5" />
         </button>
       ) : item.type === 'meeting' ? null : (
-        <button onClick={() => markDone(item)} className="p-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 shrink-0" title="Mark done">
+        <button onClick={() => markDone(item)} className="icon-btn p-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 shrink-0" title="Mark done">
           <Check className="w-3.5 h-3.5" />
         </button>
       )}
@@ -1893,7 +1893,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
               <span className="text-stone-500 text-xs">–</span>
               <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border'} value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" aria-label="Created to date" />
               {(dateFrom || dateTo) && (
-                <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-stone-500 hover:text-stone-800 text-xs px-1" title="Clear date range">✕</button>
+                <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="icon-btn text-stone-500 hover:text-stone-800 text-xs px-1" title="Clear date range">✕</button>
               )}
             </div>
             <select className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border font-semibold'} aria-label="Filter by staff member" value={staffFilter} onChange={e => { setStaffFilter(e.target.value); setAssignFilter('all'); }}>
@@ -2089,7 +2089,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }}
-                      className="px-3 py-1.5 bg-white border border-stone-300 hover:border-nikki-sky text-stone-800 text-xs font-semibold rounded-lg inline-flex items-center gap-1.5">
+                      className="icon-btn px-3 py-1.5 bg-white border border-stone-300 hover:border-nikki-sky text-stone-800 text-xs font-semibold rounded-lg inline-flex items-center gap-1.5">
                       <CalendarClock className="w-3.5 h-3.5" /> {l.appointment_at ? 'Reschedule' : 'Schedule'}
                     </button>
                     <button
@@ -2191,7 +2191,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                             {leadsWithMeeting.has(l.id) && <span className="text-[11px]" title="Meeting scheduled">🗓️</span>}
                           </div>
                           {canDragHere && (
-                            <button onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }} className={`ml-auto p-1 rounded ${l.appointment_at ? 'text-nikki-blue' : 'text-stone-400 hover:text-nikki-blue'}`} title={l.appointment_at ? 'Reschedule' : 'Schedule appointment'}>
+                            <button onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }} className={`icon-btn ml-auto p-1 rounded ${l.appointment_at ? 'text-nikki-blue' : 'text-stone-400 hover:text-nikki-blue'}`} title={l.appointment_at ? 'Reschedule' : 'Schedule appointment'}>
                               <CalendarClock className="w-3.5 h-3.5" />
                             </button>
                           )}
@@ -2260,7 +2260,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                     </button>
                   </>
                 )}
-                <button className="text-stone-700 hover:text-nikki-navy p-1" onClick={() => setOpenLead(null)}>✕</button>
+                <button aria-label="Close lead details" className="icon-btn text-stone-700 hover:text-nikki-navy p-1" onClick={() => setOpenLead(null)}><span aria-hidden="true">✕</span></button>
               </div>
             </div>
             {hasPermission('manage_leads') && (
@@ -2454,7 +2454,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="text-nikki-navy font-extrabold text-lg">Edit Lead Details</h3>
-              <button onClick={() => setEditingLead(null)} className="text-stone-700 hover:text-nikki-navy">✕</button>
+              <button aria-label="Close" onClick={() => setEditingLead(null)} className="icon-btn text-stone-700 hover:text-nikki-navy"><span aria-hidden="true">✕</span></button>
             </div>
             <form onSubmit={saveEditedLead} className="space-y-3">
               <div>
@@ -2634,7 +2634,7 @@ function LogOutcomeDialog({
             <h3 className="text-nikki-navy text-lg font-bold mt-0.5">{lead.customer_name}</h3>
             <p className="text-stone-600 text-xs mt-0.5">{lead.phone} • currently {stageLabel(lead.stage)}</p>
           </div>
-          <button onClick={onClose} className="text-stone-700 hover:text-nikki-navy p-1">✕</button>
+          <button aria-label="Close" onClick={onClose} className="icon-btn text-stone-700 hover:text-nikki-navy p-1"><span aria-hidden="true">✕</span></button>
         </div>
 
         <div className="flex gap-2 mb-4">

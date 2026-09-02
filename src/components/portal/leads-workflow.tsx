@@ -287,7 +287,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => call(l.phone)} className="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-white" title="Call">
+              <button onClick={() => call(l.phone)} className="icon-btn w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-white" title="Call">
                 <Phone className="w-4 h-4" />
               </button>
               <button onClick={() => openLead(l)} className="text-nikki-blue text-xs font-medium">Add Remark</button>
@@ -1080,8 +1080,8 @@ export function TeamActivityFeed() {
           onClose={() => setPreviewImage(null)}
           label="Visit proof preview"
         >
-          <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
-            <XCircle className="w-6 h-6" />
+          <button onClick={() => setPreviewImage(null)} aria-label="Close preview" className="icon-btn absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+            <XCircle aria-hidden="true" className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
         </ModalOverlay>
@@ -1931,8 +1931,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
           onClose={() => setPreviewImage(null)}
           label="Visit proof preview"
         >
-          <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
-            <XCircle className="w-6 h-6" />
+          <button onClick={() => setPreviewImage(null)} aria-label="Close preview" className="icon-btn absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+            <XCircle aria-hidden="true" className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
         </ModalOverlay>

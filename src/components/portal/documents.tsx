@@ -195,7 +195,7 @@ export function DocumentViewer({
             <h3 className="text-nikki-navy text-lg font-semibold">{title}</h3>
             {meta && <p className="text-stone-700 text-xs mt-0.5">{meta}</p>}
           </div>
-          <button className="text-stone-700 hover:text-nikki-navy" onClick={onClose}>✕</button>
+          <button aria-label="Close" className="icon-btn text-stone-700 hover:text-nikki-navy" onClick={onClose}><span aria-hidden="true">✕</span></button>
         </div>
 
         <div className="bg-white text-stone-800 rounded-lg p-6 whitespace-pre-wrap text-sm leading-relaxed font-serif mb-5">

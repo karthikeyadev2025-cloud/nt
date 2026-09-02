@@ -72,6 +72,41 @@
   }
 }
 
+@layer components {
+  /*
+    ── Touch targets ───────────────────────────────────────────────
+    Priority 2 (Touch & Interaction). Icon-only controls in this app
+    are laid out for a mouse: a `p-1.5` button around a 16px icon is
+    28×28, and the close/reschedule/prev-month buttons are smaller
+    still. The guideline floor is 44×44, and this app's actual users
+    are field executives and telecallers tapping through the lead
+    board on a phone, one-handed.
+
+    Growing them unconditionally would bloat the dense admin tables
+    on desktop, where a 28px target with a mouse is genuinely fine.
+    So the minimum only applies to coarse pointers — a real touch
+    screen — and it grows the button rather than overlaying an
+    invisible 44px pseudo-element, because two adjacent overlays in a
+    tight icon row would overlap each other and steal taps, which is
+    the exact failure this is meant to prevent.
+
+    `display` here is in the components layer, so any Tailwind display
+    utility on the element (flex, block, hidden) still wins.
+  */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (pointer: coarse) {
+    .icon-btn {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+}
+
 @layer utilities {
   /* Trusted-by client logo marquee (PublicSite) */
   @keyframes marquee {

@@ -131,11 +131,11 @@ export function IdProofUploader({ staffUserId, canManage }: { staffUserId: strin
               {p.verified_at && (
                 <span className="flex items-center gap-1 text-emerald-700 text-[11px] font-bold shrink-0"><CheckCircle2 className="w-3.5 h-3.5" /> Verified</span>
               )}
-              <button onClick={() => view(p)} className="p-1.5 rounded-lg hover:bg-nikki-border text-stone-600 shrink-0" title="View"><Eye className="w-3.5 h-3.5" /></button>
+              <button onClick={() => view(p)} className="icon-btn p-1.5 rounded-lg hover:bg-nikki-border text-stone-600 shrink-0" title="View"><Eye className="w-3.5 h-3.5" /></button>
               {canManage && !p.verified_at && (
                 <button onClick={() => verify(p)} className="text-[11px] font-bold text-nikki-blue shrink-0">Verify</button>
               )}
-              <button onClick={() => remove(p)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 shrink-0" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(p)} className="icon-btn p-1.5 rounded-lg hover:bg-red-50 text-red-600 shrink-0" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           ))}
         </div>

@@ -156,7 +156,7 @@ export function PortalShell({
                 <p className="text-stone-700 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
-            <button onClick={signOut} className="text-stone-700 hover:text-red-700 p-1" title="Sign out">
+            <button onClick={signOut} className="icon-btn text-stone-700 hover:text-red-700 p-1" title="Sign out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -167,7 +167,7 @@ export function PortalShell({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="border-b border-nikki-border px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="icon-btn md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <div className="md:hidden shrink-0">
               <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 object-contain" />
             </div>
@@ -188,7 +188,7 @@ export function PortalShell({
               {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
             </button>
             <NotificationBell onNavigate={(t) => { if (visibleTabs.some(x => x.id === t)) onTabChange(t); }} />
-            <button onClick={signOut} aria-label="Sign out" className="md:hidden text-stone-700 hover:text-red-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} aria-label="Sign out" className="icon-btn md:hidden text-stone-700 hover:text-red-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
@@ -208,7 +208,7 @@ export function PortalShell({
                     <p className="text-stone-700 text-[11px] font-mono truncate">{subLabel}</p>
                   </div>
                 </div>
-                <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="p-2.5 -m-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
+                <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="icon-btn p-2.5 -m-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
               </div>
               <nav className="flex-1 space-y-1">
                 {visibleTabs.map(t => {

@@ -639,7 +639,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
       <div className="bg-white border border-nikki-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-nikki-navy font-semibold text-lg">Onboard New Employee</h3>
-          <button className="text-stone-700 hover:text-nikki-navy" onClick={onClose}>✕</button>
+          <button aria-label="Close" className="icon-btn text-stone-700 hover:text-nikki-navy" onClick={onClose}><span aria-hidden="true">✕</span></button>
         </div>
         <div className="flex items-center gap-1 mb-6 text-xs">
           {steps.map((s, i) => (
@@ -1818,7 +1818,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
                   <input className={inputCls} placeholder="Description" value={f.description} onChange={e => {
                     const fs = [...(editing.features || [])]; fs[i] = { ...f, description: e.target.value }; setEditing({ ...editing, features: fs });
                   }} />
-                  <button className="text-red-700 text-xs px-2" onClick={() => setEditing({ ...editing, features: (editing.features || []).filter((_, j) => j !== i) as ProductFeature[] })}>✕</button>
+                  <button aria-label="Remove this feature" className="icon-btn text-red-700 text-xs px-2" onClick={() => setEditing({ ...editing, features: (editing.features || []).filter((_, j) => j !== i) as ProductFeature[] })}><span aria-hidden="true">✕</span></button>
                 </div>
               ))}
             </div>
@@ -2579,7 +2579,7 @@ export default function SuperAdminDashboard() {
                   <p className="text-stone-700 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
                 </div>
               </div>
-              <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="p-2.5 -m-1 text-stone-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="icon-btn p-2.5 -m-1 text-stone-700"><X className="w-5 h-5" /></button>
             </div>
             <nav className="flex-1">{navGroups}</nav>
             <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-nikki-border pt-3">
@@ -2592,7 +2592,7 @@ export default function SuperAdminDashboard() {
       <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="icon-btn md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <h1 className="text-3xl font-extrabold text-nikki-navy tracking-tight truncate">{tabs.find(t => t.id === tab)?.label}</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -2610,7 +2610,7 @@ export default function SuperAdminDashboard() {
               <Key className="w-3.5 h-3.5 text-nikki-blue" />
               <span className="hidden sm:inline">{user?.full_name}</span>
             </button>
-            <button onClick={signOut} aria-label="Sign out" className="md:hidden text-stone-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} aria-label="Sign out" className="icon-btn md:hidden text-stone-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
           </div>
         </div>
 

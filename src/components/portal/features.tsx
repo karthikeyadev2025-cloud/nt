@@ -887,7 +887,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
                   <input className={inputCls} value={q} onChange={e => {
                     const next = [...((editingJob.questions as string[] | null) || [])]; next[i] = e.target.value; setEditingJob({ ...editingJob, questions: next });
                   }} placeholder={`Question ${i + 1}`} />
-                  <button className="text-red-700 text-xs px-2" onClick={() => setEditingJob({ ...editingJob, questions: ((editingJob.questions as string[] | null) || []).filter((_, j) => j !== i) })}>✕</button>
+                  <button aria-label="Remove this question" className="icon-btn text-red-700 text-xs px-2" onClick={() => setEditingJob({ ...editingJob, questions: ((editingJob.questions as string[] | null) || []).filter((_, j) => j !== i) })}><span aria-hidden="true">✕</span></button>
                 </div>
               ))}
             </div>
@@ -909,7 +909,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
                 <p className="text-stone-700 text-sm">{openApp.phone} {openApp.email && `• ${openApp.email}`}</p>
                 <p className="text-stone-700 text-xs mt-0.5">Applied for: {openApp.position || jobTitle(openApp.job_posting_id || '')} • {openApp.experience || 'exp not specified'}</p>
               </div>
-              <button className="text-stone-700 hover:text-nikki-navy" onClick={() => setOpenApp(null)}>✕</button>
+              <button aria-label="Close application" className="icon-btn text-stone-700 hover:text-nikki-navy" onClick={() => setOpenApp(null)}><span aria-hidden="true">✕</span></button>
             </div>
 
             <div className="flex gap-3 mb-4">

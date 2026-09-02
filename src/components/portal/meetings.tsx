@@ -729,9 +729,9 @@ export function TeamCalendar() {
     <div>
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div className="flex items-center gap-1">
-          <button onClick={prev} className="p-1.5 rounded-lg hover:bg-stone-100"><ChevronLeft className="w-4 h-4 text-stone-700" /></button>
+          <button onClick={prev} aria-label="Previous month" className="icon-btn p-1.5 rounded-lg hover:bg-stone-100"><ChevronLeft aria-hidden="true" className="w-4 h-4 text-stone-700" /></button>
           <button onClick={today} className="px-3 py-1.5 rounded-lg border border-nikki-border text-xs font-semibold text-stone-700 hover:bg-stone-100">Today</button>
-          <button onClick={next} className="p-1.5 rounded-lg hover:bg-stone-100"><ChevronRight className="w-4 h-4 text-stone-700" /></button>
+          <button onClick={next} aria-label="Next month" className="icon-btn p-1.5 rounded-lg hover:bg-stone-100"><ChevronRight aria-hidden="true" className="w-4 h-4 text-stone-700" /></button>
           <span className="ml-2 text-nikki-navy text-sm font-semibold">
             {weekStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', day: 'numeric' })} –
             {' '}{new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}

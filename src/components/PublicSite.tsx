@@ -136,7 +136,7 @@ function Navigation() {
           ))}
           <a href="/login" className="px-4 py-2 rounded-xl bg-nikki-blue hover:bg-nikki-royal text-white text-sm font-semibold shadow-md shadow-nikki-blue/20 transition-all border border-nikki-royal/30">Staff Login</a>
         </div>
-        <button className="md:hidden text-stone-700" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
+        <button className="md:hidden text-stone-700 icon-btn" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
       </div>
       {open && (
         <div className="md:hidden bg-white border-t border-nikki-border px-4 py-3 space-y-2 shadow-lg">
@@ -1362,7 +1362,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
             <h3 className="text-nikki-navy text-lg font-bold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
             {job && <p className="text-stone-700 text-xs mt-0.5">{job.location} • {job.employment_type.replace('_', ' ')}</p>}
           </div>
-          <button className="text-stone-400 hover:text-stone-700" onClick={onClose}>✕</button>
+          <button aria-label="Close" className="icon-btn text-stone-400 hover:text-stone-700" onClick={onClose}><span aria-hidden="true">✕</span></button>
         </div>
 
         {done ? (
