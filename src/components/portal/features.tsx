@@ -10,6 +10,7 @@ import { describeReadError } from './shared-utils';
 import { istDateStr, istDateStrDaysAgo } from '../../lib/dates';
 import type { Segment, Database } from '../../lib/database.types';
 import { ModalOverlay } from '../ui/Modal';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 type Notification    = Database['public']['Tables']['notifications']['Row'];
 type Announcement    = Database['public']['Tables']['announcements']['Row'];
@@ -145,6 +146,7 @@ export function AnnouncementsFeed() {
 export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState<Announcement[]>([]);
   const [form, setForm] = useState({ segment_slug: '', title: '', body: '', is_pinned: false });
 
@@ -167,7 +169,13 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
     load();
   }
   async function remove(id: string) {
-    if (!confirm('Delete this announcement?')) return;
+    const ok = await confirm({
+      title: 'Delete this announcement?',
+      body: 'Staff will no longer see it. This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error } = await supabase.from('announcements').delete().eq('id', id);
     if (error) { toast.error(`Couldn't delete: ${error.message}`); return; }
     toast.success('Announcement deleted');

@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { cardCls, btnCls, inputCls } from './shared';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 // staff_id_proofs isn't in database.types.ts yet (generated file, no live
 // DB access to regenerate it) — cast at the call boundary, same pattern
@@ -22,6 +23,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 export function IdProofUploader({ staffUserId, canManage }: { staffUserId: string; canManage: boolean }) {
   const { user } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [proofs, setProofs] = useState<IdProofRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [docType, setDocType] = useState('aadhaar');
@@ -73,7 +75,13 @@ export function IdProofUploader({ staffUserId, canManage }: { staffUserId: strin
   }
 
   async function remove(proof: IdProofRow) {
-    if (!window.confirm(`Delete ${proof.file_name || DOC_TYPE_LABELS[proof.doc_type]}? This can't be undone.`)) return;
+    const ok = await confirm({
+      title: `Delete ${proof.file_name || DOC_TYPE_LABELS[proof.doc_type]}?`,
+      body: "The file is removed from storage as well. This can't be undone.",
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error: sErr } = await supabase.storage.from('id-proofs').remove([proof.file_path]);
     if (sErr) { toast.error(`Couldn't delete file: ${sErr.message}`); return; }
     const { error: dErr } = await supabase.from('staff_id_proofs' as never).delete().eq('id', proof.id);

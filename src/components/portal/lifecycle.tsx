@@ -9,6 +9,7 @@ import { cachedRpc } from '../../lib/cachedRpc';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import type { Segment, Tables } from '../../lib/database.types';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 // ─────────────────────────── Staff: request an attendance correction (missed punch)
 export function MyRegularizations() {
@@ -156,6 +157,7 @@ export function RegularizationApprovals() {
 // ─────────────────────────── HR: holiday calendar
 export function HolidayManager({ segments }: { segments: Segment[] }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState<Tables<'holidays'>[]>([]);
   const [form, setForm] = useState({ holiday_date: '', name: '', segment_slug: '', is_optional: false });
 
@@ -184,7 +186,13 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
   }
 
   async function remove(id: string) {
-    if (!confirm('Remove this holiday?')) return;
+    const ok = await confirm({
+      title: 'Remove this holiday?',
+      body: 'It stops applying to attendance and leave calculations.',
+      confirmLabel: 'Remove',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error } = await supabase.from('holidays').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
     invalidate('holidays');

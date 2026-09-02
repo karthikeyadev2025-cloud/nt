@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './lib/toast';
+import { ConfirmProvider } from './components/ui/ConfirmDialog';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import PWAInstallBanner from './components/PWAInstallBanner';
 
@@ -142,7 +143,9 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <ToastProvider>
-          <AppContent />
+          <ConfirmProvider>
+            <AppContent />
+          </ConfirmProvider>
         </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>

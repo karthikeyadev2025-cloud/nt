@@ -51,6 +51,7 @@ import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
 import { ModalOverlay } from '../ui/Modal';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads', 'full_leads_view', 'bulk_assign_leads', 'approve_transfers',
@@ -1522,6 +1523,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
   const [editing, setEditing] = useState<Partial<Segment> | null>(null);
   const [usage, setUsage] = useState<Record<string, { staff: number; leads: number; tickets: number }>>({});
   const toast = useToast();
+  const confirm = useConfirm();
 
   async function load() {
     // Segments failing silently is the worst of these: every segment filter
@@ -1555,10 +1557,14 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
         use.leads ? `${use.leads} open lead(s)` : null,
         use.tickets ? `${use.tickets} open ticket(s)` : null,
       ].filter(Boolean);
-      const warning = attached.length
-        ? `"${seg.name}" still has ${attached.join(', ')}.\n\nRetiring removes it from the public website immediately. Existing data is NOT deleted and stays manageable in staff portals so you can wind it down.\n\nContinue?`
-        : `Retire "${seg.name}"? It will disappear from the public website. Nothing is deleted and you can reactivate it any time.`;
-      if (!confirm(warning)) return;
+      const ok = await confirm({
+        title: `Retire "${seg.name}"?`,
+        body: attached.length
+          ? `It still has ${attached.join(', ')}. Retiring removes it from the public website immediately — existing data is not deleted and stays manageable in the staff portals so you can wind it down.`
+          : 'It will disappear from the public website. Nothing is deleted and you can reactivate it any time.',
+        confirmLabel: 'Retire segment',
+      });
+      if (!ok) return;
     }
     const { error } = await supabase.from('segments').update({ active: !seg.active } as never).eq('id', seg.id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
@@ -1659,6 +1665,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
 
   const [editing, setEditing] = useState<(Partial<Product> & { features?: ProductFeature[] }) | null>(null);
   const toast = useToast();
+  const confirm = useConfirm();
 
   async function load() {
     const { data, error } = await supabase.from('products').select('*').order('order_index');
@@ -1686,7 +1693,13 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
   }
 
   async function remove(id: string) {
-    if (!confirm('Delete this product?')) return;
+    const ok = await confirm({
+      title: 'Delete this product?',
+      body: 'It disappears from the public website immediately. This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (error) { toast.error(`Couldn't delete: ${error.message}`); return; }
     toast.success('Product deleted');
@@ -1919,6 +1932,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
 // ─────────────────────────────────────── Site Media Manager (Gallery, Team, Testimonials — was missing entirely)
 function SiteMediaManager({ segments }: { segments: Segment[] }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<'gallery' | 'team' | 'testimonials' | 'logos'>('gallery');
   const [gallery, setGallery] = useState<Tables<'gallery_items'>[]>([]);
   const [team, setTeam] = useState<Tables<'team_members'>[]>([]);
@@ -1982,7 +1996,13 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
     setter();
   }
   async function remove(table: string, id: string, setter: () => void) {
-    if (!confirm('Delete this item?')) return;
+    const ok = await confirm({
+      title: 'Delete this item?',
+      body: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error } = await supabase.from(table as never).delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success('Deleted');

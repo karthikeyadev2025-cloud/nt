@@ -17,6 +17,7 @@ import { MyCallsChart } from './performance';
 import { cachedQuery } from '../../lib/cachedQuery';
 import type { Segment, Database } from '../../lib/database.types';
 import { ModalOverlay } from '../ui/Modal';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 type Lead = Database['public']['Tables']['marketing_leads']['Row'];
 type LeadRemark = Database['public']['Tables']['lead_remarks']['Row'];
@@ -2000,6 +2001,7 @@ type DupGroupRow = { segment_slug: string; phone: string; id: string; customer_n
 
 export function DuplicateLeadsManager() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<DupGroupRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [keepChoice, setKeepChoice] = useState<Record<string, string>>({}); // groupKey -> lead id to keep
@@ -2030,7 +2032,13 @@ export function DuplicateLeadsManager() {
     const keepId = keepChoice[groupKey] || members[0].id; // default: oldest (rows arrive created_at ASC)
     const mergeIds = members.filter(m => m.id !== keepId).map(m => m.id);
     if (mergeIds.length === 0) return;
-    if (!window.confirm(`Merge ${mergeIds.length} lead(s) into "${members.find(m => m.id === keepId)?.customer_name}"? Their call history moves over; the duplicate records are deleted. This can't be undone.`)) return;
+    const ok = await confirm({
+      title: `Merge ${mergeIds.length} lead${mergeIds.length === 1 ? '' : 's'} into "${members.find(m => m.id === keepId)?.customer_name}"?`,
+      body: "Their call history moves over; the duplicate records are deleted. This can't be undone.",
+      confirmLabel: 'Merge',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setBusyGroup(groupKey);
     try {
       const { error } = await supabase.rpc('merge_leads' as never, { p_keep_id: keepId, p_merge_ids: mergeIds } as never) as unknown as { error: { message: string } | null };

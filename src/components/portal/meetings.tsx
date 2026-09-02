@@ -13,6 +13,7 @@ import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { rpcCall } from './meetings-utils';
 import { ModalOverlay } from '../ui/Modal';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 export type MeetingRow = {
   id: string; lead_id: string | null; segment_slug: string | null;
@@ -325,6 +326,7 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
 }) {
   const { user } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<'view' | 'reschedule' | 'outcome'>('view');
   const [newAt, setNewAt] = useState(toLocalInput(meeting.scheduled_at));
@@ -348,7 +350,12 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     if (data && !data.ok) {
-      if (confirm(`${data.message}\n\nSchedule anyway?`)) {
+      const ok = await confirm({
+        title: 'Schedule anyway?',
+        body: data.message,
+        confirmLabel: 'Schedule anyway',
+      });
+      if (ok) {
         setBusy(true);
         const r2 = await rpcCall('reschedule_meeting', { p_meeting_id: meeting.id, p_new_at: new Date(newAt).toISOString(), p_force: true });
         setBusy(false);

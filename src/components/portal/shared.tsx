@@ -21,6 +21,7 @@ import { cachedQuery } from '../../lib/cachedQuery';
 import { isDiscontinuedSegment } from '../../lib/useSegments';
 import { invalidate } from '../../lib/cacheBus';
 import { ModalOverlay } from '../ui/Modal';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 export const inputCls =
   'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-royal focus:ring-2 focus:ring-nikki-royal/20 focus:outline-none transition-all placeholder-stone-500';
@@ -1302,6 +1303,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
 }
 
 export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialStageFilter, filterNonce }: { segments: Segment[]; focusLeadId?: string; initialSegFilter?: string; initialStageFilter?: string; filterNonce?: number }) {
+  const confirm = useConfirm();
   const [segFilter, setSegFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -1454,7 +1456,13 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
 
   async function handleBulkDelete() {
     if (selectedIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} selected lead(s)? This action cannot be undone.`)) return;
+    const ok = await confirm({
+      title: `Delete ${selectedIds.length} lead${selectedIds.length === 1 ? '' : 's'}?`,
+      body: 'The selected leads and their call history are removed permanently. This cannot be undone.',
+      confirmLabel: `Delete ${selectedIds.length}`,
+      tone: 'danger',
+    });
+    if (!ok) return;
     setBulkBusy(true);
     const { error } = await supabase.from('marketing_leads').delete().in('id', selectedIds);
     if (error) { toast.error(`Bulk delete failed: ${error.message}`); setBulkBusy(false); return; }
@@ -1469,7 +1477,12 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
   async function deleteLead(id: string) {
     const lead = leads.find(l => l.id === id) || openLead;
     if (user?.role !== 'super_admin') {
-      if (!window.confirm('Request deletion of this lead? A Super Admin will need to approve it before it\'s actually removed.')) return;
+      const ok = await confirm({
+        title: 'Request deletion of this lead?',
+        body: "A Super Admin needs to approve it before the lead is actually removed — nothing is deleted yet.",
+        confirmLabel: 'Request deletion',
+      });
+      if (!ok) return;
       const { error } = await supabase.from('lead_change_requests' as never).insert({
         lead_id: id, action: 'delete', proposed_data: null, original_data: lead || {}, requested_by: user?.id,
       } as never);
@@ -1479,7 +1492,13 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       setEditingLead(null);
       return;
     }
-    if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Delete this lead?',
+      body: `${lead?.customer_name || 'This lead'} and its call history are removed permanently. This cannot be undone.`,
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error } = await supabase.from('marketing_leads').delete().eq('id', id);
     if (error) { toast.error(`Couldn't delete lead: ${error.message}`); return; }
     toast.success('Lead deleted successfully');
@@ -2730,6 +2749,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const { user, hasPermission } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     setStaffLoaded(false);
@@ -2828,7 +2848,12 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
       // The balance guard raises a descriptive exception — offer the override
       // rather than leaving the approver stuck.
       if (table === 'leave_requests' && /entitlement/i.test(error.message)) {
-        if (confirm(`${error.message}\n\nApprove anyway (override the balance)?`)) {
+        const ok = await confirm({
+          title: 'Approve anyway?',
+          body: `${error.message} Approving overrides the leave balance for this request.`,
+          confirmLabel: 'Override and approve',
+        });
+        if (ok) {
           return review<T>(table, id, status, setter, true);
         }
         return;
