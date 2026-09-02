@@ -16,6 +16,7 @@ import { exportLeadsToExcel } from '../../lib/exportLeads';
 import { MyCallsChart } from './performance';
 import { cachedQuery } from '../../lib/cachedQuery';
 import type { Segment, Database } from '../../lib/database.types';
+import { ModalOverlay } from '../ui/Modal';
 
 type Lead = Database['public']['Tables']['marketing_leads']['Row'];
 type LeadRemark = Database['public']['Tables']['lead_remarks']['Row'];
@@ -317,7 +318,11 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       )}
 
       {active && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setActive(null)}
+          label={`Lead — ${active.customer_name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-nikki-navy font-semibold truncate">{active.customer_name}</h3>
@@ -391,7 +396,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               </div>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -1069,12 +1074,16 @@ export function TeamActivityFeed() {
       )}
 
       {previewImage && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClose={() => setPreviewImage(null)}
+          label="Visit proof preview"
+        >
           <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
             <XCircle className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -1777,7 +1786,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       </div>
 
       {active && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setActive(null)}
+          label={`Lead — ${active.customer_name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{active.customer_name}</h3>
             <p className="text-stone-700 text-xs">{active.phone} {active.email && `• ${active.email}`}</p>
@@ -1908,16 +1921,20 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               </div>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {previewImage && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClose={() => setPreviewImage(null)}
+          label="Visit proof preview"
+        >
           <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
             <XCircle className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-        </div>
+        </ModalOverlay>
       )}
 
       {capturing && (
@@ -1929,7 +1946,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       )}
 
       {showAddLead && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowAddLead(false)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setShowAddLead(false)}
+          label="Add field lead"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">Add Field Lead</h3>
             <p className="text-stone-700 text-xs">Found a new prospect on-site? Add them directly — it lands in your own queue.</p>
@@ -1967,7 +1988,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             )}
             <button className={btnCls + ' w-full'} onClick={addFieldLead}>{duplicateInfo ? 'Add Anyway' : 'Add Lead'}</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

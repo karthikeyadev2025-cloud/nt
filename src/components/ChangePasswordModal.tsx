@@ -3,6 +3,7 @@ import { X, Lock, Key } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../lib/toast';
+import { ModalOverlay } from './ui/Modal';
 
 export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const [currentPw, setCurrentPw] = useState('');
@@ -83,7 +84,11 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      label="Change password"
+      onClose={onClose}
+    >
       <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-nikki-border animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
@@ -169,6 +174,6 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           </div>
         </form>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

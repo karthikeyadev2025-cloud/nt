@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { ModalOverlay } from './ui/Modal';
 
 export default function WhatsAppButton() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -63,7 +64,11 @@ Looking forward to hearing from you!`;
       </button>
 
       {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowPopup(false)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClose={() => setShowPopup(false)}
+          label="Chat with us on WhatsApp"
+        >
           <div
             className="bg-gradient-to-br from-nikki-navy to-stone-800 border border-stone-700 rounded-2xl shadow-2xl max-w-md w-full p-6 relative animate-scale-in"
             onClick={(e) => e.stopPropagation()}
@@ -101,7 +106,7 @@ Looking forward to hearing from you!`;
               Available: Monday - Saturday, 9 AM - 7 PM
             </p>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       <style>{`

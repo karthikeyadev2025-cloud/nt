@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { NotificationBell } from './features';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
 import { waLink } from '../../lib/phone';
+import { ModalOverlay } from '../ui/Modal';
 
 export type PortalTab = { id: string; label: string; icon: LucideIcon; show: boolean };
 
@@ -192,7 +193,11 @@ export function PortalShell({
         </header>
 
         {mobileNavOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex">
+          <ModalOverlay
+            className="md:hidden fixed inset-0 z-50 flex"
+            label="Navigation menu"
+            onClose={() => setMobileNavOpen(false)}
+          >
             <div className="absolute inset-0 bg-nikki-navy/50" onClick={() => setMobileNavOpen(false)} />
             <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
               <div className="flex items-center justify-between mb-6 px-1">
@@ -229,7 +234,7 @@ export function PortalShell({
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
             </div>
-          </div>
+          </ModalOverlay>
         )}
 
         <main className="p-4 md:p-6 max-w-6xl w-full mx-auto flex-1">

@@ -12,6 +12,7 @@ import { useToast } from '../../lib/toast';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls, SegmentTabs } from './shared';
 import type { Segment } from '../../lib/database.types';
+import { ModalOverlay } from '../ui/Modal';
 
 const PRIORITY_TONE: Record<string, string> = {
   high: 'text-red-700 border-red-500/40 bg-red-50',
@@ -242,7 +243,11 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
       </div>
 
       {showNew && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowNew(false)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setShowNew(false)}
+          label="New task"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">New Task</h3>
             <input className={inputCls} placeholder="What needs doing? *"
@@ -275,7 +280,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
               {busy === 'new' ? 'Creating…' : 'Create Task'}
             </button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

@@ -9,6 +9,7 @@ import { inputCls, btnCls, cardCls, SubTabs } from './shared';
 import { describeReadError } from './shared-utils';
 import { istDateStr, istDateStrDaysAgo } from '../../lib/dates';
 import type { Segment, Database } from '../../lib/database.types';
+import { ModalOverlay } from '../ui/Modal';
 
 type Notification    = Database['public']['Tables']['notifications']['Row'];
 type Announcement    = Database['public']['Tables']['announcements']['Row'];
@@ -847,7 +848,11 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
       )}
 
       {editingJob && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingJob(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditingJob(null)}
+          label={editingJob.id ? 'Edit job posting' : 'New job posting'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editingJob.id ? 'Edit' : 'New'} Job Posting</h3>
             <input className={inputCls} placeholder="Job Title *" value={editingJob.title || ''} onChange={e => setEditingJob({ ...editingJob, title: e.target.value })} />
@@ -880,11 +885,15 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
             </div>
             <button className={btnCls + ' w-full'} onClick={saveJob}>Save Job Posting</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {openApp && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenApp(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setOpenApp(null)}
+          label={`Application from ${openApp.name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3">
               <div>
@@ -922,7 +931,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
               ))}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

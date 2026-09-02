@@ -50,6 +50,7 @@ import SessionDevices from '../SessionDevices';
 import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
+import { ModalOverlay } from '../ui/Modal';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads', 'full_leads_view', 'bulk_assign_leads', 'approve_transfers',
@@ -629,7 +630,11 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClose={onClose}
+      label="Onboard new employee"
+    >
       <div className="bg-white border border-nikki-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-nikki-navy font-semibold text-lg">Onboard New Employee</h3>
@@ -917,7 +922,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
         </div>
       </div>
       {preview && <DocumentViewer title={preview.title} content={preview.content} onClose={() => setPreview(null)} />}
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -1254,7 +1259,11 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
       )}
 
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditing(null)}
+          label={`Access control for ${editing.full_name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-4" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold text-lg">{editing.full_name} — Access Control</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -1348,7 +1357,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
             </div>
             <button className={btnCls + ' w-full'} onClick={saveUser}>Save Access</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
       {viewDocsFor && (
         <EmployeeDocumentsModal
@@ -1614,7 +1623,11 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
         ))}
       </div>
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditing(null)}
+          label={editing.id ? 'Edit segment' : 'New segment'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editing.id ? 'Edit' : 'New'} Segment</h3>
             <input className={inputCls} placeholder="Name *" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} />
@@ -1631,7 +1644,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
             </div>
             <button className={btnCls + ' w-full'} onClick={save}>Save Segment</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -1754,7 +1767,11 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
         )}
       </div>
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditing(null)}
+          label={editing.id ? 'Edit product' : 'Add product'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editing.id ? 'Edit' : 'Add'} Product</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -1793,7 +1810,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
             </div>
             <button className={btnCls + ' w-full'} onClick={save}>Save Product</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -2279,7 +2296,11 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       </div>
 
       {editingTpl && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingTpl(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditingTpl(null)}
+          label={editingTpl.id ? 'Edit template' : 'New template'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editingTpl.id ? 'Edit' : 'New'} Template</h3>
             <input className={inputCls} placeholder="Title *" value={editingTpl.title} onChange={e => setEditingTpl({ ...editingTpl, title: e.target.value })} />
@@ -2300,11 +2321,15 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
             </label>
             <button className={btnCls + ' w-full'} onClick={saveTemplate}>Save Template</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {issueFor && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setIssueFor(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setIssueFor(null)}
+          label={`Issue documents to ${issueFor.full_name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">Issue documents to {issueFor.full_name}</h3>
             {relevantTemplates(issueFor).map(t => (
@@ -2315,7 +2340,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
             ))}
             <button className={btnCls + ' w-full'} disabled={busy} onClick={issue}>{busy ? 'Issuing…' : 'Issue Selected Documents'}</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
       {preview && <DocumentViewer title={preview.title} content={preview.content} onClose={() => setPreview(null)} />}
       {viewDocsFor && (
@@ -2518,7 +2543,11 @@ export default function SuperAdminDashboard() {
       {/* Mobile nav drawer — a flat 20+ item horizontal scroll strip doesn't scale,
           so mobile gets the same grouped sections as the desktop sidebar, in an overlay. */}
       {mobileNavOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
+        <ModalOverlay
+          className="md:hidden fixed inset-0 z-50 flex"
+          label="Navigation menu"
+          onClose={() => setMobileNavOpen(false)}
+        >
           <div className="absolute inset-0 bg-nikki-navy/50" onClick={() => setMobileNavOpen(false)} />
           <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
             <div className="flex items-center justify-between mb-6 px-1">
@@ -2536,7 +2565,7 @@ export default function SuperAdminDashboard() {
               <LogOut className="w-4 h-4" /> Sign Out
             </button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">

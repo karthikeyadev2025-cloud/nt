@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { withTimeout } from '../lib/withTimeout';
 import { Lock, Mail, AlertCircle, Users, Phone, Briefcase, HeartHandshake, Clock, CheckCircle2 } from 'lucide-react';
+import { ModalOverlay } from './ui/Modal';
 
 export default function UnifiedLogin() {
   const [email, setEmail] = useState('');
@@ -243,7 +244,11 @@ export default function UnifiedLogin() {
           )}
 
           {showReset && (
-            <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowReset(false)}>
+            <ModalOverlay
+              className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+              onClose={() => setShowReset(false)}
+              label="Reset your password"
+            >
               <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
                 {resetSent ? (
                   <div className="text-center py-4">
@@ -270,7 +275,7 @@ export default function UnifiedLogin() {
                   </form>
                 )}
               </div>
-            </div>
+            </ModalOverlay>
           )}
 
           <div className="mt-6 pt-5 border-t border-nikki-border">

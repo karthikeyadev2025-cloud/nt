@@ -151,6 +151,7 @@ function Navigation() {
 }
 
 import { motion, AnimatePresence } from 'framer-motion';
+import { ModalOverlay } from './ui/Modal';
 
 // ─────────────────────────────────────────────── Client-Facing Services Showcase (Hero Widget)
 function ServicesHeroShowcase(_props: { segments: Segment[] }) {
@@ -1350,7 +1351,11 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClose={onClose}
+      label={job ? `Apply — ${job.title}` : 'General application'}
+    >
       <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-5">
           <div>
@@ -1413,7 +1418,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
           </div>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 

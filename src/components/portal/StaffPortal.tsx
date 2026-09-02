@@ -27,6 +27,7 @@ import SessionDevices from '../SessionDevices';
 import { ChangePasswordModal } from '../ChangePasswordModal';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { cachedRpc } from '../../lib/cachedRpc';
+import { ModalOverlay } from '../ui/Modal';
 
 // ─────────────────────────── Self-service: attendance
 // ─────────────────────────── Role-aware Home
@@ -613,16 +614,24 @@ export function MyAttendance() {
       </div>
 
       {previewImage && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClose={() => setPreviewImage(null)}
+          label="Selfie preview"
+        >
           <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
             <X className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Selfie Preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-        </div>
+        </ModalOverlay>
       )}
 
       {pickingMode && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setPickingMode(false)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setPickingMode(false)}
+          label="Where are you checking in from?"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-xs w-full p-6" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold text-sm mb-4">Where are you checking in from?</h3>
             <div className="space-y-2">
@@ -638,7 +647,7 @@ export function MyAttendance() {
               ))}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {showCamera && (
@@ -986,7 +995,11 @@ export default function StaffPortal() {
             that the admin console already uses, instead of tabs sliding off
             the edge of a narrow screen. */}
         {mobileNavOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex">
+          <ModalOverlay
+            className="md:hidden fixed inset-0 z-50 flex"
+            label="Navigation menu"
+            onClose={() => setMobileNavOpen(false)}
+          >
             <div className="absolute inset-0 bg-nikki-navy/50" onClick={() => setMobileNavOpen(false)} />
             <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
               <div className="flex items-center justify-between mb-6 px-1">
@@ -1022,7 +1035,7 @@ export default function StaffPortal() {
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
             </div>
-          </div>
+          </ModalOverlay>
         )}
 
         <main className="p-4 md:p-6 max-w-6xl w-full mx-auto flex-1">

@@ -13,6 +13,7 @@ import { istDateStr } from '../../lib/dates';
 import { ExportPayslipsButton } from './admin-extras';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { cachedRpc } from '../../lib/cachedRpc';
+import { ModalOverlay } from '../ui/Modal';
 
 const DAYS = [{ v: 1, l: 'Mon' }, { v: 2, l: 'Tue' }, { v: 3, l: 'Wed' }, { v: 4, l: 'Thu' }, { v: 5, l: 'Fri' }, { v: 6, l: 'Sat' }, { v: 7, l: 'Sun' }];
 
@@ -108,7 +109,11 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
       </div>
 
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditing(null)}
+          label={editing.id ? 'Edit shift' : 'New shift'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editing.id ? 'Edit' : 'New'} Shift</h3>
             <input className={inputCls} placeholder="Shift Name *" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} />
@@ -152,11 +157,15 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
             )}
             <button className={btnCls + ' w-full'} onClick={save}>Save Shift</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {assigningFor && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setAssigningFor(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setAssigningFor(null)}
+          label={`Assign staff to ${assigningFor.name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">Assign to "{assigningFor.name}"</h3>
             <select className={inputCls} value={assignStaffId} onChange={e => setAssignStaffId(e.target.value)}>
@@ -165,7 +174,7 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
             </select>
             <button className={btnCls + ' w-full'} onClick={assign}>Assign Shift</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -359,7 +368,11 @@ export function PayslipManager() {
       </div>
 
       {showGen && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowGen(false)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setShowGen(false)}
+          label="Generate payslip"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">Generate Payslip</h3>
             <select className={inputCls} value={genForm.staff_user_id} onChange={e => setGenForm({ ...genForm, staff_user_id: e.target.value })}>
@@ -385,11 +398,15 @@ export function PayslipManager() {
             <p className="text-stone-700 text-xs">Auto-fill pulls real check-ins and approved leaves for the selected month — review before generating. Base pay, performance bonus and incentives come from the staff member's salary structure automatically.</p>
             <button className={btnCls + ' w-full'} onClick={generate}>Generate</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {openSlip && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenSlip(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setOpenSlip(null)}
+          label="Payslip details"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{staffName(openSlip.staff_user_id)} — {openSlip.period_month}/{openSlip.period_year}</h3>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
@@ -420,7 +437,7 @@ export function PayslipManager() {
               </div>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -492,7 +509,11 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
   const mapLink = (lat: number, lng: number) => `https://maps.google.com/?q=${lat},${lng}`;
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      label={`Attendance logs for ${staffName}`}
+      onClose={onClose}
+    >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="p-4 border-b border-nikki-border flex items-center justify-between bg-stone-50">
           <div>
@@ -604,14 +625,18 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
       
       {/* Full Screen Image Preview Modal */}
       {previewImage && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClose={() => setPreviewImage(null)}
+          label="Attendance photo preview"
+        >
           <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
             <X className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Selfie Preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-        </div>
+        </ModalOverlay>
       )}
-    </div>
+    </ModalOverlay>
   );
 }
 

@@ -20,6 +20,7 @@ import { rpcCall } from './meetings-utils';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { isDiscontinuedSegment } from '../../lib/useSegments';
 import { invalidate } from '../../lib/cacheBus';
+import { ModalOverlay } from '../ui/Modal';
 
 export const inputCls =
   'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-royal focus:ring-2 focus:ring-nikki-royal/20 focus:outline-none transition-all placeholder-stone-500';
@@ -455,7 +456,11 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
       </div>
 
       {openTicket && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenTicket(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setOpenTicket(null)}
+          label={`Ticket ${openTicket.ticket_no}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3">
               <div>
@@ -496,7 +501,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
               )}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -752,7 +757,11 @@ export function RescheduleModal({ lead, onClose, onRescheduled }: { lead: Lead; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClose={onClose}
+      label={hadAppointment ? 'Reschedule appointment' : 'Schedule appointment'}
+    >
       <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-nikki-blue text-white flex items-center justify-center shrink-0"><CalendarClock className="w-5 h-5" /></div>
@@ -771,7 +780,7 @@ export function RescheduleModal({ lead, onClose, onRescheduled }: { lead: Lead; 
           <button type="button" disabled={busy} onClick={removeAppointment} className="w-full text-center text-red-600 text-xs font-medium pt-1">Remove appointment</button>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -1005,7 +1014,11 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClose={onClose}
+      label="New lead"
+    >
       <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
 
         {justCreated ? (
@@ -1284,7 +1297,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
           onCancel={() => setCapturingCard(false)}
         />
       )}
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -2186,7 +2199,11 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       )}
 
       {openLead && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenLead(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setOpenLead(null)}
+          label={`Lead — ${openLead.customer_name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3 gap-3">
               <div>
@@ -2344,7 +2361,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
               />
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {logOutcomeLead && (
@@ -2368,16 +2385,24 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
       )}
 
       {previewLeadPhoto && (
-        <div className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewLeadPhoto(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4"
+          onClose={() => setPreviewLeadPhoto(null)}
+          label="Visit proof preview"
+        >
           <button onClick={() => setPreviewLeadPhoto(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
             <X className="w-6 h-6" />
           </button>
           <img src={previewLeadPhoto} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-        </div>
+        </ModalOverlay>
       )}
 
       {galleryLead && (
-        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4" onClick={() => setGalleryLead(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+          onClose={() => setGalleryLead(null)}
+          label={`Photos for ${galleryLead.customer_name}`}
+        >
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-nikki-navy font-bold text-sm">{galleryLead.customer_name} — Photos</h3>
@@ -2398,11 +2423,15 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
               </div>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {editingLead && (
-        <div className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditingLead(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+          onClose={() => setEditingLead(null)}
+          label="Edit lead details"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in fade-in duration-150" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="text-nikki-navy font-extrabold text-lg">Edit Lead Details</h3>
@@ -2479,7 +2508,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
               )}
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -2574,7 +2603,11 @@ function LogOutcomeDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClose={onClose}
+      label={`Log call outcome for ${lead.customer_name}`}
+    >
       <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
           <div>
@@ -2662,7 +2695,7 @@ function LogOutcomeDialog({
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -3050,12 +3083,16 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
           )}
 
           {previewImage && (
-            <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+            <ModalOverlay
+              className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+              onClose={() => setPreviewImage(null)}
+              label="Selfie preview"
+            >
               <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
                 <X className="w-6 h-6" />
               </button>
               <img src={previewImage} alt="Selfie preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-            </div>
+            </ModalOverlay>
           )}
         </div>
       )}

@@ -11,6 +11,7 @@ import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls } from './shared';
 import { IdProofUploader } from './IdProofUploader';
 import { DOC_TYPE_LABELS } from './documents-utils';
+import { ModalOverlay } from '../ui/Modal';
 
 // ─────────────────────────── Signature Pad (draw on canvas, mobile + desktop)
 // ─────────────────────────── My Signature (saved once, auto-stamped onto
@@ -183,7 +184,11 @@ export function DocumentViewer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClose={onClose}
+      label={title}
+    >
       <div className="bg-white border border-nikki-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
           <div>
@@ -237,7 +242,7 @@ export function DocumentViewer({
           </div>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -394,7 +399,11 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
   }, [staffUserId]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      label={`Collected documents for ${staffName}`}
+      onClose={onClose}
+    >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="p-4 border-b border-nikki-border flex items-center justify-between bg-stone-50">
           <div>
@@ -498,6 +507,6 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
           onClose={() => setViewDoc(null)}
         />
       )}
-    </div>
+    </ModalOverlay>
   );
 }

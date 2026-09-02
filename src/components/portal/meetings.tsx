@@ -12,6 +12,7 @@ import { invalidate } from '../../lib/cacheBus';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { rpcCall } from './meetings-utils';
+import { ModalOverlay } from '../ui/Modal';
 
 export type MeetingRow = {
   id: string; lead_id: string | null; segment_slug: string | null;
@@ -177,7 +178,11 @@ export function ScheduleMeetingModal({
     setForm(f => ({ ...f, attendees: f.attendees.includes(id) ? f.attendees.filter(x => x !== id) : [...f.attendees, id] }));
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      label="Schedule meeting"
+      onClose={onClose}
+    >
       <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-nikki-border max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
@@ -310,7 +315,7 @@ export function ScheduleMeetingModal({
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -373,7 +378,11 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      label={`Meeting — ${meeting.meeting_type_name}`}
+      onClose={onClose}
+    >
       <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-nikki-border max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
@@ -491,7 +500,7 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
           </div>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -847,7 +856,11 @@ export function MeetingTypesManager() {
         ))}
       </div>
       {editing && (
-        <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+          label={editing.id ? 'Edit meeting type' : 'New meeting type'}
+          onClose={() => setEditing(null)}
+        >
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-nikki-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-nikki-navy font-extrabold text-base">{editing.id ? 'Edit' : 'New'} Meeting Type</h3>
@@ -882,7 +895,7 @@ export function MeetingTypesManager() {
               </div>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
