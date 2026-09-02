@@ -1,0 +1,10 @@
+{
+  "name": "run-nt-driver",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Browser driver for the Nikki Technologies app. Deliberately isolated from the app's own package.json: installing anything in the app root re-resolves the blocked xlsx tarball and fails.",
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}
