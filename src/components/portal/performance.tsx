@@ -291,13 +291,13 @@ export function SourcingFunnelWidget({ segments }: { segments: Segment[] }) {
           <p className="text-stone-500 text-[11px]">Who's bringing in the deals</p>
         </div>
         <div className="flex items-center gap-2">
-          <select value={range} onChange={e => setRange(e.target.value as typeof range)}
+          <select aria-label="Date range" value={range} onChange={e => setRange(e.target.value as typeof range)}
             className="text-xs px-2 py-1 rounded-lg border border-nikki-border bg-white text-stone-700 font-semibold">
             <option value="30d">Last 30 days</option>
             <option value="90d">Last 90 days</option>
             <option value="all">All time</option>
           </select>
-          <select value={segment} onChange={e => setSegment(e.target.value)}
+          <select aria-label="All segments" value={segment} onChange={e => setSegment(e.target.value)}
             className="text-xs px-2 py-1 rounded-lg border border-nikki-border bg-white text-stone-700 font-semibold">
             <option value="">All segments</option>
             {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}

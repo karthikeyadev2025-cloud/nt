@@ -144,7 +144,7 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
           placeholder="Search staff, leads, tickets..."
           value={query}
           onChange={e => setQuery(e.target.value)}
-        />
+        aria-label="Search staff, leads, tickets..." />
         {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-stone-700 hover:text-stone-700"><X className="w-3.5 h-3.5" /></button>}
       </div>
       {open && results.length > 0 && (

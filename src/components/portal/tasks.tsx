@@ -223,7 +223,7 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
                     </div>
                   )}
                   {canEditAll && t.status !== 'completed' && (
-                    <select className={inputCls + ' w-auto text-xs py-1'} value={t.assigned_to || ''}
+                    <select aria-label="Unassigned" className={inputCls + ' w-auto text-xs py-1'} value={t.assigned_to || ''}
                       disabled={busy === t.id} onChange={e => reassign(t, e.target.value)}>
                       <option value="">Unassigned</option>
                       {staff
@@ -251,31 +251,31 @@ export function TasksBoard({ segments, mineOnly = false }: { segments?: Segment[
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">New Task</h3>
             <input className={inputCls} placeholder="What needs doing? *"
-              value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+              value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} aria-label="What needs doing?" />
             <textarea className={inputCls} rows={2} placeholder="Details (optional)"
-              value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+              value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} aria-label="Details (optional)" />
             <div className="grid grid-cols-2 gap-2">
-              <select className={inputCls} value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}>
+              <select aria-label="Priority" className={inputCls} value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}>
                 <option value="high">High priority</option>
                 <option value="medium">Medium priority</option>
                 <option value="low">Low priority</option>
               </select>
-              <input type="date" className={inputCls} value={form.due_date}
+              <input type="date" className={inputCls} value={form.due_date} aria-label="Due date"
                 onChange={e => setForm({ ...form, due_date: e.target.value })} />
             </div>
-            <select className={inputCls} value={form.segment_slug}
+            <select aria-label="No specific department" className={inputCls} value={form.segment_slug}
               onChange={e => setForm({ ...form, segment_slug: e.target.value, assigned_to: '' })}>
               <option value="">No specific department</option>
               {(segments || []).map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
-            <select className={inputCls} value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })}>
+            <select aria-label="Assign later" className={inputCls} value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })}>
               <option value="">Assign later</option>
               {staff
                 .filter(s => !form.segment_slug || (s.segments || []).includes(form.segment_slug) || (s.segments || []).includes('all'))
                 .map(s => <option key={s.id} value={s.id}>{s.full_name} — {s.role.replace('_', ' ')}</option>)}
             </select>
             <input className={inputCls} placeholder="Category (optional) — e.g. Payment, Compliance"
-              value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} />
+              value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} aria-label="Category (optional) — e.g. Payment, Compliance" />
             <button className={btnCls + ' w-full'} disabled={busy === 'new'} onClick={createTask}>
               {busy === 'new' ? 'Creating…' : 'Create Task'}
             </button>

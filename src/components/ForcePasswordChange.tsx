@@ -43,9 +43,9 @@ export default function ForcePasswordChange() {
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
         <form onSubmit={submit} className="space-y-4">
           <input type="password" required minLength={6} placeholder="New password" value={pw} onChange={e => setPw(e.target.value)}
-            className="w-full px-4 py-3 bg-nikki-navy border border-stone-600 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:border-nikki-royal" />
+            className="w-full px-4 py-3 bg-nikki-navy border border-stone-600 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:border-nikki-royal" aria-label="New password" />
           <input type="password" required minLength={6} placeholder="Confirm new password" value={pw2} onChange={e => setPw2(e.target.value)}
-            className="w-full px-4 py-3 bg-nikki-navy border border-stone-600 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:border-nikki-royal" />
+            className="w-full px-4 py-3 bg-nikki-navy border border-stone-600 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:border-nikki-royal" aria-label="Confirm new password" />
           <button type="submit" disabled={busy}
             className="w-full py-3.5 bg-gradient-to-r from-nikki-royal to-cyan-400 text-white font-semibold rounded-xl hover:from-nikki-sky hover:to-cyan-300 disabled:opacity-60 transition-all">
             {busy ? 'Saving…' : 'Save & Continue'}

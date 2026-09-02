@@ -105,7 +105,7 @@ export function IdProofUploader({ staffUserId, canManage }: { staffUserId: strin
       <p className="text-stone-700 text-xs mb-3">Aadhaar, PAN, passport, or other government ID — {canManage ? 'upload for this staff member' : 'upload your own'}.</p>
 
       <div className="flex gap-2 mb-4">
-        <select className={inputCls + ' flex-1'} value={docType} onChange={e => setDocType(e.target.value)}>
+        <select aria-label="Document type" className={inputCls + ' flex-1'} value={docType} onChange={e => setDocType(e.target.value)}>
           {Object.entries(DOC_TYPE_LABELS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
         </select>
         <label className={btnCls + ' cursor-pointer flex items-center gap-1.5 shrink-0'}>

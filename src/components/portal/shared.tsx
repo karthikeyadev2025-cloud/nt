@@ -474,13 +474,13 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
             <p className="text-stone-700 text-sm mb-4 whitespace-pre-wrap">{openTicket.description}</p>
             {hasPermission('manage_tickets') && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                <select className={inputCls} value={openTicket.status} onChange={e => update(openTicket.id, { status: e.target.value as SupportTicket['status'] })}>
+                <select aria-label="Ticket status" className={inputCls} value={openTicket.status} onChange={e => update(openTicket.id, { status: e.target.value as SupportTicket['status'] })}>
                   {['open', 'in_progress', 'waiting_customer', 'resolved', 'closed'].map(s => <option key={s} value={s}>{ticketStatusLabel(s)}</option>)}
                 </select>
-                <select className={inputCls} value={openTicket.priority} onChange={e => update(openTicket.id, { priority: e.target.value as SupportTicket['priority'] })}>
+                <select aria-label="Ticket priority" className={inputCls} value={openTicket.priority} onChange={e => update(openTicket.id, { priority: e.target.value as SupportTicket['priority'] })}>
                   {['low', 'medium', 'high', 'urgent'].map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
-                <select className={inputCls} value={openTicket.assigned_to || ''} onChange={e => update(openTicket.id, { assigned_to: e.target.value || null })}>
+                <select aria-label="Unassigned" className={inputCls} value={openTicket.assigned_to || ''} onChange={e => update(openTicket.id, { assigned_to: e.target.value || null })}>
                   <option value="">Unassigned</option>
                   {staff.filter(s => s.segments.includes('all') || s.segments.includes(openTicket.segment_slug)).map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
                 </select>
@@ -496,7 +496,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
               ))}
               {hasPermission('manage_tickets') && (
                 <div className="flex gap-2 pt-2">
-                  <input className={inputCls} placeholder="Type your reply — the customer will see this via email/portal." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendReply()} />
+                  <input className={inputCls} placeholder="Type your reply — the customer will see this via email/portal." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendReply()} aria-label="Type your reply — the customer will see this via email/portal." />
                   <button className={btnCls} onClick={sendReply}>Send</button>
                 </div>
               )}
@@ -771,8 +771,8 @@ export function RescheduleModal({ lead, onClose, onRescheduled }: { lead: Lead; 
             <p className="text-stone-700 text-xs">{lead.customer_name}</p>
           </div>
         </div>
-        <input type="datetime-local" className={inputCls} value={at} onChange={e => setAt(e.target.value)} />
-        <input className={inputCls} placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} />
+        <input type="datetime-local" className={inputCls} value={at} onChange={e => setAt(e.target.value)} aria-label="Appointment date and time" />
+        <input className={inputCls} placeholder="Note (optional)" value={note} onChange={e => setNote(e.target.value)} aria-label="Note (optional)" />
         <div className="flex gap-2 pt-1">
           <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-stone-100 text-stone-800 text-sm font-semibold">Cancel</button>
           <button type="button" disabled={busy} onClick={save} className={btnCls + ' flex-1'}>{busy ? 'Saving...' : hadAppointment ? 'Reschedule' : 'Schedule'}</button>
@@ -1085,12 +1085,12 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
               <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Contact</p>
               <div className="relative">
                 <User className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input autoFocus className={inputCls + ` pl-9 ${attemptedSubmit && !form.customer_name ? 'border-red-400 bg-red-50' : ''}`} placeholder="Customer Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
+                <input autoFocus className={inputCls + ` pl-9 ${attemptedSubmit && !form.customer_name ? 'border-red-400 bg-red-50' : ''}`} placeholder="Customer Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} aria-label="Customer Name" />
                 {attemptedSubmit && !form.customer_name && <p className="text-red-600 text-[11px] mt-1">Name is required</p>}
               </div>
               <div className="relative">
                 <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input className={inputCls + ' pl-9 pr-9'} placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                <input className={inputCls + ' pl-9 pr-9'} placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} aria-label="Phone" />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {dupChecking && <Loader2 className="w-4 h-4 text-stone-400 animate-spin" />}
                   {!dupChecking && dupClean && <Check className="w-4 h-4 text-emerald-600" />}
@@ -1102,13 +1102,13 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
               ) : (
                 <div className="relative">
                   <Phone className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input className={inputCls + ' pl-9'} placeholder="Alternate Phone" value={form.alternate_phone} onChange={e => setForm({ ...form, alternate_phone: e.target.value })} />
+                  <input className={inputCls + ' pl-9'} placeholder="Alternate Phone" value={form.alternate_phone} onChange={e => setForm({ ...form, alternate_phone: e.target.value })} aria-label="Alternate Phone" />
                 </div>
               ))}
               {!quickMode && (
                 <div className="relative">
                   <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input className={inputCls + ' pl-9'} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                  <input className={inputCls + ' pl-9'} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} aria-label="Email" />
                 </div>
               )}
               {dupWarning && (
@@ -1127,7 +1127,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
               <p className="text-stone-500 text-[11px] font-bold uppercase tracking-wider">Lead Details</p>
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <select className={inputCls + (attemptedSubmit && !form.segment_slug ? ' border-red-400 bg-red-50' : '')} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+                  <select aria-label="Segment" className={inputCls + (attemptedSubmit && !form.segment_slug ? ' border-red-400 bg-red-50' : '')} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
                     <option value="">Segment *</option>
                     {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
                   </select>
@@ -1136,7 +1136,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
                 {!quickMode && (
                   <div className="relative">
                     <Radio className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <select className={inputCls + ' pl-9'} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
+                    <select aria-label="Lead source" className={inputCls + ' pl-9'} value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}>
                       {['field', 'telecall', 'referral', 'whatsapp', 'website', 'other'].map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
@@ -1145,11 +1145,11 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
               {!quickMode && <>
                 <div className="relative">
                   <Tag className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input className={inputCls + ' pl-9'} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
+                  <input className={inputCls + ' pl-9'} placeholder="Interested In" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} aria-label="Interested In" />
                 </div>
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input className={inputCls + ' pl-9'} placeholder="Address (street, area, city)" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+                  <input className={inputCls + ' pl-9'} placeholder="Address (street, area, city)" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} aria-label="Address (street, area, city)" />
                 </div>
                 <div>
                   <p className="text-stone-700 text-xs font-medium mb-1.5">Priority</p>
@@ -1243,8 +1243,8 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
               </button>
               {showAppointment && (
                 <div className="space-y-2.5 pl-1">
-                  <input type="datetime-local" className={inputCls} value={appointmentAt} onChange={e => setAppointmentAt(e.target.value)} />
-                  <input className={inputCls} placeholder="Appointment note (optional)" value={appointmentNote} onChange={e => setAppointmentNote(e.target.value)} />
+                  <input type="datetime-local" className={inputCls} value={appointmentAt} onChange={e => setAppointmentAt(e.target.value)} aria-label="Appointment date and time" />
+                  <input className={inputCls} placeholder="Appointment note (optional)" value={appointmentNote} onChange={e => setAppointmentNote(e.target.value)} aria-label="Appointment note (optional)" />
                 </div>
               )}
             </div>
@@ -1267,7 +1267,7 @@ export function AddLeadModal({ segments, defaultSource = 'field', staffList, onC
                   </button>
                 </div>
                 {staffList && staffList.length > 0 && (
-                  <select className={inputCls} value={form.sourced_by_user_id} onChange={e => setForm({ ...form, sourced_by_user_id: e.target.value })}>
+                  <select aria-label="Sourced by — not tracked" className={inputCls} value={form.sourced_by_user_id} onChange={e => setForm({ ...form, sourced_by_user_id: e.target.value })}>
                     <option value="">Sourced by — not tracked</option>
                     {staffList.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
                   </select>
@@ -1889,9 +1889,9 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
           <div className="flex items-center gap-2 flex-wrap pb-2 border-b border-stone-100">
             {/* Date range filter */}
             <div className="flex items-center gap-1">
-              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border'} value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
+              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border'} value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" aria-label="Created from date" />
               <span className="text-stone-500 text-xs">–</span>
-              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border'} value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" />
+              <input type="date" className={inputCls + ' text-xs py-1.5 w-auto bg-stone-50 border-nikki-border'} value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" aria-label="Created to date" />
               {(dateFrom || dateTo) && (
                 <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-stone-500 hover:text-stone-800 text-xs px-1" title="Clear date range">✕</button>
               )}
@@ -1936,7 +1936,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
 
           {selectedIds.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap ml-auto">
-              <select className={inputCls + ' text-xs py-1.5 w-auto bg-white'} value={bulkAssignee} onChange={e => setBulkAssignee(e.target.value)}>
+              <select aria-label="Reassign To..." className={inputCls + ' text-xs py-1.5 w-auto bg-white'} value={bulkAssignee} onChange={e => setBulkAssignee(e.target.value)}>
                 <option value="">Reassign To...</option>
                 <option value="">Unassigned Pool</option>
                 {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
@@ -1945,7 +1945,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 Assign ({selectedIds.length})
               </button>
 
-              <select className={inputCls + ' text-xs py-1.5 w-auto bg-white'} value={bulkStage} onChange={e => setBulkStage(e.target.value)}>
+              <select aria-label="Change Stage..." className={inputCls + ' text-xs py-1.5 w-auto bg-white'} value={bulkStage} onChange={e => setBulkStage(e.target.value)}>
                 <option value="">Change Stage...</option>
                 {stages.map(s => <option key={s} value={s}>{stageLabel(s)}</option>)}
               </select>
@@ -2265,32 +2265,32 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
             </div>
             {hasPermission('manage_leads') && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                <select className={inputCls} value={openLead.stage} onChange={e => update(openLead.id, { stage: e.target.value as Lead['stage'] })}>
+                <select aria-label="Lead stage" className={inputCls} value={openLead.stage} onChange={e => update(openLead.id, { stage: e.target.value as Lead['stage'] })}>
                   {stages.map(s => <option key={s} value={s}>{stageLabel(s)}</option>)}
                 </select>
-                <select className={inputCls} value={openLead.assigned_to || ''} onChange={e => update(openLead.id, { assigned_to: e.target.value || null })}>
+                <select aria-label="Unassigned" className={inputCls} value={openLead.assigned_to || ''} onChange={e => update(openLead.id, { assigned_to: e.target.value || null })}>
                   <option value="">Unassigned</option>
                   {staff.filter(s => s.segments.includes('all') || s.segments.includes(openLead.segment_slug)).map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
                 </select>
                 {openLead.stage === 'won' && (
                   <>
-                    <input className={inputCls} placeholder="Invoice Number" defaultValue={openLead.invoice_no || ''} onBlur={e => update(openLead.id, { invoice_no: e.target.value || null })} />
-                    <select className={inputCls} defaultValue={openLead.priority || 'medium'}
+                    <input className={inputCls} placeholder="Invoice Number" defaultValue={openLead.invoice_no || ''} onBlur={e => update(openLead.id, { invoice_no: e.target.value || null })} aria-label="Invoice Number" />
+                    <select className={inputCls} aria-label="Lead priority" defaultValue={openLead.priority || 'medium'}
                       onChange={e => update(openLead.id, { priority: e.target.value as 'high' | 'medium' | 'low' })}>
                       <option value="high">High priority</option>
                       <option value="medium">Medium priority</option>
                       <option value="low">Low priority</option>
                     </select>
                     <input className={inputCls} placeholder="Alternate phone" defaultValue={openLead.alternate_phone || ''}
-                      onBlur={e => update(openLead.id, { alternate_phone: normalizePhone(e.target.value) })} />
-                    <input className={inputCls} type="number" placeholder="Invoice Amount (₹)" defaultValue={openLead.invoice_amount || ''} onBlur={e => update(openLead.id, { invoice_amount: e.target.value ? Number(e.target.value) : null })} />
+                      onBlur={e => update(openLead.id, { alternate_phone: normalizePhone(e.target.value) })} aria-label="Alternate phone" />
+                    <input className={inputCls} type="number" placeholder="Invoice Amount (₹)" defaultValue={openLead.invoice_amount || ''} onBlur={e => update(openLead.id, { invoice_amount: e.target.value ? Number(e.target.value) : null })} aria-label="Invoice Amount (₹)" />
                   </>
                 )}
               </div>
             )}
             <div className="border-t border-stone-800 pt-3 space-y-2">
               <div className="flex gap-2">
-                <input className={inputCls} placeholder="Add call remark / note…" value={newRemark} onChange={e => setNewRemark(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRemark(false)} />
+                <input className={inputCls} placeholder="Add call remark / note…" value={newRemark} onChange={e => setNewRemark(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRemark(false)} aria-label="Add call remark / note…" />
                 <button className={btnCls} onClick={() => addRemark(false)}>Add</button>
                 <button
                   className="px-3 py-2 rounded-lg border border-purple-600 text-purple-700 text-sm whitespace-nowrap"
@@ -2459,44 +2459,44 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
             <form onSubmit={saveEditedLead} className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">Customer Name</label>
-                <input className={inputCls} required value={editingLead.customer_name} onChange={e => setEditingLead({ ...editingLead, customer_name: e.target.value })} />
+                <input className={inputCls} required value={editingLead.customer_name} onChange={e => setEditingLead({ ...editingLead, customer_name: e.target.value })} aria-label="Customer Name" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">Phone Number</label>
-                  <input className={inputCls} required value={editingLead.phone} onChange={e => setEditingLead({ ...editingLead, phone: e.target.value })} />
+                  <input className={inputCls} required value={editingLead.phone} onChange={e => setEditingLead({ ...editingLead, phone: e.target.value })} aria-label="Phone Number" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">Email</label>
-                  <input className={inputCls} value={editingLead.email || ''} onChange={e => setEditingLead({ ...editingLead, email: e.target.value })} />
+                  <input className={inputCls} value={editingLead.email || ''} onChange={e => setEditingLead({ ...editingLead, email: e.target.value })} aria-label="Email" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">Segment</label>
-                  <select className={inputCls} value={editingLead.segment_slug} onChange={e => setEditingLead({ ...editingLead, segment_slug: e.target.value })}>
+                  <select className={inputCls} aria-label="Segment" value={editingLead.segment_slug} onChange={e => setEditingLead({ ...editingLead, segment_slug: e.target.value })}>
                     {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">Stage</label>
-                  <select className={inputCls} value={editingLead.stage} onChange={e => setEditingLead({ ...editingLead, stage: e.target.value as Lead['stage'] })}>
+                  <select aria-label="Stage" className={inputCls} value={editingLead.stage} onChange={e => setEditingLead({ ...editingLead, stage: e.target.value as Lead['stage'] })}>
                     {stages.map(s => <option key={s} value={s}>{stageLabel(s)}</option>)}
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">Interested In</label>
-                <input className={inputCls} value={editingLead.interested_in || ''} onChange={e => setEditingLead({ ...editingLead, interested_in: e.target.value })} />
+                <input className={inputCls} value={editingLead.interested_in || ''} onChange={e => setEditingLead({ ...editingLead, interested_in: e.target.value })} aria-label="Interested In" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">Address</label>
                 <input className={inputCls} placeholder="Street, area, city — wherever GPS didn't fill in or got wrong"
-                  value={editingLead.address || ''} onChange={e => setEditingLead({ ...editingLead, address: e.target.value })} />
+                  value={editingLead.address || ''} onChange={e => setEditingLead({ ...editingLead, address: e.target.value })} aria-label="Street, area, city — wherever GPS didn't fill in or got wrong" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">Assign To Staff</label>
-                <select className={inputCls} value={editingLead.assigned_to || ''} onChange={e => setEditingLead({ ...editingLead, assigned_to: e.target.value || null })}>
+                <select aria-label="Unassigned" className={inputCls} value={editingLead.assigned_to || ''} onChange={e => setEditingLead({ ...editingLead, assigned_to: e.target.value || null })}>
                   <option value="">Unassigned</option>
                   {staff.filter(s => s.segments.includes('all') || s.segments.includes(editingLead.segment_slug)).map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
                 </select>
@@ -2505,11 +2505,11 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-stone-100">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">Invoice Number</label>
-                    <input className={inputCls} value={editingLead.invoice_no || ''} onChange={e => setEditingLead({ ...editingLead, invoice_no: e.target.value })} />
+                    <input className={inputCls} value={editingLead.invoice_no || ''} onChange={e => setEditingLead({ ...editingLead, invoice_no: e.target.value })} aria-label="Invoice Number" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">Invoice Amount (₹)</label>
-                    <input type="number" className={inputCls} value={editingLead.invoice_amount || ''} onChange={e => setEditingLead({ ...editingLead, invoice_amount: e.target.value ? Number(e.target.value) : null })} />
+                    <input type="number" className={inputCls} value={editingLead.invoice_amount || ''} onChange={e => setEditingLead({ ...editingLead, invoice_amount: e.target.value ? Number(e.target.value) : null })} aria-label="Invoice Amount (₹)" />
                   </div>
                 </div>
               )}
@@ -2653,7 +2653,7 @@ function LogOutcomeDialog({
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-bold text-stone-700 mb-1">What happened?</label>
-            <select
+            <select aria-label="Pick an outcome…"
               className={inputCls}
               value={outcomeKey}
               onChange={e => setOutcomeKey(e.target.value)}>
@@ -2675,7 +2675,7 @@ function LogOutcomeDialog({
               value={note}
               onChange={e => setNote(e.target.value)}
               placeholder={outcome?.requiresNote ? 'Required — say briefly why.' : 'Optional — anything worth remembering.'}
-            />
+            aria-label={outcome?.requiresNote ? 'Required — say briefly why.' : 'Optional — anything worth remembering.'} />
           </div>
 
           {outcome && outcome.followupDays !== null && (
@@ -2687,6 +2687,7 @@ function LogOutcomeDialog({
               <input
                 type="datetime-local"
                 className={inputCls}
+                aria-label="Next follow-up"
                 value={followupValue}
                 onChange={e => setFollowupOverride(e.target.value)}
               />
@@ -2908,7 +2909,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
               placeholder="🔍 Search by name, email, or phone…"
               value={staffSearch}
               onChange={e => setStaffSearch(e.target.value)}
-            />
+            aria-label="🔍 Search by name, email, or phone…" />
             {staffSearch && (
               <button onClick={() => setStaffSearch('')}
                 className="px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-xl whitespace-nowrap">
@@ -2955,7 +2956,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
               <p className="text-nikki-navy font-semibold text-sm">Daily Attendance Logs</p>
               <p className="text-stone-500 text-xs">Select date to inspect check-in times, locations, and selfie photos</p>
             </div>
-            <input type="date" className={inputCls + ' max-w-xs'} value={date} onChange={e => setDate(e.target.value)} />
+            <input type="date" className={inputCls + ' max-w-xs'} value={date} onChange={e => setDate(e.target.value)} aria-label="Attendance date" />
           </div>
 
           {/* HR-2: quick filters. Late = check_in_at AFTER the person's

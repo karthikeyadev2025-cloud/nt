@@ -764,17 +764,17 @@ export function MyRequests() {
       <div className={cardCls}>
         <h3 className="text-nikki-navy font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-nikki-blue" /> Leave Request</h3>
         <div className="grid grid-cols-2 gap-2 mb-2">
-          <input type="date" className={inputCls} value={leaveForm.from_date} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} />
-          <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} />
+          <input type="date" className={inputCls} value={leaveForm.from_date} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} aria-label="Leave from date" />
+          <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} aria-label="Leave to date" />
         </div>
-        <select className={inputCls + ' mb-2'} value={leaveForm.leave_type} onChange={e => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}>
+        <select aria-label="Leave type" className={inputCls + ' mb-2'} value={leaveForm.leave_type} onChange={e => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}>
           {['casual', 'sick', 'earned', 'unpaid', 'other'].map(t => {
             const b = balances.find(x => x.leave_type === t);
             const suffix = !b ? '' : b.is_unlimited ? ' (unpaid)' : ` (${Number(b.remaining)} left)`;
             return <option key={t} value={t}>{t}{suffix}</option>;
           })}
         </select>
-        <input className={inputCls + ' mb-3'} placeholder="Reason" value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} />
+        <input className={inputCls + ' mb-3'} placeholder="Reason" value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} aria-label="Reason" />
         <button className={btnCls + ' w-full'} disabled={busyLeave} onClick={requestLeave}>{busyLeave ? 'Submitting…' : 'Submit Leave Request'}</button>
         <div className="mt-4 space-y-1.5">
           {leaves.map(l => (
@@ -787,8 +787,8 @@ export function MyRequests() {
       </div>
       <div className={cardCls}>
         <h3 className="text-nikki-navy font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-nikki-blue" /> Salary Advance</h3>
-        <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} />
-        <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} />
+        <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} aria-label="Amount (₹)" />
+        <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} aria-label="Reason" />
         <button className={btnCls + ' w-full'} disabled={busyAdv} onClick={requestAdvance}>{busyAdv ? 'Submitting…' : 'Request Advance'}</button>
         <div className="mt-4 space-y-1.5">
           {advances.map(a => (

@@ -226,7 +226,7 @@ export function DocumentViewer({
               <SignaturePad onCapture={dataUrl => onSign && onSign(dataUrl, '')} />
             ) : (
               <div className="space-y-2">
-                <input className={inputCls} placeholder="Type your full legal name" value={typedName} onChange={e => setTypedName(e.target.value)} />
+                <input className={inputCls} placeholder="Type your full legal name" value={typedName} onChange={e => setTypedName(e.target.value)} aria-label="Type your full legal name" />
                 {typedName && <p className="text-2xl text-nikki-navy bg-white rounded-lg px-4 py-3" style={{ fontFamily: 'cursive' }}>{typedName}</p>}
                 <button className={btnCls + ' w-full'} disabled={!typedName.trim()} onClick={() => onSign && onSign('', typedName.trim())}>
                   Confirm & Sign

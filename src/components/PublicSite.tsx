@@ -1375,38 +1375,38 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
           <div className="space-y-3">
             {!job && (
               <>
-                <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+                <select aria-label="Which division interests you?" className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
                   <option value="">Which division interests you?</option>
                   {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
                 </select>
-                <input className={inputCls} placeholder="Position you're applying for *" value={form.position} onChange={e => setForm({ ...form, position: e.target.value })} />
+                <input className={inputCls} placeholder="Position you're applying for *" value={form.position} onChange={e => setForm({ ...form, position: e.target.value })} aria-label="Position you're applying for" />
               </>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <input className={inputCls} placeholder="Full Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-              <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+              <input className={inputCls} placeholder="Full Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} aria-label="Full Name" />
+              <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} aria-label="Phone" />
             </div>
-            <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-            <input className={inputCls} placeholder="Years of Experience" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} />
+            <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} aria-label="Email" />
+            <input className={inputCls} placeholder="Years of Experience" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} aria-label="Years of Experience" />
 
             {(job?.questions || []).map((q, i) => (
               <div key={i}>
                 <label className="text-stone-700 text-xs font-medium">{q}</label>
-                <textarea className={inputCls + ' mt-1'} rows={2} value={answers[i] || ''}
+                <textarea className={inputCls + ' mt-1'} rows={2} value={answers[i] || ''} aria-label={q}
                   onChange={e => setAnswers(prev => { const next = [...prev]; next[i] = e.target.value; return next; })} />
               </div>
             ))}
 
-            <textarea className={inputCls} rows={2} placeholder="Anything else you'd like to share" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
+            <textarea className={inputCls} rows={2} placeholder="Anything else you'd like to share" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} aria-label="Anything else you'd like to share" />
 
             <div>
               <label className="text-stone-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><User className="w-3.5 h-3.5 text-nikki-blue" /> Passport size photo</label>
-              <input type="file" accept="image/*" className="text-stone-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs font-medium"
+              <input type="file" accept="image/*" aria-label="Upload your photo" className="text-stone-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs font-medium"
                 onChange={e => setPhoto(e.target.files?.[0] || null)} />
             </div>
             <div>
               <label className="text-stone-700 text-xs font-semibold flex items-center gap-1.5 mb-1"><Upload className="w-3.5 h-3.5 text-nikki-blue" /> Resume (PDF/DOC) *</label>
-              <input type="file" accept=".pdf,.doc,.docx" className="text-stone-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs font-medium"
+              <input type="file" accept=".pdf,.doc,.docx" aria-label="Upload your resume" className="text-stone-700 text-sm w-full file:mr-3 file:px-3 file:py-1.5 file:rounded-xl file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs font-medium"
                 onChange={e => setResume(e.target.files?.[0] || null)} />
             </div>
 
@@ -1577,8 +1577,8 @@ function TrackTicket({ onBack }: { onBack: () => void }) {
       <button onClick={onBack} className="text-stone-700 hover:text-stone-800 text-xs mb-4 font-semibold">← Back to raise a ticket</button>
       {!result ? (
         <div className="space-y-3">
-          <input className={inputCls} placeholder="Ticket Number (e.g. NKT-CC-00001)" value={ticketNo} onChange={e => setTicketNo(e.target.value)} />
-          <input className={inputCls} placeholder="Phone number used when raising it" value={phone} onChange={e => setPhone(e.target.value)} />
+          <input className={inputCls} placeholder="Ticket Number (e.g. NKT-CC-00001)" value={ticketNo} onChange={e => setTicketNo(e.target.value)} aria-label="Ticket Number (e.g. NKT-CC-00001)" />
+          <input className={inputCls} placeholder="Phone number used when raising it" value={phone} onChange={e => setPhone(e.target.value)} aria-label="Phone number used when raising it" />
           <button onClick={lookup} disabled={busy || !ticketNo || !phone}
             className="w-full py-3 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-nikki-blue/20">
             {busy ? 'Looking up…' : 'Check Status'}
@@ -1761,23 +1761,23 @@ function RaiseTicket({ segments }: { segments: Segment[] }) {
         ) : (
           <div className="p-8 rounded-2xl bg-white border border-nikki-border shadow-xl space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
-              <select className={inputCls} value={form.segment_slug}
+              <select aria-label="Select Department" className={inputCls} value={form.segment_slug}
                 onChange={e => setForm({ ...form, segment_slug: e.target.value, ticket_type: '' })}>
                 <option value="">Select Department *</option>
                 {cleanSegments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
-              <select className={inputCls} value={form.ticket_type}
+              <select aria-label="Issue Type" className={inputCls} value={form.ticket_type}
                 onChange={e => setForm({ ...form, ticket_type: e.target.value })} disabled={!form.segment_slug}>
                 <option value="">Issue Type *</option>
                 {displayTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
               </select>
             </div>
-            <input className={inputCls} placeholder="Subject *" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} />
-            <textarea className={inputCls} rows={3} placeholder="Describe your issue" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+            <input className={inputCls} placeholder="Subject *" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} aria-label="Subject" />
+            <textarea className={inputCls} rows={3} placeholder="Describe your issue" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} aria-label="Describe your issue" />
             <div className="grid md:grid-cols-3 gap-4">
-              <input className={inputCls} placeholder="Your Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
-              <input className={inputCls} placeholder="Phone *" value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} />
-              <input className={inputCls} placeholder="Email" value={form.customer_email} onChange={e => setForm({ ...form, customer_email: e.target.value })} />
+              <input className={inputCls} placeholder="Your Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} aria-label="Your Name" />
+              <input className={inputCls} placeholder="Phone *" value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} aria-label="Phone" />
+              <input className={inputCls} placeholder="Email" value={form.customer_email} onChange={e => setForm({ ...form, customer_email: e.target.value })} aria-label="Email" />
             </div>
             {err && <p className="text-red-700 text-sm font-medium">{err}</p>}
             {turnstileSiteKey && (
@@ -1843,14 +1843,14 @@ function Contact({ content, segments }: { content: Record<string, Record<string,
             </div>
           ) : (
             <div className="space-y-4">
-              <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+              <select aria-label="Which service do you need?" className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
                 <option value="">Which service do you need? *</option>
                 {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
-              <input className={inputCls} placeholder="Your Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
-              <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
-              <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-              <textarea className={inputCls} rows={2} placeholder="Tell us what you need" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} />
+              <input className={inputCls} placeholder="Your Name *" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} aria-label="Your Name" />
+              <input className={inputCls} placeholder="Phone *" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} aria-label="Phone" />
+              <input className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} aria-label="Email" />
+              <textarea className={inputCls} rows={2} placeholder="Tell us what you need" value={form.interested_in} onChange={e => setForm({ ...form, interested_in: e.target.value })} aria-label="Tell us what you need" />
               {err && <p className="text-red-700 text-sm font-medium">{err}</p>}
               <button onClick={submit} disabled={busy}
                 className="w-full py-3 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-50 text-white font-bold transition-all shadow-md shadow-nikki-blue/20">

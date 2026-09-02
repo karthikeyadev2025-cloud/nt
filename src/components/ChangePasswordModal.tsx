@@ -118,7 +118,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                 onChange={e => setCurrentPw(e.target.value)}
                 autoComplete="current-password"
                 className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nikki-royal font-mono"
-              />
+              aria-label="Your current password" />
             </div>
           </div>
 
@@ -135,7 +135,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                 onChange={e => setNewPw(e.target.value)}
                 autoComplete="new-password"
                 className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nikki-royal font-mono"
-              />
+              aria-label="At least 8 characters" />
             </div>
           </div>
 
@@ -152,7 +152,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                 onChange={e => setConfirmPw(e.target.value)}
                 autoComplete="new-password"
                 className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nikki-royal font-mono"
-              />
+              aria-label="Re-enter new password" />
             </div>
           </div>
 
