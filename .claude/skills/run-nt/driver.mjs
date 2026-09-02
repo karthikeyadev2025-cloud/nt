@@ -7,14 +7,13 @@
  * PLAYWRIGHT_BROWSERS_PATH and papers over three things that otherwise
  * make this specific app impossible to automate:
  *
- *   1. The app reload-loops in dev. main.tsx compares a compiled-in
- *      __BUILD_ID__ (vite.config sets it to Date.now() at config load)
- *      against /build-version.json, which in dev is served straight from
- *      public/ as the literal string "dev". They never match, so the app
- *      concludes it is stale and calls location.reload() -- on load and on
- *      every visibilitychange. Playwright then dies with "Execution context
- *      was destroyed, most likely because of a navigation". Every page here
- *      stubs that route to a 404 first.
+ *   1. The app can reload itself out from under the driver. main.tsx
+ *      compares a compiled-in __BUILD_ID__ against /build-version.json and
+ *      calls location.reload() on a mismatch, which surfaces in Playwright
+ *      as "Execution context was destroyed, most likely because of a
+ *      navigation". main.tsx now skips this entirely in dev (it used to
+ *      loop ~13x/sec there), but a production build still reloads on a
+ *      mismatch, so every page here stubs the route to a 404 regardless.
  *
  *   2. waitUntil:'networkidle' never resolves. Supabase is unreachable from
  *      the sandbox, and its client retries; the network never goes quiet.
@@ -98,9 +97,8 @@ async function assertServer() {
     console.error(
       `Cannot reach ${BASE} (${e.message}).\n\n` +
       `Start it first:\n` +
-      `  npm run build && npm run preview > /tmp/nt-preview.log 2>&1 &\n\n` +
-      `Use preview, NOT \`npm run dev\`: in dev the app reload-loops about 13x/sec\n` +
-      `(build-id mismatch -- see SKILL.md Gotchas). The port is 3000, not 5173.`
+      `  npm run dev > /tmp/nt-dev.log 2>&1 &\n\n` +
+      `The port is 3000 (vite.config.ts, strictPort), not Vite's default 5173.`
     );
     process.exit(1);
   }

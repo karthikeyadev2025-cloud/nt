@@ -10,10 +10,6 @@ a browser via `.claude/skills/run-nt/tsrun.sh`.
 
 All paths below are relative to the repo root.
 
-**Read this first, it will save you an hour:** `npm run dev` reload-loops —
-measured at **135 page loads in 10 seconds** — so a browser can never settle
-on it. Serve with `npm run preview` instead. See Gotchas.
-
 ## Prerequisites
 
 Nothing to `apt-get` in this image. Verified present:
@@ -59,17 +55,20 @@ driver below is the only thing that verifies runtime behavior.
 
 ## Run (agent path)
 
-Build once, then serve the built output. Not `npm run dev` — see the warning
-above.
-
 ```bash
-npm run build
-npm run preview > /tmp/nt-preview.log 2>&1 &
-sleep 5 && curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/   # -> 200
+npm run dev > /tmp/nt-dev.log 2>&1 &
+sleep 6 && curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/   # -> 200
 ```
 
 Port is **3000**, set by `vite.config.ts` with `strictPort: true`. It is not
 Vite's default 5173.
+
+`npm run dev` is the right server for driving the app — no build step, and
+HMR. Use `npm run build && npm run preview` (same port) only when you need to
+check something that differs in a production bundle: minification, code
+splitting, or the post-deploy stale-tab reload, which is disabled in dev.
+
+The driver passes all 12 smoke checks against either server.
 
 ### One-shot commands
 
@@ -185,11 +184,11 @@ the entry is written to the repo root, so use `./src/...`.
 ## Run (human path)
 
 ```bash
-npm run build && npm run preview    # -> http://localhost:3000, Ctrl-C to stop
+npm run dev        # -> http://localhost:3000 with HMR, Ctrl-C to stop
 ```
 
-`npm run dev` gives you HMR but the page reload-loops (below), so it is only
-usable if you never look at the browser.
+For the production bundle instead: `npm run build && npm run preview`, same
+port.
 
 Stop a backgrounded server **by port**, never by name:
 
@@ -199,15 +198,23 @@ kill $(lsof -ti tcp:3000)
 
 ## Gotchas
 
-- **`npm run dev` reload-loops the browser, ~13 times a second.**
-  `vite.config.ts` sets `__BUILD_ID__` to `Date.now()` at config load, while
-  dev serves `public/build-version.json` verbatim as `{"buildId": "dev"}`.
-  `src/main.tsx` compares them, concludes the tab is stale, and calls
-  `location.reload()` — on load and on every `visibilitychange`. Measured:
-  **135 main-frame navigations in 10s on dev, 1 on preview.** `vite build`
-  writes `dist/build-version.json` with the *same* id it compiles in, so
-  preview is stable. (`driver.mjs` also stubs the route to a 404, so it
-  works against either server — but prefer preview.)
+- **The stale-tab reload check is disabled in dev, deliberately** — don't
+  "restore" it. `vite.config.ts` sets `__BUILD_ID__` to `Date.now()` at
+  config load, while the dev server serves `public/build-version.json`
+  verbatim as `{"buildId": "dev"}`. Those can never be equal, so
+  `src/main.tsx` used to conclude the tab was stale on every dev page load
+  and call `location.reload()` — measured at **135 main-frame navigations in
+  10 seconds**, which made `npm run dev` unusable in a browser and
+  impossible to automate. It is now guarded by `if (import.meta.env.DEV)
+  return;`. Production is unaffected: `vite build` writes
+  `dist/build-version.json` with the same id it compiles in, and a mismatched
+  id still triggers the reload (verified by serving a fake newer id against
+  `npm run preview`).
+
+- **`driver.mjs` stubs `/build-version.json` to a 404 anyway.** Belt and
+  braces: it keeps the driver immune to this whole mechanism, including
+  against a production build where a stale bundle and a fresh
+  `build-version.json` would loop.
 
 - **`pkill -f vite` kills your own shell.** `pgrep -f` matches the agent
   shell's own command line, because that line contains the pattern you
@@ -258,8 +265,10 @@ kill $(lsof -ti tcp:3000)
   Delete `node_modules/xlsx` and re-run `setup.sh`.
 
 - **`page.evaluate: Execution context was destroyed, most likely because of
-  a navigation`**: you are pointed at the dev server and it reload-looped.
-  Use `npm run preview`.
+  a navigation`**: the page reloaded under you. Almost always the stale-tab
+  check (see Gotchas) — check that the `import.meta.env.DEV` guard in
+  `src/main.tsx` is intact, and that your script stubs
+  `**/build-version.json*` the way `driver.mjs` does.
 
 - **`page.goto: Timeout 30000ms exceeded` with `waiting until "networkidle"`**:
   see the networkidle gotcha. Use `domcontentloaded`.
@@ -280,5 +289,5 @@ kill $(lsof -ti tcp:3000)
   the skill's own `node_modules`.
 
 - **Driver exits with "Cannot reach http://localhost:3000"**: no server, or
-  you started it on 5173 out of habit. `npm run preview`, then re-check with
+  you started it on 5173 out of habit. `npm run dev`, then re-check with
   `curl`.

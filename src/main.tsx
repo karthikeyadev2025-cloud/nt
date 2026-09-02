@@ -35,12 +35,26 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Automatic stale-version detection. Every 60 seconds while this tab is
-// visible, check whether a newer build has been deployed since this page
-// loaded — if so, purge everything and reload automatically. This exists
-// specifically so nobody ever has to manually clear their browser's cache
-// after a deploy again: the app detects it's stale and fixes itself.
+// Automatic stale-version detection. On load, and again whenever the tab
+// becomes visible, check whether a newer build has been deployed since this
+// page loaded — if so, purge everything and reload automatically. This
+// exists specifically so nobody ever has to manually clear their browser's
+// cache after a deploy again: the app detects it's stale and fixes itself.
 (function watchForNewDeploy() {
+  // Never in dev. There are no deploys to detect there (Vite's HMR handles
+  // code changes), and the check cannot do anything BUT misfire: vite.config
+  // sets __BUILD_ID__ to Date.now() at config load, while the dev server
+  // serves public/build-version.json verbatim as {"buildId": "dev"}. Those
+  // two can never be equal, so every dev page load concluded it was stale
+  // and called location.reload() — which loaded the page, which concluded it
+  // was stale, which reloaded. Measured at 135 navigations in 10 seconds,
+  // i.e. `npm run dev` was unusable in a browser and impossible to automate.
+  //
+  // vite build writes dist/build-version.json with the SAME id it compiles
+  // into the bundle, so the production path is unaffected and still catches
+  // a genuinely stale tab after a real deploy.
+  if (import.meta.env.DEV) return;
+
   let reloading = false;
 
   async function checkForNewVersion() {
