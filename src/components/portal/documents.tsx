@@ -169,7 +169,7 @@ export function DocumentViewer({
     const w = window.open('', '_blank');
     if (!w) return;
     const sigBlock = signed && signatureDataUrl
-      ? `<div style="margin-top:40px"><img src="${signatureDataUrl}" style="height:60px"/><p style="font-size:12px;color:#64748b;border-top:1px solid #cbd5e1;padding-top:6px;width:260px">Signed by ${signedName || ''} on ${acknowledgedAt ? new Date(acknowledgedAt).toLocaleDateString() : ''}</p></div>`
+      ? `<div style="margin-top:40px"><img src="${signatureDataUrl}" alt="Signature" style="height:60px"/><p style="font-size:12px;color:#64748b;border-top:1px solid #cbd5e1;padding-top:6px;width:260px">Signed by ${signedName || ''} on ${acknowledgedAt ? new Date(acknowledgedAt).toLocaleDateString() : ''}</p></div>`
       : signed ? `<p style="margin-top:40px;font-size:12px;color:#64748b">Acknowledged on ${acknowledgedAt ? new Date(acknowledgedAt).toLocaleDateString() : ''}</p>` : '';
     w.document.write(`
       <html><head><title>${title}</title>

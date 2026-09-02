@@ -468,7 +468,7 @@ export function IDCard() {
         </div>
         <div className="bg-white text-center p-5">
           <div className="w-16 h-16 rounded-full bg-nikki-border mx-auto mb-2 overflow-hidden flex items-center justify-center text-stone-700 font-bold text-xl">
-            {user.profile_photo_url ? <img src={user.profile_photo_url} className="w-full h-full object-cover" /> : user.full_name[0]}
+            {user.profile_photo_url ? <img src={user.profile_photo_url} alt={`${user.full_name} profile photo`} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : user.full_name[0]}
           </div>
           <p className="text-nikki-navy font-semibold">{user.full_name}</p>
           <p className="text-stone-700 text-xs mb-3">{user.designation || user.role}</p>
@@ -984,7 +984,7 @@ export function MyPhotoRequest() {
       <h3 className="text-nikki-navy font-semibold text-sm mb-3">Profile Photo</h3>
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-stone-100 overflow-hidden flex items-center justify-center text-stone-700 font-bold">
-          {user?.profile_photo_url ? <img src={user.profile_photo_url} className="w-full h-full object-cover" /> : user?.full_name?.[0]}
+          {user?.profile_photo_url ? <img src={user.profile_photo_url} alt="Your profile photo" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : user?.full_name?.[0]}
         </div>
         <div>
           {pendingReq ? (
@@ -1034,7 +1034,7 @@ export function PhotoChangeApprovals() {
       {pending.map(r => (
         <div key={r.id} className={cardCls + ' flex items-center justify-between'}>
           <div className="flex items-center gap-3">
-            <img src={r.requested_photo_url} className="w-12 h-12 rounded-full object-cover" />
+            <img src={r.requested_photo_url} alt={`Requested profile photo for ${names[r.staff_user_id] || 'this staff member'}`} loading="lazy" decoding="async" className="w-12 h-12 rounded-full object-cover" />
             <p className="text-nikki-navy text-sm">{names[r.staff_user_id] || '—'}</p>
           </div>
           <div className="flex gap-2">

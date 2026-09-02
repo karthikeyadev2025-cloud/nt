@@ -102,7 +102,7 @@ function ClientLogos() {
       <p className="text-center text-stone-700 text-xs uppercase tracking-[0.2em] mb-8">Trusted By</p>
       <div className="flex gap-16 animate-marquee w-max">
         {track.map((l, i) => (
-          <img key={`${l.id}-${i}`} src={l.logo_url || ''} alt={l.name} className="h-10 md:h-12 object-contain opacity-60 hover:opacity-100 transition-opacity grayscale hover:grayscale-0" />
+          <img key={`${l.id}-${i}`} src={l.logo_url || ''} alt={l.name} loading="lazy" decoding="async" className="h-10 md:h-12 object-contain opacity-60 hover:opacity-100 transition-opacity grayscale hover:grayscale-0" />
         ))}
       </div>
     </section>
@@ -1128,7 +1128,7 @@ function Products() {
               >
                 <div className="flex items-center gap-3 mb-3">
                   {p.logo_url
-                    ? <img src={p.logo_url} alt={p.name} className="w-11 h-11 rounded-xl object-cover shadow-xs" />
+                    ? <img src={p.logo_url} alt={p.name} loading="lazy" decoding="async" className="w-11 h-11 rounded-xl object-cover shadow-xs" />
                     : <div className="w-11 h-11 rounded-xl bg-nikki-blue flex items-center justify-center font-extrabold text-white text-lg shadow-md">{p.name[0]}</div>}
                   <div>
                     <h3 className="text-xl font-bold text-nikki-navy">{p.name}</h3>
@@ -1181,7 +1181,7 @@ function GallerySection() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {items.map(g => (
             <div key={g.id} className="rounded-xl overflow-hidden aspect-square bg-nikki-navy">
-              <img src={g.image_url || ''} alt={g.title || ''} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+              <img src={g.image_url || ''} alt={g.title || ''} loading="lazy" decoding="async" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
             </div>
           ))}
         </div>
@@ -1212,7 +1212,7 @@ function TeamSection() {
           {items.map(m => (
             <div key={m.id} className="text-center p-5 rounded-2xl bg-white border border-nikki-border/90 shadow-sm">
               <div className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden bg-stone-100 border border-nikki-border flex items-center justify-center text-stone-700 font-bold text-2xl shadow-xs">
-                {m.photo_url ? <img src={m.photo_url} alt={m.name} className="w-full h-full object-cover" /> : m.name[0]}
+                {m.photo_url ? <img src={m.photo_url} alt={m.name} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : m.name[0]}
               </div>
               <p className="text-nikki-navy font-bold text-sm">{m.name}</p>
               <p className="text-stone-700 text-xs font-medium">{m.designation}</p>
