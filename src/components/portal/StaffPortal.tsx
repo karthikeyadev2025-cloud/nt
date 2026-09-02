@@ -27,6 +27,7 @@ import SessionDevices from '../SessionDevices';
 import { ChangePasswordModal } from '../ChangePasswordModal';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { cachedRpc } from '../../lib/cachedRpc';
+import { ModalOverlay } from '../ui/Modal';
 
 // ─────────────────────────── Self-service: attendance
 // ─────────────────────────── Role-aware Home
@@ -613,16 +614,24 @@ export function MyAttendance() {
       </div>
 
       {previewImage && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClose={() => setPreviewImage(null)}
+          label="Selfie preview"
+        >
           <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
             <X className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Selfie Preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-        </div>
+        </ModalOverlay>
       )}
 
       {pickingMode && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setPickingMode(false)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setPickingMode(false)}
+          label="Where are you checking in from?"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-xs w-full p-6" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold text-sm mb-4">Where are you checking in from?</h3>
             <div className="space-y-2">
@@ -638,7 +647,7 @@ export function MyAttendance() {
               ))}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {showCamera && (
@@ -755,17 +764,17 @@ export function MyRequests() {
       <div className={cardCls}>
         <h3 className="text-nikki-navy font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-nikki-blue" /> Leave Request</h3>
         <div className="grid grid-cols-2 gap-2 mb-2">
-          <input type="date" className={inputCls} value={leaveForm.from_date} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} />
-          <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} />
+          <input type="date" className={inputCls} value={leaveForm.from_date} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} aria-label="Leave from date" />
+          <input type="date" className={inputCls} value={leaveForm.to_date} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} aria-label="Leave to date" />
         </div>
-        <select className={inputCls + ' mb-2'} value={leaveForm.leave_type} onChange={e => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}>
+        <select aria-label="Leave type" className={inputCls + ' mb-2'} value={leaveForm.leave_type} onChange={e => setLeaveForm({ ...leaveForm, leave_type: e.target.value })}>
           {['casual', 'sick', 'earned', 'unpaid', 'other'].map(t => {
             const b = balances.find(x => x.leave_type === t);
             const suffix = !b ? '' : b.is_unlimited ? ' (unpaid)' : ` (${Number(b.remaining)} left)`;
             return <option key={t} value={t}>{t}{suffix}</option>;
           })}
         </select>
-        <input className={inputCls + ' mb-3'} placeholder="Reason" value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} />
+        <input className={inputCls + ' mb-3'} placeholder="Reason" value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} aria-label="Reason" />
         <button className={btnCls + ' w-full'} disabled={busyLeave} onClick={requestLeave}>{busyLeave ? 'Submitting…' : 'Submit Leave Request'}</button>
         <div className="mt-4 space-y-1.5">
           {leaves.map(l => (
@@ -778,8 +787,8 @@ export function MyRequests() {
       </div>
       <div className={cardCls}>
         <h3 className="text-nikki-navy font-semibold mb-3 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-nikki-blue" /> Salary Advance</h3>
-        <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} />
-        <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} />
+        <input type="number" className={inputCls + ' mb-2'} placeholder="Amount (₹)" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: e.target.value })} aria-label="Amount (₹)" />
+        <input className={inputCls + ' mb-3'} placeholder="Reason" value={advForm.reason} onChange={e => setAdvForm({ ...advForm, reason: e.target.value })} aria-label="Reason" />
         <button className={btnCls + ' w-full'} disabled={busyAdv} onClick={requestAdvance}>{busyAdv ? 'Submitting…' : 'Request Advance'}</button>
         <div className="mt-4 space-y-1.5">
           {advances.map(a => (
@@ -951,7 +960,7 @@ export default function StaffPortal() {
                 <p className="text-stone-700 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
-            <button onClick={signOut} className="text-stone-700 hover:text-red-700 p-1" title="Sign out">
+            <button onClick={signOut} className="icon-btn text-stone-700 hover:text-red-700 p-1" title="Sign out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -963,7 +972,7 @@ export default function StaffPortal() {
         {/* Top Header */}
         <header className="border-b border-nikki-border px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="icon-btn md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <div className="md:hidden shrink-0">
               <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 object-contain" />
             </div>
@@ -976,7 +985,7 @@ export default function StaffPortal() {
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <NotificationBell onNavigate={(t) => { if (tabs.some(x => x.id === t)) setTab(t); }} />
-            <button onClick={signOut} aria-label="Sign out" className="md:hidden text-stone-700 hover:text-red-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} aria-label="Sign out" className="icon-btn md:hidden text-stone-700 hover:text-red-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
@@ -986,7 +995,11 @@ export default function StaffPortal() {
             that the admin console already uses, instead of tabs sliding off
             the edge of a narrow screen. */}
         {mobileNavOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex">
+          <ModalOverlay
+            className="md:hidden fixed inset-0 z-50 flex"
+            label="Navigation menu"
+            onClose={() => setMobileNavOpen(false)}
+          >
             <div className="absolute inset-0 bg-nikki-navy/50" onClick={() => setMobileNavOpen(false)} />
             <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
               <div className="flex items-center justify-between mb-6 px-1">
@@ -997,7 +1010,7 @@ export default function StaffPortal() {
                     <p className="text-stone-700 text-[11px] font-mono truncate">Enterprise Portal</p>
                   </div>
                 </div>
-                <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="p-2.5 -m-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
+                <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="icon-btn p-2.5 -m-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
               </div>
               <nav className="flex-1 space-y-1">
                 {tabs.map(t => {
@@ -1022,7 +1035,7 @@ export default function StaffPortal() {
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
             </div>
-          </div>
+          </ModalOverlay>
         )}
 
         <main className="p-4 md:p-6 max-w-6xl w-full mx-auto flex-1">

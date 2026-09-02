@@ -16,6 +16,9 @@ import { exportLeadsToExcel } from '../../lib/exportLeads';
 import { MyCallsChart } from './performance';
 import { cachedQuery } from '../../lib/cachedQuery';
 import type { Segment, Database } from '../../lib/database.types';
+import { ModalOverlay } from '../ui/Modal';
+import { useConfirm } from '../ui/ConfirmDialog';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 type Lead = Database['public']['Tables']['marketing_leads']['Row'];
 type LeadRemark = Database['public']['Tables']['lead_remarks']['Row'];
@@ -274,7 +277,8 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       <div className="space-y-2">
         {leads.map(l => (
           <div key={l.id} className={cardCls + ' flex items-center justify-between'}>
-            <div className="min-w-0 cursor-pointer" onClick={() => openLead(l)}>
+            <div className="min-w-0 cursor-pointer" onClick={() => openLead(l)}
+              role="button" tabIndex={0} aria-label={`Open lead ${l.customer_name}`} onKeyDown={onActivateKeyDown(() => openLead(l))}>
               <p className="text-nikki-navy text-sm font-medium truncate">{l.customer_name}</p>
               <p className="text-stone-700 text-xs mt-0.5">
                 {l.interested_in || 'No notes'} {l.callback_at && (
@@ -285,7 +289,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => call(l.phone)} className="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-white" title="Call">
+              <button onClick={() => call(l.phone)} className="icon-btn w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-white" title="Call">
                 <Phone className="w-4 h-4" />
               </button>
               <button onClick={() => openLead(l)} className="text-nikki-blue text-xs font-medium">Add Remark</button>
@@ -317,7 +321,11 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       )}
 
       {active && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setActive(null)}
+          label={`Lead — ${active.customer_name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-nikki-navy font-semibold truncate">{active.customer_name}</h3>
@@ -343,29 +351,29 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
             </button>
             <p className="text-stone-700 text-xs">{active.interested_in}</p>
 
-            <select className={inputCls} value={outcome} onChange={e => setOutcome(e.target.value)}>
+            <select aria-label="Call outcome" className={inputCls} value={outcome} onChange={e => setOutcome(e.target.value)}>
               {OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             {outcome === 'callback' && (
-              <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} />
+              <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} aria-label="Callback date and time" />
             )}
             {outcome === 'appointment' && (
               <div className="space-y-2 rounded-lg border border-nikki-royal/30 bg-nikki-royal/5 p-3">
                 <p className="text-nikki-blue text-xs font-medium">Appointment date &amp; time *</p>
-                <input type="datetime-local" className={inputCls} value={appointmentDate}
+                <input type="datetime-local" className={inputCls} value={appointmentDate} aria-label="Appointment date and time"
                   min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                   onChange={e => setAppointmentDate(e.target.value)} />
                 <input className={inputCls} placeholder="Location / what to bring (optional)"
-                  value={appointmentNote} onChange={e => setAppointmentNote(e.target.value)} />
+                  value={appointmentNote} onChange={e => setAppointmentNote(e.target.value)} aria-label="Location / what to bring (optional)" />
                 <p className="text-stone-700 text-[11px]">Your manager will be notified to assign a field executive.</p>
               </div>
             )}
-            <textarea className={inputCls} rows={2} placeholder="Remark *" value={remark} onChange={e => setRemark(e.target.value)} />
+            <textarea className={inputCls} rows={2} placeholder="Remark *" value={remark} onChange={e => setRemark(e.target.value)} aria-label="Remark" />
             <button className={btnCls + ' w-full'} disabled={busy} onClick={submitOutcome}>Save Outcome</button>
 
             <div className="border-t border-stone-800 pt-3">
               <p className="text-stone-700 text-xs mb-2 flex items-center gap-1.5"><ArrowRightLeft className="w-3.5 h-3.5" /> Appointment fixed? Hand off to a field executive:</p>
-              <select className={inputCls + ' mb-2'} value={transferTo} onChange={e => setTransferTo(e.target.value)}>
+              <select aria-label="Select executive" className={inputCls + ' mb-2'} value={transferTo} onChange={e => setTransferTo(e.target.value)}>
                 <option value="">Select executive</option>
                 {executives.map(ex => <option key={ex.id} value={ex.id}>{ex.full_name}</option>)}
               </select>
@@ -391,7 +399,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               </div>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -551,7 +559,7 @@ export function LeadChangeApprovals() {
             {r.action === 'delete' && (
               <p className="text-stone-700 text-xs mb-2">{(orig.phone as string) || ''} {orig.segment_slug ? `• ${orig.segment_slug}` : ''}</p>
             )}
-            <input className={inputCls + ' text-xs mb-2'} placeholder="Note (optional, shown in the audit trail)" value={noteDraft[r.id] || ''} onChange={e => setNoteDraft(prev => ({ ...prev, [r.id]: e.target.value }))} />
+            <input className={inputCls + ' text-xs mb-2'} placeholder="Note (optional, shown in the audit trail)" value={noteDraft[r.id] || ''} onChange={e => setNoteDraft(prev => ({ ...prev, [r.id]: e.target.value }))} aria-label="Note (optional, shown in the audit trail)" />
             <div className="flex gap-2">
               <button disabled={busyId === r.id} className="px-3 py-1 rounded bg-emerald-600 text-white text-xs flex items-center gap-1" onClick={() => resolve(r.id, true)}>
                 <CheckCircle2 className="w-3.5 h-3.5" /> Approve
@@ -845,7 +853,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
         </p>
       </div>
 
-      <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile}
+      <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} aria-label="Choose a spreadsheet to import"
         className="text-stone-700 text-sm w-full file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:bg-nikki-surface-blue file:text-nikki-navy file:font-bold file:text-xs hover:file:bg-nikki-surface-blue cursor-pointer" />
 
       {parseInfo && parseInfo.headers.length > 0 && (
@@ -861,21 +869,21 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-nikki-border">
             <div>
               <label className="block text-[11px] font-bold text-stone-700 mb-1">Customer / Business Name Column</label>
-              <select className={inputCls} value={nameCol} onChange={e => handleCustomMapChange(e.target.value, undefined, undefined)}>
+              <select aria-label="Auto-detected Column" className={inputCls} value={nameCol} onChange={e => handleCustomMapChange(e.target.value, undefined, undefined)}>
                 <option value="">Auto-detected Column</option>
                 {parseInfo.headers.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-[11px] font-bold text-stone-700 mb-1">Phone / Mobile Column</label>
-              <select className={inputCls} value={phoneCol} onChange={e => handleCustomMapChange(undefined, e.target.value, undefined)}>
+              <select aria-label="Auto-scanned (Numbers & Headers)" className={inputCls} value={phoneCol} onChange={e => handleCustomMapChange(undefined, e.target.value, undefined)}>
                 <option value="">Auto-scanned (Numbers & Headers)</option>
                 {parseInfo.headers.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-[11px] font-bold text-stone-700 mb-1">Location / Notes Column</label>
-              <select className={inputCls} value={notesCol} onChange={e => handleCustomMapChange(undefined, undefined, e.target.value)}>
+              <select aria-label="Auto-merged All Info" className={inputCls} value={notesCol} onChange={e => handleCustomMapChange(undefined, undefined, e.target.value)}>
                 <option value="">Auto-merged All Info</option>
                 {parseInfo.headers.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
@@ -890,7 +898,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-1">Target Segment *</label>
-              <select className={inputCls} value={segment} onChange={e => { setSegment(e.target.value); setAssignTo(''); }}>
+              <select aria-label="Select Segment" className={inputCls} value={segment} onChange={e => { setSegment(e.target.value); setAssignTo(''); }}>
                 <option value="">Select Segment *</option>
                 {segments
                   .filter(s => isSuperAdmin || (user?.segments || []).includes('all') || (user?.segments || []).includes(s.slug))
@@ -899,7 +907,7 @@ export function BulkLeadUpload({ segments }: { segments: Segment[] }) {
             </div>
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-1">Assign To (Telecaller / Executive)</label>
-              <select className={inputCls} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
+              <select aria-label="Leave Unassigned (Pool)" className={inputCls} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
                 <option value="">Leave Unassigned (Pool)</option>
                 {sortedAssignees
                   .filter(s => !segment || (s.segments || []).includes(segment) || (s.segments || []).includes('all'))
@@ -1010,7 +1018,7 @@ export function TeamActivityFeed() {
         <button className="text-nikki-blue text-xs" onClick={load}>Refresh</button>
       </div>
       <div className="flex gap-2 mb-4 flex-wrap">
-        <select className={inputCls + ' w-auto'} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+        <select aria-label="All activity" className={inputCls + ' w-auto'} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
           <option value="">All activity</option>
           <option value="visit">Field visits</option>
           <option value="outgoing">Calls</option>
@@ -1018,11 +1026,11 @@ export function TeamActivityFeed() {
           <option value="note">Notes</option>
           <option value="whatsapp">WhatsApp</option>
         </select>
-        <select className={inputCls + ' w-auto'} value={personFilter} onChange={e => setPersonFilter(e.target.value)}>
+        <select aria-label="Everyone" className={inputCls + ' w-auto'} value={personFilter} onChange={e => setPersonFilter(e.target.value)}>
           <option value="">Everyone</option>
           {Object.entries(userNames).map(([id, name]) => <option key={id} value={id}>{name as string}</option>)}
         </select>
-        <select className={inputCls + ' w-auto'} value={days} onChange={e => setDays(Number(e.target.value))}>
+        <select aria-label="Date range" className={inputCls + ' w-auto'} value={days} onChange={e => setDays(Number(e.target.value))}>
           <option value={1}>Today</option>
           <option value={7}>Last 7 days</option>
           <option value={30}>Last 30 days</option>
@@ -1069,12 +1077,16 @@ export function TeamActivityFeed() {
       )}
 
       {previewImage && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
-          <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
-            <XCircle className="w-6 h-6" />
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClose={() => setPreviewImage(null)}
+          label="Visit proof preview"
+        >
+          <button onClick={() => setPreviewImage(null)} aria-label="Close preview" className="icon-btn absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+            <XCircle aria-hidden="true" className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -1153,7 +1165,7 @@ export function UnassignedLeadsPool({ segments, onChanged }: { segments: Segment
       {selected.size > 0 && (
         <div className={cardCls + ' mb-4 flex flex-wrap items-center gap-3'}>
           <span className="text-stone-700 text-sm">{selected.size} selected</span>
-          <select className={inputCls + ' w-auto flex-1 min-w-[180px]'} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
+          <select aria-label="Assign selected to…" className={inputCls + ' w-auto flex-1 min-w-[180px]'} value={assignTo} onChange={e => setAssignTo(e.target.value)}>
             <option value="">Assign selected to…</option>
             {assignableStaff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {(s.role ?? '').replace('_', ' ')}</option>)}
           </select>
@@ -1298,7 +1310,7 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
                     {assignedExec ? `Executive: ${assignedExec.full_name}` : 'No executive assigned yet'}
                   </p>
                 </div>
-                <select className={inputCls + ' w-auto min-w-[190px]'} value={l.assigned_to || ''}
+                <select aria-label="Assign executive…" className={inputCls + ' w-auto min-w-[190px]'} value={l.assigned_to || ''}
                   disabled={busy === l.id}
                   onChange={e => assignExec(l.id, e.target.value, l.customer_name, l.appointment_at ?? '')}>
                   <option value="">Assign executive…</option>
@@ -1727,7 +1739,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       </div>
       <div className="space-y-2">
         {leads.map(l => (
-          <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => openLead(l)}>
+          <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => openLead(l)}
+            role="button" tabIndex={0} aria-label={`Open lead ${l.customer_name}`} onKeyDown={onActivateKeyDown(() => openLead(l))}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-nikki-navy text-sm font-medium">{l.customer_name}</p>
@@ -1777,7 +1790,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       </div>
 
       {active && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setActive(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setActive(null)}
+          label={`Lead — ${active.customer_name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{active.customer_name}</h3>
             <p className="text-stone-700 text-xs">{active.phone} {active.email && `• ${active.email}`}</p>
@@ -1786,7 +1803,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               <label className="block text-[11px] font-bold text-amber-900">
                 📍 {active.phone === 'Pending Collection' || !active.phone ? 'Collect Phone Number on Visit (Action Needed)' : 'Update Collected Phone Number'}
               </label>
-              <input className={inputCls} placeholder="Enter 10-digit phone number collected from owner" value={collectedPhone} onChange={e => setCollectedPhone(e.target.value)} />
+              <input className={inputCls} placeholder="Enter 10-digit phone number collected from owner" value={collectedPhone} onChange={e => setCollectedPhone(e.target.value)} aria-label="Enter 10-digit phone number collected from owner" />
             </div>
 
             <div className="border-t border-stone-800 pt-3">
@@ -1811,25 +1828,25 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 </button>
               )}
 
-              <select className={inputCls + ' mb-2'} value={outcome} onChange={e => setOutcome(e.target.value)}>
+              <select aria-label="Visit outcome" className={inputCls + ' mb-2'} value={outcome} onChange={e => setOutcome(e.target.value)}>
                 {VISIT_OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <input className={inputCls + ' mb-2'} placeholder="What they actually need (updates the lead)"
-                value={visitRequirement} onChange={e => setVisitRequirement(e.target.value)} />
+                value={visitRequirement} onChange={e => setVisitRequirement(e.target.value)} aria-label="What they actually need (updates the lead)" />
               <input className={inputCls + ' mb-2'} type="number" min={0}
                 placeholder={outcome === 'won' ? 'Final invoice amount (₹)' : 'Estimated deal value (₹)'}
-                value={dealValue} onChange={e => setDealValue(e.target.value)} />
-              <textarea className={inputCls} rows={2} placeholder="Visit notes / conversation summary *" value={remark} onChange={e => setRemark(e.target.value)} />
+                value={dealValue} onChange={e => setDealValue(e.target.value)} aria-label={outcome === 'won' ? 'Final invoice amount (₹)' : 'Estimated deal value (₹)'} />
+              <textarea className={inputCls} rows={2} placeholder="Visit notes / conversation summary *" value={remark} onChange={e => setRemark(e.target.value)} aria-label="Visit notes / conversation summary" />
               {outcome !== 'won' && outcome !== 'lost' && (
                 <div className="grid grid-cols-1 gap-2 mt-2">
                   <div>
                     <p className="text-stone-700 text-xs mb-1">Next follow-up (reminds you)</p>
-                    <input type="datetime-local" className={inputCls} value={nextFollowup}
+                    <input type="datetime-local" className={inputCls} value={nextFollowup} aria-label="Next follow-up"
                       onChange={e => setNextFollowup(e.target.value)} />
                   </div>
                   <div>
                     <p className="text-stone-700 text-xs mb-1">Next appointment (visible to manager)</p>
-                    <input type="datetime-local" className={inputCls} value={apptAt}
+                    <input type="datetime-local" className={inputCls} value={apptAt} aria-label="Next appointment"
                       onChange={e => setApptAt(e.target.value)} />
                   </div>
                 </div>
@@ -1908,16 +1925,20 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               </div>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {previewImage && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
-          <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
-            <XCircle className="w-6 h-6" />
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClose={() => setPreviewImage(null)}
+          label="Visit proof preview"
+        >
+          <button onClick={() => setPreviewImage(null)} aria-label="Close preview" className="icon-btn absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
+            <XCircle aria-hidden="true" className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Visit proof preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-        </div>
+        </ModalOverlay>
       )}
 
       {capturing && (
@@ -1929,7 +1950,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       )}
 
       {showAddLead && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowAddLead(false)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setShowAddLead(false)}
+          label="Add field lead"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">Add Field Lead</h3>
             <p className="text-stone-700 text-xs">Found a new prospect on-site? Add them directly — it lands in your own queue.</p>
@@ -1937,9 +1962,9 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               <option value="">Segment *</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
-            <input className={inputCls} placeholder="Customer Name *" value={newLead.customer_name} onChange={e => setNewLead({ ...newLead, customer_name: e.target.value })} />
+            <input className={inputCls} placeholder="Customer Name *" value={newLead.customer_name} onChange={e => setNewLead({ ...newLead, customer_name: e.target.value })} aria-label="Customer Name" />
             <input className={inputCls} placeholder="Phone *" value={newLead.phone} onChange={e => { setNewLead({ ...newLead, phone: e.target.value }); setDuplicateInfo(null); }} />
-            <input className={inputCls} placeholder="Interested In" value={newLead.interested_in} onChange={e => setNewLead({ ...newLead, interested_in: e.target.value })} />
+            <input className={inputCls} placeholder="Interested In" value={newLead.interested_in} onChange={e => setNewLead({ ...newLead, interested_in: e.target.value })} aria-label="Interested In" />
 
             {/* Location status — auto-captured silently on page load if
                 permission was already granted; otherwise offer one tap to
@@ -1967,7 +1992,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
             )}
             <button className={btnCls + ' w-full'} onClick={addFieldLead}>{duplicateInfo ? 'Add Anyway' : 'Add Lead'}</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -1979,6 +2004,7 @@ type DupGroupRow = { segment_slug: string; phone: string; id: string; customer_n
 
 export function DuplicateLeadsManager() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<DupGroupRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [keepChoice, setKeepChoice] = useState<Record<string, string>>({}); // groupKey -> lead id to keep
@@ -2009,7 +2035,13 @@ export function DuplicateLeadsManager() {
     const keepId = keepChoice[groupKey] || members[0].id; // default: oldest (rows arrive created_at ASC)
     const mergeIds = members.filter(m => m.id !== keepId).map(m => m.id);
     if (mergeIds.length === 0) return;
-    if (!window.confirm(`Merge ${mergeIds.length} lead(s) into "${members.find(m => m.id === keepId)?.customer_name}"? Their call history moves over; the duplicate records are deleted. This can't be undone.`)) return;
+    const ok = await confirm({
+      title: `Merge ${mergeIds.length} lead${mergeIds.length === 1 ? '' : 's'} into "${members.find(m => m.id === keepId)?.customer_name}"?`,
+      body: "Their call history moves over; the duplicate records are deleted. This can't be undone.",
+      confirmLabel: 'Merge',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setBusyGroup(groupKey);
     try {
       const { error } = await supabase.rpc('merge_leads' as never, { p_keep_id: keepId, p_merge_ids: mergeIds } as never) as unknown as { error: { message: string } | null };
@@ -2112,14 +2144,14 @@ export function BulkReassignLeads({ segments }: { segments: Segment[] }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
         <div>
           <label className="text-stone-700 text-xs">From (current owner)</label>
-          <select className={inputCls} value={fromId} onChange={e => { setFromId(e.target.value); setToId(''); }}>
+          <select aria-label="Select staff member" className={inputCls} value={fromId} onChange={e => { setFromId(e.target.value); setToId(''); }}>
             <option value="">Select staff member</option>
             {staff.map(s => <option key={s.id} value={s.id}>{s.full_name} — {(s.role ?? '').replace('_', ' ')}{!s.is_active ? ' (disabled)' : ''}</option>)}
           </select>
         </div>
         <div>
           <label className="text-stone-700 text-xs">To (new owner)</label>
-          <select className={inputCls} value={toId} onChange={e => setToId(e.target.value)} disabled={!fromId}>
+          <select aria-label="Select staff member" className={inputCls} value={toId} onChange={e => setToId(e.target.value)} disabled={!fromId}>
             <option value="">Select staff member</option>
             {staff.filter(s => s.id !== fromId && s.is_active).map(s => <option key={s.id} value={s.id}>{s.full_name} — {(s.role ?? '').replace('_', ' ')}</option>)}
           </select>

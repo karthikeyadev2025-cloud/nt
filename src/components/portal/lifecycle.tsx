@@ -9,6 +9,7 @@ import { cachedRpc } from '../../lib/cachedRpc';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import type { Segment, Tables } from '../../lib/database.types';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 // ─────────────────────────── Staff: request an attendance correction (missed punch)
 export function MyRegularizations() {
@@ -66,19 +67,19 @@ export function MyRegularizations() {
         <CalendarCheck className="w-4 h-4 text-nikki-blue" /> Attendance Correction
       </h3>
       <p className="text-stone-700 text-xs mb-3">Forgot to check in or out? Request a correction — it needs manager/HR approval.</p>
-      <input type="date" className={inputCls + ' mb-2'} max={istDateStr()}
+      <input type="date" className={inputCls + ' mb-2'} max={istDateStr()} aria-label="Date to correct"
         value={form.attendance_date} onChange={e => setForm({ ...form, attendance_date: e.target.value })} />
       <div className="grid grid-cols-2 gap-2 mb-2">
         <div>
           <label className="text-stone-700 text-xs">Check-in time</label>
-          <input type="time" className={inputCls} value={form.requested_check_in} onChange={e => setForm({ ...form, requested_check_in: e.target.value })} />
+          <input type="time" className={inputCls} value={form.requested_check_in} onChange={e => setForm({ ...form, requested_check_in: e.target.value })} aria-label="Check-in time" />
         </div>
         <div>
           <label className="text-stone-700 text-xs">Check-out time</label>
-          <input type="time" className={inputCls} value={form.requested_check_out} onChange={e => setForm({ ...form, requested_check_out: e.target.value })} />
+          <input type="time" className={inputCls} value={form.requested_check_out} onChange={e => setForm({ ...form, requested_check_out: e.target.value })} aria-label="Check-out time" />
         </div>
       </div>
-      <input className={inputCls + ' mb-3'} placeholder="Reason (e.g. phone battery died on site)" value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} />
+      <input className={inputCls + ' mb-3'} placeholder="Reason (e.g. phone battery died on site)" value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} aria-label="Reason (e.g. phone battery died on site)" />
       <button className={btnCls + ' w-full'} disabled={busy} onClick={submit}>{busy ? 'Submitting…' : 'Request Correction'}</button>
 
       {items.length > 0 && (
@@ -156,6 +157,7 @@ export function RegularizationApprovals() {
 // ─────────────────────────── HR: holiday calendar
 export function HolidayManager({ segments }: { segments: Segment[] }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState<Tables<'holidays'>[]>([]);
   const [form, setForm] = useState({ holiday_date: '', name: '', segment_slug: '', is_optional: false });
 
@@ -184,7 +186,13 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
   }
 
   async function remove(id: string) {
-    if (!confirm('Remove this holiday?')) return;
+    const ok = await confirm({
+      title: 'Remove this holiday?',
+      body: 'It stops applying to attendance and leave calculations.',
+      confirmLabel: 'Remove',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error } = await supabase.from('holidays').delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
     invalidate('holidays');
@@ -201,10 +209,10 @@ export function HolidayManager({ segments }: { segments: Segment[] }) {
         <h3 className="text-nikki-navy font-semibold text-sm flex items-center gap-2"><CalendarX className="w-4 h-4 text-nikki-blue" /> Add Holiday</h3>
         <p className="text-stone-700 text-xs">Holidays are excluded from working-day counts, so payroll doesn't treat them as absences.</p>
         <div className="grid grid-cols-2 gap-2">
-          <input type="date" className={inputCls} value={form.holiday_date} onChange={e => setForm({ ...form, holiday_date: e.target.value })} />
-          <input className={inputCls} placeholder="Holiday name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+          <input type="date" className={inputCls} value={form.holiday_date} onChange={e => setForm({ ...form, holiday_date: e.target.value })} aria-label="Holiday date" />
+          <input className={inputCls} placeholder="Holiday name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} aria-label="Holiday name" />
         </div>
-        <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+        <select aria-label="Company-wide" className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
           <option value="">Company-wide</option>
           {segments.map(s => <option key={s.slug} value={s.slug}>{s.name} only</option>)}
         </select>
@@ -294,15 +302,15 @@ export function OffboardStaff({ staffMember, onDone }: { staffMember: { id: stri
       )}
       <div>
         <label className="text-stone-700 text-xs">Last working day</label>
-        <input type="date" className={inputCls} value={form.exit_date} onChange={e => setForm({ ...form, exit_date: e.target.value })} />
+        <input type="date" className={inputCls} value={form.exit_date} onChange={e => setForm({ ...form, exit_date: e.target.value })} aria-label="Last working day" />
       </div>
       <div>
         <label className="text-stone-700 text-xs">Reason</label>
-        <select className={inputCls} value={form.exit_reason} onChange={e => setForm({ ...form, exit_reason: e.target.value })}>
+        <select aria-label="Exit reason" className={inputCls} value={form.exit_reason} onChange={e => setForm({ ...form, exit_reason: e.target.value })}>
           {['resigned', 'terminated', 'contract_ended', 'retired', 'other'].map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
         </select>
       </div>
-      <textarea className={inputCls} rows={2} placeholder="Notes (optional)" value={form.exit_note} onChange={e => setForm({ ...form, exit_note: e.target.value })} />
+      <textarea className={inputCls} rows={2} placeholder="Notes (optional)" value={form.exit_note} onChange={e => setForm({ ...form, exit_note: e.target.value })} aria-label="Notes (optional)" />
       <label className="flex items-center gap-2 text-sm text-nikki-navy cursor-pointer">
         <input type="checkbox" checked={form.disable_account} onChange={e => setForm({ ...form, disable_account: e.target.checked })} />
         Disable their login immediately
@@ -368,7 +376,7 @@ export function DanglingCheckins() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <input type="time" className={inputCls + ' w-32'} value={customTime[r.id] || ''}
+                <input type="time" className={inputCls + ' w-32'} value={customTime[r.id] || ''} aria-label="Corrected time"
                   onChange={e => setCustomTime({ ...customTime, [r.id]: e.target.value })} />
                 <button className={btnCls} disabled={busy === r.id} onClick={() => close(r)}>
                   {busy === r.id ? 'Closing…' : 'Close Day'}
@@ -400,7 +408,7 @@ export function OverdueTickets({ segments }: { segments: Segment[] }) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-stone-700 text-sm">Open tickets past their SLA resolution target.</p>
-        <select className={inputCls + ' w-auto'} value={segment} onChange={e => setSegment(e.target.value)}>
+        <select aria-label="All Segments" className={inputCls + ' w-auto'} value={segment} onChange={e => setSegment(e.target.value)}>
           <option value="">All Segments</option>
           {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
         </select>

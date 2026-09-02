@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { cardCls, btnCls, inputCls } from './shared';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 // staff_id_proofs isn't in database.types.ts yet (generated file, no live
 // DB access to regenerate it) — cast at the call boundary, same pattern
@@ -22,6 +23,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 export function IdProofUploader({ staffUserId, canManage }: { staffUserId: string; canManage: boolean }) {
   const { user } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [proofs, setProofs] = useState<IdProofRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [docType, setDocType] = useState('aadhaar');
@@ -73,7 +75,13 @@ export function IdProofUploader({ staffUserId, canManage }: { staffUserId: strin
   }
 
   async function remove(proof: IdProofRow) {
-    if (!window.confirm(`Delete ${proof.file_name || DOC_TYPE_LABELS[proof.doc_type]}? This can't be undone.`)) return;
+    const ok = await confirm({
+      title: `Delete ${proof.file_name || DOC_TYPE_LABELS[proof.doc_type]}?`,
+      body: "The file is removed from storage as well. This can't be undone.",
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error: sErr } = await supabase.storage.from('id-proofs').remove([proof.file_path]);
     if (sErr) { toast.error(`Couldn't delete file: ${sErr.message}`); return; }
     const { error: dErr } = await supabase.from('staff_id_proofs' as never).delete().eq('id', proof.id);
@@ -97,7 +105,7 @@ export function IdProofUploader({ staffUserId, canManage }: { staffUserId: strin
       <p className="text-stone-700 text-xs mb-3">Aadhaar, PAN, passport, or other government ID — {canManage ? 'upload for this staff member' : 'upload your own'}.</p>
 
       <div className="flex gap-2 mb-4">
-        <select className={inputCls + ' flex-1'} value={docType} onChange={e => setDocType(e.target.value)}>
+        <select aria-label="Document type" className={inputCls + ' flex-1'} value={docType} onChange={e => setDocType(e.target.value)}>
           {Object.entries(DOC_TYPE_LABELS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
         </select>
         <label className={btnCls + ' cursor-pointer flex items-center gap-1.5 shrink-0'}>
@@ -123,11 +131,11 @@ export function IdProofUploader({ staffUserId, canManage }: { staffUserId: strin
               {p.verified_at && (
                 <span className="flex items-center gap-1 text-emerald-700 text-[11px] font-bold shrink-0"><CheckCircle2 className="w-3.5 h-3.5" /> Verified</span>
               )}
-              <button onClick={() => view(p)} className="p-1.5 rounded-lg hover:bg-nikki-border text-stone-600 shrink-0" title="View"><Eye className="w-3.5 h-3.5" /></button>
+              <button onClick={() => view(p)} className="icon-btn p-1.5 rounded-lg hover:bg-nikki-border text-stone-600 shrink-0" title="View"><Eye className="w-3.5 h-3.5" /></button>
               {canManage && !p.verified_at && (
                 <button onClick={() => verify(p)} className="text-[11px] font-bold text-nikki-blue shrink-0">Verify</button>
               )}
-              <button onClick={() => remove(p)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 shrink-0" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => remove(p)} className="icon-btn p-1.5 rounded-lg hover:bg-red-50 text-red-600 shrink-0" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           ))}
         </div>

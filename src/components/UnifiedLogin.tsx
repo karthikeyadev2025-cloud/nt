@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { withTimeout } from '../lib/withTimeout';
 import { Lock, Mail, AlertCircle, Users, Phone, Briefcase, HeartHandshake, Clock, CheckCircle2 } from 'lucide-react';
+import { ModalOverlay } from './ui/Modal';
 
 export default function UnifiedLogin() {
   const [email, setEmail] = useState('');
@@ -175,12 +176,12 @@ export default function UnifiedLogin() {
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">New Password</label>
                   <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6}
-                    className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm" />
+                    className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm" aria-label="New Password" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">Confirm Password</label>
                   <input type="password" value={newPasswordConfirm} onChange={e => setNewPasswordConfirm(e.target.value)} required minLength={6}
-                    className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm" />
+                    className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue focus:ring-2 focus:ring-nikki-blue/20 shadow-sm" aria-label="Confirm Password" />
                 </div>
                 <button type="submit" disabled={settingPassword} className="w-full py-3.5 bg-nikki-blue hover:bg-nikki-royal text-white font-bold rounded-xl disabled:opacity-60 transition-all text-base shadow-md shadow-nikki-blue/20">
                   {settingPassword ? 'Updating…' : 'Update Password'}
@@ -202,7 +203,7 @@ export default function UnifiedLogin() {
                   required
                   autoComplete="email"
                   data-testid="login-email-input"
-                />
+                aria-label="your@email.com" />
               </div>
             </div>
 
@@ -219,7 +220,7 @@ export default function UnifiedLogin() {
                   required
                   autoComplete="current-password"
                   data-testid="login-password-input"
-                />
+                aria-label="••••••••" />
               </div>
               <button type="button" onClick={() => { setShowReset(true); setResetSent(false); setResetEmail(email); }} className="text-nikki-blue text-xs mt-2 hover:text-nikki-navy font-semibold">
                 Forgot password?
@@ -243,7 +244,11 @@ export default function UnifiedLogin() {
           )}
 
           {showReset && (
-            <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowReset(false)}>
+            <ModalOverlay
+              className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+              onClose={() => setShowReset(false)}
+              label="Reset your password"
+            >
               <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
                 {resetSent ? (
                   <div className="text-center py-4">
@@ -260,7 +265,7 @@ export default function UnifiedLogin() {
                       type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} required
                       placeholder="you@nikkitechnologies.com"
                       className="w-full px-4 py-2.5 bg-white border border-stone-300 rounded-xl text-nikki-navy placeholder-stone-500 focus:outline-none focus:border-nikki-blue mb-4 shadow-sm"
-                    />
+                    aria-label="you@nikkitechnologies.com" />
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setShowReset(false)} className="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-semibold text-sm hover:bg-stone-50">Cancel</button>
                       <button type="submit" disabled={resetLoading} className="flex-1 py-2.5 rounded-xl bg-nikki-blue hover:bg-nikki-royal disabled:opacity-60 text-white font-bold text-sm shadow-md">
@@ -270,7 +275,7 @@ export default function UnifiedLogin() {
                   </form>
                 )}
               </div>
-            </div>
+            </ModalOverlay>
           )}
 
           <div className="mt-6 pt-5 border-t border-nikki-border">

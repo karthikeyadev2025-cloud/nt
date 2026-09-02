@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { NotificationBell } from './features';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
 import { waLink } from '../../lib/phone';
+import { ModalOverlay } from '../ui/Modal';
 
 export type PortalTab = { id: string; label: string; icon: LucideIcon; show: boolean };
 
@@ -155,7 +156,7 @@ export function PortalShell({
                 <p className="text-stone-700 text-[10px] capitalize truncate">{user?.role?.replace('_', ' ')}</p>
               </div>
             )}
-            <button onClick={signOut} className="text-stone-700 hover:text-red-700 p-1" title="Sign out">
+            <button onClick={signOut} className="icon-btn text-stone-700 hover:text-red-700 p-1" title="Sign out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -166,7 +167,7 @@ export function PortalShell({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="border-b border-nikki-border px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-30 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="icon-btn md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <div className="md:hidden shrink-0">
               <img src="/nikki-logo-new.png" alt="Nikki Technologies" className="w-8 h-8 object-contain" />
             </div>
@@ -183,16 +184,20 @@ export function PortalShell({
               title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}
               aria-label={soundEnabled ? 'Mute sound alerts' : 'Enable sound alerts'}
               aria-pressed={soundEnabled}
-              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-400 hover:bg-stone-100'}`}>
+              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-500 hover:bg-stone-100'}`}>
               {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
             </button>
             <NotificationBell onNavigate={(t) => { if (visibleTabs.some(x => x.id === t)) onTabChange(t); }} />
-            <button onClick={signOut} aria-label="Sign out" className="md:hidden text-stone-700 hover:text-red-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} aria-label="Sign out" className="icon-btn md:hidden text-stone-700 hover:text-red-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
         {mobileNavOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex">
+          <ModalOverlay
+            className="md:hidden fixed inset-0 z-50 flex"
+            label="Navigation menu"
+            onClose={() => setMobileNavOpen(false)}
+          >
             <div className="absolute inset-0 bg-nikki-navy/50" onClick={() => setMobileNavOpen(false)} />
             <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
               <div className="flex items-center justify-between mb-6 px-1">
@@ -203,7 +208,7 @@ export function PortalShell({
                     <p className="text-stone-700 text-[11px] font-mono truncate">{subLabel}</p>
                   </div>
                 </div>
-                <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="p-2.5 -m-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
+                <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="icon-btn p-2.5 -m-1 text-stone-700 shrink-0"><X className="w-5 h-5" /></button>
               </div>
               <nav className="flex-1 space-y-1">
                 {visibleTabs.map(t => {
@@ -229,7 +234,7 @@ export function PortalShell({
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
             </div>
-          </div>
+          </ModalOverlay>
         )}
 
         <main className="p-4 md:p-6 max-w-6xl w-full mx-auto flex-1">

@@ -11,6 +11,8 @@ import { cachedQuery } from '../../lib/cachedQuery';
 import { inputCls, btnCls, cardCls } from './shared';
 import { IdProofUploader } from './IdProofUploader';
 import { DOC_TYPE_LABELS } from './documents-utils';
+import { ModalOverlay } from '../ui/Modal';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 // ─────────────────────────── Signature Pad (draw on canvas, mobile + desktop)
 // ─────────────────────────── My Signature (saved once, auto-stamped onto
@@ -167,7 +169,7 @@ export function DocumentViewer({
     const w = window.open('', '_blank');
     if (!w) return;
     const sigBlock = signed && signatureDataUrl
-      ? `<div style="margin-top:40px"><img src="${signatureDataUrl}" style="height:60px"/><p style="font-size:12px;color:#64748b;border-top:1px solid #cbd5e1;padding-top:6px;width:260px">Signed by ${signedName || ''} on ${acknowledgedAt ? new Date(acknowledgedAt).toLocaleDateString() : ''}</p></div>`
+      ? `<div style="margin-top:40px"><img src="${signatureDataUrl}" alt="Signature" style="height:60px"/><p style="font-size:12px;color:#64748b;border-top:1px solid #cbd5e1;padding-top:6px;width:260px">Signed by ${signedName || ''} on ${acknowledgedAt ? new Date(acknowledgedAt).toLocaleDateString() : ''}</p></div>`
       : signed ? `<p style="margin-top:40px;font-size:12px;color:#64748b">Acknowledged on ${acknowledgedAt ? new Date(acknowledgedAt).toLocaleDateString() : ''}</p>` : '';
     w.document.write(`
       <html><head><title>${title}</title>
@@ -183,14 +185,18 @@ export function DocumentViewer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClose={onClose}
+      label={title}
+    >
       <div className="bg-white border border-nikki-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-7" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-nikki-navy text-lg font-semibold">{title}</h3>
             {meta && <p className="text-stone-700 text-xs mt-0.5">{meta}</p>}
           </div>
-          <button className="text-stone-700 hover:text-nikki-navy" onClick={onClose}>✕</button>
+          <button aria-label="Close" className="icon-btn text-stone-700 hover:text-nikki-navy" onClick={onClose}><span aria-hidden="true">✕</span></button>
         </div>
 
         <div className="bg-white text-stone-800 rounded-lg p-6 whitespace-pre-wrap text-sm leading-relaxed font-serif mb-5">
@@ -221,7 +227,7 @@ export function DocumentViewer({
               <SignaturePad onCapture={dataUrl => onSign && onSign(dataUrl, '')} />
             ) : (
               <div className="space-y-2">
-                <input className={inputCls} placeholder="Type your full legal name" value={typedName} onChange={e => setTypedName(e.target.value)} />
+                <input className={inputCls} placeholder="Type your full legal name" value={typedName} onChange={e => setTypedName(e.target.value)} aria-label="Type your full legal name" />
                 {typedName && <p className="text-2xl text-nikki-navy bg-white rounded-lg px-4 py-3" style={{ fontFamily: 'cursive' }}>{typedName}</p>}
                 <button className={btnCls + ' w-full'} disabled={!typedName.trim()} onClick={() => onSign && onSign('', typedName.trim())}>
                   Confirm & Sign
@@ -237,7 +243,7 @@ export function DocumentViewer({
           </div>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -300,7 +306,8 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
       )}
       {docs.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No documents issued yet.</p>}
       {docs.map(d => (
-        <div key={d.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => setOpen(d)}>
+        <div key={d.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => setOpen(d)}
+          role="button" tabIndex={0} aria-label={`Open ${d.title}`} onKeyDown={onActivateKeyDown(() => setOpen(d))}>
           <div className="flex items-center gap-3">
             <FileText className="w-5 h-5 text-nikki-blue" />
             <div>
@@ -394,7 +401,11 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
   }, [staffUserId]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      label={`Collected documents for ${staffName}`}
+      onClose={onClose}
+    >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="p-4 border-b border-nikki-border flex items-center justify-between bg-stone-50">
           <div>
@@ -498,6 +509,6 @@ export function EmployeeDocumentsModal({ staffUserId, staffName, onClose }: { st
           onClose={() => setViewDoc(null)}
         />
       )}
-    </div>
+    </ModalOverlay>
   );
 }

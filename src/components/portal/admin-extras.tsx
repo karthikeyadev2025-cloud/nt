@@ -140,11 +140,11 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-sm focus-within:border-nikki-royal focus-within:ring-2 focus-within:ring-nikki-royal/20 shadow-sm w-48 sm:w-64">
         <Search className="w-4 h-4 text-stone-700 shrink-0" />
         <input
-          className="bg-transparent border-none p-0 text-nikki-navy text-xs focus:ring-0 focus:outline-none w-full placeholder-stone-400 font-medium"
+          className="bg-transparent border-none p-0 text-nikki-navy text-xs focus:ring-0 focus:outline-none w-full placeholder-stone-500 font-medium"
           placeholder="Search staff, leads, tickets..."
           value={query}
           onChange={e => setQuery(e.target.value)}
-        />
+        aria-label="Search staff, leads, tickets..." />
         {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-stone-700 hover:text-stone-700"><X className="w-3.5 h-3.5" /></button>}
       </div>
       {open && results.length > 0 && (

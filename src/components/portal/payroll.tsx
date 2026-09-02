@@ -13,6 +13,8 @@ import { istDateStr } from '../../lib/dates';
 import { ExportPayslipsButton } from './admin-extras';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { cachedRpc } from '../../lib/cachedRpc';
+import { ModalOverlay } from '../ui/Modal';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 const DAYS = [{ v: 1, l: 'Mon' }, { v: 2, l: 'Tue' }, { v: 3, l: 'Wed' }, { v: 4, l: 'Thu' }, { v: 5, l: 'Fri' }, { v: 6, l: 'Sat' }, { v: 7, l: 'Sun' }];
 
@@ -108,17 +110,21 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
       </div>
 
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditing(null)}
+          label={editing.id ? 'Edit shift' : 'New shift'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editing.id ? 'Edit' : 'New'} Shift</h3>
-            <input className={inputCls} placeholder="Shift Name *" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} />
-            <select className={inputCls} value={editing.segment_slug || ''} onChange={e => setEditing({ ...editing, segment_slug: e.target.value || null })}>
+            <input className={inputCls} placeholder="Shift Name *" value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} aria-label="Shift Name" />
+            <select aria-label="Company-wide" className={inputCls} value={editing.segment_slug || ''} onChange={e => setEditing({ ...editing, segment_slug: e.target.value || null })}>
               <option value="">Company-wide</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-stone-700 text-xs">Start Time</label><input type="time" className={inputCls} value={editing.start_time} onChange={e => setEditing({ ...editing, start_time: e.target.value })} /></div>
-              <div><label className="text-stone-700 text-xs">End Time</label><input type="time" className={inputCls} value={editing.end_time} onChange={e => setEditing({ ...editing, end_time: e.target.value })} /></div>
+              <div><label className="text-stone-700 text-xs">Start Time</label><input type="time" className={inputCls} value={editing.start_time} onChange={e => setEditing({ ...editing, start_time: e.target.value })} aria-label="Start Time" /></div>
+              <div><label className="text-stone-700 text-xs">End Time</label><input type="time" className={inputCls} value={editing.end_time} onChange={e => setEditing({ ...editing, end_time: e.target.value })} aria-label="End Time" /></div>
             </div>
             <div>
               <label className="text-stone-700 text-xs mb-1 block">Working Days</label>
@@ -132,12 +138,12 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-stone-700 text-xs">Grace Period (min)</label><input type="number" className={inputCls} value={editing.grace_minutes} onChange={e => setEditing({ ...editing, grace_minutes: Number(e.target.value) })} /></div>
-              <div><label className="text-stone-700 text-xs">Break (min)</label><input type="number" className={inputCls} value={editing.break_minutes ?? 0} onChange={e => setEditing({ ...editing, break_minutes: Number(e.target.value) })} /></div>
+              <div><label className="text-stone-700 text-xs">Grace Period (min)</label><input type="number" className={inputCls} value={editing.grace_minutes} onChange={e => setEditing({ ...editing, grace_minutes: Number(e.target.value) })} aria-label="Grace Period (min)" /></div>
+              <div><label className="text-stone-700 text-xs">Break (min)</label><input type="number" className={inputCls} value={editing.break_minutes ?? 0} onChange={e => setEditing({ ...editing, break_minutes: Number(e.target.value) })} aria-label="Break (min)" /></div>
             </div>
             <div>
               <label className="text-stone-700 text-xs">Late Fine Policy</label>
-              <select className={inputCls} value={editing.late_fine_type} onChange={e => setEditing({ ...editing, late_fine_type: e.target.value })}>
+              <select aria-label="Late fine policy" className={inputCls} value={editing.late_fine_type} onChange={e => setEditing({ ...editing, late_fine_type: e.target.value })}>
                 <option value="none">No fine — just flag as late</option>
                 <option value="fixed_per_occurrence">Fixed amount per late day</option>
                 <option value="per_minute">Amount per minute late</option>
@@ -145,27 +151,31 @@ export function ShiftsManager({ segments }: { segments: { slug: string; name: st
               </select>
             </div>
             {editing.late_fine_type !== 'none' && editing.late_fine_type !== 'half_day_after_minutes' && (
-              <div><label className="text-stone-700 text-xs">Fine Amount (₹)</label><input type="number" className={inputCls} value={editing.late_fine_amount} onChange={e => setEditing({ ...editing, late_fine_amount: Number(e.target.value) })} /></div>
+              <div><label className="text-stone-700 text-xs">Fine Amount (₹)</label><input type="number" className={inputCls} value={editing.late_fine_amount} onChange={e => setEditing({ ...editing, late_fine_amount: Number(e.target.value) })} aria-label="Fine Amount (₹)" /></div>
             )}
             {editing.late_fine_type === 'half_day_after_minutes' && (
-              <div><label className="text-stone-700 text-xs">Minutes late = half day</label><input type="number" className={inputCls} value={editing.half_day_after_minutes} onChange={e => setEditing({ ...editing, half_day_after_minutes: Number(e.target.value) })} /></div>
+              <div><label className="text-stone-700 text-xs">Minutes late = half day</label><input type="number" className={inputCls} value={editing.half_day_after_minutes} onChange={e => setEditing({ ...editing, half_day_after_minutes: Number(e.target.value) })} aria-label="Minutes late = half day" /></div>
             )}
             <button className={btnCls + ' w-full'} onClick={save}>Save Shift</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {assigningFor && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setAssigningFor(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setAssigningFor(null)}
+          label={`Assign staff to ${assigningFor.name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-sm w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">Assign to "{assigningFor.name}"</h3>
-            <select className={inputCls} value={assignStaffId} onChange={e => setAssignStaffId(e.target.value)}>
+            <select aria-label="Select staff member" className={inputCls} value={assignStaffId} onChange={e => setAssignStaffId(e.target.value)}>
               <option value="">Select staff member</option>
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
             </select>
             <button className={btnCls + ' w-full'} onClick={assign}>Assign Shift</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -347,7 +357,8 @@ export function PayslipManager() {
       </div>
       <div className="space-y-2">
         {payslips.map(p => (
-          <div key={p.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => openPayments(p)}>
+          <div key={p.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => openPayments(p)}
+            role="button" tabIndex={0} aria-label={`Open payslip for ${staffName(p.staff_user_id)}, ${p.period_month}/${p.period_year}`} onKeyDown={onActivateKeyDown(() => openPayments(p))}>
             <div>
               <p className="text-nikki-navy text-sm font-medium">{staffName(p.staff_user_id)} — {p.period_month}/{p.period_year}</p>
               <p className="text-stone-700 text-xs mt-0.5">Net Pay ₹{Number(p.net_pay).toLocaleString('en-IN')} • Paid ₹{Number(p.amount_paid).toLocaleString('en-IN')}</p>
@@ -359,37 +370,45 @@ export function PayslipManager() {
       </div>
 
       {showGen && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowGen(false)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setShowGen(false)}
+          label="Generate payslip"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">Generate Payslip</h3>
-            <select className={inputCls} value={genForm.staff_user_id} onChange={e => setGenForm({ ...genForm, staff_user_id: e.target.value })}>
+            <select aria-label="Select staff" className={inputCls} value={genForm.staff_user_id} onChange={e => setGenForm({ ...genForm, staff_user_id: e.target.value })}>
               <option value="">Select staff *</option>
               {staff.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-stone-700 text-xs">Month</label><input type="number" min={1} max={12} className={inputCls} value={genForm.period_month} onChange={e => setGenForm({ ...genForm, period_month: Number(e.target.value) })} /></div>
-              <div><label className="text-stone-700 text-xs">Year</label><input type="number" className={inputCls} value={genForm.period_year} onChange={e => setGenForm({ ...genForm, period_year: Number(e.target.value) })} /></div>
+              <div><label className="text-stone-700 text-xs">Month</label><input type="number" min={1} max={12} className={inputCls} value={genForm.period_month} onChange={e => setGenForm({ ...genForm, period_month: Number(e.target.value) })} aria-label="Month" /></div>
+              <div><label className="text-stone-700 text-xs">Year</label><input type="number" className={inputCls} value={genForm.period_year} onChange={e => setGenForm({ ...genForm, period_year: Number(e.target.value) })} aria-label="Year" /></div>
             </div>
             <button className="w-full py-2 rounded-lg border border-nikki-royal text-nikki-blue text-sm font-medium" onClick={autoFillFromAttendance}>
               Auto-fill from Attendance & Leave Records
             </button>
             <div className="grid grid-cols-2 gap-3">
               {(['working_days', 'present_days', 'absent_days', 'paid_leave_days', 'unpaid_leave_days', 'late_days'] as const).map(k => (
-                <div key={k}><label className="text-stone-700 text-xs capitalize">{k.replace(/_/g, ' ')}</label><input type="number" className={inputCls} value={genForm[k]} onChange={e => setGenForm({ ...genForm, [k]: Number(e.target.value) })} /></div>
+                <div key={k}><label className="text-stone-700 text-xs capitalize">{k.replace(/_/g, ' ')}</label><input type="number" className={inputCls} aria-label={k.replace(/_/g, ' ')} value={genForm[k]} onChange={e => setGenForm({ ...genForm, [k]: Number(e.target.value) })} /></div>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-stone-700 text-xs">Late Fine (₹)</label><input type="number" className={inputCls} value={genForm.late_fine} onChange={e => setGenForm({ ...genForm, late_fine: Number(e.target.value) })} /></div>
-              <div><label className="text-stone-700 text-xs">Other Deductions (₹)</label><input type="number" className={inputCls} value={genForm.other_deductions} onChange={e => setGenForm({ ...genForm, other_deductions: Number(e.target.value) })} /></div>
+              <div><label className="text-stone-700 text-xs">Late Fine (₹)</label><input type="number" className={inputCls} value={genForm.late_fine} onChange={e => setGenForm({ ...genForm, late_fine: Number(e.target.value) })} aria-label="Late Fine (₹)" /></div>
+              <div><label className="text-stone-700 text-xs">Other Deductions (₹)</label><input type="number" className={inputCls} value={genForm.other_deductions} onChange={e => setGenForm({ ...genForm, other_deductions: Number(e.target.value) })} aria-label="Other Deductions (₹)" /></div>
             </div>
             <p className="text-stone-700 text-xs">Auto-fill pulls real check-ins and approved leaves for the selected month — review before generating. Base pay, performance bonus and incentives come from the staff member's salary structure automatically.</p>
             <button className={btnCls + ' w-full'} onClick={generate}>Generate</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {openSlip && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenSlip(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setOpenSlip(null)}
+          label="Payslip details"
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{staffName(openSlip.staff_user_id)} — {openSlip.period_month}/{openSlip.period_year}</h3>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
@@ -400,12 +419,12 @@ export function PayslipManager() {
             <div className="border-t border-stone-800 pt-3 space-y-2">
               <p className="text-stone-700 text-sm font-medium">Record a Payment</p>
               <div className="grid grid-cols-2 gap-2">
-                <input type="number" className={inputCls} placeholder="Amount *" value={payForm.amount} onChange={e => setPayForm({ ...payForm, amount: e.target.value })} />
-                <select className={inputCls} value={payForm.method} onChange={e => setPayForm({ ...payForm, method: e.target.value })}>
+                <input type="number" className={inputCls} placeholder="Amount *" value={payForm.amount} onChange={e => setPayForm({ ...payForm, amount: e.target.value })} aria-label="Amount" />
+                <select aria-label="Payment method" className={inputCls} value={payForm.method} onChange={e => setPayForm({ ...payForm, method: e.target.value })}>
                   {['cash', 'bank_transfer', 'upi', 'cheque', 'other'].map(m => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
                 </select>
               </div>
-              <input className={inputCls} placeholder="Reference (optional)" value={payForm.reference} onChange={e => setPayForm({ ...payForm, reference: e.target.value })} />
+              <input className={inputCls} placeholder="Reference (optional)" value={payForm.reference} onChange={e => setPayForm({ ...payForm, reference: e.target.value })} aria-label="Reference (optional)" />
               <button className={btnCls + ' w-full'} onClick={recordPayment}>Record Payment</button>
             </div>
             {payments.length > 0 && (
@@ -420,7 +439,7 @@ export function PayslipManager() {
               </div>
             )}
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -492,7 +511,11 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
   const mapLink = (lat: number, lng: number) => `https://maps.google.com/?q=${lat},${lng}`;
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      label={`Attendance logs for ${staffName}`}
+      onClose={onClose}
+    >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="p-4 border-b border-nikki-border flex items-center justify-between bg-stone-50">
           <div>
@@ -539,7 +562,7 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                               photoUrls[log.check_in_selfie_url] ? (
                                 <div className="mt-2">
                                   <p className="text-[11px] text-stone-500 mb-1">Check-in Photo:</p>
-                                  <button onClick={() => setPreviewImage(photoUrls[log.check_in_selfie_url!])} className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
+                                  <button onClick={() => setPreviewImage(photoUrls[log.check_in_selfie_url!])} aria-label="View check-in selfie full size" className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
                                     <img src={photoUrls[log.check_in_selfie_url!]} alt="Check in selfie" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                       <ImageIcon className="w-6 h-6 text-white" />
@@ -575,7 +598,7 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
                               photoUrls[log.check_out_selfie_url] ? (
                                 <div className="mt-2">
                                   <p className="text-[11px] text-stone-500 mb-1">Check-out Photo:</p>
-                                  <button onClick={() => setPreviewImage(photoUrls[log.check_out_selfie_url!])} className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
+                                  <button onClick={() => setPreviewImage(photoUrls[log.check_out_selfie_url!])} aria-label="View check-out selfie full size" className="block relative group overflow-hidden rounded-lg w-28 h-28 border border-nikki-border shadow-sm">
                                     <img src={photoUrls[log.check_out_selfie_url!]} alt="Check out selfie" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                       <ImageIcon className="w-6 h-6 text-white" />
@@ -604,14 +627,18 @@ export function AttendanceDetailsModal({ staffUserId, staffName, onClose }: { st
       
       {/* Full Screen Image Preview Modal */}
       {previewImage && (
-        <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClose={() => setPreviewImage(null)}
+          label="Attendance photo preview"
+        >
           <button onClick={() => setPreviewImage(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white">
             <X className="w-6 h-6" />
           </button>
           <img src={previewImage} alt="Selfie Preview" className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-        </div>
+        </ModalOverlay>
       )}
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -642,11 +669,11 @@ export function AttendanceSummaryTable({ segments }: { segments: { slug: string;
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h3 className="text-nikki-navy font-semibold text-sm">Attendance Summary</h3>
         <div className="flex gap-2">
-          <select className={inputCls + ' w-auto'} value={segment} onChange={e => setSegment(e.target.value)}>
+          <select aria-label="All Segments" className={inputCls + ' w-auto'} value={segment} onChange={e => setSegment(e.target.value)}>
             <option value="">All Segments</option>
             {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
           </select>
-          <select className={inputCls + ' w-auto'} value={days} onChange={e => setDays(Number(e.target.value))}>
+          <select aria-label="Date range" className={inputCls + ' w-auto'} value={days} onChange={e => setDays(Number(e.target.value))}>
             <option value={7}>7 days</option>
             <option value={14}>14 days</option>
             <option value={30}>30 days</option>

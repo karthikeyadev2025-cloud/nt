@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, RotateCcw, Check, X } from 'lucide-react';
 import { btnCls } from './portal/shared';
+import { ModalOverlay } from './ui/Modal';
 
 interface CameraCaptureProps {
   title: string;
@@ -57,7 +58,11 @@ export default function CameraCapture({ title, onCapture, onCancel, onSkip }: Ca
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4" onClick={onCancel}>
+    <ModalOverlay
+      className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4"
+      onClose={onCancel}
+      label={title}
+    >
       <div className="bg-stone-950 border border-stone-700 rounded-2xl max-w-sm w-full p-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-semibold text-sm flex items-center gap-2"><Camera className="w-4 h-4 text-nikki-sky" /> {title}</h3>
@@ -105,6 +110,6 @@ export default function CameraCapture({ title, onCapture, onCancel, onSkip }: Ca
           </>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

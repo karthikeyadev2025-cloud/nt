@@ -214,7 +214,7 @@ export default function SessionDevices() {
         </ul>
       )}
 
-      <p className="text-stone-400 text-[11px] font-medium mt-4 leading-relaxed">
+      <p className="text-stone-500 text-[11px] font-medium mt-4 leading-relaxed">
         Devices are updated automatically every minute. A revoked device is signed out within about a minute of the click.
       </p>
     </div>

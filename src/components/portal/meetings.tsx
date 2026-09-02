@@ -12,6 +12,9 @@ import { invalidate } from '../../lib/cacheBus';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { rpcCall } from './meetings-utils';
+import { ModalOverlay } from '../ui/Modal';
+import { useConfirm } from '../ui/ConfirmDialog';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 export type MeetingRow = {
   id: string; lead_id: string | null; segment_slug: string | null;
@@ -177,7 +180,11 @@ export function ScheduleMeetingModal({
     setForm(f => ({ ...f, attendees: f.attendees.includes(id) ? f.attendees.filter(x => x !== id) : [...f.attendees, id] }));
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      label="Schedule meeting"
+      onClose={onClose}
+    >
       <div className="bg-white rounded-2xl p-6 max-w-2xl w-full shadow-2xl border border-nikki-border max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
@@ -196,21 +203,21 @@ export function ScheduleMeetingModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-bold text-stone-700 mb-1 block">Meeting Type</label>
-              <select className={inputCls} value={form.meeting_type_id} onChange={e => pickType(e.target.value)}>
+              <select aria-label="Meeting type" className={inputCls} value={form.meeting_type_id} onChange={e => pickType(e.target.value)}>
                 {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs font-bold text-stone-700 mb-1 block">Duration (min)</label>
               <input type="number" min={5} max={480} className={inputCls}
-                value={form.duration_minutes} onChange={e => setForm({ ...form, duration_minutes: Number(e.target.value) })} />
+                value={form.duration_minutes} onChange={e => setForm({ ...form, duration_minutes: Number(e.target.value) })} aria-label="Duration (min)" />
             </div>
           </div>
 
           <div>
             <label className="text-xs font-bold text-stone-700 mb-1 block">Date & Time (IST)</label>
             <input type="datetime-local" className={inputCls} value={form.scheduled_at}
-              onChange={e => setForm({ ...form, scheduled_at: e.target.value })} />
+              onChange={e => setForm({ ...form, scheduled_at: e.target.value })} aria-label="Date & Time (IST)" />
           </div>
 
           <div>
@@ -233,7 +240,7 @@ export function ScheduleMeetingModal({
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <input className={inputCls + ' flex-1'} placeholder="Google Meet link (auto-fills, or paste)"
-                    value={form.meet_link} onChange={e => setForm({ ...form, meet_link: e.target.value })} />
+                    value={form.meet_link} onChange={e => setForm({ ...form, meet_link: e.target.value })} aria-label="Google Meet link (auto-fills, or paste)" />
                   <button type="button" onClick={openAndAutoFillMeet}
                     className="shrink-0 px-3 py-2 rounded-lg bg-nikki-surface-blue border border-nikki-sky text-nikki-navy text-xs font-semibold hover:bg-nikki-surface-blue flex items-center gap-1.5">
                     <Video className="w-3.5 h-3.5" /> Open Meet & Auto-Fill
@@ -254,18 +261,18 @@ export function ScheduleMeetingModal({
             )}
             {form.location_kind === 'in_person' && (
               <input className={inputCls} placeholder="Address" value={form.location_address}
-                onChange={e => setForm({ ...form, location_address: e.target.value })} />
+                onChange={e => setForm({ ...form, location_address: e.target.value })} aria-label="Address" />
             )}
           </div>
 
           {!leadId && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input className={inputCls} placeholder="Customer name (optional)" value={form.customer_name}
-                onChange={e => setForm({ ...form, customer_name: e.target.value })} />
+                onChange={e => setForm({ ...form, customer_name: e.target.value })} aria-label="Customer name (optional)" />
               <input className={inputCls} placeholder="Phone (optional)" value={form.customer_phone}
-                onChange={e => setForm({ ...form, customer_phone: e.target.value })} />
+                onChange={e => setForm({ ...form, customer_phone: e.target.value })} aria-label="Phone (optional)" />
               <input className={inputCls} placeholder="Email (optional)" value={form.customer_email}
-                onChange={e => setForm({ ...form, customer_email: e.target.value })} />
+                onChange={e => setForm({ ...form, customer_email: e.target.value })} aria-label="Email (optional)" />
             </div>
           )}
 
@@ -286,7 +293,7 @@ export function ScheduleMeetingModal({
           <div>
             <label className="text-xs font-bold text-stone-700 mb-1 block">Agenda / Prep Notes</label>
             <textarea className={inputCls} rows={3} placeholder="What are we discussing?"
-              value={form.agenda} onChange={e => setForm({ ...form, agenda: e.target.value })} />
+              value={form.agenda} onChange={e => setForm({ ...form, agenda: e.target.value })} aria-label="What are we discussing?" />
           </div>
 
           {conflictWarn && (
@@ -310,7 +317,7 @@ export function ScheduleMeetingModal({
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -320,6 +327,7 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
 }) {
   const { user } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<'view' | 'reschedule' | 'outcome'>('view');
   const [newAt, setNewAt] = useState(toLocalInput(meeting.scheduled_at));
@@ -343,7 +351,12 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     if (data && !data.ok) {
-      if (confirm(`${data.message}\n\nSchedule anyway?`)) {
+      const ok = await confirm({
+        title: 'Schedule anyway?',
+        body: data.message,
+        confirmLabel: 'Schedule anyway',
+      });
+      if (ok) {
         setBusy(true);
         const r2 = await rpcCall('reschedule_meeting', { p_meeting_id: meeting.id, p_new_at: new Date(newAt).toISOString(), p_force: true });
         setBusy(false);
@@ -373,7 +386,11 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+      label={`Meeting — ${meeting.meeting_type_name}`}
+      onClose={onClose}
+    >
       <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-nikki-border max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
@@ -451,7 +468,7 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
         {mode === 'reschedule' && (
           <div className="space-y-3">
             <label className="text-xs font-bold text-stone-700 block">New Date & Time (IST)</label>
-            <input type="datetime-local" className={inputCls} value={newAt} onChange={e => setNewAt(e.target.value)} />
+            <input type="datetime-local" className={inputCls} value={newAt} onChange={e => setNewAt(e.target.value)} aria-label="New Date & Time (IST)" />
             <div className="flex justify-end gap-2 pt-3">
               <button onClick={() => setMode('view')} className="px-3 py-1.5 text-xs font-semibold text-stone-700">Back</button>
               <button onClick={reschedule} disabled={busy} className={btnCls + ' text-xs'}>{busy ? 'Saving…' : 'Reschedule'}</button>
@@ -478,11 +495,11 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
             </div>
             <div>
               <label className="text-xs font-bold text-stone-700 mb-1 block">What happened?</label>
-              <textarea className={inputCls} rows={3} value={notes} onChange={e => setNotes(e.target.value)} />
+              <textarea className={inputCls} rows={3} value={notes} onChange={e => setNotes(e.target.value)} aria-label="What happened?" />
             </div>
             <div>
               <label className="text-xs font-bold text-stone-700 mb-1 block">Next step (optional)</label>
-              <input className={inputCls} value={nextStep} onChange={e => setNextStep(e.target.value)} />
+              <input className={inputCls} value={nextStep} onChange={e => setNextStep(e.target.value)} aria-label="Next step (optional)" />
             </div>
             <div className="flex justify-end gap-2 pt-3">
               <button onClick={() => setMode('view')} className="px-3 py-1.5 text-xs font-semibold text-stone-700">Back</button>
@@ -491,7 +508,7 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
           </div>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -499,7 +516,8 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
 function MeetingListItem({ m, onOpen }: { m: MeetingRow; onOpen: (m: MeetingRow) => void }) {
   const isPast = new Date(m.scheduled_at).getTime() < Date.now();
   return (
-    <div className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => onOpen(m)}>
+    <div className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => onOpen(m)}
+      role="button" tabIndex={0} aria-label={`Open meeting ${m.meeting_type_name}`} onKeyDown={onActivateKeyDown(() => onOpen(m))}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
@@ -713,16 +731,16 @@ export function TeamCalendar() {
     <div>
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div className="flex items-center gap-1">
-          <button onClick={prev} className="p-1.5 rounded-lg hover:bg-stone-100"><ChevronLeft className="w-4 h-4 text-stone-700" /></button>
+          <button onClick={prev} aria-label="Previous month" className="icon-btn p-1.5 rounded-lg hover:bg-stone-100"><ChevronLeft aria-hidden="true" className="w-4 h-4 text-stone-700" /></button>
           <button onClick={today} className="px-3 py-1.5 rounded-lg border border-nikki-border text-xs font-semibold text-stone-700 hover:bg-stone-100">Today</button>
-          <button onClick={next} className="p-1.5 rounded-lg hover:bg-stone-100"><ChevronRight className="w-4 h-4 text-stone-700" /></button>
+          <button onClick={next} aria-label="Next month" className="icon-btn p-1.5 rounded-lg hover:bg-stone-100"><ChevronRight aria-hidden="true" className="w-4 h-4 text-stone-700" /></button>
           <span className="ml-2 text-nikki-navy text-sm font-semibold">
             {weekStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', day: 'numeric' })} –
             {' '}{new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <select value={scope} onChange={e => setScope(e.target.value as typeof scope)} className={inputCls + ' w-auto'}>
+          <select aria-label="Calendar scope" value={scope} onChange={e => setScope(e.target.value as typeof scope)} className={inputCls + ' w-auto'}>
             <option value="mine">My meetings</option>
             <option value="team">My team</option>
             {canScopeAll && <option value="all">Everyone</option>}
@@ -847,30 +865,34 @@ export function MeetingTypesManager() {
         ))}
       </div>
       {editing && (
-        <div className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-nikki-navy/60 backdrop-blur-sm flex items-center justify-center p-4"
+          label={editing.id ? 'Edit meeting type' : 'New meeting type'}
+          onClose={() => setEditing(null)}
+        >
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-nikki-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-nikki-navy font-extrabold text-base">{editing.id ? 'Edit' : 'New'} Meeting Type</h3>
               <button onClick={() => setEditing(null)}><X className="w-5 h-5 text-stone-700" /></button>
             </div>
             <div className="space-y-3">
-              <input className={inputCls} placeholder="Name (shown in dropdowns)" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} />
+              <input className={inputCls} placeholder="Name (shown in dropdowns)" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} aria-label="Name (shown in dropdowns)" />
               <input className={inputCls} placeholder="Slug (a-z, 0-9, _)" value={editing.slug || ''}
-                onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })} />
+                onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })} aria-label="Slug (a-z, 0-9, _)" />
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-stone-700 mb-1 block">Default Duration (min)</label>
                   <input type="number" min={5} max={480} className={inputCls} value={editing.default_duration_minutes ?? 30}
-                    onChange={e => setEditing({ ...editing, default_duration_minutes: Number(e.target.value) })} />
+                    onChange={e => setEditing({ ...editing, default_duration_minutes: Number(e.target.value) })} aria-label="Default Duration (min)" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-stone-700 mb-1 block">Order</label>
                   <input type="number" className={inputCls} value={editing.order_index ?? 100}
-                    onChange={e => setEditing({ ...editing, order_index: Number(e.target.value) })} />
+                    onChange={e => setEditing({ ...editing, order_index: Number(e.target.value) })} aria-label="Order" />
                 </div>
               </div>
               <textarea className={inputCls} rows={2} placeholder="Description (optional)"
-                value={editing.description || ''} onChange={e => setEditing({ ...editing, description: e.target.value })} />
+                value={editing.description || ''} onChange={e => setEditing({ ...editing, description: e.target.value })} aria-label="Description (optional)" />
               <label className="flex items-center gap-2 text-sm text-stone-700">
                 <input type="checkbox" checked={editing.active !== false}
                   onChange={e => setEditing({ ...editing, active: e.target.checked })} />
@@ -882,7 +904,7 @@ export function MeetingTypesManager() {
               </div>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

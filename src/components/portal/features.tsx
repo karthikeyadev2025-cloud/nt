@@ -9,6 +9,9 @@ import { inputCls, btnCls, cardCls, SubTabs } from './shared';
 import { describeReadError } from './shared-utils';
 import { istDateStr, istDateStrDaysAgo } from '../../lib/dates';
 import type { Segment, Database } from '../../lib/database.types';
+import { ModalOverlay } from '../ui/Modal';
+import { useConfirm } from '../ui/ConfirmDialog';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 type Notification    = Database['public']['Tables']['notifications']['Row'];
 type Announcement    = Database['public']['Tables']['announcements']['Row'];
@@ -97,6 +100,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
             {items.length === 0 && <p className="text-stone-700 text-sm text-center py-8">No notifications yet.</p>}
             {items.map(n => (
               <div key={n.id} onClick={() => handleClick(n)}
+                role="button" tabIndex={0} onKeyDown={onActivateKeyDown(() => handleClick(n))}
                 className={`px-4 py-3 border-b border-nikki-navy cursor-pointer hover:bg-stone-50 ${!n.read_at ? 'bg-nikki-royal/5' : ''}`}>
                 <p className="text-nikki-navy text-sm">{n.title}</p>
                 {n.body && <p className="text-stone-700 text-xs mt-0.5">{n.body}</p>}
@@ -144,6 +148,7 @@ export function AnnouncementsFeed() {
 export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState<Announcement[]>([]);
   const [form, setForm] = useState({ segment_slug: '', title: '', body: '', is_pinned: false });
 
@@ -166,7 +171,13 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
     load();
   }
   async function remove(id: string) {
-    if (!confirm('Delete this announcement?')) return;
+    const ok = await confirm({
+      title: 'Delete this announcement?',
+      body: 'Staff will no longer see it. This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error } = await supabase.from('announcements').delete().eq('id', id);
     if (error) { toast.error(`Couldn't delete: ${error.message}`); return; }
     toast.success('Announcement deleted');
@@ -178,12 +189,12 @@ export function AnnouncementsManager({ segments }: { segments: Segment[] }) {
     <div>
       <div className={cardCls + ' mb-6 space-y-3'}>
         <h3 className="text-nikki-navy font-semibold text-sm">Post Announcement</h3>
-        <select className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
+        <select aria-label="All Staff" className={inputCls} value={form.segment_slug} onChange={e => setForm({ ...form, segment_slug: e.target.value })}>
           <option value="">All Staff</option>
           {segments.map(s => <option key={s.slug} value={s.slug}>{s.name} only</option>)}
         </select>
-        <input className={inputCls} placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
-        <textarea className={inputCls} rows={3} placeholder="Message" value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} />
+        <input className={inputCls} placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} aria-label="Title" />
+        <textarea className={inputCls} rows={3} placeholder="Message" value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} aria-label="Message" />
         <label className="flex items-center gap-2 text-sm text-nikki-navy cursor-pointer">
           <input type="checkbox" checked={form.is_pinned} onChange={e => setForm({ ...form, is_pinned: e.target.checked })} /> Pin to top
         </label>
@@ -252,12 +263,12 @@ export function ShiftSwapBoard() {
     <div className="space-y-6">
       <div className={cardCls + ' space-y-3'}>
         <h3 className="text-nikki-navy font-semibold text-sm flex items-center gap-2"><Repeat className="w-4 h-4 text-nikki-blue" /> Request Shift Swap</h3>
-        <input type="date" className={inputCls} value={form.shift_date} onChange={e => setForm({ ...form, shift_date: e.target.value })} />
-        <select className={inputCls} value={form.target_id} onChange={e => setForm({ ...form, target_id: e.target.value })}>
+        <input type="date" className={inputCls} value={form.shift_date} onChange={e => setForm({ ...form, shift_date: e.target.value })} aria-label="Shift date to swap" />
+        <select aria-label="Swap with (optional)" className={inputCls} value={form.target_id} onChange={e => setForm({ ...form, target_id: e.target.value })}>
           <option value="">Swap with (optional)</option>
           {colleagues.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}
         </select>
-        <input className={inputCls} placeholder="Reason" value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} />
+        <input className={inputCls} placeholder="Reason" value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} aria-label="Reason" />
         <button className={btnCls} onClick={submit}>Submit Request</button>
       </div>
 
@@ -344,11 +355,11 @@ export function MyBankDetails() {
         </div>
       ) : (
         <div className="space-y-2">
-          <input className={inputCls} placeholder="Account Holder Name" value={form.account_holder} onChange={e => setForm({ ...form, account_holder: e.target.value })} />
-          <input className={inputCls} placeholder="Account Number" value={form.account_number} onChange={e => setForm({ ...form, account_number: e.target.value })} />
-          <input className={inputCls} placeholder="IFSC Code" value={form.ifsc} onChange={e => setForm({ ...form, ifsc: e.target.value })} />
-          <input className={inputCls} placeholder="Bank Name" value={form.bank_name} onChange={e => setForm({ ...form, bank_name: e.target.value })} />
-          <input className={inputCls} placeholder="UPI ID (optional)" value={form.upi_id} onChange={e => setForm({ ...form, upi_id: e.target.value })} />
+          <input className={inputCls} placeholder="Account Holder Name" value={form.account_holder} onChange={e => setForm({ ...form, account_holder: e.target.value })} aria-label="Account Holder Name" />
+          <input className={inputCls} placeholder="Account Number" value={form.account_number} onChange={e => setForm({ ...form, account_number: e.target.value })} aria-label="Account Number" />
+          <input className={inputCls} placeholder="IFSC Code" value={form.ifsc} onChange={e => setForm({ ...form, ifsc: e.target.value })} aria-label="IFSC Code" />
+          <input className={inputCls} placeholder="Bank Name" value={form.bank_name} onChange={e => setForm({ ...form, bank_name: e.target.value })} aria-label="Bank Name" />
+          <input className={inputCls} placeholder="UPI ID (optional)" value={form.upi_id} onChange={e => setForm({ ...form, upi_id: e.target.value })} aria-label="UPI ID (optional)" />
           <p className="text-stone-700 text-xs">Changes require HR approval before taking effect.</p>
           <div className="flex gap-2">
             <button className={btnCls} onClick={submit}>Submit for Approval</button>
@@ -457,7 +468,7 @@ export function IDCard() {
         </div>
         <div className="bg-white text-center p-5">
           <div className="w-16 h-16 rounded-full bg-nikki-border mx-auto mb-2 overflow-hidden flex items-center justify-center text-stone-700 font-bold text-xl">
-            {user.profile_photo_url ? <img src={user.profile_photo_url} className="w-full h-full object-cover" /> : user.full_name[0]}
+            {user.profile_photo_url ? <img src={user.profile_photo_url} alt={`${user.full_name} profile photo`} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : user.full_name[0]}
           </div>
           <p className="text-nikki-navy font-semibold">{user.full_name}</p>
           <p className="text-stone-700 text-xs mb-3">{user.designation || user.role}</p>
@@ -803,7 +814,8 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
           </div>
           <div className="space-y-2">
             {filteredApps.map(a => (
-              <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => viewFiles(a)}>
+              <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => viewFiles(a)}
+                role="button" tabIndex={0} aria-label={`Open application from ${a.name}`} onKeyDown={onActivateKeyDown(() => viewFiles(a))}>
                 <div>
                   <p className="text-nikki-navy text-sm font-medium">{a.name} <span className="text-stone-700 text-xs">— {a.position || jobTitle(a.job_posting_id || '')}</span></p>
                   <p className="text-stone-700 text-xs mt-0.5">{a.phone} • {a.experience || 'exp not specified'} • {new Date(a.created_at ?? '').toLocaleDateString()}</p>
@@ -847,23 +859,27 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
       )}
 
       {editingJob && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingJob(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditingJob(null)}
+          label={editingJob.id ? 'Edit job posting' : 'New job posting'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editingJob.id ? 'Edit' : 'New'} Job Posting</h3>
-            <input className={inputCls} placeholder="Job Title *" value={editingJob.title || ''} onChange={e => setEditingJob({ ...editingJob, title: e.target.value })} />
+            <input className={inputCls} placeholder="Job Title *" value={editingJob.title || ''} onChange={e => setEditingJob({ ...editingJob, title: e.target.value })} aria-label="Job Title" />
             <div className="grid grid-cols-2 gap-3">
-              <select className={inputCls} value={editingJob.segment_slug || ''} onChange={e => setEditingJob({ ...editingJob, segment_slug: e.target.value })}>
+              <select aria-label="Company-wide" className={inputCls} value={editingJob.segment_slug || ''} onChange={e => setEditingJob({ ...editingJob, segment_slug: e.target.value })}>
                 <option value="">Company-wide</option>
                 {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
-              <select className={inputCls} value={editingJob.employment_type || 'full_time'} onChange={e => setEditingJob({ ...editingJob, employment_type: e.target.value })}>
+              <select aria-label="Employment type" className={inputCls} value={editingJob.employment_type || 'full_time'} onChange={e => setEditingJob({ ...editingJob, employment_type: e.target.value })}>
                 {['full_time', 'part_time', 'contract', 'intern'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
               </select>
-              <input className={inputCls} placeholder="Location" value={editingJob.location || ''} onChange={e => setEditingJob({ ...editingJob, location: e.target.value })} />
-              <input type="number" min={1} className={inputCls} placeholder="Openings" value={editingJob.positions_open ?? 1} onChange={e => setEditingJob({ ...editingJob, positions_open: Number(e.target.value) })} />
+              <input className={inputCls} placeholder="Location" value={editingJob.location || ''} onChange={e => setEditingJob({ ...editingJob, location: e.target.value })} aria-label="Location" />
+              <input type="number" min={1} className={inputCls} placeholder="Openings" value={editingJob.positions_open ?? 1} onChange={e => setEditingJob({ ...editingJob, positions_open: Number(e.target.value) })} aria-label="Openings" />
             </div>
-            <textarea className={inputCls} rows={3} placeholder="Description" value={editingJob.description || ''} onChange={e => setEditingJob({ ...editingJob, description: e.target.value })} />
-            <textarea className={inputCls} rows={2} placeholder="Requirements" value={editingJob.requirements || ''} onChange={e => setEditingJob({ ...editingJob, requirements: e.target.value })} />
+            <textarea className={inputCls} rows={3} placeholder="Description" value={editingJob.description || ''} onChange={e => setEditingJob({ ...editingJob, description: e.target.value })} aria-label="Description" />
+            <textarea className={inputCls} rows={2} placeholder="Requirements" value={editingJob.requirements || ''} onChange={e => setEditingJob({ ...editingJob, requirements: e.target.value })} aria-label="Requirements" />
             <div>
               <div className="flex justify-between items-center mb-2">
                 <p className="text-stone-700 text-sm font-medium">Screening Questions</p>
@@ -874,17 +890,21 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
                   <input className={inputCls} value={q} onChange={e => {
                     const next = [...((editingJob.questions as string[] | null) || [])]; next[i] = e.target.value; setEditingJob({ ...editingJob, questions: next });
                   }} placeholder={`Question ${i + 1}`} />
-                  <button className="text-red-700 text-xs px-2" onClick={() => setEditingJob({ ...editingJob, questions: ((editingJob.questions as string[] | null) || []).filter((_, j) => j !== i) })}>✕</button>
+                  <button aria-label="Remove this question" className="icon-btn text-red-700 text-xs px-2" onClick={() => setEditingJob({ ...editingJob, questions: ((editingJob.questions as string[] | null) || []).filter((_, j) => j !== i) })}><span aria-hidden="true">✕</span></button>
                 </div>
               ))}
             </div>
             <button className={btnCls + ' w-full'} onClick={saveJob}>Save Job Posting</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {openApp && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setOpenApp(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setOpenApp(null)}
+          label={`Application from ${openApp.name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3">
               <div>
@@ -892,7 +912,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
                 <p className="text-stone-700 text-sm">{openApp.phone} {openApp.email && `• ${openApp.email}`}</p>
                 <p className="text-stone-700 text-xs mt-0.5">Applied for: {openApp.position || jobTitle(openApp.job_posting_id || '')} • {openApp.experience || 'exp not specified'}</p>
               </div>
-              <button className="text-stone-700 hover:text-nikki-navy" onClick={() => setOpenApp(null)}>✕</button>
+              <button aria-label="Close application" className="icon-btn text-stone-700 hover:text-nikki-navy" onClick={() => setOpenApp(null)}><span aria-hidden="true">✕</span></button>
             </div>
 
             <div className="flex gap-3 mb-4">
@@ -922,7 +942,7 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
               ))}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -964,14 +984,14 @@ export function MyPhotoRequest() {
       <h3 className="text-nikki-navy font-semibold text-sm mb-3">Profile Photo</h3>
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-stone-100 overflow-hidden flex items-center justify-center text-stone-700 font-bold">
-          {user?.profile_photo_url ? <img src={user.profile_photo_url} className="w-full h-full object-cover" /> : user?.full_name?.[0]}
+          {user?.profile_photo_url ? <img src={user.profile_photo_url} alt="Your profile photo" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : user?.full_name?.[0]}
         </div>
         <div>
           {pendingReq ? (
             <p className="text-amber-700 text-xs">Change request pending approval.</p>
           ) : (
             <>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} disabled={uploading}
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} disabled={uploading} aria-label="Choose a new profile photo"
                 className="text-stone-700 text-xs file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-stone-100 file:text-stone-700 file:text-xs" />
               <p className="text-stone-700 text-[11px] mt-1">Requires HR approval before it updates.</p>
             </>
@@ -1014,7 +1034,7 @@ export function PhotoChangeApprovals() {
       {pending.map(r => (
         <div key={r.id} className={cardCls + ' flex items-center justify-between'}>
           <div className="flex items-center gap-3">
-            <img src={r.requested_photo_url} className="w-12 h-12 rounded-full object-cover" />
+            <img src={r.requested_photo_url} alt={`Requested profile photo for ${names[r.staff_user_id] || 'this staff member'}`} loading="lazy" decoding="async" className="w-12 h-12 rounded-full object-cover" />
             <p className="text-nikki-navy text-sm">{names[r.staff_user_id] || '—'}</p>
           </div>
           <div className="flex gap-2">

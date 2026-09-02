@@ -50,6 +50,8 @@ import SessionDevices from '../SessionDevices';
 import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
+import { ModalOverlay } from '../ui/Modal';
+import { useConfirm } from '../ui/ConfirmDialog';
 
 const PERMISSION_KEYS = [
   'view_leads', 'manage_leads', 'create_leads', 'full_leads_view', 'bulk_assign_leads', 'approve_transfers',
@@ -165,7 +167,7 @@ function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: str
           return (
             <button key={i.key} onClick={() => onGo(i.tab)}
               className={`text-left rounded-xl border bg-white px-3 py-2 transition-all cursor-pointer ${dim ? 'border-nikki-border opacity-60 hover:opacity-100 hover:border-stone-300' : 'border-nikki-border hover:border-nikki-sky hover:shadow-sm'}`}>
-              <p className={`text-lg leading-tight ${dim ? 'text-stone-400 font-bold' : i.tone}`}>{n}</p>
+              <p className={`text-lg leading-tight ${dim ? 'text-stone-500 font-bold' : i.tone}`}>{n}</p>
               <p className="text-stone-700 text-[11px] font-semibold leading-tight mt-0.5">{i.label}</p>
             </button>
           );
@@ -213,7 +215,7 @@ function CollapsibleSection({ title, icon: Icon, defaultOpen = false, children }
     <div className="rounded-2xl border border-nikki-border bg-white overflow-hidden">
       <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-stone-50 transition-colors">
         <h3 className="text-nikki-navy text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" /> {title}</h3>
-        <ChevronRight className={`w-4 h-4 text-stone-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`w-4 h-4 text-stone-500 transition-transform ${open ? 'rotate-90' : ''}`} />
       </button>
       {open && <div className="px-4 pb-4 pt-1 border-t border-stone-100">{children}</div>}
     </div>
@@ -629,11 +631,15 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+    <ModalOverlay
+      className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+      onClose={onClose}
+      label="Onboard new employee"
+    >
       <div className="bg-white border border-nikki-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-nikki-navy font-semibold text-lg">Onboard New Employee</h3>
-          <button className="text-stone-700 hover:text-nikki-navy" onClick={onClose}>✕</button>
+          <button aria-label="Close" className="icon-btn text-stone-700 hover:text-nikki-navy" onClick={onClose}><span aria-hidden="true">✕</span></button>
         </div>
         <div className="flex items-center gap-1 mb-6 text-xs">
           {steps.map((s, i) => (
@@ -686,10 +692,10 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
 
         {step === 0 && (
           <div className="space-y-3">
-            <input className={inputCls} placeholder="Full Name *" value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
-            <input className={inputCls} placeholder="Email *" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            <input className={inputCls} placeholder="Full Name *" value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} aria-label="Full Name" />
+            <input className={inputCls} placeholder="Email *" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} aria-label="Email" />
             <div className="flex gap-2">
-              <input className={inputCls} placeholder="Temporary Password *" type="text" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+              <input className={inputCls} placeholder="Temporary Password *" type="text" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} aria-label="Temporary Password" />
               <button type="button" className="px-3 py-2 rounded-lg border border-nikki-border text-stone-700 text-xs whitespace-nowrap"
                 onClick={() => {
                   const gen = Array.from(crypto.getRandomValues(new Uint8Array(9)))
@@ -700,11 +706,11 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
                 disabled={!form.password}
                 onClick={() => { navigator.clipboard?.writeText(form.password); toast.success('Password copied'); }}>Copy</button>
             </div>
-            <input className={inputCls} placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
-            <input className={inputCls} placeholder="Designation (e.g. Field Technician)" value={form.designation} onChange={e => setForm({ ...form, designation: e.target.value })} />
+            <input className={inputCls} placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} aria-label="Phone" />
+            <input className={inputCls} placeholder="Designation (e.g. Field Technician)" value={form.designation} onChange={e => setForm({ ...form, designation: e.target.value })} aria-label="Designation (e.g. Field Technician)" />
             <div className="grid grid-cols-2 gap-3">
-              <input className={inputCls} placeholder="Blood Group (optional)" value={form.blood_group} onChange={e => setForm({ ...form, blood_group: e.target.value })} />
-              <input className={inputCls} placeholder="ID Proof No. (Aadhaar/PAN, optional)" value={form.id_proof_number} onChange={e => setForm({ ...form, id_proof_number: e.target.value })} />
+              <input className={inputCls} placeholder="Blood Group (optional)" value={form.blood_group} onChange={e => setForm({ ...form, blood_group: e.target.value })} aria-label="Blood Group (optional)" />
+              <input className={inputCls} placeholder="ID Proof No. (Aadhaar/PAN, optional)" value={form.id_proof_number} onChange={e => setForm({ ...form, id_proof_number: e.target.value })} aria-label="ID Proof No. (Aadhaar/PAN, optional)" />
             </div>
           </div>
         )}
@@ -713,7 +719,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
           <div className="space-y-4">
             <div>
               <p className="text-stone-700 text-sm font-medium mb-2">Role</p>
-              <select className={inputCls} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+              <select aria-label="Role" className={inputCls} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
                 {['manager', 'hr', 'marketing_executive', 'telecaller', 'support_agent', 'employee'].map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
@@ -732,17 +738,17 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="text-stone-700 text-sm font-medium mb-2">Employment Type</p>
-                <select className={inputCls} value={form.employment_type} onChange={e => setForm({ ...form, employment_type: e.target.value })}>
+                <select aria-label="Employment type" className={inputCls} value={form.employment_type} onChange={e => setForm({ ...form, employment_type: e.target.value })}>
                   {['full_time', 'part_time', 'contract', 'intern'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
                 </select>
               </div>
               <div>
                 <p className="text-stone-700 text-sm font-medium mb-2">Joining Date</p>
-                <input type="date" className={inputCls} value={form.joining_date} onChange={e => setForm({ ...form, joining_date: e.target.value })} />
+                <input type="date" className={inputCls} value={form.joining_date} onChange={e => setForm({ ...form, joining_date: e.target.value })} aria-label="Joining date" />
               </div>
               <div>
                 <p className="text-stone-700 text-sm font-medium mb-2">Date of Birth <span className="text-stone-700 font-normal">(optional)</span></p>
-                <input type="date" className={inputCls} value={form.date_of_birth} onChange={e => setForm({ ...form, date_of_birth: e.target.value })} />
+                <input type="date" className={inputCls} value={form.date_of_birth} onChange={e => setForm({ ...form, date_of_birth: e.target.value })} aria-label="Date of birth (optional)" />
               </div>
             </div>
             <div>
@@ -765,11 +771,11 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
             </div>
             <div>
               <p className="text-stone-700 text-sm font-medium mb-2">Reporting Time / Shift <span className="text-stone-700 font-normal">(shown on offer & welcome letters)</span></p>
-              <input className={inputCls} value={form.reporting_time} onChange={e => setForm({ ...form, reporting_time: e.target.value })} placeholder="e.g. 9:30 AM – 6:30 PM, Monday to Saturday" />
+              <input className={inputCls} value={form.reporting_time} onChange={e => setForm({ ...form, reporting_time: e.target.value })} placeholder="e.g. 9:30 AM – 6:30 PM, Monday to Saturday" aria-label="e.g. 9:30 AM – 6:30 PM, Monday to Saturday" />
             </div>
             <div>
               <p className="text-stone-700 text-sm font-medium mb-2">Reports To <span className="text-stone-700 font-normal">(their direct manager gets their leave requests)</span></p>
-              <select className={inputCls} value={form.reports_to} onChange={e => setForm({ ...form, reports_to: e.target.value })}>
+              <select aria-label="No direct manager — notify all approvers" className={inputCls} value={form.reports_to} onChange={e => setForm({ ...form, reports_to: e.target.value })}>
                 <option value="">No direct manager — notify all approvers</option>
                 {managers.map(m => <option key={m.id} value={m.id}>{m.full_name} — {m.role.replace('_', ' ')}</option>)}
               </select>
@@ -917,7 +923,7 @@ function OnboardingWizard({ segments, onDone, onClose }: { segments: Segment[]; 
         </div>
       </div>
       {preview && <DocumentViewer title={preview.title} content={preview.content} onClose={() => setPreview(null)} />}
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -1254,14 +1260,18 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
       )}
 
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditing(null)}
+          label={`Access control for ${editing.full_name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-4" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold text-lg">{editing.full_name} — Access Control</h3>
             <div className="grid grid-cols-2 gap-3">
-              <select className={inputCls} value={editing.role} onChange={e => setEditing({ ...editing, role: e.target.value })}>
+              <select aria-label="Role" className={inputCls} value={editing.role} onChange={e => setEditing({ ...editing, role: e.target.value })}>
                 {['manager', 'hr', 'marketing_executive', 'telecaller', 'support_agent', 'employee'].map(r => <option key={r} value={r}>{r}</option>)}
               </select>
-              <select className={inputCls} value={(editing as unknown as { employment_status?: string }).employment_status || 'active'}
+              <select aria-label="Employment status" className={inputCls} value={(editing as unknown as { employment_status?: string }).employment_status || 'active'}
                 onChange={e => setEditing({ ...editing, employment_status: e.target.value } as never)}>
                 <option value="active">Active</option>
                 <option value="suspended">Suspended</option>
@@ -1271,8 +1281,8 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
               <p className="col-span-2 text-stone-500 text-[11px] -mt-2">
                 Anything other than Active signs them out, removes them from every assignment picker, and — for everyone except HR/Admin — shows their name as "Former Employee ({editing.staff_code || 'no code'})" wherever it appears. All their historical leads, tickets, and documents stay exactly as they are; nothing is deleted. Switch back to Active any time to fully restore.
               </p>
-              <input className={inputCls} placeholder="Designation" value={editing.designation || ''} onChange={e => setEditing({ ...editing, designation: e.target.value })} />
-              <select className={inputCls} value={editing.employment_type || 'full_time'} onChange={e => setEditing({ ...editing, employment_type: e.target.value })}>
+              <input className={inputCls} placeholder="Designation" value={editing.designation || ''} onChange={e => setEditing({ ...editing, designation: e.target.value })} aria-label="Designation" />
+              <select aria-label="Employment type" className={inputCls} value={editing.employment_type || 'full_time'} onChange={e => setEditing({ ...editing, employment_type: e.target.value })}>
                 {['full_time', 'part_time', 'contract', 'intern'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
               </select>
             </div>
@@ -1329,7 +1339,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
             <div className="border-t border-stone-800 pt-3">
               <p className="text-stone-700 text-sm font-medium mb-2">Reset Password</p>
               <div className="flex gap-2">
-                <input className={inputCls} type="password" placeholder="New password (min 6 characters)" value={resetPasswordValue} onChange={e => setResetPasswordValue(e.target.value)} />
+                <input className={inputCls} type="password" placeholder="New password (min 6 characters)" value={resetPasswordValue} onChange={e => setResetPasswordValue(e.target.value)} aria-label="New password (min 6 characters)" />
                 <button className={btnCls} disabled={resettingPassword} onClick={doResetPassword}>{resettingPassword ? 'Setting…' : 'Set'}</button>
               </div>
               <p className="text-stone-700 text-xs mt-1">Sets their password directly — tell them the new password securely. They can also self-reset via "Forgot password?" on the login page.</p>
@@ -1348,7 +1358,7 @@ function AccessControl({ segments, openSignal, focusStaffId }: { segments: Segme
             </div>
             <button className={btnCls + ' w-full'} onClick={saveUser}>Save Access</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
       {viewDocsFor && (
         <EmployeeDocumentsModal
@@ -1417,6 +1427,7 @@ function LeavePolicyManager() {
               <span className="text-stone-700 text-xs">unlimited (unpaid)</span>
             ) : (
               <input type="number" min={0} className={inputCls + ' w-24 text-right'} defaultValue={r.annual_days}
+                aria-label={`Annual days for ${r.leave_type}`}
                 disabled={busy} onBlur={e => { const v = Number(e.target.value); if (v !== Number(r.annual_days)) save(r.id, v); }} />
             )}
           </div>
@@ -1513,6 +1524,7 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
   const [editing, setEditing] = useState<Partial<Segment> | null>(null);
   const [usage, setUsage] = useState<Record<string, { staff: number; leads: number; tickets: number }>>({});
   const toast = useToast();
+  const confirm = useConfirm();
 
   async function load() {
     // Segments failing silently is the worst of these: every segment filter
@@ -1546,10 +1558,14 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
         use.leads ? `${use.leads} open lead(s)` : null,
         use.tickets ? `${use.tickets} open ticket(s)` : null,
       ].filter(Boolean);
-      const warning = attached.length
-        ? `"${seg.name}" still has ${attached.join(', ')}.\n\nRetiring removes it from the public website immediately. Existing data is NOT deleted and stays manageable in staff portals so you can wind it down.\n\nContinue?`
-        : `Retire "${seg.name}"? It will disappear from the public website. Nothing is deleted and you can reactivate it any time.`;
-      if (!confirm(warning)) return;
+      const ok = await confirm({
+        title: `Retire "${seg.name}"?`,
+        body: attached.length
+          ? `It still has ${attached.join(', ')}. Retiring removes it from the public website immediately — existing data is not deleted and stays manageable in the staff portals so you can wind it down.`
+          : 'It will disappear from the public website. Nothing is deleted and you can reactivate it any time.',
+        confirmLabel: 'Retire segment',
+      });
+      if (!ok) return;
     }
     const { error } = await supabase.from('segments').update({ active: !seg.active } as never).eq('id', seg.id);
     if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
@@ -1614,24 +1630,28 @@ function SegmentsManager({ onChanged }: { onChanged: () => void }) {
         ))}
       </div>
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditing(null)}
+          label={editing.id ? 'Edit segment' : 'New segment'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editing.id ? 'Edit' : 'New'} Segment</h3>
-            <input className={inputCls} placeholder="Name *" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} />
-            <input className={inputCls} placeholder="Slug * (e.g. ai_automation)" value={editing.slug || ''} disabled={!!editing.id} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') })} />
-            <input className={inputCls} placeholder="Ticket Prefix * (e.g. AI)" value={editing.ticket_prefix || ''} onChange={e => setEditing({ ...editing, ticket_prefix: e.target.value.toUpperCase() })} />
-            <input className={inputCls} placeholder="Tagline" value={editing.tagline || ''} onChange={e => setEditing({ ...editing, tagline: e.target.value })} />
-            <textarea className={inputCls} rows={2} placeholder="Description" value={editing.description || ''} onChange={e => setEditing({ ...editing, description: e.target.value })} />
+            <input className={inputCls} placeholder="Name *" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} aria-label="Name" />
+            <input className={inputCls} placeholder="Slug * (e.g. ai_automation)" value={editing.slug || ''} disabled={!!editing.id} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') })} aria-label="Slug (e.g. ai_automation)" />
+            <input className={inputCls} placeholder="Ticket Prefix * (e.g. AI)" value={editing.ticket_prefix || ''} onChange={e => setEditing({ ...editing, ticket_prefix: e.target.value.toUpperCase() })} aria-label="Ticket Prefix (e.g. AI)" />
+            <input className={inputCls} placeholder="Tagline" value={editing.tagline || ''} onChange={e => setEditing({ ...editing, tagline: e.target.value })} aria-label="Tagline" />
+            <textarea className={inputCls} rows={2} placeholder="Description" value={editing.description || ''} onChange={e => setEditing({ ...editing, description: e.target.value })} aria-label="Description" />
             <div className="grid grid-cols-3 gap-3">
-              <input className={inputCls} placeholder="Icon (lucide name)" value={editing.icon || ''} onChange={e => setEditing({ ...editing, icon: e.target.value })} />
-              <input className={inputCls} type="color" value={editing.color || '#0ea5e9'} onChange={e => setEditing({ ...editing, color: e.target.value })} />
-              <select className={inputCls} value={editing.active ? '1' : '0'} onChange={e => setEditing({ ...editing, active: e.target.value === '1' })}>
+              <input className={inputCls} placeholder="Icon (lucide name)" value={editing.icon || ''} onChange={e => setEditing({ ...editing, icon: e.target.value })} aria-label="Icon (lucide name)" />
+              <input className={inputCls} type="color" value={editing.color || '#0ea5e9'} onChange={e => setEditing({ ...editing, color: e.target.value })} aria-label="Segment colour" />
+              <select aria-label="Visibility" className={inputCls} value={editing.active ? '1' : '0'} onChange={e => setEditing({ ...editing, active: e.target.value === '1' })}>
                 <option value="1">Active</option><option value="0">Hidden</option>
               </select>
             </div>
             <button className={btnCls + ' w-full'} onClick={save}>Save Segment</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -1646,6 +1666,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
 
   const [editing, setEditing] = useState<(Partial<Product> & { features?: ProductFeature[] }) | null>(null);
   const toast = useToast();
+  const confirm = useConfirm();
 
   async function load() {
     const { data, error } = await supabase.from('products').select('*').order('order_index');
@@ -1673,7 +1694,13 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
   }
 
   async function remove(id: string) {
-    if (!confirm('Delete this product?')) return;
+    const ok = await confirm({
+      title: 'Delete this product?',
+      body: 'It disappears from the public website immediately. This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (error) { toast.error(`Couldn't delete: ${error.message}`); return; }
     toast.success('Product deleted');
@@ -1701,7 +1728,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
               <div className="flex items-center gap-2 mb-2.5">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color ?? '#78716c' }} />
                 <h4 className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider">{seg.name}</h4>
-                <span className="text-stone-400 text-xs">({segRows.length})</span>
+                <span className="text-stone-500 text-xs">({segRows.length})</span>
               </div>
               <div className="space-y-2">
                 {segRows.map(p => {
@@ -1754,22 +1781,26 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
         )}
       </div>
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditing(null)}
+          label={editing.id ? 'Edit product' : 'Add product'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editing.id ? 'Edit' : 'Add'} Product</h3>
             <div className="grid grid-cols-2 gap-3">
-              <input className={inputCls} placeholder="Name *" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} />
-              <input className={inputCls} placeholder="Slug *" value={editing.slug || ''} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} />
+              <input className={inputCls} placeholder="Name *" value={editing.name || ''} onChange={e => setEditing({ ...editing, name: e.target.value })} aria-label="Name" />
+              <input className={inputCls} placeholder="Slug *" value={editing.slug || ''} onChange={e => setEditing({ ...editing, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} aria-label="Slug" />
             </div>
-            <input className={inputCls} placeholder="Tagline" value={editing.tagline || ''} onChange={e => setEditing({ ...editing, tagline: e.target.value })} />
-            <textarea className={inputCls} rows={3} placeholder="Description" value={editing.description || ''} onChange={e => setEditing({ ...editing, description: e.target.value })} />
+            <input className={inputCls} placeholder="Tagline" value={editing.tagline || ''} onChange={e => setEditing({ ...editing, tagline: e.target.value })} aria-label="Tagline" />
+            <textarea className={inputCls} rows={3} placeholder="Description" value={editing.description || ''} onChange={e => setEditing({ ...editing, description: e.target.value })} aria-label="Description" />
             <div className="grid grid-cols-2 gap-3">
-              <input className={inputCls} placeholder="External URL (link-out)" value={editing.external_url || ''} onChange={e => setEditing({ ...editing, external_url: e.target.value })} />
-              <input className={inputCls} placeholder="Button label" value={editing.demo_cta || ''} onChange={e => setEditing({ ...editing, demo_cta: e.target.value })} />
-              <select className={inputCls} value={editing.segment_slug || ''} onChange={e => setEditing({ ...editing, segment_slug: e.target.value })}>
+              <input className={inputCls} placeholder="External URL (link-out)" value={editing.external_url || ''} onChange={e => setEditing({ ...editing, external_url: e.target.value })} aria-label="External URL (link-out)" />
+              <input className={inputCls} placeholder="Button label" value={editing.demo_cta || ''} onChange={e => setEditing({ ...editing, demo_cta: e.target.value })} aria-label="Button label" />
+              <select aria-label="Segment" className={inputCls} value={editing.segment_slug || ''} onChange={e => setEditing({ ...editing, segment_slug: e.target.value })}>
                 {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
-              <select className={inputCls} value={editing.status || 'active'} onChange={e => setEditing({ ...editing, status: e.target.value })}>
+              <select aria-label="Product status" className={inputCls} value={editing.status || 'active'} onChange={e => setEditing({ ...editing, status: e.target.value })}>
                 <option value="active">Active</option><option value="coming_soon">Coming Soon</option><option value="hidden">Hidden</option>
               </select>
             </div>
@@ -1787,13 +1818,13 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
                   <input className={inputCls} placeholder="Description" value={f.description} onChange={e => {
                     const fs = [...(editing.features || [])]; fs[i] = { ...f, description: e.target.value }; setEditing({ ...editing, features: fs });
                   }} />
-                  <button className="text-red-700 text-xs px-2" onClick={() => setEditing({ ...editing, features: (editing.features || []).filter((_, j) => j !== i) as ProductFeature[] })}>✕</button>
+                  <button aria-label="Remove this feature" className="icon-btn text-red-700 text-xs px-2" onClick={() => setEditing({ ...editing, features: (editing.features || []).filter((_, j) => j !== i) as ProductFeature[] })}><span aria-hidden="true">✕</span></button>
                 </div>
               ))}
             </div>
             <button className={btnCls + ' w-full'} onClick={save}>Save Product</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
@@ -1872,10 +1903,10 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
               </div>
             ))}
           </div>
-          <input className={inputCls + ' mb-2'} placeholder="Service title" value={newService.title} onChange={e => setNewService({ ...newService, title: e.target.value })} />
-          <input className={inputCls + ' mb-2'} placeholder="Description" value={newService.description} onChange={e => setNewService({ ...newService, description: e.target.value })} />
-          <input className={inputCls + ' mb-2'} placeholder="Best for (who this is for)" value={newService.best_for} onChange={e => setNewService({ ...newService, best_for: e.target.value })} />
-          <input className={inputCls + ' mb-2'} placeholder="What's included (comma-separated)" value={newService.highlights} onChange={e => setNewService({ ...newService, highlights: e.target.value })} />
+          <input className={inputCls + ' mb-2'} placeholder="Service title" value={newService.title} onChange={e => setNewService({ ...newService, title: e.target.value })} aria-label="Service title" />
+          <input className={inputCls + ' mb-2'} placeholder="Description" value={newService.description} onChange={e => setNewService({ ...newService, description: e.target.value })} aria-label="Description" />
+          <input className={inputCls + ' mb-2'} placeholder="Best for (who this is for)" value={newService.best_for} onChange={e => setNewService({ ...newService, best_for: e.target.value })} aria-label="Best for (who this is for)" />
+          <input className={inputCls + ' mb-2'} placeholder="What's included (comma-separated)" value={newService.highlights} onChange={e => setNewService({ ...newService, highlights: e.target.value })} aria-label="What's included (comma-separated)" />
           <button className={btnCls} onClick={addService}>Add Service</button>
         </div>
         <div className={cardCls}>
@@ -1889,7 +1920,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
             ))}
           </div>
           <div className="flex gap-2">
-            <input className={inputCls} placeholder="New ticket type" value={newType} onChange={e => setNewType(e.target.value)} />
+            <input className={inputCls} placeholder="New ticket type" value={newType} onChange={e => setNewType(e.target.value)} aria-label="New ticket type" />
             <button className={btnCls} onClick={addType}>Add</button>
           </div>
         </div>
@@ -1902,6 +1933,7 @@ function CatalogManager({ segments }: { segments: Segment[] }) {
 // ─────────────────────────────────────── Site Media Manager (Gallery, Team, Testimonials — was missing entirely)
 function SiteMediaManager({ segments }: { segments: Segment[] }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<'gallery' | 'team' | 'testimonials' | 'logos'>('gallery');
   const [gallery, setGallery] = useState<Tables<'gallery_items'>[]>([]);
   const [team, setTeam] = useState<Tables<'team_members'>[]>([]);
@@ -1965,7 +1997,13 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
     setter();
   }
   async function remove(table: string, id: string, setter: () => void) {
-    if (!confirm('Delete this item?')) return;
+    const ok = await confirm({
+      title: 'Delete this item?',
+      body: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const { error } = await supabase.from(table as never).delete().eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success('Deleted');
@@ -1992,8 +2030,8 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
           <div className={cardCls + ' mb-4 space-y-2'}>
             <p className="text-nikki-navy text-sm font-medium">Add Gallery Photo</p>
             <ImageUpload placeholder="Upload Gallery Image *" value={newGallery.image_url} onChange={url => setNewGallery({ ...newGallery, image_url: url })} />
-            <input className={inputCls} placeholder="Caption (optional)" value={newGallery.title} onChange={e => setNewGallery({ ...newGallery, title: e.target.value })} />
-            <select className={inputCls} value={newGallery.segment_slug} onChange={e => setNewGallery({ ...newGallery, segment_slug: e.target.value })}>
+            <input className={inputCls} placeholder="Caption (optional)" value={newGallery.title} onChange={e => setNewGallery({ ...newGallery, title: e.target.value })} aria-label="Caption (optional)" />
+            <select aria-label="All segments" className={inputCls} value={newGallery.segment_slug} onChange={e => setNewGallery({ ...newGallery, segment_slug: e.target.value })}>
               <option value="">All segments</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
@@ -2018,11 +2056,11 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
           <div className={cardCls + ' mb-4 space-y-2'}>
             <p className="text-nikki-navy text-sm font-medium">Add Team Member</p>
             <div className="grid grid-cols-2 gap-2">
-              <input className={inputCls} placeholder="Name *" value={newTeam.name} onChange={e => setNewTeam({ ...newTeam, name: e.target.value })} />
-              <input className={inputCls} placeholder="Designation" value={newTeam.designation} onChange={e => setNewTeam({ ...newTeam, designation: e.target.value })} />
+              <input className={inputCls} placeholder="Name *" value={newTeam.name} onChange={e => setNewTeam({ ...newTeam, name: e.target.value })} aria-label="Name" />
+              <input className={inputCls} placeholder="Designation" value={newTeam.designation} onChange={e => setNewTeam({ ...newTeam, designation: e.target.value })} aria-label="Designation" />
             </div>
             <ImageUpload placeholder="Upload Team Photo" value={newTeam.photo_url} onChange={url => setNewTeam({ ...newTeam, photo_url: url })} />
-            <select className={inputCls} value={newTeam.segment_slug} onChange={e => setNewTeam({ ...newTeam, segment_slug: e.target.value })}>
+            <select aria-label="All segments" className={inputCls} value={newTeam.segment_slug} onChange={e => setNewTeam({ ...newTeam, segment_slug: e.target.value })}>
               <option value="">All segments</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
@@ -2032,7 +2070,7 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
             {team.map(t => (
               <div key={t.id} className={cardCls + ' flex items-center justify-between'}>
                 <div className="flex items-center gap-3">
-                  {t.photo_url && <img src={t.photo_url} className="w-9 h-9 rounded-full object-cover" />}
+                  {t.photo_url && <img src={t.photo_url} alt={`${t.name} photo`} loading="lazy" decoding="async" className="w-9 h-9 rounded-full object-cover" />}
                   <div>
                     <p className="text-nikki-navy text-sm">{t.name}</p>
                     <p className="text-stone-700 text-xs">{t.designation}</p>
@@ -2052,13 +2090,13 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
         <div>
           <div className={cardCls + ' mb-4 space-y-2'}>
             <p className="text-nikki-navy text-sm font-medium">Add Testimonial</p>
-            <input className={inputCls} placeholder="Customer Name *" value={newTestimonial.customer_name} onChange={e => setNewTestimonial({ ...newTestimonial, customer_name: e.target.value })} />
-            <textarea className={inputCls} rows={2} placeholder="Testimonial text *" value={newTestimonial.content} onChange={e => setNewTestimonial({ ...newTestimonial, content: e.target.value })} />
+            <input className={inputCls} placeholder="Customer Name *" value={newTestimonial.customer_name} onChange={e => setNewTestimonial({ ...newTestimonial, customer_name: e.target.value })} aria-label="Customer Name" />
+            <textarea className={inputCls} rows={2} placeholder="Testimonial text *" value={newTestimonial.content} onChange={e => setNewTestimonial({ ...newTestimonial, content: e.target.value })} aria-label="Testimonial text" />
             <div className="grid grid-cols-2 gap-2">
-              <select className={inputCls} value={newTestimonial.rating} onChange={e => setNewTestimonial({ ...newTestimonial, rating: Number(e.target.value) })}>
+              <select aria-label="Rating" className={inputCls} value={newTestimonial.rating} onChange={e => setNewTestimonial({ ...newTestimonial, rating: Number(e.target.value) })}>
                 {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{r} stars</option>)}
               </select>
-              <select className={inputCls} value={newTestimonial.segment_slug} onChange={e => setNewTestimonial({ ...newTestimonial, segment_slug: e.target.value })}>
+              <select aria-label="All segments" className={inputCls} value={newTestimonial.segment_slug} onChange={e => setNewTestimonial({ ...newTestimonial, segment_slug: e.target.value })}>
                 <option value="">All segments</option>
                 {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
@@ -2087,9 +2125,9 @@ function SiteMediaManager({ segments }: { segments: Segment[] }) {
           <div className={cardCls + ' mb-4 space-y-2'}>
             <p className="text-nikki-navy text-sm font-medium">Add Client Logo</p>
             <p className="text-stone-700 text-xs">Shows in the scrolling "Trusted By" strip on the homepage.</p>
-            <input className={inputCls} placeholder="Client Name *" value={newLogo.name} onChange={e => setNewLogo({ ...newLogo, name: e.target.value })} />
+            <input className={inputCls} placeholder="Client Name *" value={newLogo.name} onChange={e => setNewLogo({ ...newLogo, name: e.target.value })} aria-label="Client Name" />
             <ImageUpload placeholder="Upload Client Logo *" value={newLogo.logo_url} onChange={url => setNewLogo({ ...newLogo, logo_url: url })} />
-            <select className={inputCls} value={newLogo.segment_slug} onChange={e => setNewLogo({ ...newLogo, segment_slug: e.target.value })}>
+            <select aria-label="All segments" className={inputCls} value={newLogo.segment_slug} onChange={e => setNewLogo({ ...newLogo, segment_slug: e.target.value })}>
               <option value="">All segments</option>
               {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
@@ -2145,7 +2183,7 @@ function ContentManager() {
               <div key={r.id}>
                 <label className="text-stone-700 text-xs capitalize">{r.key}</label>
                 <div className="flex gap-2 mt-1">
-                  <textarea className={inputCls} rows={r.value.length > 80 ? 2 : 1} value={r.value}
+                  <textarea className={inputCls} rows={r.value.length > 80 ? 2 : 1} value={r.value} aria-label={r.key}
                     onChange={e => setRows(prev => prev.map(x => x.id === r.id ? { ...x, value: e.target.value } : x))} />
                   <button className={btnCls} onClick={() => save(r)}>{saved === r.id ? '✓' : 'Save'}</button>
                 </div>
@@ -2279,32 +2317,40 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
       </div>
 
       {editingTpl && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setEditingTpl(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setEditingTpl(null)}
+          label={editingTpl.id ? 'Edit template' : 'New template'}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">{editingTpl.id ? 'Edit' : 'New'} Template</h3>
-            <input className={inputCls} placeholder="Title *" value={editingTpl.title} onChange={e => setEditingTpl({ ...editingTpl, title: e.target.value })} />
+            <input className={inputCls} placeholder="Title *" value={editingTpl.title} onChange={e => setEditingTpl({ ...editingTpl, title: e.target.value })} aria-label="Title" />
             <div className="grid grid-cols-2 gap-3">
-              <select className={inputCls} value={editingTpl.doc_type} onChange={e => setEditingTpl({ ...editingTpl, doc_type: e.target.value })}>
+              <select aria-label="Document type" className={inputCls} value={editingTpl.doc_type} onChange={e => setEditingTpl({ ...editingTpl, doc_type: e.target.value })}>
                 {Object.keys(DOC_TYPE_LABELS).map(k => <option key={k} value={k}>{DOC_TYPE_LABELS[k]}</option>)}
               </select>
-              <select className={inputCls} value={editingTpl.segment_slug || ''} onChange={e => setEditingTpl({ ...editingTpl, segment_slug: e.target.value || null })}>
+              <select aria-label="All segments" className={inputCls} value={editingTpl.segment_slug || ''} onChange={e => setEditingTpl({ ...editingTpl, segment_slug: e.target.value || null })}>
                 <option value="">All segments</option>
                 {segments.map(s => <option key={s.slug} value={s.slug}>{s.name}</option>)}
               </select>
             </div>
             <p className="text-stone-700 text-xs">Placeholders: {'{{name}} {{designation}} {{role}} {{segment}} {{joining_date}} {{ctc}} {{employment_type}} {{company}}'}</p>
-            <textarea className={inputCls} rows={10} value={editingTpl.body} onChange={e => setEditingTpl({ ...editingTpl, body: e.target.value })} />
+            <textarea className={inputCls} rows={10} value={editingTpl.body} onChange={e => setEditingTpl({ ...editingTpl, body: e.target.value })} aria-label="Template body" />
             <label className="flex items-center gap-2 text-sm text-nikki-navy cursor-pointer">
               <input type="checkbox" checked={editingTpl.requires_signature !== false} onChange={e => setEditingTpl({ ...editingTpl, requires_signature: e.target.checked })} />
               Requires employee signature <span className="text-stone-700 text-xs">(off = simple acknowledge)</span>
             </label>
             <button className={btnCls + ' w-full'} onClick={saveTemplate}>Save Template</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {issueFor && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setIssueFor(null)}>
+        <ModalOverlay
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClose={() => setIssueFor(null)}
+          label={`Issue documents to ${issueFor.full_name}`}
+        >
           <div className="bg-white border border-nikki-border rounded-2xl max-w-md w-full p-6 space-y-3" onClick={e => e.stopPropagation()}>
             <h3 className="text-nikki-navy font-semibold">Issue documents to {issueFor.full_name}</h3>
             {relevantTemplates(issueFor).map(t => (
@@ -2315,7 +2361,7 @@ function DocumentsManager({ segments }: { segments: Segment[] }) {
             ))}
             <button className={btnCls + ' w-full'} disabled={busy} onClick={issue}>{busy ? 'Issuing…' : 'Issue Selected Documents'}</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
       {preview && <DocumentViewer title={preview.title} content={preview.content} onClose={() => setPreview(null)} />}
       {viewDocsFor && (
@@ -2518,7 +2564,11 @@ export default function SuperAdminDashboard() {
       {/* Mobile nav drawer — a flat 20+ item horizontal scroll strip doesn't scale,
           so mobile gets the same grouped sections as the desktop sidebar, in an overlay. */}
       {mobileNavOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
+        <ModalOverlay
+          className="md:hidden fixed inset-0 z-50 flex"
+          label="Navigation menu"
+          onClose={() => setMobileNavOpen(false)}
+        >
           <div className="absolute inset-0 bg-nikki-navy/50" onClick={() => setMobileNavOpen(false)} />
           <div className="relative w-72 max-w-[85vw] bg-white h-full overflow-y-auto p-4 shadow-xl flex flex-col">
             <div className="flex items-center justify-between mb-6 px-1">
@@ -2529,20 +2579,20 @@ export default function SuperAdminDashboard() {
                   <p className="text-stone-700 text-[11px] font-semibold">{isSuperAdmin ? 'Super Admin' : 'Admin Console'}</p>
                 </div>
               </div>
-              <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="p-2.5 -m-1 text-stone-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation menu" className="icon-btn p-2.5 -m-1 text-stone-700"><X className="w-5 h-5" /></button>
             </div>
             <nav className="flex-1">{navGroups}</nav>
             <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-700 hover:text-red-700 text-sm font-semibold border-t border-nikki-border pt-3">
               <LogOut className="w-4 h-4" /> Sign Out
             </button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
+            <button onClick={() => setMobileNavOpen(true)} aria-label="Open navigation menu" aria-expanded={mobileNavOpen} className="icon-btn md:hidden p-2.5 -ml-2 text-stone-700 shrink-0"><Menu className="w-6 h-6" /></button>
             <h1 className="text-3xl font-extrabold text-nikki-navy tracking-tight truncate">{tabs.find(t => t.id === tab)?.label}</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -2552,7 +2602,7 @@ export default function SuperAdminDashboard() {
               title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}
               aria-label={soundEnabled ? 'Mute sound alerts' : 'Enable sound alerts'}
               aria-pressed={soundEnabled}
-              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-400 hover:bg-stone-100'}`}>
+              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-500 hover:bg-stone-100'}`}>
               {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
             </button>
             <NotificationBell onNavigate={(t) => setTab(t as Tab)} />
@@ -2560,7 +2610,7 @@ export default function SuperAdminDashboard() {
               <Key className="w-3.5 h-3.5 text-nikki-blue" />
               <span className="hidden sm:inline">{user?.full_name}</span>
             </button>
-            <button onClick={signOut} aria-label="Sign out" className="md:hidden text-stone-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
+            <button onClick={signOut} aria-label="Sign out" className="icon-btn md:hidden text-stone-700 p-2 -m-2"><LogOut className="w-5 h-5" /></button>
           </div>
         </div>
 
