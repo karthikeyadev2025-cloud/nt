@@ -12,6 +12,7 @@ import { inputCls, btnCls, cardCls } from './shared';
 import { IdProofUploader } from './IdProofUploader';
 import { DOC_TYPE_LABELS } from './documents-utils';
 import { ModalOverlay } from '../ui/Modal';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 // ─────────────────────────── Signature Pad (draw on canvas, mobile + desktop)
 // ─────────────────────────── My Signature (saved once, auto-stamped onto
@@ -305,7 +306,8 @@ export function MyDocumentsList({ staffUserId, employeeName }: { staffUserId: st
       )}
       {docs.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No documents issued yet.</p>}
       {docs.map(d => (
-        <div key={d.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => setOpen(d)}>
+        <div key={d.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => setOpen(d)}
+          role="button" tabIndex={0} aria-label={`Open ${d.title}`} onKeyDown={onActivateKeyDown(() => setOpen(d))}>
           <div className="flex items-center gap-3">
             <FileText className="w-5 h-5 text-nikki-blue" />
             <div>

@@ -167,7 +167,7 @@ function ActionCentre({ onGo }: { onGo: (tab: string, filter?: { segFilter?: str
           return (
             <button key={i.key} onClick={() => onGo(i.tab)}
               className={`text-left rounded-xl border bg-white px-3 py-2 transition-all cursor-pointer ${dim ? 'border-nikki-border opacity-60 hover:opacity-100 hover:border-stone-300' : 'border-nikki-border hover:border-nikki-sky hover:shadow-sm'}`}>
-              <p className={`text-lg leading-tight ${dim ? 'text-stone-400 font-bold' : i.tone}`}>{n}</p>
+              <p className={`text-lg leading-tight ${dim ? 'text-stone-500 font-bold' : i.tone}`}>{n}</p>
               <p className="text-stone-700 text-[11px] font-semibold leading-tight mt-0.5">{i.label}</p>
             </button>
           );
@@ -215,7 +215,7 @@ function CollapsibleSection({ title, icon: Icon, defaultOpen = false, children }
     <div className="rounded-2xl border border-nikki-border bg-white overflow-hidden">
       <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-stone-50 transition-colors">
         <h3 className="text-nikki-navy text-xs font-extrabold tracking-wider flex items-center gap-1.5"><Icon className="w-3.5 h-3.5" /> {title}</h3>
-        <ChevronRight className={`w-4 h-4 text-stone-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+        <ChevronRight className={`w-4 h-4 text-stone-500 transition-transform ${open ? 'rotate-90' : ''}`} />
       </button>
       {open && <div className="px-4 pb-4 pt-1 border-t border-stone-100">{children}</div>}
     </div>
@@ -1728,7 +1728,7 @@ function ProductsManager({ segments }: { segments: Segment[] }) {
               <div className="flex items-center gap-2 mb-2.5">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color ?? '#78716c' }} />
                 <h4 className="text-nikki-navy text-xs font-extrabold uppercase tracking-wider">{seg.name}</h4>
-                <span className="text-stone-400 text-xs">({segRows.length})</span>
+                <span className="text-stone-500 text-xs">({segRows.length})</span>
               </div>
               <div className="space-y-2">
                 {segRows.map(p => {
@@ -2602,7 +2602,7 @@ export default function SuperAdminDashboard() {
               title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}
               aria-label={soundEnabled ? 'Mute sound alerts' : 'Enable sound alerts'}
               aria-pressed={soundEnabled}
-              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-400 hover:bg-stone-100'}`}>
+              className={`p-1.5 rounded-lg transition-colors ${soundEnabled ? 'text-nikki-blue hover:bg-nikki-surface-blue' : 'text-stone-500 hover:bg-stone-100'}`}>
               {soundEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
             </button>
             <NotificationBell onNavigate={(t) => setTab(t as Tab)} />

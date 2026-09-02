@@ -22,6 +22,7 @@ import { isDiscontinuedSegment } from '../../lib/useSegments';
 import { invalidate } from '../../lib/cacheBus';
 import { ModalOverlay } from '../ui/Modal';
 import { useConfirm } from '../ui/ConfirmDialog';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 export const inputCls =
   'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-royal focus:ring-2 focus:ring-nikki-royal/20 focus:outline-none transition-all placeholder-stone-500';
@@ -379,6 +380,8 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
           return (
             <div key={t.id} className={cardCls + ' hover:border-stone-300'}>
               <div className="flex flex-wrap items-center gap-3 cursor-pointer"
+                role="button" tabIndex={0} aria-label={`Open ticket ${t.ticket_no}`}
+                onKeyDown={onActivateKeyDown(() => { setOpenTicket(t); loadReplies(t.id); })}
                 onClick={() => { setOpenTicket(t); loadReplies(t.id); }}>
                 <span className="font-mono text-nikki-blue text-sm">{t.ticket_no}</span>
                 <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color ?? undefined }}>{seg?.name}</span>
@@ -1991,7 +1994,9 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                 </button>
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2.5" onClick={() => { setOpenLead(l); loadRemarks(l.id); }} style={{ cursor: 'pointer' }}>
+                <div className="flex flex-wrap items-center gap-2.5" onClick={() => { setOpenLead(l); loadRemarks(l.id); }} style={{ cursor: 'pointer' }}
+                  role="button" tabIndex={0} aria-label={`Open lead ${l.customer_name}`}
+                  onKeyDown={onActivateKeyDown(() => { setOpenLead(l); loadRemarks(l.id); })}>
                   <span className="text-nikki-navy font-bold">{l.customer_name}</span>
                   <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: (seg?.color || '#888') + '22', color: seg?.color ?? undefined }}>{seg?.name}</span>
                   <span className={`px-2 py-0.5 rounded text-xs ${stageColors[l.stage]}`}>{stageLabel(l.stage)}</span>
@@ -2171,6 +2176,10 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                         onDragStart={() => setDragLeadId(l.id)}
                         onDragEnd={() => { setDragLeadId(null); setDragOverStage(null); }}
                         onClick={() => { setOpenLead(l); loadRemarks(l.id); }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Open lead ${l.customer_name}`}
+                        onKeyDown={onActivateKeyDown(() => { setOpenLead(l); loadRemarks(l.id); })}
                         className={`bg-white border border-nikki-border rounded-xl p-2.5 shadow-sm hover:border-stone-300 transition-colors ${canDragHere ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}>
                         <div className="flex items-start gap-2">
                           {l.photo_url && (
@@ -2191,7 +2200,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                             {leadsWithMeeting.has(l.id) && <span className="text-[11px]" title="Meeting scheduled">🗓️</span>}
                           </div>
                           {canDragHere && (
-                            <button onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }} className={`icon-btn ml-auto p-1 rounded ${l.appointment_at ? 'text-nikki-blue' : 'text-stone-400 hover:text-nikki-blue'}`} title={l.appointment_at ? 'Reschedule' : 'Schedule appointment'}>
+                            <button onClick={(e) => { e.stopPropagation(); setRescheduleLead(l); }} className={`icon-btn ml-auto p-1 rounded ${l.appointment_at ? 'text-nikki-blue' : 'text-stone-500 hover:text-nikki-blue'}`} title={l.appointment_at ? 'Reschedule' : 'Schedule appointment'}>
                               <CalendarClock className="w-3.5 h-3.5" />
                             </button>
                           )}
@@ -2199,7 +2208,7 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
                       </div>
                     );
                   })}
-                  {colLeads.length === 0 && <p className="text-stone-400 text-xs text-center py-4">Drop here</p>}
+                  {colLeads.length === 0 && <p className="text-stone-500 text-xs text-center py-4">Drop here</p>}
                 </div>
               </div>
             );

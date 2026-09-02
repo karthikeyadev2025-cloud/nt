@@ -614,7 +614,7 @@ function Hero({ segments, content }: { segments: Segment[]; content: Record<stri
                   className="flex items-center gap-2 px-5 py-3 rounded-xl border border-stone-300 bg-white hover:border-nikki-royal hover:bg-stone-50 transition-all text-nikki-navy shadow-md font-semibold text-sm">
                   <Icon name={s.icon ?? ''} className="w-5 h-5 text-nikki-blue" />
                   <span>{s.name}</span>
-                  <ChevronRight className="w-4 h-4 text-stone-400" />
+                  <ChevronRight className="w-4 h-4 text-stone-500" />
                 </a>
               ))}
             </motion.div>
@@ -1362,7 +1362,7 @@ function ApplyModal({ job, segments, onClose }: { job: JobPosting | null; segmen
             <h3 className="text-nikki-navy text-lg font-bold">{job ? `Apply — ${job.title}` : 'General Application'}</h3>
             {job && <p className="text-stone-700 text-xs mt-0.5">{job.location} • {job.employment_type.replace('_', ' ')}</p>}
           </div>
-          <button aria-label="Close" className="icon-btn text-stone-400 hover:text-stone-700" onClick={onClose}><span aria-hidden="true">✕</span></button>
+          <button aria-label="Close" className="icon-btn text-stone-500 hover:text-stone-800" onClick={onClose}><span aria-hidden="true">✕</span></button>
         </div>
 
         {done ? (

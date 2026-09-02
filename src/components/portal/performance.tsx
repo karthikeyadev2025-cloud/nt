@@ -310,7 +310,7 @@ export function SourcingFunnelWidget({ segments }: { segments: Segment[] }) {
       ) : rows.length === 0 ? (
         <div className="py-10 text-center">
           <p className="text-stone-500 text-sm">No sourced leads in this range yet.</p>
-          <p className="text-stone-400 text-xs mt-1">Add "Who sourced this lead" when creating leads to build this report.</p>
+          <p className="text-stone-500 text-xs mt-1">Add "Who sourced this lead" when creating leads to build this report.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -324,13 +324,13 @@ export function SourcingFunnelWidget({ segments }: { segments: Segment[] }) {
                 <p className="text-stone-500 text-xs">{r.total_leads} sourced • {r.won_leads} won</p>
               </div>
               <p className={`text-sm font-bold shrink-0 ${
-                r.win_rate_pct === null ? 'text-stone-400' : r.win_rate_pct >= 40 ? 'text-emerald-700' : r.win_rate_pct >= 20 ? 'text-amber-700' : 'text-red-700'
+                r.win_rate_pct === null ? 'text-stone-500' : r.win_rate_pct >= 40 ? 'text-emerald-700' : r.win_rate_pct >= 20 ? 'text-amber-700' : 'text-red-700'
               }`}>
                 {r.win_rate_pct === null ? '—' : `${r.win_rate_pct}%`}
               </p>
             </div>
           ))}
-          <p className="text-stone-400 text-[10px] pt-1 italic">Win rate excludes in-progress leads. — means no decided leads yet.</p>
+          <p className="text-stone-500 text-[10px] pt-1 italic">Win rate excludes in-progress leads. — means no decided leads yet.</p>
         </div>
       )}
     </div>

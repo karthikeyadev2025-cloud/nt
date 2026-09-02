@@ -14,6 +14,7 @@ import { ExportPayslipsButton } from './admin-extras';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { cachedRpc } from '../../lib/cachedRpc';
 import { ModalOverlay } from '../ui/Modal';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 const DAYS = [{ v: 1, l: 'Mon' }, { v: 2, l: 'Tue' }, { v: 3, l: 'Wed' }, { v: 4, l: 'Thu' }, { v: 5, l: 'Fri' }, { v: 6, l: 'Sat' }, { v: 7, l: 'Sun' }];
 
@@ -356,7 +357,8 @@ export function PayslipManager() {
       </div>
       <div className="space-y-2">
         {payslips.map(p => (
-          <div key={p.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => openPayments(p)}>
+          <div key={p.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => openPayments(p)}
+            role="button" tabIndex={0} aria-label={`Open payslip for ${staffName(p.staff_user_id)}, ${p.period_month}/${p.period_year}`} onKeyDown={onActivateKeyDown(() => openPayments(p))}>
             <div>
               <p className="text-nikki-navy text-sm font-medium">{staffName(p.staff_user_id)} — {p.period_month}/{p.period_year}</p>
               <p className="text-stone-700 text-xs mt-0.5">Net Pay ₹{Number(p.net_pay).toLocaleString('en-IN')} • Paid ₹{Number(p.amount_paid).toLocaleString('en-IN')}</p>

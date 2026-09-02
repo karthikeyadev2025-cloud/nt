@@ -14,6 +14,7 @@ import { istDateStr } from '../../lib/dates';
 import { rpcCall } from './meetings-utils';
 import { ModalOverlay } from '../ui/Modal';
 import { useConfirm } from '../ui/ConfirmDialog';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 export type MeetingRow = {
   id: string; lead_id: string | null; segment_slug: string | null;
@@ -515,7 +516,8 @@ function MeetingDetailModal({ meeting, onClose, onChanged }: {
 function MeetingListItem({ m, onOpen }: { m: MeetingRow; onOpen: (m: MeetingRow) => void }) {
   const isPast = new Date(m.scheduled_at).getTime() < Date.now();
   return (
-    <div className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => onOpen(m)}>
+    <div className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => onOpen(m)}
+      role="button" tabIndex={0} aria-label={`Open meeting ${m.meeting_type_name}`} onKeyDown={onActivateKeyDown(() => onOpen(m))}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">

@@ -11,6 +11,7 @@ import { istDateStr, istDateStrDaysAgo } from '../../lib/dates';
 import type { Segment, Database } from '../../lib/database.types';
 import { ModalOverlay } from '../ui/Modal';
 import { useConfirm } from '../ui/ConfirmDialog';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 type Notification    = Database['public']['Tables']['notifications']['Row'];
 type Announcement    = Database['public']['Tables']['announcements']['Row'];
@@ -99,6 +100,7 @@ export function NotificationBell({ onNavigate }: { onNavigate?: (tab: string) =>
             {items.length === 0 && <p className="text-stone-700 text-sm text-center py-8">No notifications yet.</p>}
             {items.map(n => (
               <div key={n.id} onClick={() => handleClick(n)}
+                role="button" tabIndex={0} onKeyDown={onActivateKeyDown(() => handleClick(n))}
                 className={`px-4 py-3 border-b border-nikki-navy cursor-pointer hover:bg-stone-50 ${!n.read_at ? 'bg-nikki-royal/5' : ''}`}>
                 <p className="text-nikki-navy text-sm">{n.title}</p>
                 {n.body && <p className="text-stone-700 text-xs mt-0.5">{n.body}</p>}
@@ -812,7 +814,8 @@ export function CareersManager({ segments }: { segments: Segment[] }) {
           </div>
           <div className="space-y-2">
             {filteredApps.map(a => (
-              <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => viewFiles(a)}>
+              <div key={a.id} className={cardCls + ' flex items-center justify-between cursor-pointer hover:border-stone-300'} onClick={() => viewFiles(a)}
+                role="button" tabIndex={0} aria-label={`Open application from ${a.name}`} onKeyDown={onActivateKeyDown(() => viewFiles(a))}>
                 <div>
                   <p className="text-nikki-navy text-sm font-medium">{a.name} <span className="text-stone-700 text-xs">— {a.position || jobTitle(a.job_posting_id || '')}</span></p>
                   <p className="text-stone-700 text-xs mt-0.5">{a.phone} • {a.experience || 'exp not specified'} • {new Date(a.created_at ?? '').toLocaleDateString()}</p>

@@ -75,7 +75,8 @@ Looking forward to hearing from you!`;
           >
             <button
               onClick={() => setShowPopup(false)}
-              className="absolute top-4 right-4 w-8 h-8 bg-stone-800 hover:bg-stone-700 rounded-full flex items-center justify-center transition-colors"
+              aria-label="Close"
+              className="icon-btn absolute top-4 right-4 w-8 h-8 bg-stone-800 hover:bg-stone-700 rounded-full flex items-center justify-center transition-colors"
             >
               <X className="w-5 h-5 text-stone-400" />
             </button>

@@ -18,6 +18,7 @@ import { cachedQuery } from '../../lib/cachedQuery';
 import type { Segment, Database } from '../../lib/database.types';
 import { ModalOverlay } from '../ui/Modal';
 import { useConfirm } from '../ui/ConfirmDialog';
+import { onActivateKeyDown } from '../../lib/a11y';
 
 type Lead = Database['public']['Tables']['marketing_leads']['Row'];
 type LeadRemark = Database['public']['Tables']['lead_remarks']['Row'];
@@ -276,7 +277,8 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       <div className="space-y-2">
         {leads.map(l => (
           <div key={l.id} className={cardCls + ' flex items-center justify-between'}>
-            <div className="min-w-0 cursor-pointer" onClick={() => openLead(l)}>
+            <div className="min-w-0 cursor-pointer" onClick={() => openLead(l)}
+              role="button" tabIndex={0} aria-label={`Open lead ${l.customer_name}`} onKeyDown={onActivateKeyDown(() => openLead(l))}>
               <p className="text-nikki-navy text-sm font-medium truncate">{l.customer_name}</p>
               <p className="text-stone-700 text-xs mt-0.5">
                 {l.interested_in || 'No notes'} {l.callback_at && (
@@ -1737,7 +1739,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       </div>
       <div className="space-y-2">
         {leads.map(l => (
-          <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => openLead(l)}>
+          <div key={l.id} className={cardCls + ' cursor-pointer hover:border-stone-300'} onClick={() => openLead(l)}
+            role="button" tabIndex={0} aria-label={`Open lead ${l.customer_name}`} onKeyDown={onActivateKeyDown(() => openLead(l))}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-nikki-navy text-sm font-medium">{l.customer_name}</p>
