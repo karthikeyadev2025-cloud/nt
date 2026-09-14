@@ -51,6 +51,7 @@ import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
 import { ModalOverlay } from '../ui/Modal';
+import { CommandPalette } from '../ui/CommandPalette';
 import { useConfirm } from '../ui/ConfirmDialog';
 
 const PERMISSION_KEYS = [
@@ -2590,6 +2591,16 @@ export default function SuperAdminDashboard() {
           </div>
         </ModalOverlay>
       )}
+
+      {/* Ctrl/Cmd-K (or "/") from anywhere. This dashboard has 25 screens
+          behind seven collapsible sidebar groups, so "which group was
+          Duplicate Leads under again" was a real, repeated cost. The
+          sidebar group name rides along in the result so the answer sticks. */}
+      <CommandPalette
+        items={tabGroups.flatMap(g => g.items.map(t => ({ id: t.id, label: t.label, icon: t.icon, group: g.label })))}
+        activeId={tab}
+        onSelect={(id) => goTo(id as Tab)}
+      />
 
       <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
