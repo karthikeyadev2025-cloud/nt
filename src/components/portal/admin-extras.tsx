@@ -5,6 +5,8 @@ import { cachedQuery } from '../../lib/cachedQuery';
 import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { sanitizeOrFilterTerm } from '../../lib/searchFilter';
+import { useToast } from '../../lib/toast';
+import { describeReadError } from './shared-utils';
 import type { Segment, Database } from '../../lib/database.types';
 
 type SecurityAuditLog = Database['public']['Tables']['security_audit_logs']['Row'];
@@ -208,9 +210,15 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
 
 // ─────────────────────────── Export Staff CSV button
 export function ExportStaffButton() {
+  const toast = useToast();
   async function exportCsv() {
-    const { data } = await supabase.from('app_users').select('*');
-    if (!data || data.length === 0) return;
+    const { data, error } = await supabase.from('app_users').select('*');
+    // Both failure modes used to `return` silently, so the button simply
+    // did nothing when clicked and the admin had no idea whether the export
+    // was empty, blocked by permissions, or broken.
+    const msg = describeReadError(error, 'staff records');
+    if (msg) { toast.error(msg); return; }
+    if (!data || data.length === 0) { toast.info('No staff records to export.'); return; }
     const headers = ['id', 'full_name', 'email', 'role', 'phone', 'designation', 'is_active', 'joining_date'];
     const csvRows = [headers.join(',')];
     data.forEach(u => {
@@ -219,6 +227,7 @@ export function ExportStaffButton() {
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `staff_export_${istDateStr()}.csv`; a.click();
+    URL.revokeObjectURL(url); // the blob stays in memory for the tab's life otherwise
   }
   return (
     <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 text-xs font-bold border border-stone-300 transition-all">
