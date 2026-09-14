@@ -12,6 +12,7 @@ import { invalidate } from '../../lib/cacheBus';
 import { inputCls, btnCls, cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
 import { rpcCall } from './meetings-utils';
+import { describeReadError } from './shared-utils';
 import { ModalOverlay } from '../ui/Modal';
 import { useConfirm } from '../ui/ConfirmDialog';
 import { onActivateKeyDown } from '../../lib/a11y';
@@ -605,6 +606,7 @@ export function MyMeetings() {
 export function LeadMeetingsTab({ leadId, leadName, leadPhone }: {
   leadId: string; leadName: string; leadPhone: string;
 }) {
+  const toast = useToast();
   const [rows, setRows] = useState<MeetingRow[]>([]);
   const [open, setOpen] = useState<MeetingRow | null>(null);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -612,10 +614,14 @@ export function LeadMeetingsTab({ leadId, leadName, leadPhone }: {
   const load = useCallback(async () => {
     const from = new Date('2020-01-01').toISOString();
     const to = new Date(); to.setFullYear(to.getFullYear() + 2);
-    const { data } = await rpcCall<MeetingRow[]>('list_meetings', { p_from: from, p_to: to.toISOString(), p_scope: 'team' });
+    const { data, error } = await rpcCall<MeetingRow[]>('list_meetings', { p_from: from, p_to: to.toISOString(), p_scope: 'team' });
+    // A failed load used to render as "no meetings scheduled", which reads
+    // as a fact about the lead rather than a fact about the network.
+    const msg = describeReadError(error, 'meetings');
+    if (msg) { toast.error(msg); return; }
     const list = Array.isArray(data) ? data : [];
     setRows((list as MeetingRow[]).filter(m => m.lead_id === leadId));
-  }, [leadId]);
+  }, [leadId, toast]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -647,6 +653,7 @@ export function LeadMeetingsTab({ leadId, leadName, leadPhone }: {
 // actually cares about day to day; a super_admin sees their own team's
 // scope the same way, same as everywhere else meetings show up.
 export function TodayMeetingsWidget() {
+  const toast = useToast();
   const [rows, setRows] = useState<MeetingRow[]>([]);
   const [open, setOpen] = useState<MeetingRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -654,10 +661,12 @@ export function TodayMeetingsWidget() {
   const load = useCallback(async () => {
     const from = new Date(); from.setHours(0, 0, 0, 0);
     const to = new Date(); to.setHours(23, 59, 59, 999);
-    const { data } = await rpcCall<MeetingRow[]>('list_meetings', { p_from: from.toISOString(), p_to: to.toISOString(), p_scope: 'team' });
+    const { data, error } = await rpcCall<MeetingRow[]>('list_meetings', { p_from: from.toISOString(), p_to: to.toISOString(), p_scope: 'team' });
+    const msg = describeReadError(error, "today's meetings");
+    if (msg) { toast.error(msg); setLoading(false); return; }
     setRows(Array.isArray(data) ? data.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()) : []);
     setLoading(false);
-  }, []);
+  }, [toast]);
   useEffect(() => { load(); }, [load]);
 
   if (loading) return null;
@@ -688,6 +697,7 @@ export function TodayMeetingsWidget() {
 }
 
 export function TeamCalendar() {
+  const toast = useToast();
   const { hasPermission } = useAuth();
   const [rows, setRows] = useState<MeetingRow[]>([]);
   const [weekStart, setWeekStart] = useState(() => {
@@ -706,9 +716,11 @@ export function TeamCalendar() {
   const load = useCallback(async () => {
     const from = new Date(weekStart);
     const to = new Date(weekStart); to.setDate(to.getDate() + 7);
-    const { data } = await rpcCall<MeetingRow[]>('list_meetings', { p_from: from.toISOString(), p_to: to.toISOString(), p_scope: scope });
+    const { data, error } = await rpcCall<MeetingRow[]>('list_meetings', { p_from: from.toISOString(), p_to: to.toISOString(), p_scope: scope });
+    const msg = describeReadError(error, 'the team calendar');
+    if (msg) { toast.error(msg); return; }
     if (Array.isArray(data)) setRows(data);
-  }, [weekStart, scope]);
+  }, [weekStart, scope, toast]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -818,9 +830,11 @@ export function MeetingTypesManager() {
   const [editing, setEditing] = useState<Partial<MeetingType> | null>(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('meeting_types' as never).select('*').order('order_index');
+    const { data, error } = await supabase.from('meeting_types' as never).select('*').order('order_index');
+    const msg = describeReadError(error, 'meeting types');
+    if (msg) { toast.error(msg); return; }
     if (data) setRows(data as MeetingType[]);
-  }, []);
+  }, [toast]);
   useEffect(() => { load(); }, [load]);
 
   async function save() {

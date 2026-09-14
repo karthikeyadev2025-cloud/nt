@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
@@ -1401,11 +1401,13 @@ function LeavePolicyManager() {
   const [rows, setRows] = useState<Tables<'leave_policies'>[]>([]);
   const [busy, setBusy] = useState(false);
 
-  async function load() {
-    const { data } = await supabase.from('leave_policies').select('*').is('role_name', null).order('leave_type');
+  const load = useCallback(async () => {
+    const { data, error } = await supabase.from('leave_policies').select('*').is('role_name', null).order('leave_type');
+    const msg = describeReadError(error, 'leave policies');
+    if (msg) { toast.error(msg); return; }
     if (data) setRows(data);
-  }
-  useEffect(() => { load(); }, []);
+  }, [toast]);
+  useEffect(() => { load(); }, [load]);
 
   async function save(id: string, annual_days: number) {
     setBusy(true);
