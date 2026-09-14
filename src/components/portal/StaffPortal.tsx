@@ -28,6 +28,7 @@ import { ChangePasswordModal } from '../ChangePasswordModal';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { cachedRpc } from '../../lib/cachedRpc';
 import { ModalOverlay } from '../ui/Modal';
+import { getPosition } from '../../lib/geo';
 
 // ─────────────────────────── Self-service: attendance
 // ─────────────────────────── Role-aware Home
@@ -399,16 +400,14 @@ export function MyAttendance() {
   }, [user, dateStr]);
   useEffect(() => { load(); }, [load]);
 
-  function getPosition(): Promise<{ lat: number | null; lng: number | null }> {
-    return new Promise(resolve => {
-      if (!navigator.geolocation) return resolve({ lat: null, lng: null });
-      navigator.geolocation.getCurrentPosition(
-        p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => resolve({ lat: null, lng: null }),
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
-    });
-  }
+  // This used to be a second, subtly different copy of lib/geo's
+  // getPosition: on failure it resolved `{ lat: null, lng: null }` instead
+  // of `null`. Both check-in and check-out guard with `if (!pos)`, and an
+  // object — even one full of nulls — is truthy, so that guard NEVER fired.
+  // Attendance was written with null coordinates while the code above it
+  // documented the opposite ("a failure on either one stops the check-in").
+  // Using the shared helper makes the guard work and removes the duplicate
+  // that let the two drift apart.
 
   async function uploadSelfie(dataUrl: string): Promise<string | null> {
     if (!user) return null;
