@@ -23,6 +23,7 @@ import { invalidate } from '../../lib/cacheBus';
 import { ModalOverlay } from '../ui/Modal';
 import { useConfirm } from '../ui/ConfirmDialog';
 import { onActivateKeyDown } from '../../lib/a11y';
+import { sanitizeOrFilterTerm } from '../../lib/searchFilter';
 
 export const inputCls =
   'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-royal focus:ring-2 focus:ring-nikki-royal/20 focus:outline-none transition-all placeholder-stone-500';
@@ -1573,10 +1574,10 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
         if (dateFrom) q = q.gte('created_at', dateFrom);
         if (dateTo) q = q.lte('created_at', dateTo + 'T23:59:59');
         if (searchTerm) {
-          // PostgREST's .or() takes a comma-separated filter list, so a
-          // comma, parenthesis or backslash typed into the search box would
-          // otherwise be parsed as filter syntax rather than as text.
-          const safe = searchTerm.replace(/[\\,()]/g, ' ').trim();
+          // See sanitizeOrFilterTerm: PostgREST's .or() takes a
+          // comma-separated filter list, so punctuation typed into the
+          // search box is otherwise parsed as filter syntax, not as text.
+          const safe = sanitizeOrFilterTerm(searchTerm);
           if (safe) {
             q = q.or(`customer_name.ilike.%${safe}%,phone.ilike.%${safe}%,interested_in.ilike.%${safe}%`);
           }
