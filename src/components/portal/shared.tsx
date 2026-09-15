@@ -1436,14 +1436,24 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
 
     if (bulkAssignee) {
       const assigneeObj = staff.find(s => s.id === bulkAssignee);
-      await supabase.from('notifications').insert({
+      // Surfaced rather than swallowed: the assignment itself has already
+      // succeeded at this point, so a failed notification leaves someone
+      // holding new work they were never told about. The notifications
+      // INSERT policy requires created_by = auth.uid(), supplied by the
+      // column default, so this is also the line that would report it if
+      // that default ever went missing.
+      const { error: notifErr } = await supabase.from('notifications').insert({
         user_id: bulkAssignee,
         kind: 'lead_assigned',
         title: 'New leads assigned to you',
         body: `${selectedIds.length} leads were assigned to you.`,
         link: '/portal',
       } as never);
-      toast.success(`${selectedIds.length} leads assigned to ${assigneeObj?.full_name || 'staff'}`);
+      if (notifErr) {
+        toast.error(`${selectedIds.length} leads assigned, but ${assigneeObj?.full_name || 'the assignee'} could not be notified: ${notifErr.message}. Tell them directly.`);
+      } else {
+        toast.success(`${selectedIds.length} leads assigned to ${assigneeObj?.full_name || 'staff'}`);
+      }
     } else {
       toast.success(`${selectedIds.length} leads set to Unassigned`);
     }

@@ -1311,11 +1311,18 @@ export function AppointmentsBoard({ segments }: { segments: Segment[] }) {
       .update({ assigned_to: execId, updated_at: new Date().toISOString() } as never).eq('id', leadId);
     setBusy('');
     if (error) { toast.error(`Couldn't assign: ${error.message}`); return; }
-    await supabase.from('notifications').insert({
+    // Same reasoning as the bulk-assign path in shared.tsx: the assignment
+    // has landed, so a silent notification failure means an executive is
+    // expected at an appointment nobody told them about.
+    const { error: notifErr } = await supabase.from('notifications').insert({
       user_id: execId, kind: 'appointment', title: `Appointment assigned: ${customerName}`,
       body: `${new Date(apptAt).toLocaleString('en-IN')} — you are attending this appointment.`, link: '/portal',
     } as never);
-    toast.success('Executive assigned — they have been notified');
+    if (notifErr) {
+      toast.error(`Executive assigned, but they could not be notified: ${notifErr.message}. Tell them directly.`);
+    } else {
+      toast.success('Executive assigned — they have been notified');
+    }
     invalidate('leads', 'notifications');
     load();
   }
