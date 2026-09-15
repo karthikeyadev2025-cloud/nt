@@ -36,6 +36,18 @@ COMMENT ON COLUMN notifications.created_by IS
 
 DROP POLICY IF EXISTS "staff create notifications" ON notifications;
 
+-- Also drop THIS migration's own policy first, so re-running the file is a
+-- no-op instead of a failure. Without it a second run raised 42710
+-- (duplicate_object) on the CREATE below and rolled the whole thing back —
+-- alarming to read, and indistinguishable at a glance from the migration
+-- never having worked.
+--
+-- Dropping both names matters for a reason beyond tidiness: Postgres ORs
+-- permissive policies together, so if the old `WITH CHECK (true)` policy
+-- ever coexisted with the strict one, the permissive one would win and the
+-- spoofing hole would be wide open while looking fixed.
+DROP POLICY IF EXISTS "staff create attributable notifications" ON notifications;
+
 CREATE POLICY "staff create attributable notifications" ON notifications
   FOR INSERT TO authenticated
   WITH CHECK (
