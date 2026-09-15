@@ -95,16 +95,26 @@ export const VISIT_OUTCOMES: readonly Outcome[] = [
     note: 'required', tone: 'emerald', followupDays: null },
 ];
 
-/** Defaults each screen starts on. Named so a rename cannot silently break them. */
-export const DEFAULT_CALL_OUTCOME = 'interested';
-export const DEFAULT_VISIT_OUTCOME = 'visit_followup';
+/*
+  Every screen starts with nothing selected, and these return undefined for
+  '' — deliberately, rather than falling back to the first entry.
 
-export function callOutcome(value: string): Outcome {
-  return CALL_OUTCOMES.find(o => o.value === value) ?? CALL_OUTCOMES[0];
+  A pre-selected outcome is a wrong answer waiting to be saved: the form looks
+  filled in, so someone who forgets to choose records whatever the default was
+  rather than what happened. And a lookup that silently falls back is the same
+  bug one layer down — with the first call entry being "No answer", a missed
+  guard would have written stage 'not_answered' AND handed the lead back to
+  the unassigned pool, for a call that was never logged at all.
+
+  Returning undefined makes the compiler name every place that has to deal
+  with "nothing chosen yet".
+*/
+export function callOutcome(value: string): Outcome | undefined {
+  return CALL_OUTCOMES.find(o => o.value === value);
 }
 
-export function visitOutcome(value: string): Outcome {
-  return VISIT_OUTCOMES.find(o => o.value === value) ?? VISIT_OUTCOMES[0];
+export function visitOutcome(value: string): Outcome | undefined {
+  return VISIT_OUTCOMES.find(o => o.value === value);
 }
 
 /**

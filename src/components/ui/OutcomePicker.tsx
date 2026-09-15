@@ -12,6 +12,13 @@ import { OUTCOME_TONE, type Outcome } from '../portal/outcomes';
   dropdown to see what was missing. A visible grid shows the whole vocabulary
   at once and costs one tap.
 
+  Nothing is selected until someone chooses. A pre-selected outcome makes the
+  form look filled in, so whoever forgets to choose records the default rather
+  than what happened — and the defaults were "Spoke — interested" and "Met —
+  follow up later", which are exactly the outcomes you least want invented.
+  The unselected state says so, so an untouched grid does not read as a
+  rendering glitch.
+
   Buttons are min-h-[44px] because these are the primary targets for staff
   working one-handed, outdoors, on a phone.
 */
@@ -46,6 +53,7 @@ export function OutcomePicker({ legend, options, value, onChange }: {
       {/* The hint belongs to the chosen outcome, so it sits under the grid
           rather than inside a button that has no room for it. */}
       {selected?.hint && <p className="text-stone-600 text-[11px] mt-1.5 italic">{selected.hint}</p>}
+      {!selected && <p className="text-stone-600 text-[11px] mt-1.5">Pick one to continue.</p>}
     </fieldset>
   );
 }

@@ -11,8 +11,7 @@ import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, Resch
 import { stageLabel, describeDbError, describeReadError } from './shared-utils';
 import {
   CALL_OUTCOMES, VISIT_OUTCOMES, callOutcome, visitOutcome,
-  releasesToPool, isClosed, DEFAULT_CALL_OUTCOME, DEFAULT_VISIT_OUTCOME,
-  WON_REMARK_PREFIXES,
+  releasesToPool, isClosed, WON_REMARK_PREFIXES,
 } from './outcomes';
 import { OutcomePicker } from '../ui/OutcomePicker';
 import { normalizePhone, waLink } from '../../lib/phone';
@@ -109,7 +108,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
   const [executives, setExecutives] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);
   const [active, setActive] = useState<Lead | null>(null);
   const [history, setHistory] = useState<LeadRemark[]>([]);
-  const [outcome, setOutcome] = useState(DEFAULT_CALL_OUTCOME);
+  const [outcome, setOutcome] = useState('');
   const [remark, setRemark] = useState('');
   const [callbackDate, setCallbackDate] = useState('');
   const [appointmentDate, setAppointmentDate] = useState('');
@@ -158,7 +157,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
 
   async function openLead(lead: Lead) {
     setActive(lead);
-    setOutcome(DEFAULT_CALL_OUTCOME);
+    setOutcome('');
     setRemark('');
     setCallbackDate('');
     setTransferTo('');
@@ -173,6 +172,9 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
   async function submitOutcome() {
     if (!active || !user) return;
     const meta = callOutcome(outcome);
+    // Nothing pre-selected, so nothing is assumed. Saying so is better than
+    // a disabled button, which leaves you guessing what is missing.
+    if (!meta) { toast.error('Pick what happened on the call first.'); return; }
     // A note is demanded only where the note IS the information. "No answer"
     // and "Asked to call back" already say everything they can say — the old
     // blanket requirement meant the caller typed "." to get past it, or gave
@@ -278,6 +280,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     load();
   }
 
+  const callMeta = callOutcome(outcome);
   return (
     <div>
       <TelecallerStatsDashboard />
@@ -399,10 +402,10 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
             )}
 
             <OutcomePicker legend="How did the call go?" options={CALL_OUTCOMES} value={outcome} onChange={setOutcome} />
-            {callOutcome(outcome).schedules === 'callback' && (
+            {callMeta?.schedules === 'callback' && (
               <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} aria-label="Callback date and time" />
             )}
-            {callOutcome(outcome).schedules === 'appointment' && (
+            {callMeta?.schedules === 'appointment' && (
               <div className="space-y-2 rounded-lg border border-nikki-royal/30 bg-nikki-royal/5 p-3">
                 <p className="text-nikki-blue text-xs font-medium">Appointment date &amp; time *</p>
                 <input type="datetime-local" className={inputCls} value={appointmentDate} aria-label="Appointment date and time"
@@ -416,13 +419,13 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
             <textarea
               className={inputCls}
               rows={2}
-              placeholder={callOutcome(outcome).note === 'required' ? 'What did they say? *' : 'Anything to add? (optional)'}
-              aria-label={callOutcome(outcome).note === 'required' ? 'What did they say? Required' : 'Anything to add? Optional'}
+              placeholder={!callMeta ? 'Notes' : callMeta.note === 'required' ? 'What did they say? *' : 'Anything to add? (optional)'}
+              aria-label={!callMeta ? 'Notes' : callMeta.note === 'required' ? 'What did they say? Required' : 'Anything to add? Optional'}
               value={remark}
               onChange={e => setRemark(e.target.value)}
             />
             <button className={btnCls + ' w-full min-h-[44px]'} disabled={busy} onClick={submitOutcome}>
-              {busy ? 'Saving…' : `Save call: ${callOutcome(outcome).label}`}
+              {busy ? 'Saving…' : callMeta ? `Save call: ${callMeta.label}` : 'Save call'}
             </button>
 
             <div className="border-t border-stone-800 pt-3">
@@ -1461,7 +1464,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
-  const [outcome, setOutcome] = useState(DEFAULT_VISIT_OUTCOME);
+  const [outcome, setOutcome] = useState('');
   const [remark, setRemark] = useState('');
   const [busy, setBusy] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
@@ -1569,7 +1572,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
   async function openLead(lead: Lead) {
     setActive(lead);
-    setOutcome(DEFAULT_VISIT_OUTCOME);
+    setOutcome('');
     setRemark('');
     setPhotoDataUrl(null);
     setLocation(null);
@@ -1646,6 +1649,9 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     // precisely why an absent customer got logged as "Follow-up needed"
     // instead: that was the cheapest option that would let the form save.
     const meta = visitOutcome(outcome);
+    // Nothing pre-selected, so nothing is assumed. Saying so is better than
+    // a disabled button, which leaves you guessing what is missing.
+    if (!meta) { toast.error('Pick what happened on the visit first.'); return; }
     if (meta.note === 'required' && !remark.trim()) {
       toast.error(`Add a short note so the next person knows what happened — "${meta.label}" needs one.`);
       return;
@@ -1723,12 +1729,15 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   }
 
   const visitMeta = visitOutcome(outcome);
-  const noteRequired = visitMeta.note === 'required';
+  const noteRequired = visitMeta?.note === 'required';
   // "Estimated deal value" is the wrong words once a number has actually been
   // quoted to the customer, and the wrong words again for a closed deal.
-  const dealValueLabel = visitMeta.stage === 'won' ? 'Final invoice amount (₹)'
-    : visitMeta.stage === 'quoted' ? 'Amount you quoted (₹)'
+  const dealValueLabel = visitMeta?.stage === 'won' ? 'Final invoice amount (₹)'
+    : visitMeta?.stage === 'quoted' ? 'Amount you quoted (₹)'
     : 'Estimated deal value (₹)';
+  // With nothing chosen the visit is not closed, so the follow-up and
+  // appointment fields stay visible rather than flickering in on first tap.
+  const visitClosed = !!visitMeta && isClosed(visitMeta);
 
   return (
     <div>
@@ -1975,9 +1984,9 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 placeholder={dealValueLabel} value={dealValue}
                 onChange={e => setDealValue(e.target.value)} aria-label={dealValueLabel} />
               <textarea className={inputCls} rows={2} value={remark} onChange={e => setRemark(e.target.value)}
-                placeholder={noteRequired ? 'What happened on the visit? *' : 'Anything to add? (optional)'}
-                aria-label={noteRequired ? 'What happened on the visit? Required' : 'Anything to add? Optional'} />
-              {!isClosed(visitMeta) && (
+                placeholder={!visitMeta ? 'Notes' : noteRequired ? 'What happened on the visit? *' : 'Anything to add? (optional)'}
+                aria-label={!visitMeta ? 'Notes' : noteRequired ? 'What happened on the visit? Required' : 'Anything to add? Optional'} />
+              {!visitClosed && (
                 <div className="grid grid-cols-1 gap-2 mt-2">
                   <div>
                     <p className="text-stone-700 text-xs mb-1">Next follow-up (reminds you)</p>
@@ -1992,7 +2001,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 </div>
               )}
               <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>
-                {busy ? 'Saving…' : `Save visit: ${visitMeta.label}`}
+                {busy ? 'Saving…' : visitMeta ? `Save visit: ${visitMeta.label}` : 'Save visit'}
               </button>
             </div>
 

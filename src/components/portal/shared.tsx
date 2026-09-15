@@ -2609,7 +2609,7 @@ function LogOutcomeDialog({
   const followupValue = followupOverride || defaultFollowup;
 
   async function submit() {
-    if (!outcome) { toast.error('Pick what happened first.'); return; }
+    if (!outcome) { toast.error(`Pick what happened on the ${mode === 'call' ? 'call' : 'visit'} first.`); return; }
     if (outcome.note === 'required' && !note.trim()) {
       toast.error(`Add a short note so the next person knows what happened — "${outcome.label}" needs one.`);
       return;
@@ -2738,7 +2738,7 @@ function LogOutcomeDialog({
           </button>
           <button
             onClick={submit}
-            disabled={busy || !outcome}
+            disabled={busy}
             className="px-4 py-2 text-xs font-bold text-white bg-nikki-blue hover:bg-nikki-navy disabled:opacity-40 disabled:cursor-not-allowed rounded-xl shadow-md">
             {busy ? 'Saving…' : outcome ? `Save: ${outcome.label}` : 'Save & advance'}
           </button>
