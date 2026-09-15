@@ -125,21 +125,29 @@ ALTER TABLE app_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE role_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE segments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "read own profile" ON app_users;
 CREATE POLICY "read own profile" ON app_users FOR SELECT TO authenticated
   USING (id = auth.uid() OR is_super_admin() OR has_permission('view_staff'));
+DROP POLICY IF EXISTS "super admin manages users" ON app_users;
 CREATE POLICY "super admin manages users" ON app_users FOR INSERT TO authenticated
   WITH CHECK (is_super_admin() OR has_permission('manage_staff'));
+DROP POLICY IF EXISTS "super admin updates users" ON app_users;
 CREATE POLICY "super admin updates users" ON app_users FOR UPDATE TO authenticated
   USING (is_super_admin() OR has_permission('manage_staff') OR id = auth.uid())
   WITH CHECK (is_super_admin() OR has_permission('manage_staff') OR id = auth.uid());
+DROP POLICY IF EXISTS "super admin deletes users" ON app_users;
 CREATE POLICY "super admin deletes users" ON app_users FOR DELETE TO authenticated
   USING (is_super_admin());
 
+DROP POLICY IF EXISTS "authenticated read roles" ON role_permissions;
 CREATE POLICY "authenticated read roles" ON role_permissions FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "super admin manages roles" ON role_permissions;
 CREATE POLICY "super admin manages roles" ON role_permissions FOR ALL TO authenticated
   USING (is_super_admin()) WITH CHECK (is_super_admin());
 
+DROP POLICY IF EXISTS "public read active segments" ON segments;
 CREATE POLICY "public read active segments" ON segments FOR SELECT USING (active = true OR is_super_admin());
+DROP POLICY IF EXISTS "super admin manages segments" ON segments;
 CREATE POLICY "super admin manages segments" ON segments FOR ALL TO authenticated
   USING (is_super_admin()) WITH CHECK (is_super_admin());
 
@@ -156,7 +164,9 @@ CREATE TABLE IF NOT EXISTS site_content (
   UNIQUE(section, key)
 );
 ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read content" ON site_content;
 CREATE POLICY "public read content" ON site_content FOR SELECT USING (true);
+DROP POLICY IF EXISTS "cms manage content" ON site_content;
 CREATE POLICY "cms manage content" ON site_content FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_content'))
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));
@@ -187,18 +197,25 @@ CREATE TABLE IF NOT EXISTS services (
   updated_at timestamptz DEFAULT now()
 );
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read services" ON services;
 CREATE POLICY "public read services" ON services FOR SELECT USING (active = true OR is_super_admin() OR has_permission('manage_content'));
+DROP POLICY IF EXISTS "cms manage services" ON services;
 CREATE POLICY "cms manage services" ON services FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_content'))
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));
 
-INSERT INTO services (segment_slug, title, description, icon, order_index) VALUES
-  ('digital_media','Social Media Marketing','Instagram, Facebook, YouTube growth with content calendars and ads.','Megaphone',1),
+INSERT INTO services (segment_slug, title, description, icon, order_index)
+SELECT * FROM (VALUES
+('digital_media','Social Media Marketing','Instagram, Facebook, YouTube growth with content calendars and ads.','Megaphone',1),
   ('digital_media','Branding & Design','Logos, brand kits, posters, reels and video production.','Palette',2),
   ('digital_media','Performance Ads','Google & Meta ads with tracked ROI and lead funnels.','TrendingUp',3),
   ('software','SaaS Products','Our own products — retail billing, payroll and AI voice.','Boxes',1),
   ('software','Custom Software','Web apps, mobile apps and business automation built to order.','Code2',2),
-  ('software','AI Solutions','AI voice bots, chatbots and workflow automation.','Bot',3);
+  ('software','AI Solutions','AI voice bots, chatbots and workflow automation.','Bot',3)
+) AS v(segment_slug, title, description, icon, order_index)
+WHERE NOT EXISTS (
+  SELECT 1 FROM services x WHERE x.segment_slug IS NOT DISTINCT FROM v.segment_slug AND x.title IS NOT DISTINCT FROM v.title
+);
 
 -- ═══════════════════════════════════════════════════════════════
 -- 5. PRODUCTS (Software Solutions catalog — link-out)
@@ -221,7 +238,9 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at timestamptz DEFAULT now()
 );
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read products" ON products;
 CREATE POLICY "public read products" ON products FOR SELECT USING (status <> 'hidden' OR is_super_admin() OR has_permission('manage_content'));
+DROP POLICY IF EXISTS "cms manage products" ON products;
 CREATE POLICY "cms manage products" ON products FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_content'))
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));
@@ -232,7 +251,8 @@ INSERT INTO products (slug, name, tagline, description, external_url, features, 
   ('punchly','Punchly','Attendance & Payroll SaaS','Selfie + GPS attendance, shift management, leave workflows and one-click payroll with Excel reports. Android app included.','https://punchly.online',
    '[{"title":"Smart Attendance","description":"Selfie + GPS check-in, night shifts supported","icon":"Clock"},{"title":"Payroll","description":"Salary, advances and Excel reports","icon":"IndianRupee"},{"title":"Mobile App","description":"Android app for every employee","icon":"Smartphone"}]'::jsonb, 2),
   ('jovio','Jovio AI Voice','Telugu AI Voice Receptionist','AI-powered voice receptionist that answers business calls in Telugu and English — books appointments, answers FAQs, 24/7.','https://jovio.in',
-   '[{"title":"Telugu Voice AI","description":"Natural Telugu + English conversations","icon":"Mic"},{"title":"24/7 Reception","description":"Never miss a customer call","icon":"PhoneCall"},{"title":"Smart Routing","description":"Appointments, FAQs and escalation","icon":"GitBranch"}]'::jsonb, 3);
+   '[{"title":"Telugu Voice AI","description":"Natural Telugu + English conversations","icon":"Mic"},{"title":"24/7 Reception","description":"Never miss a customer call","icon":"PhoneCall"},{"title":"Smart Routing","description":"Appointments, FAQs and escalation","icon":"GitBranch"}]'::jsonb, 3)
+ON CONFLICT (slug) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════
 -- 6. SUPPORT TICKETS (per-segment, separate views)
@@ -245,14 +265,21 @@ CREATE TABLE IF NOT EXISTS ticket_types (
   active boolean DEFAULT true
 );
 ALTER TABLE ticket_types ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read ticket types" ON ticket_types;
 CREATE POLICY "public read ticket types" ON ticket_types FOR SELECT USING (active = true OR is_super_admin());
+DROP POLICY IF EXISTS "manage ticket types" ON ticket_types;
 CREATE POLICY "manage ticket types" ON ticket_types FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_content'))
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));
 
-INSERT INTO ticket_types (segment_slug, name, order_index) VALUES
-  ('digital_media','Campaign Issue',1),('digital_media','Design Request',2),('digital_media','Account/Billing',3),('digital_media','Other',4),
-  ('software','Bug Report',1),('software','Feature Request',2),('software','Account/Billing',3),('software','Demo Request',4),('software','Other',5);
+INSERT INTO ticket_types (segment_slug, name, order_index)
+SELECT * FROM (VALUES
+('digital_media','Campaign Issue',1),('digital_media','Design Request',2),('digital_media','Account/Billing',3),('digital_media','Other',4),
+  ('software','Bug Report',1),('software','Feature Request',2),('software','Account/Billing',3),('software','Demo Request',4),('software','Other',5)
+) AS v(segment_slug, name, order_index)
+WHERE NOT EXISTS (
+  SELECT 1 FROM ticket_types x WHERE x.segment_slug IS NOT DISTINCT FROM v.segment_slug AND x.name IS NOT DISTINCT FROM v.name
+);
 
 CREATE SEQUENCE IF NOT EXISTS ticket_seq;
 
@@ -293,12 +320,16 @@ CREATE INDEX IF NOT EXISTS idx_tickets_segment ON support_tickets(segment_slug, 
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 
 -- Public can create tickets (Raise a Ticket form)
+DROP POLICY IF EXISTS "anyone can raise ticket" ON support_tickets;
 CREATE POLICY "anyone can raise ticket" ON support_tickets FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "staff view segment tickets" ON support_tickets;
 CREATE POLICY "staff view segment tickets" ON support_tickets FOR SELECT TO authenticated
   USING (has_permission('view_tickets') AND can_access_segment(segment_slug));
+DROP POLICY IF EXISTS "staff manage segment tickets" ON support_tickets;
 CREATE POLICY "staff manage segment tickets" ON support_tickets FOR UPDATE TO authenticated
   USING (has_permission('manage_tickets') AND can_access_segment(segment_slug))
   WITH CHECK (has_permission('manage_tickets') AND can_access_segment(segment_slug));
+DROP POLICY IF EXISTS "super admin deletes tickets" ON support_tickets;
 CREATE POLICY "super admin deletes tickets" ON support_tickets FOR DELETE TO authenticated USING (is_super_admin());
 
 CREATE TABLE IF NOT EXISTS ticket_replies (
@@ -311,8 +342,10 @@ CREATE TABLE IF NOT EXISTS ticket_replies (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE ticket_replies ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "staff view replies" ON ticket_replies;
 CREATE POLICY "staff view replies" ON ticket_replies FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM support_tickets t WHERE t.id = ticket_id AND has_permission('view_tickets') AND can_access_segment(t.segment_slug)));
+DROP POLICY IF EXISTS "staff add replies" ON ticket_replies;
 CREATE POLICY "staff add replies" ON ticket_replies FOR INSERT TO authenticated
   WITH CHECK (EXISTS (SELECT 1 FROM support_tickets t WHERE t.id = ticket_id AND has_permission('manage_tickets') AND can_access_segment(t.segment_slug)));
 
@@ -345,12 +378,16 @@ CREATE TABLE IF NOT EXISTS marketing_leads (
 CREATE INDEX IF NOT EXISTS idx_leads_segment_stage ON marketing_leads(segment_slug, stage);
 ALTER TABLE marketing_leads ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "public can submit lead" ON marketing_leads;
 CREATE POLICY "public can submit lead" ON marketing_leads FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "staff view segment leads" ON marketing_leads;
 CREATE POLICY "staff view segment leads" ON marketing_leads FOR SELECT TO authenticated
   USING (has_permission('view_leads') AND (can_access_segment(segment_slug) OR assigned_to = auth.uid() OR created_by = auth.uid()));
+DROP POLICY IF EXISTS "staff update segment leads" ON marketing_leads;
 CREATE POLICY "staff update segment leads" ON marketing_leads FOR UPDATE TO authenticated
   USING (has_permission('manage_leads') AND (can_access_segment(segment_slug) OR assigned_to = auth.uid()))
   WITH CHECK (has_permission('manage_leads'));
+DROP POLICY IF EXISTS "super admin deletes leads" ON marketing_leads;
 CREATE POLICY "super admin deletes leads" ON marketing_leads FOR DELETE TO authenticated USING (is_super_admin());
 
 CREATE TABLE IF NOT EXISTS lead_remarks (
@@ -362,8 +399,10 @@ CREATE TABLE IF NOT EXISTS lead_remarks (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE lead_remarks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "staff view remarks" ON lead_remarks;
 CREATE POLICY "staff view remarks" ON lead_remarks FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM marketing_leads l WHERE l.id = lead_id AND has_permission('view_leads') AND (can_access_segment(l.segment_slug) OR l.assigned_to = auth.uid() OR l.created_by = auth.uid())));
+DROP POLICY IF EXISTS "staff add remarks" ON lead_remarks;
 CREATE POLICY "staff add remarks" ON lead_remarks FOR INSERT TO authenticated
   WITH CHECK (has_permission('manage_leads'));
 
@@ -387,10 +426,13 @@ CREATE TABLE IF NOT EXISTS attendance_records (
   UNIQUE(staff_user_id, attendance_date)
 );
 ALTER TABLE attendance_records ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own attendance" ON attendance_records;
 CREATE POLICY "own attendance" ON attendance_records FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('view_attendance'));
+DROP POLICY IF EXISTS "self check in" ON attendance_records;
 CREATE POLICY "self check in" ON attendance_records FOR INSERT TO authenticated
   WITH CHECK (staff_user_id = auth.uid() OR has_permission('manage_payroll'));
+DROP POLICY IF EXISTS "self check out" ON attendance_records;
 CREATE POLICY "self check out" ON attendance_records FOR UPDATE TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('manage_payroll'))
   WITH CHECK (staff_user_id = auth.uid() OR has_permission('manage_payroll'));
@@ -407,10 +449,13 @@ CREATE TABLE IF NOT EXISTS salary_advance_requests (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE salary_advance_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own advances" ON salary_advance_requests;
 CREATE POLICY "own advances" ON salary_advance_requests FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('approve_advances') OR has_permission('view_payroll'));
+DROP POLICY IF EXISTS "request advance" ON salary_advance_requests;
 CREATE POLICY "request advance" ON salary_advance_requests FOR INSERT TO authenticated
   WITH CHECK (staff_user_id = auth.uid());
+DROP POLICY IF EXISTS "hr reviews advances" ON salary_advance_requests;
 CREATE POLICY "hr reviews advances" ON salary_advance_requests FOR UPDATE TO authenticated
   USING (has_permission('approve_advances')) WITH CHECK (has_permission('approve_advances'));
 
@@ -428,10 +473,13 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE leave_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own leaves" ON leave_requests;
 CREATE POLICY "own leaves" ON leave_requests FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('approve_leaves'));
+DROP POLICY IF EXISTS "request leave" ON leave_requests;
 CREATE POLICY "request leave" ON leave_requests FOR INSERT TO authenticated
   WITH CHECK (staff_user_id = auth.uid());
+DROP POLICY IF EXISTS "approve leaves" ON leave_requests;
 CREATE POLICY "approve leaves" ON leave_requests FOR UPDATE TO authenticated
   USING (has_permission('approve_leaves')) WITH CHECK (has_permission('approve_leaves'));
 
@@ -449,7 +497,9 @@ CREATE TABLE IF NOT EXISTS gallery_items (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE gallery_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read gallery" ON gallery_items;
 CREATE POLICY "public read gallery" ON gallery_items FOR SELECT USING (active = true OR is_super_admin() OR has_permission('manage_content'));
+DROP POLICY IF EXISTS "cms manage gallery" ON gallery_items;
 CREATE POLICY "cms manage gallery" ON gallery_items FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_content'))
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));
@@ -466,7 +516,9 @@ CREATE TABLE IF NOT EXISTS testimonials (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read testimonials" ON testimonials;
 CREATE POLICY "public read testimonials" ON testimonials FOR SELECT USING (active = true OR is_super_admin() OR has_permission('manage_content'));
+DROP POLICY IF EXISTS "cms manage testimonials" ON testimonials;
 CREATE POLICY "cms manage testimonials" ON testimonials FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_content'))
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));
@@ -482,7 +534,9 @@ CREATE TABLE IF NOT EXISTS team_members (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read team" ON team_members;
 CREATE POLICY "public read team" ON team_members FOR SELECT USING (active = true OR is_super_admin() OR has_permission('manage_content'));
+DROP POLICY IF EXISTS "cms manage team" ON team_members;
 CREATE POLICY "cms manage team" ON team_members FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_content'))
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));
@@ -497,7 +551,9 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public submit contact" ON contact_messages;
 CREATE POLICY "public submit contact" ON contact_messages FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "staff read contacts" ON contact_messages;
 CREATE POLICY "staff read contacts" ON contact_messages FOR SELECT TO authenticated
   USING (is_super_admin() OR has_permission('view_leads'));
 
@@ -514,7 +570,9 @@ CREATE TABLE IF NOT EXISTS career_applications (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE career_applications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public apply career" ON career_applications;
 CREATE POLICY "public apply career" ON career_applications FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "hr read careers" ON career_applications;
 CREATE POLICY "hr read careers" ON career_applications FOR SELECT TO authenticated
   USING (is_super_admin() OR has_permission('view_staff'));
 
@@ -532,8 +590,11 @@ CREATE TABLE IF NOT EXISTS security_audit_logs (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE security_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "insert own logs" ON security_audit_logs;
 CREATE POLICY "insert own logs" ON security_audit_logs FOR INSERT TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "anon insert login logs" ON security_audit_logs;
 CREATE POLICY "anon insert login logs" ON security_audit_logs FOR INSERT TO anon WITH CHECK (event_type IN ('login_failed','login_success'));
+DROP POLICY IF EXISTS "super admin reads logs" ON security_audit_logs;
 CREATE POLICY "super admin reads logs" ON security_audit_logs FOR SELECT TO authenticated USING (is_super_admin());
 
 -- ═══════════════════════════════════════════════════════════════
@@ -545,12 +606,17 @@ INSERT INTO storage.buckets (id, name, public) VALUES
   ('lead-photos','lead-photos', false)
 ON CONFLICT (id) DO NOTHING;
 
+DROP POLICY IF EXISTS "public read site photos" ON storage.objects;
 CREATE POLICY "public read site photos" ON storage.objects FOR SELECT USING (bucket_id = 'site-photos');
+DROP POLICY IF EXISTS "cms upload site photos" ON storage.objects;
 CREATE POLICY "cms upload site photos" ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (bucket_id = 'site-photos' AND (is_super_admin() OR has_permission('manage_content')));
+DROP POLICY IF EXISTS "cms delete site photos" ON storage.objects;
 CREATE POLICY "cms delete site photos" ON storage.objects FOR DELETE TO authenticated
   USING (bucket_id = 'site-photos' AND (is_super_admin() OR has_permission('manage_content')));
+DROP POLICY IF EXISTS "staff upload selfies" ON storage.objects;
 CREATE POLICY "staff upload selfies" ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (bucket_id IN ('selfies','lead-photos'));
+DROP POLICY IF EXISTS "staff read selfies" ON storage.objects;
 CREATE POLICY "staff read selfies" ON storage.objects FOR SELECT TO authenticated
   USING (bucket_id IN ('selfies','lead-photos'));

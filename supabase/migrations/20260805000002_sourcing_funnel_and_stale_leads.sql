@@ -120,6 +120,7 @@ ALTER TABLE lead_stale_notifications ENABLE ROW LEVEL SECURITY;
 -- Read-only for staff — helps them see "this alert is because it's been
 -- stale since X" if we surface it in the UI later. Writes are all
 -- via SECURITY DEFINER functions.
+DROP POLICY IF EXISTS "auth read stale notifications" ON lead_stale_notifications;
 CREATE POLICY "auth read stale notifications" ON lead_stale_notifications
   FOR SELECT TO authenticated USING (
     is_super_admin() OR has_permission('manage_leads')

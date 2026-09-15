@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS client_logos (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE client_logos ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read client logos" ON client_logos;
 CREATE POLICY "public read client logos" ON client_logos FOR SELECT USING (active = true OR is_super_admin() OR has_permission('manage_content'));
+DROP POLICY IF EXISTS "cms manage client logos" ON client_logos;
 CREATE POLICY "cms manage client logos" ON client_logos FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_content'))
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));

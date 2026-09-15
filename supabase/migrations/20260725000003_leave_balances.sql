@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS leave_policies (
   UNIQUE (leave_type, role_name)
 );
 ALTER TABLE leave_policies ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "authenticated read leave policies" ON leave_policies;
 CREATE POLICY "authenticated read leave policies" ON leave_policies FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "hr manages leave policies" ON leave_policies;
 CREATE POLICY "hr manages leave policies" ON leave_policies FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_staff'))
   WITH CHECK (is_super_admin() OR has_permission('manage_staff'));

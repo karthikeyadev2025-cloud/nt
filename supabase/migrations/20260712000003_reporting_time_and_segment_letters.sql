@@ -1,4 +1,21 @@
 /*
+  ⚠ THIS FILE IS DELIBERATELY NOT RE-RUNNABLE. DO NOT "FIX" IT.
+
+  Re-running it raises:
+      check constraint "document_templates_doc_type_check" is violated by
+      some row
+
+  That error is protecting your data. This migration narrows doc_type to
+  six values. Migration 20260726000004 later widens it to twelve
+  (appointment_letter, nda, posh_policy and others) and real rows now use
+  them. Re-applying the narrower constraint would reject live documents.
+
+  On a fresh database the files run in order and the wider constraint lands
+  last, which is correct. On an existing database this file must not run
+  again.
+*/
+
+/*
   # Reporting time on onboarding + segment-specific offer/welcome letters + job description doc type
 */
 

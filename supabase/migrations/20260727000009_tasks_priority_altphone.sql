@@ -58,6 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_tasks_due ON office_tasks (due_date)
 ALTER TABLE office_tasks ENABLE ROW LEVEL SECURITY;
 
 -- Mine, or mine to oversee.
+DROP POLICY IF EXISTS "view own and managed tasks" ON office_tasks;
 CREATE POLICY "view own and managed tasks" ON office_tasks FOR SELECT TO authenticated
   USING (
     assigned_to = auth.uid()
@@ -67,6 +68,7 @@ CREATE POLICY "view own and managed tasks" ON office_tasks FOR SELECT TO authent
   );
 
 -- Anyone who manages people or work can raise a task.
+DROP POLICY IF EXISTS "create tasks" ON office_tasks;
 CREATE POLICY "create tasks" ON office_tasks FOR INSERT TO authenticated
   WITH CHECK (
     is_super_admin()
@@ -78,6 +80,7 @@ CREATE POLICY "create tasks" ON office_tasks FOR INSERT TO authenticated
 -- The assignee can move status and add a completion note; owners/managers can
 -- edit everything. The privileged-column guard below stops an assignee
 -- reassigning a task to someone else or rewriting the brief.
+DROP POLICY IF EXISTS "update own or managed tasks" ON office_tasks;
 CREATE POLICY "update own or managed tasks" ON office_tasks FOR UPDATE TO authenticated
   USING (
     assigned_to = auth.uid()
@@ -87,6 +90,7 @@ CREATE POLICY "update own or managed tasks" ON office_tasks FOR UPDATE TO authen
   )
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "delete own tasks" ON office_tasks;
 CREATE POLICY "delete own tasks" ON office_tasks FOR DELETE TO authenticated
   USING (created_by = auth.uid() OR is_super_admin() OR has_permission('manage_staff'));
 

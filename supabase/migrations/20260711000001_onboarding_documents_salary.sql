@@ -1,4 +1,26 @@
 /*
+  NOTE ON RE-RUNNING THIS FILE ALONE
+
+  The document_templates seed below is guarded with WHERE NOT EXISTS, so it
+  will not duplicate rows. It can, however, RESURRECT two of them.
+
+  This file seeds a company-wide (segment_slug NULL) "Offer Letter" and
+  "Welcome Letter". Migration 20260712000003 then deliberately DELETEs both
+  and replaces them with segment-specific versions. A guard cannot tell
+  "never existed" from "deliberately removed", so re-running this file on an
+  existing database puts those two generic templates back, and
+  20260712000003 will not remove them again (it stops earlier on its own
+  doc_type constraint — see the note at the top of that file).
+
+  Harmless but confusing: two extra generic templates appear in the HR
+  document list. To clear them:
+
+      DELETE FROM document_templates
+      WHERE doc_type IN ('offer_letter','welcome_letter')
+        AND segment_slug IS NULL;
+*/
+
+/*
   # Onboarding Documents & Salary Transparency
   - document_templates: per-segment templates (offer letter, welcome letter, roles & responsibilities, custom)
   - employee_documents: generated docs issued to a specific employee, with acknowledgement tracking
@@ -26,16 +48,23 @@ CREATE TABLE IF NOT EXISTS document_templates (
   updated_at timestamptz DEFAULT now()
 );
 ALTER TABLE document_templates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "staff read templates" ON document_templates;
 CREATE POLICY "staff read templates" ON document_templates FOR SELECT TO authenticated
   USING (is_super_admin() OR has_permission('manage_staff') OR has_permission('view_staff'));
+DROP POLICY IF EXISTS "super admin manage templates" ON document_templates;
 CREATE POLICY "super admin manage templates" ON document_templates FOR ALL TO authenticated
   USING (is_super_admin()) WITH CHECK (is_super_admin());
 
-INSERT INTO document_templates (segment_slug, doc_type, title, body) VALUES
-  (NULL, 'welcome_letter', 'Welcome Letter', E'Dear {{name}},\n\nWelcome to Nikki Technologies! We are delighted to have you join us as {{designation}} in our {{segment}} division, effective {{joining_date}}.\n\nYou are now part of a team building CCTV security solutions, digital media growth and software products for businesses across Telangana and Andhra Pradesh. We look forward to your contributions and growth with us.\n\nIf you have any questions, your manager and HR are always available to help.\n\nWarm regards,\nNikki Technologies'),
+INSERT INTO document_templates (segment_slug, doc_type, title, body)
+SELECT * FROM (VALUES
+(NULL, 'welcome_letter', 'Welcome Letter', E'Dear {{name}},\n\nWelcome to Nikki Technologies! We are delighted to have you join us as {{designation}} in our {{segment}} division, effective {{joining_date}}.\n\nYou are now part of a team building CCTV security solutions, digital media growth and software products for businesses across Telangana and Andhra Pradesh. We look forward to your contributions and growth with us.\n\nIf you have any questions, your manager and HR are always available to help.\n\nWarm regards,\nNikki Technologies'),
   (NULL, 'offer_letter', 'Offer Letter', E'Dear {{name}},\n\nWe are pleased to offer you the position of {{designation}} in the {{segment}} division of Nikki Technologies, reporting from {{joining_date}}.\n\nCompensation (Annual CTC): ₹{{ctc}}\nEmployment Type: {{employment_type}}\n\nThis offer is subject to our standard company policies and code of conduct. Please confirm your acceptance by acknowledging this letter in your staff portal.\n\nWe look forward to working with you.\n\nRegards,\nNikki Technologies HR'),
   ('digital_media', 'roles_responsibilities', 'Roles & Responsibilities — Digital Media', E'Position: {{designation}}\nDivision: Digital Media\n\nKey Responsibilities:\n- Plan and execute social media content calendars for client accounts\n- Design creatives, reels and campaign assets aligned with brand guidelines\n- Manage and optimize paid ad campaigns (Meta/Google) with tracked ROI\n- Coordinate with clients on approvals and campaign feedback\n- Report performance metrics to the manager on a weekly basis\n- Stay current with platform trends and best practices\n\nReporting: You report to your Digital Media Segment Manager.'),
-  ('software', 'roles_responsibilities', 'Roles & Responsibilities — Software Solutions', E'Position: {{designation}}\nDivision: Software Solutions\n\nKey Responsibilities:\n- Develop, test and maintain features for Nikki Technologies products and client software projects\n- Follow code review, version control and documentation standards\n- Respond to and resolve support tickets within SLA\n- Collaborate with the team on architecture and technical decisions\n- Communicate blockers and progress clearly and promptly\n- Safeguard client and company data at all times\n\nReporting: You report to your Software Segment Manager.');
+  ('software', 'roles_responsibilities', 'Roles & Responsibilities — Software Solutions', E'Position: {{designation}}\nDivision: Software Solutions\n\nKey Responsibilities:\n- Develop, test and maintain features for Nikki Technologies products and client software projects\n- Follow code review, version control and documentation standards\n- Respond to and resolve support tickets within SLA\n- Collaborate with the team on architecture and technical decisions\n- Communicate blockers and progress clearly and promptly\n- Safeguard client and company data at all times\n\nReporting: You report to your Software Segment Manager.')
+) AS v(segment_slug, doc_type, title, body)
+WHERE NOT EXISTS (
+  SELECT 1 FROM document_templates x WHERE x.segment_slug IS NOT DISTINCT FROM v.segment_slug AND x.doc_type IS NOT DISTINCT FROM v.doc_type AND x.title IS NOT DISTINCT FROM v.title
+);
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. Employee documents (generated/issued copies, per staff member)
@@ -53,12 +82,16 @@ CREATE TABLE IF NOT EXISTS employee_documents (
 );
 ALTER TABLE employee_documents ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "own documents" ON employee_documents;
 CREATE POLICY "own documents" ON employee_documents FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR is_super_admin() OR has_permission('manage_staff') OR has_permission('view_staff'));
+DROP POLICY IF EXISTS "hr issue documents" ON employee_documents;
 CREATE POLICY "hr issue documents" ON employee_documents FOR INSERT TO authenticated
   WITH CHECK (is_super_admin() OR has_permission('manage_staff'));
+DROP POLICY IF EXISTS "hr update documents" ON employee_documents;
 CREATE POLICY "hr update documents" ON employee_documents FOR UPDATE TO authenticated
   USING (is_super_admin() OR has_permission('manage_staff') OR staff_user_id = auth.uid())
   WITH CHECK (is_super_admin() OR has_permission('manage_staff') OR staff_user_id = auth.uid());
+DROP POLICY IF EXISTS "super admin delete documents" ON employee_documents;
 CREATE POLICY "super admin delete documents" ON employee_documents FOR DELETE TO authenticated
   USING (is_super_admin());

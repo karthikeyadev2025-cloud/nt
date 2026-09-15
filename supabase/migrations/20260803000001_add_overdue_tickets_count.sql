@@ -1,4 +1,23 @@
 /*
+  ⚠ THIS FILE IS DELIBERATELY NOT RE-RUNNABLE. DO NOT "FIX" IT.
+
+  Re-running it raises:
+      cannot remove parameter defaults from existing function
+
+  That error is protecting you. Migration 20260803120000 is a P0 security
+  fix: it replaced get_dashboard_counts(p_user_id uuid) — which trusted a
+  client-supplied user id and let any staff member read a colleague's
+  pending-task count — with get_dashboard_counts(p_user_id uuid DEFAULT
+  NULL), which ignores the parameter and uses auth.uid().
+
+  This file still carries the OLD, vulnerable definition. Adding a
+  DROP FUNCTION to make it re-runnable would let it overwrite the security
+  fix and silently reintroduce the leak. Postgres refusing is the correct
+  outcome: on a fresh database the files run in order and the fix lands
+  last; on an existing one this file must not run again.
+*/
+
+/*
   # Add overdueTickets to get_dashboard_counts
 
   Found via a full audit that a concurrent session had reverted ActionCentre

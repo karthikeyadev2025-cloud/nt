@@ -18,8 +18,11 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own notifications" ON notifications;
 CREATE POLICY "own notifications" ON notifications FOR SELECT TO authenticated USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "own notifications update" ON notifications;
 CREATE POLICY "own notifications update" ON notifications FOR UPDATE TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "staff create notifications" ON notifications;
 CREATE POLICY "staff create notifications" ON notifications FOR INSERT TO authenticated WITH CHECK (true);
 
 CREATE OR REPLACE FUNCTION notify_user(p_user_id uuid, p_kind text, p_title text, p_body text, p_link text DEFAULT NULL)
@@ -41,7 +44,9 @@ CREATE TABLE IF NOT EXISTS announcements (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "staff read announcements" ON announcements;
 CREATE POLICY "staff read announcements" ON announcements FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "admin manage announcements" ON announcements;
 CREATE POLICY "admin manage announcements" ON announcements FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_staff')) WITH CHECK (is_super_admin() OR has_permission('manage_staff'));
 
@@ -77,10 +82,13 @@ CREATE TABLE IF NOT EXISTS shift_swap_requests (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE shift_swap_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own swap requests" ON shift_swap_requests;
 CREATE POLICY "own swap requests" ON shift_swap_requests FOR SELECT TO authenticated
   USING (requester_id = auth.uid() OR target_id = auth.uid() OR has_permission('approve_leaves') OR is_super_admin());
+DROP POLICY IF EXISTS "create swap request" ON shift_swap_requests;
 CREATE POLICY "create swap request" ON shift_swap_requests FOR INSERT TO authenticated
   WITH CHECK (requester_id = auth.uid());
+DROP POLICY IF EXISTS "review swap request" ON shift_swap_requests;
 CREATE POLICY "review swap request" ON shift_swap_requests FOR UPDATE TO authenticated
   USING (has_permission('approve_leaves') OR is_super_admin()) WITH CHECK (has_permission('approve_leaves') OR is_super_admin());
 
@@ -136,10 +144,13 @@ CREATE TABLE IF NOT EXISTS bank_change_requests (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE bank_change_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own bank requests" ON bank_change_requests;
 CREATE POLICY "own bank requests" ON bank_change_requests FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('approve_advances') OR has_permission('view_payroll') OR is_super_admin());
+DROP POLICY IF EXISTS "request bank change" ON bank_change_requests;
 CREATE POLICY "request bank change" ON bank_change_requests FOR INSERT TO authenticated
   WITH CHECK (staff_user_id = auth.uid());
+DROP POLICY IF EXISTS "review bank change" ON bank_change_requests;
 CREATE POLICY "review bank change" ON bank_change_requests FOR UPDATE TO authenticated
   USING (has_permission('approve_advances') OR is_super_admin()) WITH CHECK (has_permission('approve_advances') OR is_super_admin());
 

@@ -26,7 +26,9 @@ CREATE TABLE IF NOT EXISTS holidays (
   UNIQUE(holiday_date, segment_slug)
 );
 ALTER TABLE holidays ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "staff read holidays" ON holidays;
 CREATE POLICY "staff read holidays" ON holidays FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "hr manage holidays" ON holidays;
 CREATE POLICY "hr manage holidays" ON holidays FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_staff'))
   WITH CHECK (is_super_admin() OR has_permission('manage_staff'));
@@ -50,10 +52,13 @@ CREATE TABLE IF NOT EXISTS attendance_regularizations (
 CREATE INDEX IF NOT EXISTS idx_regularizations_staff ON attendance_regularizations(staff_user_id, status);
 ALTER TABLE attendance_regularizations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "own regularizations" ON attendance_regularizations;
 CREATE POLICY "own regularizations" ON attendance_regularizations FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR (has_permission('view_attendance') AND can_access_staff(staff_user_id)));
+DROP POLICY IF EXISTS "request regularization" ON attendance_regularizations;
 CREATE POLICY "request regularization" ON attendance_regularizations FOR INSERT TO authenticated
   WITH CHECK (staff_user_id = auth.uid());
+DROP POLICY IF EXISTS "review regularization" ON attendance_regularizations;
 CREATE POLICY "review regularization" ON attendance_regularizations FOR UPDATE TO authenticated
   USING (has_permission('approve_leaves') AND can_access_staff(staff_user_id))
   WITH CHECK (has_permission('approve_leaves') AND can_access_staff(staff_user_id));

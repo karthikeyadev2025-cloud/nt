@@ -18,8 +18,9 @@ WHERE NOT EXISTS (SELECT 1 FROM shifts);
 --    so add your own in Super Admin → HR → Holidays.
 --    Sundays are already excluded automatically by count_working_days().
 -- ═══════════════════════════════════════════════════════════════
-INSERT INTO holidays (holiday_date, name, segment_slug, is_optional) VALUES
-  ('2026-01-26', 'Republic Day',            NULL, false),
+INSERT INTO holidays (holiday_date, name, segment_slug, is_optional)
+SELECT * FROM (VALUES
+  ('2026-01-26'::date, 'Republic Day',      NULL::text, false),
   ('2026-03-04', 'Holi',                    NULL, false),
   ('2026-03-21', 'Id-ul-Fitr (Ramzan Eid)', NULL, false),
   ('2026-04-01', 'Ugadi',                   NULL, false),
@@ -32,7 +33,10 @@ INSERT INTO holidays (holiday_date, name, segment_slug, is_optional) VALUES
   ('2026-10-20', 'Dussehra (Vijaya Dashami)', NULL, false),
   ('2026-11-08', 'Diwali',                  NULL, false),
   ('2026-12-25', 'Christmas',               NULL, false)
-ON CONFLICT (holiday_date, segment_slug) DO NOTHING;
+) AS v(holiday_date, name, segment_slug, is_optional)
+WHERE NOT EXISTS (
+  SELECT 1 FROM holidays x WHERE x.holiday_date IS NOT DISTINCT FROM v.holiday_date AND x.segment_slug IS NOT DISTINCT FROM v.segment_slug
+);
 
 -- ═══════════════════════════════════════════════════════════════
 -- 3. Contact copy for a ticket-first business (no public phone line)

@@ -47,8 +47,10 @@ DROP POLICY IF EXISTS "auth insert own logs" ON security_audit_logs;
 DROP POLICY IF EXISTS "anon insert failed logins" ON security_audit_logs;
 DROP POLICY IF EXISTS "anon insert login logs" ON security_audit_logs;
 
+DROP POLICY IF EXISTS "authenticated insert audit logs" ON security_audit_logs;
 CREATE POLICY "authenticated insert audit logs" ON security_audit_logs FOR INSERT TO authenticated
   WITH CHECK (event_type IN ('login_success', 'login_failed', 'logout'));
 
+DROP POLICY IF EXISTS "anon insert audit logs" ON security_audit_logs;
 CREATE POLICY "anon insert audit logs" ON security_audit_logs FOR INSERT TO anon
   WITH CHECK (event_type IN ('login_success', 'login_failed', 'logout'));

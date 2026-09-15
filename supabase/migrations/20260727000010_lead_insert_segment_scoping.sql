@@ -47,6 +47,7 @@ GRANT EXECUTE ON FUNCTION staff_covers_segment(uuid, text) TO authenticated;
 
 -- Staff: only in segments they can access, only assigned to someone who
 -- covers that segment (or left unassigned for the pool).
+DROP POLICY IF EXISTS "staff create leads in own segments" ON marketing_leads;
 CREATE POLICY "staff create leads in own segments" ON marketing_leads
   FOR INSERT TO authenticated
   WITH CHECK (

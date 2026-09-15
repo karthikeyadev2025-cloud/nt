@@ -214,7 +214,9 @@ CREATE TRIGGER trg_advance_decided_notify AFTER UPDATE ON salary_advance_request
 -- (the pre-auth event that legitimately has no session); successes are written
 -- by the authenticated client after sign-in.
 DROP POLICY IF EXISTS "anon insert login logs" ON security_audit_logs;
+DROP POLICY IF EXISTS "anon insert failed logins" ON security_audit_logs;
 CREATE POLICY "anon insert failed logins" ON security_audit_logs FOR INSERT TO anon
   WITH CHECK (event_type = 'login_failed');
+DROP POLICY IF EXISTS "auth insert own logs" ON security_audit_logs;
 CREATE POLICY "auth insert own logs" ON security_audit_logs FOR INSERT TO authenticated
   WITH CHECK (event_type IN ('login_success','logout'));

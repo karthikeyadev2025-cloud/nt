@@ -25,7 +25,9 @@ CREATE TABLE IF NOT EXISTS job_postings (
   updated_at timestamptz DEFAULT now()
 );
 ALTER TABLE job_postings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public read open jobs" ON job_postings;
 CREATE POLICY "public read open jobs" ON job_postings FOR SELECT USING (status = 'open' OR is_super_admin() OR has_permission('manage_careers'));
+DROP POLICY IF EXISTS "hr manage jobs" ON job_postings;
 CREATE POLICY "hr manage jobs" ON job_postings FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_careers'))
   WITH CHECK (is_super_admin() OR has_permission('manage_careers'));
@@ -45,6 +47,7 @@ ALTER TABLE career_applications ADD COLUMN IF NOT EXISTS review_note text DEFAUL
 DROP POLICY IF EXISTS "hr read careers" ON career_applications;
 CREATE POLICY "hr read careers" ON career_applications FOR SELECT TO authenticated
   USING (is_super_admin() OR has_permission('view_careers') OR has_permission('manage_careers'));
+DROP POLICY IF EXISTS "hr update careers" ON career_applications;
 CREATE POLICY "hr update careers" ON career_applications FOR UPDATE TO authenticated
   USING (is_super_admin() OR has_permission('manage_careers'))
   WITH CHECK (is_super_admin() OR has_permission('manage_careers'));
@@ -62,7 +65,9 @@ WHERE role_name = 'hr';
 INSERT INTO storage.buckets (id, name, public) VALUES ('career-uploads', 'career-uploads', false)
 ON CONFLICT (id) DO NOTHING;
 
+DROP POLICY IF EXISTS "public upload career files" ON storage.objects;
 CREATE POLICY "public upload career files" ON storage.objects FOR INSERT
   WITH CHECK (bucket_id = 'career-uploads');
+DROP POLICY IF EXISTS "staff read career files" ON storage.objects;
 CREATE POLICY "staff read career files" ON storage.objects FOR SELECT TO authenticated
   USING (bucket_id = 'career-uploads' AND (is_super_admin() OR has_permission('view_careers') OR has_permission('manage_careers')));

@@ -5,6 +5,7 @@
   # edit templates without needing the literal super_admin account.
 */
 DROP POLICY IF EXISTS "super admin manage templates" ON document_templates;
+DROP POLICY IF EXISTS "staff manage templates" ON document_templates;
 CREATE POLICY "staff manage templates" ON document_templates FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_staff'))
   WITH CHECK (is_super_admin() OR has_permission('manage_staff'));

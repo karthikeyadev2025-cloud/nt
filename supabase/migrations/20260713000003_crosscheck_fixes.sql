@@ -18,10 +18,13 @@ CREATE TABLE IF NOT EXISTS photo_change_requests (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE photo_change_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own photo requests" ON photo_change_requests;
 CREATE POLICY "own photo requests" ON photo_change_requests FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('manage_staff') OR is_super_admin());
+DROP POLICY IF EXISTS "request photo change" ON photo_change_requests;
 CREATE POLICY "request photo change" ON photo_change_requests FOR INSERT TO authenticated
   WITH CHECK (staff_user_id = auth.uid());
+DROP POLICY IF EXISTS "review photo change" ON photo_change_requests;
 CREATE POLICY "review photo change" ON photo_change_requests FOR UPDATE TO authenticated
   USING (has_permission('manage_staff') OR is_super_admin()) WITH CHECK (has_permission('manage_staff') OR is_super_admin());
 
@@ -56,8 +59,10 @@ CREATE TABLE IF NOT EXISTS promotions (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE promotions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own promotions" ON promotions;
 CREATE POLICY "own promotions" ON promotions FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('view_staff') OR has_permission('manage_staff') OR is_super_admin());
+DROP POLICY IF EXISTS "hr create promotions" ON promotions;
 CREATE POLICY "hr create promotions" ON promotions FOR INSERT TO authenticated
   WITH CHECK (has_permission('manage_staff') OR is_super_admin());
 
@@ -87,5 +92,6 @@ ON CONFLICT (section, key) DO NOTHING;
 -- 4. Storage: let any staff member upload their own profile-photo request
 --    (site-photos bucket is otherwise gated to manage_content/CMS use)
 -- ═══════════════════════════════════════════════════════════════
+DROP POLICY IF EXISTS "staff upload profile photo requests" ON storage.objects;
 CREATE POLICY "staff upload profile photo requests" ON storage.objects FOR INSERT TO authenticated
   WITH CHECK (bucket_id = 'site-photos' AND name LIKE 'profile-requests/%');

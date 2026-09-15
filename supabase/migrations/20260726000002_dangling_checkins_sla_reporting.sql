@@ -88,7 +88,9 @@ CREATE TABLE IF NOT EXISTS ticket_sla_policies (
   resolution_hours int NOT NULL
 );
 ALTER TABLE ticket_sla_policies ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "staff read sla" ON ticket_sla_policies;
 CREATE POLICY "staff read sla" ON ticket_sla_policies FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "admin manage sla" ON ticket_sla_policies;
 CREATE POLICY "admin manage sla" ON ticket_sla_policies FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_content'))
   WITH CHECK (is_super_admin() OR has_permission('manage_content'));

@@ -27,7 +27,9 @@ CREATE TABLE IF NOT EXISTS shifts (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE shifts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "staff read shifts" ON shifts;
 CREATE POLICY "staff read shifts" ON shifts FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "admin manage shifts" ON shifts;
 CREATE POLICY "admin manage shifts" ON shifts FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_staff')) WITH CHECK (is_super_admin() OR has_permission('manage_staff'));
 
@@ -40,8 +42,10 @@ CREATE TABLE IF NOT EXISTS staff_shifts (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE staff_shifts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own shift assignment" ON staff_shifts;
 CREATE POLICY "own shift assignment" ON staff_shifts FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('view_staff') OR is_super_admin());
+DROP POLICY IF EXISTS "admin assign shifts" ON staff_shifts;
 CREATE POLICY "admin assign shifts" ON staff_shifts FOR ALL TO authenticated
   USING (is_super_admin() OR has_permission('manage_staff')) WITH CHECK (is_super_admin() OR has_permission('manage_staff'));
 
@@ -80,8 +84,10 @@ CREATE TABLE IF NOT EXISTS payslips (
   UNIQUE(staff_user_id, period_year, period_month)
 );
 ALTER TABLE payslips ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own payslips" ON payslips;
 CREATE POLICY "own payslips" ON payslips FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('view_payroll') OR is_super_admin());
+DROP POLICY IF EXISTS "hr manage payslips" ON payslips;
 CREATE POLICY "hr manage payslips" ON payslips FOR ALL TO authenticated
   USING (has_permission('manage_payroll') OR is_super_admin()) WITH CHECK (has_permission('manage_payroll') OR is_super_admin());
 
@@ -99,10 +105,13 @@ CREATE TABLE IF NOT EXISTS salary_payments (
 );
 CREATE INDEX IF NOT EXISTS idx_salary_payments_payslip ON salary_payments(payslip_id);
 ALTER TABLE salary_payments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own salary payments" ON salary_payments;
 CREATE POLICY "own salary payments" ON salary_payments FOR SELECT TO authenticated
   USING (staff_user_id = auth.uid() OR has_permission('view_payroll') OR is_super_admin());
+DROP POLICY IF EXISTS "hr record payments" ON salary_payments;
 CREATE POLICY "hr record payments" ON salary_payments FOR INSERT TO authenticated
   WITH CHECK (has_permission('manage_payroll') OR is_super_admin());
+DROP POLICY IF EXISTS "hr delete payments" ON salary_payments;
 CREATE POLICY "hr delete payments" ON salary_payments FOR DELETE TO authenticated
   USING (has_permission('manage_payroll') OR is_super_admin());
 
