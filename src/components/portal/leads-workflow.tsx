@@ -8,7 +8,7 @@ import { withTimeout } from '../../lib/withTimeout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
-import { stageLabel, describeDbError } from './shared-utils';
+import { stageLabel, describeDbError, describeReadError } from './shared-utils';
 import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, listDropped, retryDropped, removeQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
@@ -412,11 +412,15 @@ export function TransferApprovals() {
   const [names, setNames] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('marketing_leads').select('*').eq('transfer_status', 'pending').order('updated_at', { ascending: false });
+    const { data, error } = await supabase.from('marketing_leads').select('*').eq('transfer_status', 'pending').order('updated_at', { ascending: false });
+    // An approval queue that renders empty on failure means handoffs sit
+    // unapproved while the manager is told there is nothing to approve.
+    const msg = describeReadError(error, 'pending handoff requests');
+    if (msg) { toast.error(msg); return; }
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
     if (users) setNames(Object.fromEntries(users.map(u => [u.id, u.full_name])));
-  }, []);
+  }, [toast]);
   useEffect(() => { load(); }, [load]);
 
   async function resolve(id: string, approve: boolean, targetExec: string) {
@@ -501,11 +505,15 @@ export function LeadChangeApprovals() {
     // lead_change_requests isn't in database.types.ts yet (raw SQL
     // migration, no live DB access to regenerate the generated file) —
     // cast at the call boundary.
-    const { data } = await supabase.from('lead_change_requests' as never).select('*').eq('status', 'pending').order('created_at', { ascending: false }) as unknown as { data: LeadChangeRequest[] | null };
+    const { data, error } = await supabase.from('lead_change_requests' as never).select('*').eq('status', 'pending').order('created_at', { ascending: false }) as unknown as { data: LeadChangeRequest[] | null; error: { message: string; code?: string } | null };
+    // Same trap as the handoff queue: an empty approvals list that
+    // actually means "the read failed" leaves deletion requests hanging.
+    const msg = describeReadError(error, 'pending lead change requests');
+    if (msg) { toast.error(msg); return; }
     if (data) setItems(data);
     const { data: users } = await supabase.from('app_users').select('id, full_name');
     if (users) setNames(Object.fromEntries(users.map(u => [u.id, u.full_name])));
-  }, []);
+  }, [toast]);
   useEffect(() => { load(); }, [load]);
 
   async function resolve(id: string, approve: boolean) {

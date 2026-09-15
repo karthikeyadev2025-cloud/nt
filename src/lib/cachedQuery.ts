@@ -49,7 +49,17 @@ export async function cachedQuery<T>(
 
   const existing = inFlightQueries.get(key);
   if (existing) {
-    return existing as Promise<T>;
+    // Join the in-flight request, but do NOT hand its rejection straight
+    // back. Returning the raw promise skipped the stale-cache fallback
+    // below, so of two callers waiting on the same failing request, the
+    // one that happened to arrive first fell back to cached rows and the
+    // second got an error — the same screen showing data or an error box
+    // purely by race order.
+    return (existing as Promise<T>).catch(err => {
+      const stale = queryCache.get(key);
+      if (stale) return stale.result as T;
+      throw err;
+    });
   }
 
   const promise = withTimeout(Promise.resolve(fn()), timeoutMs, key);

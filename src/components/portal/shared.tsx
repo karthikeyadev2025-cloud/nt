@@ -23,6 +23,7 @@ import { invalidate } from '../../lib/cacheBus';
 import { ModalOverlay } from '../ui/Modal';
 import { useConfirm } from '../ui/ConfirmDialog';
 import { onActivateKeyDown } from '../../lib/a11y';
+import { sanitizeOrFilterTerm } from '../../lib/searchFilter';
 
 export const inputCls =
   'w-full px-3.5 py-2.5 rounded-xl bg-white border border-stone-300 text-nikki-navy text-sm focus:border-nikki-royal focus:ring-2 focus:ring-nikki-royal/20 focus:outline-none transition-all placeholder-stone-500';
@@ -233,6 +234,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [staff, setStaff] = useState<{ id: string; full_name: string; segments: string[] }[]>([]);
   const [openTicket, setOpenTicket] = useState<SupportTicket | null>(null);
+  const [ticketsTruncated, setTicketsTruncated] = useState(false);
   const [replies, setReplies] = useState<{ id: string; author_name: string; message: string; created_at: string | null }[]>([]);
   const [reply, setReply] = useState('');
   const { user, hasPermission } = useAuth();
@@ -266,7 +268,13 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
         if (error) throw error;
         return data as SupportTicket[];
       });
-      if (data) setTickets(data);
+      if (data) {
+        setTickets(data);
+        // The query caps at 300. Without saying so, an older ticket that
+        // simply fell outside the window looks deleted, and a support agent
+        // tells the customer it does not exist.
+        setTicketsTruncated(data.length >= 300);
+      }
     } catch (err) {
       toast.error(`Couldn't load tickets: ${(err instanceof Error ? err.message : String(err))}`);
     }
@@ -457,6 +465,11 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
           );
         })}
         {filteredTickets.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No tickets in this view.</p>}
+        {ticketsTruncated && (
+          <p className="text-stone-600 text-xs text-center pt-3">
+            Showing the {tickets.length} most recent tickets — older ones exist but aren't loaded. Narrow by segment or status to reach them.
+          </p>
+        )}
       </div>
 
       {openTicket && (
@@ -1573,10 +1586,10 @@ export function LeadsBoard({ segments, focusLeadId, initialSegFilter, initialSta
         if (dateFrom) q = q.gte('created_at', dateFrom);
         if (dateTo) q = q.lte('created_at', dateTo + 'T23:59:59');
         if (searchTerm) {
-          // PostgREST's .or() takes a comma-separated filter list, so a
-          // comma, parenthesis or backslash typed into the search box would
-          // otherwise be parsed as filter syntax rather than as text.
-          const safe = searchTerm.replace(/[\\,()]/g, ' ').trim();
+          // See sanitizeOrFilterTerm: PostgREST's .or() takes a
+          // comma-separated filter list, so punctuation typed into the
+          // search box is otherwise parsed as filter syntax, not as text.
+          const safe = sanitizeOrFilterTerm(searchTerm);
           if (safe) {
             q = q.or(`customer_name.ilike.%${safe}%,phone.ilike.%${safe}%,interested_in.ilike.%${safe}%`);
           }
@@ -2808,7 +2821,7 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
           }
           setPhotoUrls(map);
         }
-      }).catch(() => setAttendanceLoaded(true));
+      }).catch(err => { setAttendanceLoaded(true); toast.error(`Couldn't load attendance: ${err instanceof Error ? err.message : String(err)}`); });
     }
     if (tab === 'leaves') {
       setLeavesLoaded(false);
@@ -2816,7 +2829,10 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
         const { data, error } = await supabase.from('leave_requests').select('*').order('created_at', { ascending: false }).limit(200);
         if (error) throw error;
         return data;
-      }).then(data => { if (data) setLeaves(data); setLeavesLoaded(true); }).catch(() => setLeavesLoaded(true));
+      }).then(data => { if (data) setLeaves(data); setLeavesLoaded(true); })
+        // An approval queue that renders empty on a failed read tells HR
+        // there is nothing to approve while requests sit waiting.
+        .catch(err => { setLeavesLoaded(true); toast.error(`Couldn't load leave requests: ${err instanceof Error ? err.message : String(err)}`); });
     }
     if (tab === 'advances') {
       setAdvancesLoaded(false);
@@ -2824,9 +2840,10 @@ export function HRBoard({ segments }: { segments: Segment[] }) {
         const { data, error } = await supabase.from('salary_advance_requests').select('*').order('created_at', { ascending: false }).limit(200);
         if (error) throw error;
         return data;
-      }).then(data => { if (data) setAdvances(data); setAdvancesLoaded(true); }).catch(() => setAdvancesLoaded(true));
+      }).then(data => { if (data) setAdvances(data); setAdvancesLoaded(true); })
+        .catch(err => { setAdvancesLoaded(true); toast.error(`Couldn't load advance requests: ${err instanceof Error ? err.message : String(err)}`); });
     }
-  }, [tab, date]);
+  }, [tab, date, toast]);
 
   const staffById = useMemo(() => Object.fromEntries(staff.map(s => [s.id, s])), [staff]);
   type StaffLite = { id: string; full_name: string; role: string; email: string; phone: string; segments: string[]; is_active: boolean; reporting_time?: string | null };

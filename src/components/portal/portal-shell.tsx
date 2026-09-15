@@ -5,6 +5,7 @@ import { NotificationBell } from './features';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
 import { waLink } from '../../lib/phone';
 import { ModalOverlay } from '../ui/Modal';
+import { CommandPalette, CommandPaletteButton } from '../ui/CommandPalette';
 
 export type PortalTab = { id: string; label: string; icon: LucideIcon; show: boolean };
 
@@ -179,6 +180,7 @@ export function PortalShell({
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            <CommandPaletteButton />
             <button
               onClick={() => { setSoundEnabled(!soundEnabled); if (notifPermission === 'default') requestNotificationPermission(); }}
               title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}
@@ -240,6 +242,15 @@ export function PortalShell({
         <main className="p-4 md:p-6 max-w-6xl w-full mx-auto flex-1">
           {children}
         </main>
+
+        {/* Ctrl/Cmd-K (or "/") from anywhere in the portal. Fed the same
+            already-permission-filtered tab list the nav renders, so it can
+            never offer a screen the user would be refused on arrival. */}
+        <CommandPalette
+          items={visibleTabs.map(t => ({ id: t.id, label: t.label, icon: t.icon }))}
+          activeId={activeTab}
+          onSelect={onTabChange}
+        />
       </div>
     </div>
   );

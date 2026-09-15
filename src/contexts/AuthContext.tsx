@@ -70,6 +70,24 @@ const SESSION_KEY = 'nkt_user_session';
 // instead of falling back unnecessarily.
 const AUTH_TIMEOUT_MS = 2500;
 
+// Sign-in gets its own, much longer budget, and must NOT share the one above.
+//
+// AUTH_TIMEOUT_MS exists to bound the *background* checks that gate the
+// initial render — there, failing fast and falling back is right. Pressing
+// "Sign In" is the opposite situation: the user is watching a spinner and
+// has explicitly asked to wait, and the call is slow by design (the server
+// hashes the password) on top of a round trip that field staff make over
+// patchy mobile data.
+//
+// Capping it at 2.5s meant a perfectly good sign-in on a slow connection
+// was reported as "timed out — please check your connection", while the
+// request kept going and Supabase persisted the session anyway. The user
+// was left authenticated but told they had failed, and because the throw
+// skipped the rest of the function, logLogin() and beginSession() never
+// ran — so that login appeared in neither the security audit log nor the
+// active-devices list.
+const SIGN_IN_TIMEOUT_MS = 15000;
+
 // ═══════════════════════════════════════════════════════════════════════
 // Profile + permission fetchers — retry on transient failure, distinguish
 // "definitely gone" from "ambiguous, try again".
@@ -408,7 +426,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await withTimeout(
         supabase.auth.signInWithPassword({ email: cleanEmail, password }),
-        AUTH_TIMEOUT_MS,
+        SIGN_IN_TIMEOUT_MS,
         'sign-in'
       );
 

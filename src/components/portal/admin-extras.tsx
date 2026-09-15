@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search, X, Shield, Download, CheckCircle2, Circle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cachedQuery } from '../../lib/cachedQuery';
 import { cardCls } from './shared';
 import { istDateStr } from '../../lib/dates';
+import { sanitizeOrFilterTerm } from '../../lib/searchFilter';
+import { useToast } from '../../lib/toast';
+import { describeReadError } from './shared-utils';
 import type { Segment, Database } from '../../lib/database.types';
 
 type SecurityAuditLog = Database['public']['Tables']['security_audit_logs']['Row'];
@@ -111,24 +114,51 @@ type QuickFocus = { kind: 'staff' | 'lead' | 'ticket'; id: string };
 export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: QuickFocus) => void }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ id: string; title: string; subtitle: string; tab: string; kind: QuickFocus['kind'] }[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
+  // Monotonic id for each search. The debounce below only cancels a request
+  // that has not STARTED yet; once three queries are in flight, a slow
+  // response for "acm" could still land after the fast one for "acme" and
+  // overwrite it, leaving the dropdown showing results that do not match
+  // what is in the box. Anything but the newest run is discarded.
+  const runIdRef = useRef(0);
+
   useEffect(() => {
-    if (query.trim().length < 2) {
+    // PostgREST parses commas/brackets in a .or() filter as syntax, so a
+    // search for "acme, inc" used to produce a malformed request that
+    // returned nothing, with the error discarded and an empty dropdown.
+    const q = sanitizeOrFilterTerm(query.toLowerCase());
+    if (q.length < 2) {
       setResults([]);
+      setSearchError(null);
       return;
     }
-    const q = query.toLowerCase();
+    const runId = ++runIdRef.current;
     const t = setTimeout(async () => {
-      const [{ data: staff }, { data: leads }, { data: tickets }] = await Promise.all([
+      const [staffRes, leadRes, ticketRes] = await Promise.all([
         supabase.from('app_users').select('id, full_name, email, role').or(`full_name.ilike.%${q}%,email.ilike.%${q}%`).limit(5),
         supabase.from('marketing_leads').select('id, customer_name, phone, segment_slug').or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5),
         supabase.from('support_tickets').select('id, ticket_no, subject').or(`ticket_no.ilike.%${q}%,subject.ilike.%${q}%`).limit(5),
       ]);
+      if (runId !== runIdRef.current) return; // a newer search has taken over
+
+      const firstError = staffRes.error || leadRes.error || ticketRes.error;
+      if (firstError) {
+        // Previously every error was dropped on the floor and the user just
+        // saw "No matches", which is indistinguishable from a real empty
+        // result and sends them hunting for a record that does exist.
+        setResults([]);
+        setSearchError(firstError.message);
+        setOpen(true);
+        return;
+      }
+      setSearchError(null);
+
       const res: typeof results = [];
-      (staff || []).forEach(s => res.push({ id: s.id, title: s.full_name, subtitle: `${s.role} • ${s.email}`, tab: 'access', kind: 'staff' }));
-      (leads || []).forEach(l => res.push({ id: l.id, title: l.customer_name, subtitle: `Lead • ${l.phone}`, tab: 'crm', kind: 'lead' }));
-      (tickets || []).forEach(tk => res.push({ id: tk.id, title: tk.ticket_no, subtitle: tk.subject, tab: 'tickets', kind: 'ticket' }));
+      (staffRes.data || []).forEach(s => res.push({ id: s.id, title: s.full_name, subtitle: `${s.role} • ${s.email}`, tab: 'access', kind: 'staff' }));
+      (leadRes.data || []).forEach(l => res.push({ id: l.id, title: l.customer_name, subtitle: `Lead • ${l.phone}`, tab: 'crm', kind: 'lead' }));
+      (ticketRes.data || []).forEach(tk => res.push({ id: tk.id, title: tk.ticket_no, subtitle: tk.subject, tab: 'tickets', kind: 'ticket' }));
       setResults(res);
       setOpen(true);
     }, 200);
@@ -147,11 +177,16 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
         aria-label="Search staff, leads, tickets..." />
         {query && <button onClick={() => { setQuery(''); setOpen(false); }} className="text-stone-700 hover:text-stone-700"><X className="w-3.5 h-3.5" /></button>}
       </div>
-      {open && results.length > 0 && (
+      {open && (results.length > 0 || searchError) && (
         <>
           <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setOpen(false)} />
           <div className="fixed left-3 right-3 top-16 z-50 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:inset-x-auto sm:mt-2 sm:w-80
                           max-h-[70vh] sm:max-h-96 overflow-y-auto bg-white border border-nikki-border rounded-2xl shadow-xl p-2 space-y-1">
+            {searchError && (
+              <p role="status" className="p-2.5 text-red-700 text-[11px] font-semibold">
+                Search failed — {searchError}
+              </p>
+            )}
             {results.map(r => (
               <button
                 key={r.id}
@@ -175,9 +210,15 @@ export function QuickSearch({ onNavigate }: { onNavigate: (tab: string, focus?: 
 
 // ─────────────────────────── Export Staff CSV button
 export function ExportStaffButton() {
+  const toast = useToast();
   async function exportCsv() {
-    const { data } = await supabase.from('app_users').select('*');
-    if (!data || data.length === 0) return;
+    const { data, error } = await supabase.from('app_users').select('*');
+    // Both failure modes used to `return` silently, so the button simply
+    // did nothing when clicked and the admin had no idea whether the export
+    // was empty, blocked by permissions, or broken.
+    const msg = describeReadError(error, 'staff records');
+    if (msg) { toast.error(msg); return; }
+    if (!data || data.length === 0) { toast.info('No staff records to export.'); return; }
     const headers = ['id', 'full_name', 'email', 'role', 'phone', 'designation', 'is_active', 'joining_date'];
     const csvRows = [headers.join(',')];
     data.forEach(u => {
@@ -186,6 +227,7 @@ export function ExportStaffButton() {
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `staff_export_${istDateStr()}.csv`; a.click();
+    URL.revokeObjectURL(url); // the blob stays in memory for the tab's life otherwise
   }
   return (
     <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-nikki-border text-stone-800 text-xs font-bold border border-stone-300 transition-all">

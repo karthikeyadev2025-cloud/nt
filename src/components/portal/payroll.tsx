@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FileText, Plus, X, MapPin, Image as ImageIcon, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { invalidate } from '../../lib/cacheBus';
@@ -9,6 +9,7 @@ type SalaryPayment = Database['public']['Tables']['salary_payments']['Row'];
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls } from './shared';
+import { describeReadError } from './shared-utils';
 import { istDateStr } from '../../lib/dates';
 import { ExportPayslipsButton } from './admin-extras';
 import { cachedQuery } from '../../lib/cachedQuery';
@@ -192,8 +193,9 @@ export function PayslipManager() {
   const [openSlip, setOpenSlip] = useState<Payslip | null>(null);
   const [payForm, setPayForm] = useState({ amount: '', method: 'bank_transfer', reference: '', note: '' });
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
+  const [payslipsTruncated, setPayslipsTruncated] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const res = await cachedQuery('payslip_manager_data', async () => {
         const [{ data: s }, { data: p }] = await Promise.all([
@@ -202,12 +204,19 @@ export function PayslipManager() {
         ]);
         return { staff: s || [], payslips: p || [] };
       });
-      if (res) { setStaff(res.staff as never); setPayslips(res.payslips); }
-    } catch {
-      // ignore
+      if (res) {
+        setStaff(res.staff as never);
+        setPayslips(res.payslips);
+        setPayslipsTruncated(res.payslips.length >= 200);
+      }
+    } catch (err) {
+      // Was `catch { /* ignore */ }` — a failed load left the screen showing
+      // "No payslips generated yet", which for a payroll screen is a
+      // materially wrong statement about whether people have been paid.
+      toast.error(`Couldn't load payroll data: ${err instanceof Error ? err.message : String(err)}`);
     }
-  }
-  useEffect(() => { load(); }, []);
+  }, [toast]);
+  useEffect(() => { load(); }, [load]);
 
   async function autoFillFromAttendance() {
     if (!genForm.staff_user_id) { toast.error('Select a staff member first'); return; }
@@ -324,7 +333,11 @@ export function PayslipManager() {
 
   async function openPayments(slip: Payslip) {
     setOpenSlip(slip);
-    const { data } = await supabase.from('salary_payments').select('*').eq('payslip_id', slip.id).order('paid_at', { ascending: false });
+    const { data, error } = await supabase.from('salary_payments').select('*').eq('payslip_id', slip.id).order('paid_at', { ascending: false });
+    // This list is money already paid against the payslip. A failed read
+    // rendering as "no payments recorded" invites paying someone twice.
+    const msg = describeReadError(error, 'payments for this payslip');
+    if (msg) { toast.error(msg); setPayments([]); return; }
     if (data) setPayments(data);
     setPayForm({ amount: '', method: 'bank_transfer', reference: '', note: '' });
   }
@@ -367,6 +380,11 @@ export function PayslipManager() {
           </div>
         ))}
         {payslips.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No payslips generated yet.</p>}
+        {payslipsTruncated && (
+          <p className="text-stone-600 text-xs text-center pt-3">
+            Showing the {payslips.length} most recent payslips — older periods exist but aren't loaded.
+          </p>
+        )}
       </div>
 
       {showGen && (

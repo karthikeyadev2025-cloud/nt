@@ -54,6 +54,25 @@ export type DueAlert = {
   type: 'followup' | 'callback' | 'appointment' | 'meeting'; dueAt: string;
 };
 
+/**
+ * Identity of a single alertable moment.
+ *
+ * The scheduled time is part of the key, and that is the whole point. The
+ * key used to be just `${leadId}-f`, and every key that fires is remembered
+ * in `seenRef` so it never fires twice. That meant rescheduling was fatal:
+ * once a lead's follow-up had alerted (or was silently acknowledged as
+ * already-overdue on the first poll of the session), moving it to a new
+ * time reused the same key, `seenRef` still contained it, and the new time
+ * never alerted. A telecaller pushing a call to "tomorrow 3pm" — the single
+ * most common action in this app — got no reminder for it.
+ *
+ * Keying on the time means a rescheduled item is a genuinely new moment and
+ * alerts on its own merits, while the same moment still only ever fires once.
+ */
+export function alertKey(leadId: string, type: DueAlert['type'], dueAt: string): string {
+  return `${leadId}|${type}|${dueAt}`;
+}
+
 const SOUND_PREF_KEY = 'nt_due_alert_sound_enabled';
 // Fires 15 minutes before the scheduled time, not at it — an actual
 // heads-up you can act on ("call in 15 min") rather than a notice that
@@ -97,22 +116,25 @@ export function useDueLeadAlerts() {
     const isFirstPoll = firstPollRef.current;
     const newlyDue: DueAlert[] = [];
     data.forEach(l => {
-      const candidates: { key: string; type: DueAlert['type']; dueAt: string | null }[] = [
-        { key: `${l.id}-f`, type: 'followup', dueAt: l.next_followup_at },
-        { key: `${l.id}-c`, type: 'callback', dueAt: l.callback_at },
-        { key: `${l.id}-a`, type: 'appointment', dueAt: l.appointment_at },
+      const candidates: { type: DueAlert['type']; dueAt: string | null }[] = [
+        { type: 'followup', dueAt: l.next_followup_at },
+        { type: 'callback', dueAt: l.callback_at },
+        { type: 'appointment', dueAt: l.appointment_at },
       ];
-      candidates.forEach(c => {
-        if (!c.dueAt || seenRef.current.has(c.key)) return;
-        const due = new Date(c.dueAt).getTime();
+      candidates.forEach(({ type, dueAt }) => {
+        if (!dueAt) return;
+        const key = alertKey(l.id, type, dueAt);
+        if (seenRef.current.has(key)) return;
+        const due = new Date(dueAt).getTime();
+        if (Number.isNaN(due)) return; // unparseable timestamp — never alert on it
         if (due - ALERT_LEAD_MS > now) return; // more than 15 min away, not due yet
-        seenRef.current.add(c.key);
+        seenRef.current.add(key);
         // On the very first poll after mount, anything already inside its
         // 15-minute window (or overdue) predates this session — silently
         // acknowledge it (it's already visible in the to-do list) instead
         // of firing an alert storm.
         if (isFirstPoll) return;
-        newlyDue.push({ key: c.key, leadId: l.id, customerName: l.customer_name, phone: l.phone, type: c.type, dueAt: c.dueAt });
+        newlyDue.push({ key, leadId: l.id, customerName: l.customer_name, phone: l.phone, type, dueAt });
       });
     });
 
@@ -128,9 +150,14 @@ export function useDueLeadAlerts() {
         data: { id: string; lead_id: string | null; customer_name: string | null; customer_phone: string | null; meeting_type_name: string; scheduled_at: string; status: string }[] | null;
       };
       (Array.isArray(meetings) ? meetings : []).forEach(m => {
-        const key = `mtg-${m.id}`;
+        // Same reschedule trap as leads above, and this one is worse: the
+        // Team Calendar has an explicit "Reschedule Meeting" action, so a
+        // key of `mtg-<id>` alone guaranteed that a moved meeting never
+        // alerted again.
+        const key = alertKey(m.id, 'meeting', m.scheduled_at);
         if (m.status !== 'scheduled' || seenRef.current.has(key)) return;
         const due = new Date(m.scheduled_at).getTime();
+        if (Number.isNaN(due)) return;
         if (due - ALERT_LEAD_MS > now) return;
         seenRef.current.add(key);
         if (isFirstPoll) return;
@@ -151,11 +178,20 @@ export function useDueLeadAlerts() {
     }
   }, [user, soundEnabled, notifPermission]);
 
+  // `poll` is rebuilt whenever soundEnabled or notifPermission changes, and
+  // this effect depended on it directly — so muting the bell tore down the
+  // 30s timer, started a fresh one, and fired an extra immediate poll. Hold
+  // the latest poll in a ref instead: the timer is installed once and always
+  // calls the current version.
+  const pollRef = useRef(poll);
+  useEffect(() => { pollRef.current = poll; }, [poll]);
+
   useEffect(() => {
-    poll();
-    const interval = setInterval(poll, 30000);
+    if (!user) return;
+    pollRef.current();
+    const interval = setInterval(() => pollRef.current(), 30000);
     return () => clearInterval(interval);
-  }, [poll]);
+  }, [user]);
 
   function dismiss(key: string) {
     setActiveAlerts(prev => prev.filter(a => a.key !== key));

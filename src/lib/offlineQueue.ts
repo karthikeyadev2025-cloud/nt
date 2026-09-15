@@ -142,12 +142,30 @@ const MAX_ATTEMPTS = 8;
 
 export type FlushResult = { synced: number; failed: number; remaining: number; dropped: number };
 
-/**
- * Replay queued visits. Safe to call repeatedly and concurrently-ish: each
- * item is removed only after the server confirms, and client_ref makes a
- * duplicate insert a no-op.
- */
-export async function flushQueue(supabase: SupabaseClient): Promise<FlushResult> {
+// Only one flush may be in flight at a time.
+//
+// startAutoFlush wires four triggers — the `online` event, visibilitychange,
+// a 60s timer and an initial run — and returning to the tab after a
+// reconnect fires two of them within milliseconds. client_ref made the
+// *inserts* safe, but the attempt bookkeeping was not: both passes would
+// read attempts=N, both would fail the same way, and both would write
+// attempts=N+1 on an item they had each only tried once. A genuinely
+// unsyncable visit therefore burned its 8-attempt budget in 4 real cycles,
+// and a visit failing transiently could get parked while it was still
+// perfectly recoverable — losing field notes, GPS and a photo from the
+// queue's live list, which is exactly what this module exists to prevent.
+//
+// Callers all want "the queue has been flushed", so a concurrent caller
+// joins the run in progress rather than starting a second one.
+let inFlightFlush: Promise<FlushResult> | null = null;
+
+export function flushQueue(supabase: SupabaseClient): Promise<FlushResult> {
+  if (inFlightFlush) return inFlightFlush;
+  inFlightFlush = runFlush(supabase).finally(() => { inFlightFlush = null; });
+  return inFlightFlush;
+}
+
+async function runFlush(supabase: SupabaseClient): Promise<FlushResult> {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     return { synced: 0, failed: 0, remaining: await queueCount(), dropped: await droppedCount() };
   }

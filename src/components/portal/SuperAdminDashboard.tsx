@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import {
   LayoutDashboard, Ticket, Users2, Layers, Boxes, FileText,
   UserCog, LogOut, Wrench, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
@@ -51,6 +51,7 @@ import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
 import { ModalOverlay } from '../ui/Modal';
+import { CommandPalette, CommandPaletteButton } from '../ui/CommandPalette';
 import { useConfirm } from '../ui/ConfirmDialog';
 
 const PERMISSION_KEYS = [
@@ -1401,11 +1402,13 @@ function LeavePolicyManager() {
   const [rows, setRows] = useState<Tables<'leave_policies'>[]>([]);
   const [busy, setBusy] = useState(false);
 
-  async function load() {
-    const { data } = await supabase.from('leave_policies').select('*').is('role_name', null).order('leave_type');
+  const load = useCallback(async () => {
+    const { data, error } = await supabase.from('leave_policies').select('*').is('role_name', null).order('leave_type');
+    const msg = describeReadError(error, 'leave policies');
+    if (msg) { toast.error(msg); return; }
     if (data) setRows(data);
-  }
-  useEffect(() => { load(); }, []);
+  }, [toast]);
+  useEffect(() => { load(); }, [load]);
 
   async function save(id: string, annual_days: number) {
     setBusy(true);
@@ -2589,6 +2592,16 @@ export default function SuperAdminDashboard() {
         </ModalOverlay>
       )}
 
+      {/* Ctrl/Cmd-K (or "/") from anywhere. This dashboard has 25 screens
+          behind seven collapsible sidebar groups, so "which group was
+          Duplicate Leads under again" was a real, repeated cost. The
+          sidebar group name rides along in the result so the answer sticks. */}
+      <CommandPalette
+        items={tabGroups.flatMap(g => g.items.map(t => ({ id: t.id, label: t.label, icon: t.icon, group: g.label })))}
+        activeId={tab}
+        onSelect={(id) => goTo(id as Tab)}
+      />
+
       <main className="flex-1 p-5 md:p-8 overflow-y-auto min-w-0">
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
@@ -2596,6 +2609,10 @@ export default function SuperAdminDashboard() {
             <h1 className="text-3xl font-extrabold text-nikki-navy tracking-tight truncate">{tabs.find(t => t.id === tab)?.label}</h1>
           </div>
           <div className="flex items-center gap-3">
+            {/* Two different searches, deliberately side by side: QuickSearch
+                finds records (a lead, a ticket, a person), this finds
+                screens. Labelling both makes the difference legible. */}
+            <CommandPaletteButton />
             <QuickSearch onNavigate={navigateWithFocus} />
             <button
               onClick={() => { setSoundEnabled(!soundEnabled); if (notifPermission === 'default') requestNotificationPermission(); }}
