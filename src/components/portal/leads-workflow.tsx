@@ -9,8 +9,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
 import { stageLabel, describeDbError, describeReadError } from './shared-utils';
-import { OUTCOMES, outcomeMeta } from './telecaller-outcomes';
-import { VISIT_OUTCOME_OPTIONS, visitOutcomeMeta } from './visit-outcomes';
+import {
+  CALL_OUTCOMES, VISIT_OUTCOMES, callOutcome, visitOutcome,
+  releasesToPool, isClosed, DEFAULT_CALL_OUTCOME, DEFAULT_VISIT_OUTCOME,
+  WON_REMARK_PREFIXES,
+} from './outcomes';
 import { OutcomePicker } from '../ui/OutcomePicker';
 import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, listDropped, retryDropped, removeQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
@@ -45,12 +48,25 @@ export function TelecallerStatsDashboard() {
           supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_requested_by', user.id).eq('transfer_status', 'pending'),
         ]);
 
-        const { data: convRemarks } = await supabase.from('lead_remarks')
-          .select('lead_id')
-          .eq('user_id', user.id)
-          .ilike('remark', '[Converted / Closed]%')
-          .gte('created_at', monthStart.toISOString());
-        const convertedMonth = new Set((convRemarks || []).map((r: { lead_id: string }) => r.lead_id)).size;
+        // Conversions are counted from remark TEXT because a won lead is
+        // released to the unassigned pool, so it can no longer be attributed
+        // through assigned_to. That makes the wording load-bearing: this used
+        // to be a hardcoded '[Converted / Closed]%', and renaming that button
+        // would have dropped the number to zero with nothing failing. The
+        // prefixes live in the catalog next to the label, and every historical
+        // wording is queried so past months keep counting.
+        const convRemarkSets = await Promise.all(
+          WON_REMARK_PREFIXES.map(prefix =>
+            supabase.from('lead_remarks')
+              .select('lead_id')
+              .eq('user_id', user.id)
+              .ilike('remark', `[${prefix}]%`)
+              .gte('created_at', monthStart.toISOString())
+          )
+        );
+        const convertedMonth = new Set(
+          convRemarkSets.flatMap(r => (r.data || []).map((x: { lead_id: string }) => x.lead_id))
+        ).size;
 
         return {
           assigned: assigned || 0, calledToday: calledToday || 0, callbacks: callbacks || 0,
@@ -93,7 +109,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
   const [executives, setExecutives] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);
   const [active, setActive] = useState<Lead | null>(null);
   const [history, setHistory] = useState<LeadRemark[]>([]);
-  const [outcome, setOutcome] = useState('contacted');
+  const [outcome, setOutcome] = useState(DEFAULT_CALL_OUTCOME);
   const [remark, setRemark] = useState('');
   const [callbackDate, setCallbackDate] = useState('');
   const [appointmentDate, setAppointmentDate] = useState('');
@@ -142,7 +158,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
 
   async function openLead(lead: Lead) {
     setActive(lead);
-    setOutcome('contacted');
+    setOutcome(DEFAULT_CALL_OUTCOME);
     setRemark('');
     setCallbackDate('');
     setTransferTo('');
@@ -156,9 +172,9 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
 
   async function submitOutcome() {
     if (!active || !user) return;
-    const meta = outcomeMeta(outcome);
+    const meta = callOutcome(outcome);
     // A note is demanded only where the note IS the information. "No answer"
-    // and "Call back later" already say everything they can say — the old
+    // and "Asked to call back" already say everything they can say — the old
     // blanket requirement meant the caller typed "." to get past it, or gave
     // up logging entirely, and an unlogged "no answer" never releases the
     // lead back to the pool for someone else to try.
@@ -166,21 +182,20 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
       toast.error(`Add a short note so the next person knows what happened — "${meta.label}" needs one.`);
       return;
     }
-    const isCallback = outcome === 'callback';
-    const isAppointment = outcome === 'appointment';
+    const isCallback = meta.schedules === 'callback';
+    const isAppointment = meta.schedules === 'appointment';
     if (isAppointment && !appointmentDate) { toast.error('Please pick the appointment date and time'); return; }
     if (isAppointment && new Date(appointmentDate) < new Date()) { toast.error('Appointment must be in the future'); return; }
     setBusy(true);
-    // Only terminal outcomes (won / lost / not-answered) release the lead back to
-    // the unassigned pool. "Interested" and callbacks stay with the caller so the
-    // lead never disappears into a pool that restricted staff can't see.
-    const releasesToPool = outcome === 'won' || outcome === 'lost' || outcome === 'not_answered';
+    // The stage an outcome means is the catalog's to decide, not this
+    // function's. It used to be a ternary here and a different ternary on the
+    // leads board, which is how the same call came to record a different
+    // funnel position depending on which screen logged it.
+    const releases = releasesToPool(meta);
     const patch: Record<string, unknown> = {
-      stage: outcome === 'won' ? 'won' : outcome === 'lost' ? 'lost'
-           : outcome === 'not_answered' ? 'not_answered'
-           : isAppointment ? 'qualified' : 'contacted',
+      stage: meta.stage,
       callback_at: isCallback && callbackDate ? new Date(callbackDate).toISOString() : null,
-      assigned_to: releasesToPool ? null : user.id,
+      assigned_to: releases ? null : user.id,
       updated_at: new Date().toISOString(),
     };
     if (isAppointment) {
@@ -205,7 +220,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     // Writing the remark first means the lead is still assigned to this caller
     // when the policy is evaluated, so the note always lands.
     const { error: remarkErr } = await supabase.from('lead_remarks').insert({
-      lead_id: active.id, user_id: user.id, call_type: 'outgoing',
+      lead_id: active.id, user_id: user.id, call_type: meta.callType,
       // With no typed note this is just "[No answer]", which already reads
       // as a complete statement in the history.
       remark: `[${meta.label}] ${remark.trim()}`.trim()
@@ -233,7 +248,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     toast.success(
       isAppointment ? 'Appointment booked — your manager has been notified to assign an executive'
       : isCallback ? 'Callback scheduled — stays in your queue'
-      : releasesToPool ? 'Saved — lead released to the unassigned pool'
+      : releases ? 'Saved — lead released to the unassigned pool'
       : 'Saved — lead stays in your queue for follow-up'
     );
     setActive(null);
@@ -383,11 +398,11 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               </div>
             )}
 
-            <OutcomePicker legend="How did the call go?" options={OUTCOMES} value={outcome} onChange={setOutcome} />
-            {outcome === 'callback' && (
+            <OutcomePicker legend="How did the call go?" options={CALL_OUTCOMES} value={outcome} onChange={setOutcome} />
+            {callOutcome(outcome).schedules === 'callback' && (
               <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} aria-label="Callback date and time" />
             )}
-            {outcome === 'appointment' && (
+            {callOutcome(outcome).schedules === 'appointment' && (
               <div className="space-y-2 rounded-lg border border-nikki-royal/30 bg-nikki-royal/5 p-3">
                 <p className="text-nikki-blue text-xs font-medium">Appointment date &amp; time *</p>
                 <input type="datetime-local" className={inputCls} value={appointmentDate} aria-label="Appointment date and time"
@@ -401,13 +416,13 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
             <textarea
               className={inputCls}
               rows={2}
-              placeholder={outcomeMeta(outcome).note === 'required' ? 'What did they say? *' : 'Anything to add? (optional)'}
-              aria-label={outcomeMeta(outcome).note === 'required' ? 'What did they say? Required' : 'Anything to add? Optional'}
+              placeholder={callOutcome(outcome).note === 'required' ? 'What did they say? *' : 'Anything to add? (optional)'}
+              aria-label={callOutcome(outcome).note === 'required' ? 'What did they say? Required' : 'Anything to add? Optional'}
               value={remark}
               onChange={e => setRemark(e.target.value)}
             />
             <button className={btnCls + ' w-full min-h-[44px]'} disabled={busy} onClick={submitOutcome}>
-              {busy ? 'Saving…' : `Save call: ${outcomeMeta(outcome).label}`}
+              {busy ? 'Saving…' : `Save call: ${callOutcome(outcome).label}`}
             </button>
 
             <div className="border-t border-stone-800 pt-3">
@@ -1446,7 +1461,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
-  const [outcome, setOutcome] = useState('contacted');
+  const [outcome, setOutcome] = useState(DEFAULT_VISIT_OUTCOME);
   const [remark, setRemark] = useState('');
   const [busy, setBusy] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
@@ -1554,7 +1569,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
   async function openLead(lead: Lead) {
     setActive(lead);
-    setOutcome('contacted');
+    setOutcome(DEFAULT_VISIT_OUTCOME);
     setRemark('');
     setPhotoDataUrl(null);
     setLocation(null);
@@ -1630,7 +1645,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     // has nothing to write, and the old blanket block on every outcome is
     // precisely why an absent customer got logged as "Follow-up needed"
     // instead: that was the cheapest option that would let the form save.
-    const meta = visitOutcomeMeta(outcome);
+    const meta = visitOutcome(outcome);
     if (meta.note === 'required' && !remark.trim()) {
       toast.error(`Add a short note so the next person knows what happened — "${meta.label}" needs one.`);
       return;
@@ -1639,8 +1654,8 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
     const photoBlob = photoDataUrl ? await (await fetch(photoDataUrl)).blob() : null;
 
-    const isClosed = outcome === 'won' || outcome === 'lost';
-    const patch: Record<string, unknown> = { stage: outcome, updated_at: new Date().toISOString() };
+    const closed = isClosed(meta);
+    const patch: Record<string, unknown> = { stage: meta.stage, updated_at: new Date().toISOString() };
     if (location) {
       patch.latitude = location.lat; patch.longitude = location.lng;
       if (location.address) patch.address = location.address;
@@ -1653,18 +1668,18 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       if (cleaned.length >= 10) patch.phone = cleaned;
     }
     if (dealValue) {
-      if (outcome === 'won') patch.invoice_amount = Number(dealValue);
+      if (meta.stage === 'won') patch.invoice_amount = Number(dealValue);
       else patch.estimated_value = Number(dealValue);
     }
     // Field staff schedule their own next touch; closing clears it so a won
     // deal doesn't keep nagging.
-    patch.next_followup_at = isClosed ? null : (nextFollowup ? new Date(nextFollowup).toISOString() : null);
+    patch.next_followup_at = closed ? null : (nextFollowup ? new Date(nextFollowup).toISOString() : null);
     // The executive can move or set the appointment themselves after meeting
     // the customer — they're the one who agreed the new time.
     if (apptAt) {
       patch.appointment_at = new Date(apptAt).toISOString();
       patch.appointment_set_by = user.id;
-    } else if (isClosed) {
+    } else if (closed) {
       patch.appointment_at = null;
     }
     // Ownership is retained on close. Releasing it used to wipe the closer's
@@ -1684,7 +1699,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       // self-describing, and with no typed note "[Nobody there]" already
       // reads as a complete statement.
       remark: `[${meta.label}] ${remark.trim()}`.trim(),
-      callType: 'visit',
+      callType: meta.callType,
       occurredAt: new Date().toISOString(),
       latitude: location?.lat ?? null,
       longitude: location?.lng ?? null,
@@ -1700,18 +1715,19 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     if (result.remaining > 0) {
       toast.success(`Visit saved on your phone — will sync automatically (${result.remaining} pending)`);
     } else {
-      toast.success(isClosed ? 'Visit logged — lead closed' : 'Visit logged');
+      toast.success(closed ? 'Visit logged — lead closed' : 'Visit logged');
     }
     setActive(null);
     setDealValue(''); setVisitRequirement(''); setNextFollowup(''); setApptAt('');
     load();
   }
 
-  const noteRequired = visitOutcomeMeta(outcome).note === 'required';
+  const visitMeta = visitOutcome(outcome);
+  const noteRequired = visitMeta.note === 'required';
   // "Estimated deal value" is the wrong words once a number has actually been
   // quoted to the customer, and the wrong words again for a closed deal.
-  const dealValueLabel = outcome === 'won' ? 'Final invoice amount (₹)'
-    : outcome === 'quoted' ? 'Amount you quoted (₹)'
+  const dealValueLabel = visitMeta.stage === 'won' ? 'Final invoice amount (₹)'
+    : visitMeta.stage === 'quoted' ? 'Amount you quoted (₹)'
     : 'Estimated deal value (₹)';
 
   return (
@@ -1951,7 +1967,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               )}
 
               <div className="mb-2">
-                <OutcomePicker legend="How did the visit go?" options={VISIT_OUTCOME_OPTIONS} value={outcome} onChange={setOutcome} />
+                <OutcomePicker legend="How did the visit go?" options={VISIT_OUTCOMES} value={outcome} onChange={setOutcome} />
               </div>
               <input className={inputCls + ' mb-2'} placeholder="What they actually need (updates the lead)"
                 value={visitRequirement} onChange={e => setVisitRequirement(e.target.value)} aria-label="What they actually need (updates the lead)" />
@@ -1961,7 +1977,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               <textarea className={inputCls} rows={2} value={remark} onChange={e => setRemark(e.target.value)}
                 placeholder={noteRequired ? 'What happened on the visit? *' : 'Anything to add? (optional)'}
                 aria-label={noteRequired ? 'What happened on the visit? Required' : 'Anything to add? Optional'} />
-              {outcome !== 'won' && outcome !== 'lost' && (
+              {!isClosed(visitMeta) && (
                 <div className="grid grid-cols-1 gap-2 mt-2">
                   <div>
                     <p className="text-stone-700 text-xs mb-1">Next follow-up (reminds you)</p>
@@ -1976,7 +1992,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 </div>
               )}
               <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>
-                {busy ? 'Saving…' : `Save visit: ${visitOutcomeMeta(outcome).label}`}
+                {busy ? 'Saving…' : `Save visit: ${visitMeta.label}`}
               </button>
             </div>
 
