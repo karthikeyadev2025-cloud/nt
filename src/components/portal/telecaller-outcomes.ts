@@ -4,6 +4,8 @@
 // a file exporting both components and plain values forces a full reload
 // of every importer when one of those values changes.
 
+import type { OutcomeOption } from './outcome-tone';
+
 /*
   Call outcomes, ordered by how often a telecaller actually picks them
   rather than by workflow tidiness — "Not Answered" is the most common
@@ -23,7 +25,7 @@
   When nothing is typed the stored remark is just the bracketed tag —
   "[No answer]" — which already reads as a complete statement.
 */
-export const OUTCOMES = [
+export const OUTCOMES: readonly OutcomeOption[] = [
   { value: 'not_answered', label: 'No answer', note: 'optional', tone: 'neutral' },
   { value: 'callback', label: 'Call back later', note: 'optional', tone: 'amber' },
   { value: 'contacted', label: 'Spoke — interested', note: 'required', tone: 'emerald' },
@@ -33,14 +35,6 @@ export const OUTCOMES = [
 ] as const;
 
 
-export const OUTCOME_TONE: Record<string, { idle: string; active: string }> = {
-  neutral: { idle: 'border-stone-300 text-stone-700 hover:bg-stone-50', active: 'border-stone-700 bg-stone-700 text-white' },
-  amber: { idle: 'border-amber-300 text-amber-800 hover:bg-amber-50', active: 'border-amber-600 bg-amber-600 text-white' },
-  emerald: { idle: 'border-emerald-300 text-emerald-800 hover:bg-emerald-50', active: 'border-emerald-600 bg-emerald-600 text-white' },
-  blue: { idle: 'border-nikki-border text-nikki-blue hover:bg-nikki-surface-blue', active: 'border-nikki-blue bg-nikki-blue text-white' },
-  red: { idle: 'border-red-300 text-red-700 hover:bg-red-50', active: 'border-red-600 bg-red-600 text-white' },
-};
-
-export function outcomeMeta(value: string) {
+export function outcomeMeta(value: string): OutcomeOption {
   return OUTCOMES.find(o => o.value === value) ?? OUTCOMES[0];
 }

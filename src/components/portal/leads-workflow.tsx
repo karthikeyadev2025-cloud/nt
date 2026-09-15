@@ -9,7 +9,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
 import { stageLabel, describeDbError, describeReadError } from './shared-utils';
-import { OUTCOMES, OUTCOME_TONE, outcomeMeta } from './telecaller-outcomes';
+import { OUTCOMES, outcomeMeta } from './telecaller-outcomes';
+import { VISIT_OUTCOME_OPTIONS, visitOutcomeMeta } from './visit-outcomes';
+import { OutcomePicker } from '../ui/OutcomePicker';
 import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, listDropped, retryDropped, removeQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
@@ -83,41 +85,6 @@ export function TelecallerStatsDashboard() {
 }
 
 // ─────────────────────────── Telecaller: active call queue (click-to-call, quick remark, transfer request)
-
-
-/**
- * The call-outcome picker.
- *
- * Was a <select> of six options. On a phone that is a full-screen picker —
- * tap, scroll, tap, confirm — for the field a telecaller touches on every
- * single dial, dozens of times a day. As buttons it is one tap, every option
- * is visible without opening anything, and the colour carries the kind of
- * outcome before the label is read.
- */
-export function CallOutcomePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <fieldset>
-      <legend className="text-stone-700 text-xs font-semibold mb-1.5">How did the call go?</legend>
-      <div className="grid grid-cols-2 gap-2">
-        {OUTCOMES.map(o => {
-          const selected = value === o.value;
-          const tone = OUTCOME_TONE[o.tone];
-          return (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => onChange(o.value)}
-              aria-pressed={selected}
-              className={`min-h-[44px] px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${selected ? tone.active : tone.idle}`}
-            >
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
-    </fieldset>
-  );
-}
 
 export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Segment[]; openAddLeadSignal?: number }) {
   const { user, hasPermission } = useAuth();
@@ -416,7 +383,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               </div>
             )}
 
-            <CallOutcomePicker value={outcome} onChange={setOutcome} />
+            <OutcomePicker legend="How did the call go?" options={OUTCOMES} value={outcome} onChange={setOutcome} />
             {outcome === 'callback' && (
               <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} aria-label="Callback date and time" />
             )}
@@ -440,7 +407,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               onChange={e => setRemark(e.target.value)}
             />
             <button className={btnCls + ' w-full min-h-[44px]'} disabled={busy} onClick={submitOutcome}>
-              {busy ? 'Saving…' : `Save — ${outcomeMeta(outcome).label}`}
+              {busy ? 'Saving…' : `Save call: ${outcomeMeta(outcome).label}`}
             </button>
 
             <div className="border-t border-stone-800 pt-3">
@@ -1467,13 +1434,6 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
 
 // ─────────────────────────── Marketing Executive: field visits (photo + GPS + auto-address + notes)
 
-const VISIT_OUTCOMES = [
-  { value: 'contacted', label: 'Follow-up needed' },
-  { value: 'qualified', label: 'Interested — quoting' },
-  { value: 'won', label: 'Closed — Won' },
-  { value: 'lost', label: 'Closed — Lost' },
-];
-
 export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
@@ -1665,7 +1625,16 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   }
 
   async function saveVisit() {
-    if (!active || !user || !remark.trim()) { toast.error('Add a visit note before saving'); return; }
+    if (!active || !user) return;
+    // A note is demanded only where the note IS the record. "Nobody there"
+    // has nothing to write, and the old blanket block on every outcome is
+    // precisely why an absent customer got logged as "Follow-up needed"
+    // instead: that was the cheapest option that would let the form save.
+    const meta = visitOutcomeMeta(outcome);
+    if (meta.note === 'required' && !remark.trim()) {
+      toast.error(`Add a short note so the next person knows what happened — "${meta.label}" needs one.`);
+      return;
+    }
     setBusy(true);
 
     const photoBlob = photoDataUrl ? await (await fetch(photoDataUrl)).blob() : null;
@@ -1711,7 +1680,10 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       leadId: active.id,
       leadName: active.customer_name,
       userId: user.id,
-      remark,
+      // Same shape as a logged call: the bracketed outcome makes the history
+      // self-describing, and with no typed note "[Nobody there]" already
+      // reads as a complete statement.
+      remark: `[${meta.label}] ${remark.trim()}`.trim(),
       callType: 'visit',
       occurredAt: new Date().toISOString(),
       latitude: location?.lat ?? null,
@@ -1735,6 +1707,12 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     load();
   }
 
+  const noteRequired = visitOutcomeMeta(outcome).note === 'required';
+  // "Estimated deal value" is the wrong words once a number has actually been
+  // quoted to the customer, and the wrong words again for a closed deal.
+  const dealValueLabel = outcome === 'won' ? 'Final invoice amount (₹)'
+    : outcome === 'quoted' ? 'Amount you quoted (₹)'
+    : 'Estimated deal value (₹)';
 
   return (
     <div>
@@ -1870,60 +1848,16 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               <input className={inputCls} placeholder="Enter 10-digit phone number collected from owner" value={collectedPhone} onChange={e => setCollectedPhone(e.target.value)} aria-label="Enter 10-digit phone number collected from owner" />
             </div>
 
-            <div className="border-t border-stone-800 pt-3">
-              <p className="text-stone-700 text-sm font-medium mb-2">Log a Visit</p>
-
-              {photoDataUrl ? (
-                <img src={photoDataUrl} alt="Captured" className="w-full rounded-lg mb-2" />
-              ) : (
-                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" onClick={() => setCapturing(true)}>
-                  <Camera className="w-4 h-4" /> Take Client/Site Photo
-                </button>
-              )}
-
-              {location ? (
-                <div className="mb-2 px-3 py-2 rounded-lg bg-stone-50 border border-stone-800">
-                  <p className="text-emerald-700 text-xs">📍 {location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
-                  <button className="text-nikki-blue text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
-                </div>
-              ) : (
-                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={() => captureLocation()}>
-                  <MapPin className="w-4 h-4" /> {locating ? 'Getting location…' : 'Capture Location & Address'}
-                </button>
-              )}
-
-              <select aria-label="Visit outcome" className={inputCls + ' mb-2'} value={outcome} onChange={e => setOutcome(e.target.value)}>
-                {VISIT_OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <input className={inputCls + ' mb-2'} placeholder="What they actually need (updates the lead)"
-                value={visitRequirement} onChange={e => setVisitRequirement(e.target.value)} aria-label="What they actually need (updates the lead)" />
-              <input className={inputCls + ' mb-2'} type="number" min={0}
-                placeholder={outcome === 'won' ? 'Final invoice amount (₹)' : 'Estimated deal value (₹)'}
-                value={dealValue} onChange={e => setDealValue(e.target.value)} aria-label={outcome === 'won' ? 'Final invoice amount (₹)' : 'Estimated deal value (₹)'} />
-              <textarea className={inputCls} rows={2} placeholder="Visit notes / conversation summary *" value={remark} onChange={e => setRemark(e.target.value)} aria-label="Visit notes / conversation summary" />
-              {outcome !== 'won' && outcome !== 'lost' && (
-                <div className="grid grid-cols-1 gap-2 mt-2">
-                  <div>
-                    <p className="text-stone-700 text-xs mb-1">Next follow-up (reminds you)</p>
-                    <input type="datetime-local" className={inputCls} value={nextFollowup} aria-label="Next follow-up"
-                      onChange={e => setNextFollowup(e.target.value)} />
-                  </div>
-                  <div>
-                    <p className="text-stone-700 text-xs mb-1">Next appointment (visible to manager)</p>
-                    <input type="datetime-local" className={inputCls} value={apptAt} aria-label="Next appointment"
-                      onChange={e => setApptAt(e.target.value)} />
-                  </div>
-                </div>
-              )}
-              <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>{busy ? 'Saving…' : 'Save Visit'}</button>
-            </div>
-
             {/* Visits that haven't reached the server yet live only in
                 IndexedDB, so they used to be completely absent from this
                 panel — the executive typed a summary, saw it vanish, and had
-                no way to confirm it still existed. Show them first, clearly
-                marked, so "saved on your phone" is something you can actually
-                see on the record it belongs to. */}
+                no way to confirm it still existed.
+
+                They belong here, with the rest of the history and above the
+                form, because they ARE the history: the most recent visit is
+                the likeliest one still waiting for signal, so showing it only
+                below the form meant "what happened last time" could come up
+                empty precisely when the last visit was the one that mattered. */}
             {(() => {
               const unsent = [...pendingItems, ...droppedItems].filter(p => p.leadId === active.id);
               if (unsent.length === 0) return null;
@@ -1965,9 +1899,14 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               );
             })()}
 
+            {/* Last visit's notes and site photo are what you need while walking
+                up to the door, so they come before the form. They used to sit
+                underneath it, below the outcome picker, the requirement, the
+                deal value, the notes box and two datetime pickers — a scroll
+                nobody does one-handed on a doorstep. */}
             {remarks.length > 0 && (
-              <div className="border-t border-stone-800 pt-3 space-y-2">
-                <p className="text-stone-700 text-xs font-medium">Full History</p>
+              <div className="rounded-xl bg-stone-50 border border-nikki-border p-3 space-y-2 max-h-40 overflow-y-auto">
+                <p className="text-stone-700 text-xs font-semibold">Before you go in — what happened last time</p>
                 {remarks.map(r => (
                   <div key={r.id} className="text-xs">
                     <p className="text-stone-700">{new Date(r.created_at ?? '').toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''} • {(r.call_type ?? '')}</p>
@@ -1988,6 +1927,60 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 ))}
               </div>
             )}
+
+            <div className="border-t border-stone-800 pt-3">
+              <p className="text-stone-700 text-sm font-medium mb-2">Log a Visit</p>
+
+              {photoDataUrl ? (
+                <img src={photoDataUrl} alt="Captured" className="w-full rounded-lg mb-2" />
+              ) : (
+                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" onClick={() => setCapturing(true)}>
+                  <Camera className="w-4 h-4" /> Take Client/Site Photo
+                </button>
+              )}
+
+              {location ? (
+                <div className="mb-2 px-3 py-2 rounded-lg bg-stone-50 border border-stone-800">
+                  <p className="text-emerald-700 text-xs">📍 {location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
+                  <button className="text-nikki-blue text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
+                </div>
+              ) : (
+                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={() => captureLocation()}>
+                  <MapPin className="w-4 h-4" /> {locating ? 'Getting location…' : 'Capture Location & Address'}
+                </button>
+              )}
+
+              <div className="mb-2">
+                <OutcomePicker legend="How did the visit go?" options={VISIT_OUTCOME_OPTIONS} value={outcome} onChange={setOutcome} />
+              </div>
+              <input className={inputCls + ' mb-2'} placeholder="What they actually need (updates the lead)"
+                value={visitRequirement} onChange={e => setVisitRequirement(e.target.value)} aria-label="What they actually need (updates the lead)" />
+              <input className={inputCls + ' mb-2'} type="number" min={0}
+                placeholder={dealValueLabel} value={dealValue}
+                onChange={e => setDealValue(e.target.value)} aria-label={dealValueLabel} />
+              <textarea className={inputCls} rows={2} value={remark} onChange={e => setRemark(e.target.value)}
+                placeholder={noteRequired ? 'What happened on the visit? *' : 'Anything to add? (optional)'}
+                aria-label={noteRequired ? 'What happened on the visit? Required' : 'Anything to add? Optional'} />
+              {outcome !== 'won' && outcome !== 'lost' && (
+                <div className="grid grid-cols-1 gap-2 mt-2">
+                  <div>
+                    <p className="text-stone-700 text-xs mb-1">Next follow-up (reminds you)</p>
+                    <input type="datetime-local" className={inputCls} value={nextFollowup} aria-label="Next follow-up"
+                      onChange={e => setNextFollowup(e.target.value)} />
+                  </div>
+                  <div>
+                    <p className="text-stone-700 text-xs mb-1">Next appointment (visible to manager)</p>
+                    <input type="datetime-local" className={inputCls} value={apptAt} aria-label="Next appointment"
+                      onChange={e => setApptAt(e.target.value)} />
+                  </div>
+                </div>
+              )}
+              <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>
+                {busy ? 'Saving…' : `Save visit: ${visitOutcomeMeta(outcome).label}`}
+              </button>
+            </div>
+
+
           </div>
         </ModalOverlay>
       )}
