@@ -2,12 +2,23 @@ import { createContext, useCallback, useContext, useMemo, useState, ReactNode } 
 import { CheckCircle2, XCircle, X } from 'lucide-react';
 
 type ToastKind = 'success' | 'error' | 'info';
-interface ToastItem { id: number; kind: ToastKind; message: string; }
+interface ToastAction { label: string; onClick: () => void }
+interface ToastItem { id: number; kind: ToastKind; message: string; action?: ToastAction }
 
 export interface ToastContextType {
   success: (msg: string) => void;
   error: (msg: string) => void;
   info: (msg: string) => void;
+  /**
+   * A toast carrying one action, for an Undo window.
+   *
+   * `ms` is how long the toast stays, and callers use it as the window in
+   * which the action can still be taken — so it has to be long enough to
+   * notice, read and reach on a phone, not the 4 seconds a "Saved" gets.
+   * The action button dismisses the toast itself, so taking it never races
+   * the timer.
+   */
+  action: (msg: string, label: string, onClick: () => void, ms?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -16,20 +27,22 @@ let counter = 0;
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
 
-  const push = useCallback((kind: ToastKind, message: string) => {
+  const push = useCallback((kind: ToastKind, message: string, action?: ToastAction, ms?: number) => {
     const id = ++counter;
-    setItems(prev => [...prev, { id, kind, message }]);
+    setItems(prev => [...prev, { id, kind, message, action }]);
     // Errors stay twice as long. Four seconds is fine for "Saved" but it's
     // not enough to read, understand and act on a failure message — and
     // these are the toasts that actually carry information the user needs
     // (a rejected save, a sync error, a validation message from the DB).
-    setTimeout(() => setItems(prev => prev.filter(t => t.id !== id)), kind === 'error' ? 8000 : 4000);
+    setTimeout(() => setItems(prev => prev.filter(t => t.id !== id)), ms ?? (kind === 'error' ? 8000 : 4000));
   }, []);
 
   const value: ToastContextType = useMemo(() => ({
     success: (msg: string) => push('success', msg),
     error: (msg: string) => push('error', msg),
     info: (msg: string) => push('info', msg),
+    action: (msg: string, label: string, onClick: () => void, ms = 7000) =>
+      push('info', msg, { label, onClick }, ms),
   }), [push]);
 
   return (
@@ -69,6 +82,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 text itself always states the outcome. */}
             {t.kind === 'success' ? <CheckCircle2 aria-hidden="true" className="w-4 h-4 mt-0.5 shrink-0" /> : t.kind === 'error' ? <XCircle aria-hidden="true" className="w-4 h-4 mt-0.5 shrink-0" /> : null}
             <span className="flex-1">{t.message}</span>
+            {/* Sized to the 44px touch floor like every other primary control:
+                this is the button someone jabs at on a phone having just
+                realised they tapped the wrong lead, and missing it means the
+                action they wanted to stop goes through. */}
+            {t.action && (
+              <button
+                type="button"
+                onClick={() => {
+                  setItems(prev => prev.filter(x => x.id !== t.id));
+                  t.action!.onClick();
+                }}
+                className="shrink-0 min-h-[44px] px-3 -my-1 rounded-lg font-bold underline underline-offset-2 hover:bg-white/10">
+                {t.action.label}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setItems(prev => prev.filter(x => x.id !== t.id))}

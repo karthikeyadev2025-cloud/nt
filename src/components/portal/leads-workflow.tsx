@@ -14,6 +14,7 @@ import {
   releasesToPool, isClosed, WON_REMARK_PREFIXES,
 } from './outcomes';
 import { OutcomePicker } from '../ui/OutcomePicker';
+import { PendingActions } from '../../lib/pendingActions';
 import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, listDropped, retryDropped, removeQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
@@ -1536,6 +1537,93 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     else if (r.remaining > 0) toast.error(`Still offline — ${r.remaining} visit(s) waiting`);
   }
 
+  /*
+    One-tap "Nobody there".
+
+    Driving to a customer and finding the shop shut is the single most
+    common thing that happens to a field executive, and until now logging it
+    cost five interactions: open the lead, wait for history and photos to
+    load, pick the outcome, scroll, save. Enough friction that the honest
+    move — recording a wasted trip — was the expensive one, and the lead
+    just sat there looking untouched.
+
+    It is one tap now, and the write is DELAYED rather than undone. A tap
+    starts a 7-second window and only then queues the visit, so Undo has
+    nothing to reverse: no compensating remark, no deleting a row the RLS
+    policies may not even permit deleting. The lead simply never got logged.
+
+    This outcome is the only one that earns a shortcut. It needs no note, it
+    does not close the lead, it does not release it to the pool, and the GPS
+    the app already holds is the proof the trip happened. Everything else
+    still goes through the form, where it belongs.
+  */
+  const UNDO_MS = 7000;
+  const [pendingAbsent, setPendingAbsent] = useState<Set<string>>(new Set());
+  const absent = useRef(new PendingActions());
+  const mountedRef = useRef(true);
+
+  // Anything still inside its undo window when this view unmounts is
+  // committed immediately, rather than lost because the executive navigated
+  // away.
+  useEffect(() => {
+    const queue = absent.current;
+    return () => { mountedRef.current = false; queue.flushAll(); };
+  }, []);
+
+  function logNobodyThere(lead: Lead) {
+    if (!user) return;
+    const meta = visitOutcome('visit_absent')!;
+    // Snapshot the location now, not at commit time — it is the position
+    // when the executive was standing at the door.
+    const at = location;
+
+    const persist = async () => {
+      const patch: Record<string, unknown> = { stage: meta.stage, updated_at: new Date().toISOString() };
+      if (at) {
+        patch.latitude = at.lat; patch.longitude = at.lng;
+        if (at.address) patch.address = at.address;
+      }
+      await enqueue({
+        id: crypto.randomUUID(),
+        leadId: lead.id,
+        leadName: lead.customer_name,
+        userId: user.id,
+        // No typed note, so the bracketed outcome is the whole remark — and
+        // "[Nobody there]" already reads as a complete statement.
+        remark: `[${meta.label}]`,
+        callType: meta.callType,
+        occurredAt: new Date().toISOString(),
+        latitude: at?.lat ?? null,
+        longitude: at?.lng ?? null,
+        address: at?.address ?? null,
+        photo: null,
+        leadPatch: patch,
+      });
+      const result = await flushQueue(supabase);
+      if (!mountedRef.current) return;
+      setPendingCount(result.remaining);
+      setPendingItems(await listQueued());
+      setDroppedItems(await listDropped());
+      setPendingAbsent(prev => { const next = new Set(prev); next.delete(lead.id); return next; });
+      load();
+    };
+
+    // schedule() refuses a key that is already pending, so a double tap
+    // cannot queue the same visit twice or restart the window.
+    if (!absent.current.schedule(lead.id, persist, UNDO_MS)) return;
+    setPendingAbsent(prev => new Set(prev).add(lead.id));
+
+    toast.action(`${lead.customer_name} — nobody there`, 'Undo', () => {
+      // False means the timer already fired and the visit is queued; saying
+      // nothing would leave them believing they had stopped it.
+      if (absent.current.cancel(lead.id)) {
+        setPendingAbsent(prev => { const next = new Set(prev); next.delete(lead.id); return next; });
+      } else {
+        toast.info(`Already saved — open ${lead.customer_name} to change it.`);
+      }
+    }, UNDO_MS);
+  }
+
   type DupWarning = { id: string; customer_name: string; stage: string; assignee_name: string };
   const [duplicateInfo, setDuplicateInfo] = useState<DupWarning[] | null>(null);
 
@@ -1851,6 +1939,23 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 {new Date(l.appointment_at) < new Date() ? ' (date passed)' : ''}
               </p>
             )}
+            {/* stopPropagation because the whole card opens the lead — without
+                it every tap here would also launch the modal it exists to
+                avoid. */}
+            <div className="mt-2 flex justify-end" onClick={e => e.stopPropagation()}>
+              {pendingAbsent.has(l.id) ? (
+                <span className="text-stone-600 text-xs font-medium min-h-[44px] inline-flex items-center px-3">
+                  Logging “Nobody there”…
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => logNobodyThere(l)}
+                  className="min-h-[44px] px-3 rounded-xl border border-stone-300 text-stone-700 text-xs font-semibold hover:bg-stone-50 inline-flex items-center gap-1.5">
+                  🚪 Nobody there
+                </button>
+              )}
+            </div>
           </div>
         ))}
         {leads.length === 0 && <p className="text-stone-700 text-sm text-center py-10">No field leads assigned to you yet. Tap "View Available Unassigned Leads" below to assign leads to yourself or tap "+ Add Lead".</p>}
