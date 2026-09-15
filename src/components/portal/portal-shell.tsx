@@ -5,7 +5,7 @@ import { NotificationBell } from './features';
 import { useDueLeadAlerts } from '../../lib/dueAlerts';
 import { waLink } from '../../lib/phone';
 import { ModalOverlay } from '../ui/Modal';
-import { CommandPalette } from '../ui/CommandPalette';
+import { CommandPalette, CommandPaletteButton } from '../ui/CommandPalette';
 
 export type PortalTab = { id: string; label: string; icon: LucideIcon; show: boolean };
 
@@ -180,6 +180,7 @@ export function PortalShell({
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            <CommandPaletteButton />
             <button
               onClick={() => { setSoundEnabled(!soundEnabled); if (notifPermission === 'default') requestNotificationPermission(); }}
               title={soundEnabled ? 'Sound alerts on for due follow-ups/appointments — tap to mute' : 'Sound alerts muted — tap to enable'}

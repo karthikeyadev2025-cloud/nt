@@ -51,7 +51,7 @@ import { ChangePasswordModal } from '../ChangePasswordModal';
 import { useToast } from '../../lib/toast';
 import { istDateStr } from '../../lib/dates';
 import { ModalOverlay } from '../ui/Modal';
-import { CommandPalette } from '../ui/CommandPalette';
+import { CommandPalette, CommandPaletteButton } from '../ui/CommandPalette';
 import { useConfirm } from '../ui/ConfirmDialog';
 
 const PERMISSION_KEYS = [
@@ -2609,6 +2609,10 @@ export default function SuperAdminDashboard() {
             <h1 className="text-3xl font-extrabold text-nikki-navy tracking-tight truncate">{tabs.find(t => t.id === tab)?.label}</h1>
           </div>
           <div className="flex items-center gap-3">
+            {/* Two different searches, deliberately side by side: QuickSearch
+                finds records (a lead, a ticket, a person), this finds
+                screens. Labelling both makes the difference legible. */}
+            <CommandPaletteButton />
             <QuickSearch onNavigate={navigateWithFocus} />
             <button
               onClick={() => { setSoundEnabled(!soundEnabled); if (notifPermission === 'default') requestNotificationPermission(); }}

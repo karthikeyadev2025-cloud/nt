@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, CornerDownLeft } from 'lucide-react';
 import { ModalOverlay } from './Modal';
 import { rankItems, type PaletteItem } from '../../lib/fuzzyMatch';
+import { OPEN_PALETTE_EVENT, openCommandPalette } from '../../lib/commandPaletteBus';
 
 /*
   "Jump to anything" — one keystroke to reach any screen the signed-in user
@@ -18,6 +19,30 @@ import { rankItems, type PaletteItem } from '../../lib/fuzzyMatch';
   already-filtered tab list the sidebar renders, so it can never offer a
   screen the user would be refused on arrival.
 */
+
+/**
+ * The visible way in. Shows as a search-style control on desktop (wide
+ * enough to read as "you can search here", with the shortcut spelled out so
+ * people learn it) and collapses to a labelled icon button on phones, where
+ * header space is scarce and there is no keyboard shortcut to fall back on.
+ */
+export function CommandPaletteButton({ className = '' }: { className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={openCommandPalette}
+      aria-keyshortcuts="Control+K"
+      aria-label="Jump to a screen"
+      title="Jump to a screen (Ctrl+K)"
+      className={`icon-btn gap-2 rounded-xl border border-nikki-border text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-colors
+                  p-2 sm:px-3 sm:py-1.5 sm:min-w-[9.5rem] sm:justify-start ${className}`}
+    >
+      <Search aria-hidden="true" className="w-4 h-4 shrink-0" />
+      <span className="hidden sm:inline text-xs font-medium">Jump to…</span>
+      <kbd className="hidden md:inline ml-auto text-[11px] font-semibold border border-nikki-border rounded px-1.5 py-0.5">Ctrl K</kbd>
+    </button>
+  );
+}
 
 export function CommandPalette({
   items,
@@ -55,8 +80,17 @@ export function CommandPalette({
         setOpen(true);
       }
     }
+    // A visible button elsewhere in the page chrome opens it through this
+    // event. Without it the palette was keyboard-only — undiscoverable for
+    // anyone not told the shortcut, and flatly unusable for the telecallers
+    // and field executives who work from a phone and have no Ctrl key.
+    function onOpenRequest() { setOpen(true); }
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener(OPEN_PALETTE_EVENT, onOpenRequest);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(OPEN_PALETTE_EVENT, onOpenRequest);
+    };
   }, []);
 
   useEffect(() => { setCursor(0); }, [query]);
@@ -134,10 +168,17 @@ export function CommandPalette({
           })}
         </div>
 
+        {/* Keyboard hints only where there is a keyboard. On a phone this
+            footer was advertising "ctrl+k or / anytime" to someone who has
+            neither key — noise at best, confusing at worst. Touch users get
+            the one instruction that applies to them instead. */}
         <p className="px-4 py-2 border-t border-nikki-border bg-stone-50 text-stone-600 text-[11px]">
-          <kbd className="font-semibold">↑</kbd> <kbd className="font-semibold">↓</kbd> to move ·
-          <kbd className="font-semibold"> enter</kbd> to open ·
-          <kbd className="font-semibold"> ctrl</kbd>+<kbd className="font-semibold">k</kbd> or <kbd className="font-semibold">/</kbd> anytime
+          <span className="hidden sm:inline">
+            <kbd className="font-semibold">↑</kbd> <kbd className="font-semibold">↓</kbd> to move ·
+            <kbd className="font-semibold"> enter</kbd> to open ·
+            <kbd className="font-semibold"> ctrl</kbd>+<kbd className="font-semibold">k</kbd> or <kbd className="font-semibold">/</kbd> anytime
+          </span>
+          <span className="sm:hidden">Tap a screen to open it</span>
         </p>
       </div>
     </ModalOverlay>
