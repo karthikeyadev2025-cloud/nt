@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
 import { stageLabel, describeDbError, describeReadError } from './shared-utils';
+import { OUTCOMES, OUTCOME_TONE, outcomeMeta } from './telecaller-outcomes';
 import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, listDropped, retryDropped, removeQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
@@ -82,14 +83,41 @@ export function TelecallerStatsDashboard() {
 }
 
 // ─────────────────────────── Telecaller: active call queue (click-to-call, quick remark, transfer request)
-const OUTCOMES = [
-  { value: 'contacted', label: 'Spoke — Interested' },
-  { value: 'appointment', label: 'Appointment Booked' },
-  { value: 'not_answered', label: 'Not Answered' },
-  { value: 'lost', label: 'Not Interested' },
-  { value: 'callback', label: 'Callback Requested' },
-  { value: 'won', label: 'Converted / Closed' },
-];
+
+
+/**
+ * The call-outcome picker.
+ *
+ * Was a <select> of six options. On a phone that is a full-screen picker —
+ * tap, scroll, tap, confirm — for the field a telecaller touches on every
+ * single dial, dozens of times a day. As buttons it is one tap, every option
+ * is visible without opening anything, and the colour carries the kind of
+ * outcome before the label is read.
+ */
+export function CallOutcomePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <fieldset>
+      <legend className="text-stone-700 text-xs font-semibold mb-1.5">How did the call go?</legend>
+      <div className="grid grid-cols-2 gap-2">
+        {OUTCOMES.map(o => {
+          const selected = value === o.value;
+          const tone = OUTCOME_TONE[o.tone];
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onChange(o.value)}
+              aria-pressed={selected}
+              className={`min-h-[44px] px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${selected ? tone.active : tone.idle}`}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
 
 export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Segment[]; openAddLeadSignal?: number }) {
   const { user, hasPermission } = useAuth();
@@ -160,7 +188,17 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
   }
 
   async function submitOutcome() {
-    if (!active || !user || !remark.trim()) { toast.error('Please add a remark before saving'); return; }
+    if (!active || !user) return;
+    const meta = outcomeMeta(outcome);
+    // A note is demanded only where the note IS the information. "No answer"
+    // and "Call back later" already say everything they can say — the old
+    // blanket requirement meant the caller typed "." to get past it, or gave
+    // up logging entirely, and an unlogged "no answer" never releases the
+    // lead back to the pool for someone else to try.
+    if (meta.note === 'required' && !remark.trim()) {
+      toast.error(`Add a short note so the next person knows what happened — "${meta.label}" needs one.`);
+      return;
+    }
     const isCallback = outcome === 'callback';
     const isAppointment = outcome === 'appointment';
     if (isAppointment && !appointmentDate) { toast.error('Please pick the appointment date and time'); return; }
@@ -201,7 +239,9 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     // when the policy is evaluated, so the note always lands.
     const { error: remarkErr } = await supabase.from('lead_remarks').insert({
       lead_id: active.id, user_id: user.id, call_type: 'outgoing',
-      remark: `[${OUTCOMES.find(o => o.value === outcome)?.label}] ${remark}`
+      // With no typed note this is just "[No answer]", which already reads
+      // as a complete statement in the history.
+      remark: `[${meta.label}] ${remark.trim()}`.trim()
         + (isAppointment ? ` — appointment ${new Date(appointmentDate).toLocaleString('en-IN')}` : ''),
     } as never);
     if (remarkErr) {
@@ -351,9 +391,32 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
             </button>
             <p className="text-stone-700 text-xs">{active.interested_in}</p>
 
-            <select aria-label="Call outcome" className={inputCls} value={outcome} onChange={e => setOutcome(e.target.value)}>
-              {OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+            {/*
+              Previous history sits ABOVE the form now. Its own label said
+              "read before calling", but it was the last thing in the modal,
+              below every field you only fill in afterwards — so reading it
+              first meant scrolling past the entire form, and nobody does
+              that on a phone mid-dial. What you need before the call now
+              comes before the call.
+            */}
+            {history.length > 0 && (
+              <div className="rounded-xl bg-stone-50 border border-nikki-border p-3 space-y-2 max-h-40 overflow-y-auto">
+                <p className="text-stone-700 text-xs font-semibold">Before you call — what happened last time</p>
+                {history.map(h => {
+                  const isSystem = h.remark.startsWith('Stage changed:') || h.remark.startsWith('Reassigned:');
+                  return (
+                    <div key={h.id} className={`text-xs ${isSystem ? 'pl-2 border-l-2 border-stone-300' : ''}`}>
+                      <p className="text-stone-600">
+                        {new Date(h.created_at ?? '').toLocaleString()} • {h.author_name || 'System'}{h.author_staff_code ? ` (${h.author_staff_code})` : ''}
+                      </p>
+                      <p className={isSystem ? 'text-stone-600 italic' : 'text-stone-800'}>{h.remark}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <CallOutcomePicker value={outcome} onChange={setOutcome} />
             {outcome === 'callback' && (
               <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} aria-label="Callback date and time" />
             )}
@@ -368,8 +431,17 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
                 <p className="text-stone-700 text-[11px]">Your manager will be notified to assign a field executive.</p>
               </div>
             )}
-            <textarea className={inputCls} rows={2} placeholder="Remark *" value={remark} onChange={e => setRemark(e.target.value)} aria-label="Remark" />
-            <button className={btnCls + ' w-full'} disabled={busy} onClick={submitOutcome}>Save Outcome</button>
+            <textarea
+              className={inputCls}
+              rows={2}
+              placeholder={outcomeMeta(outcome).note === 'required' ? 'What did they say? *' : 'Anything to add? (optional)'}
+              aria-label={outcomeMeta(outcome).note === 'required' ? 'What did they say? Required' : 'Anything to add? Optional'}
+              value={remark}
+              onChange={e => setRemark(e.target.value)}
+            />
+            <button className={btnCls + ' w-full min-h-[44px]'} disabled={busy} onClick={submitOutcome}>
+              {busy ? 'Saving…' : `Save — ${outcomeMeta(outcome).label}`}
+            </button>
 
             <div className="border-t border-stone-800 pt-3">
               <p className="text-stone-700 text-xs mb-2 flex items-center gap-1.5"><ArrowRightLeft className="w-3.5 h-3.5" /> Appointment fixed? Hand off to a field executive:</p>
@@ -382,22 +454,6 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               </button>
             </div>
 
-            {history.length > 0 && (
-              <div className="border-t border-stone-800 pt-3 space-y-2 max-h-48 overflow-y-auto">
-                <p className="text-stone-700 text-xs font-medium">Previous History {history.length > 0 && '— read before calling'}</p>
-                {history.map(h => {
-                  const isSystem = h.remark.startsWith('Stage changed:') || h.remark.startsWith('Reassigned:');
-                  return (
-                    <div key={h.id} className={`text-xs ${isSystem ? 'pl-2 border-l-2 border-stone-800' : ''}`}>
-                      <p className="text-stone-700">
-                        {new Date(h.created_at ?? '').toLocaleString()} • {h.author_name || 'System'}{h.author_staff_code ? ` (${h.author_staff_code})` : ''}
-                      </p>
-                      <p className={isSystem ? 'text-stone-700 italic' : 'text-stone-700'}>{h.remark}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </ModalOverlay>
       )}
