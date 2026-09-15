@@ -24,7 +24,12 @@ cd "$UNIT"
 
 TMP="$(mktemp -d)"
 INLINE=""
-cleanup() { rm -rf "$TMP"; [ -n "$INLINE" ] && rm -f "$INLINE"; }
+# `return 0` is load-bearing. Bash replaces the script's exit status with the
+# EXIT trap's own return value, and with no -e file the trailing
+# `[ -n "$INLINE" ] && ...` short-circuits to 1 — so every run of a scratch
+# .ts file exited 1 no matter what the script did, and a genuinely failing
+# check was indistinguishable from a passing one to anything reading $?.
+cleanup() { rm -rf "$TMP"; [ -n "$INLINE" ] && rm -f "$INLINE"; return 0; }
 trap cleanup EXIT
 
 if [ "${1:-}" = "-e" ]; then

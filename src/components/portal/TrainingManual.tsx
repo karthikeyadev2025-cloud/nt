@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cardCls } from './shared';
+import { stageLabel, stages } from './shared-utils';
 import { useAuth } from '../../contexts/AuthContext';
 
 type Section = { id: string; label: string; icon: LucideIcon; body: React.ReactNode };
@@ -212,7 +213,7 @@ function buildSections(role: Role): Section[] {
   sections.push(
     {
       id: 'quick-actions', label: 'One-Click Buttons', icon: MousePointerClick,
-      body: <p className="text-sm text-stone-700">On the Leads Management board, every card has a row of small stage buttons — New, Called, Interested, Quoted, Won, Lost, Callback later. Tapping one instantly moves the lead there with no form. Use this when you just need to update where things stand with nothing else to note — "Log Outcome" is still on the same card for whenever you do want to leave one.</p>,
+      body: <p className="text-sm text-stone-700">On the Leads Management board, every card has a row of small stage buttons — {stages.map(stageLabel).join(', ')}. Tapping one instantly moves the lead there with no form. Use this when you just need to update where things stand with nothing else to note — "Log Outcome" is still on the same card for whenever you do want to leave one.</p>,
     },
     {
       id: 'views', label: 'List vs Kanban', icon: LayoutGrid,
@@ -224,7 +225,7 @@ function buildSections(role: Role): Section[] {
     {
       id: 'appointments', label: 'Appointments', icon: CalendarClock,
       body: <>
-        <p className="text-sm text-stone-700 mb-3">Book an appointment three ways: while adding a lead, via "Appointment Booked" in Log Outcome, or with the dedicated Reschedule button.</p>
+        <p className="text-sm text-stone-700 mb-3">Book an appointment three ways: while adding a lead, via "Appointment booked" in the telecaller queue, or with the Schedule / Reschedule button on any lead card. Log Outcome on the leads board does not book one — it deliberately saves the stage, the note and the follow-up together in a single step, and an appointment needs a date, so use Schedule for that.</p>
         <Step n={1} title="Find Reschedule">On a lead card ("Schedule" if none yet, "Reschedule" if one exists) or inside the lead's detail view.</Step>
         <Step n={2} title="Pick date and time"> </Step>
         <Step n={3} title="Add a note (optional)">What to bring, a landmark, etc.</Step>

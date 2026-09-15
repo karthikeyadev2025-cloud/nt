@@ -45,6 +45,13 @@ degrades honestly — the public site works, `/login` renders and says
 
 ```bash
 npm run typecheck    # tsc --noEmit -p tsconfig.app.json
+
+# Always `npm run typecheck`, never a bare `npx tsc --noEmit`. The root
+# tsconfig.json is `files: []` plus project references, so a bare tsc checks
+# ZERO files and exits 0 — it looks like a clean typecheck and is a no-op.
+# `vite build` does not typecheck either (esbuild strips types unchecked),
+# so the build passing says nothing about type errors.
+
 npm run lint         # eslint .
 npm run build        # vite build -> dist/
 ```

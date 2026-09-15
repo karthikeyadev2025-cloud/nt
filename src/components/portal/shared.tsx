@@ -39,12 +39,15 @@ export const cardCls = 'p-5 rounded-2xl bg-white border border-nikki-border/90 s
 // that changed). Imported directly below since this file's own code
 // uses them throughout; not re-exported from here — the one other file
 // that needed them (leads-workflow.tsx) now imports straight from
-// shared-utils.ts instead.
+// shared-utils.ts instead. The outcome catalogs moved again, to outcomes.ts,
+// so the telecaller queue, the field-visit form and this board all ask
+// "what happened?" with one vocabulary.
 import {
-  describeDbError, displayStaffName, ticketStatusLabel, stageLabel,
-  CALL_OUTCOMES, VISIT_OUTCOMES,
+  describeDbError, displayStaffName, ticketStatusLabel, stageLabel, stages,
   type StaffNameInfo,
 } from './shared-utils';
+import { CALL_OUTCOMES, VISIT_OUTCOMES } from './outcomes';
+import { OutcomePicker } from '../ui/OutcomePicker';
 
 /**
  * ═══════════════════════════════════════════════════════════════════
@@ -524,7 +527,7 @@ export function TicketsBoard({ segments, focusId, initialSegFilter, initialStatu
   );
 }
 
-const stages: Lead['stage'][] = ['new', 'contacted', 'qualified', 'quoted', 'won', 'lost', 'not_answered'];
+
 const stageColors: Record<string, string> = {
   new: 'bg-nikki-surface-blue text-nikki-blue', contacted: 'bg-indigo-100 text-indigo-700',
   qualified: 'bg-purple-100 text-purple-700', quoted: 'bg-amber-100 text-amber-700',
@@ -2578,13 +2581,19 @@ function LogOutcomeDialog({
   const toast = useToast();
   // Field visits use a different outcome list (with 'visit' call_type).
   const [mode, setMode] = useState<'call' | 'visit'>('call');
-  const catalog = mode === 'call' ? CALL_OUTCOMES : VISIT_OUTCOMES;
+  // Booking an appointment also has to write appointment_at, which the
+  // log_lead_outcome RPC does not take — it deliberately does stage, remark
+  // and follow-up in one atomic call and nothing else. Rather than let the
+  // button appear here and silently not book anything, it is left out and the
+  // Schedule button on the card (which does exactly this) is pointed at.
+  const catalog = (mode === 'call' ? CALL_OUTCOMES : VISIT_OUTCOMES)
+    .filter(o => o.schedules !== 'appointment');
   const [outcomeKey, setOutcomeKey] = useState<string>('');
   const [note, setNote] = useState('');
   const [followupOverride, setFollowupOverride] = useState<string>('');
   const [busy, setBusy] = useState(false);
 
-  const outcome = catalog.find(o => o.key === outcomeKey) || null;
+  const outcome = catalog.find(o => o.value === outcomeKey) || null;
 
   // Default follow-up: today + outcome.followupDays, in the format
   // <input type="datetime-local"> expects (YYYY-MM-DDTHH:mm, LOCAL time).
@@ -2600,9 +2609,9 @@ function LogOutcomeDialog({
   const followupValue = followupOverride || defaultFollowup;
 
   async function submit() {
-    if (!outcome) { toast.error('Pick what happened first.'); return; }
-    if (outcome.requiresNote && !note.trim()) {
-      toast.error('Please add a short note — this outcome needs a reason.');
+    if (!outcome) { toast.error(`Pick what happened on the ${mode === 'call' ? 'call' : 'visit'} first.`); return; }
+    if (outcome.note === 'required' && !note.trim()) {
+      toast.error(`Add a short note so the next person knows what happened — "${outcome.label}" needs one.`);
       return;
     }
     setBusy(true);
@@ -2673,31 +2682,29 @@ function LogOutcomeDialog({
         </div>
 
         <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">What happened?</label>
-            <select aria-label="Pick an outcome…"
-              className={inputCls}
-              value={outcomeKey}
-              onChange={e => setOutcomeKey(e.target.value)}>
-              <option value="">Pick an outcome…</option>
-              {catalog.map(o => (
-                <option key={o.key} value={o.key}>{o.label}</option>
-              ))}
-            </select>
-            {outcome?.hint && <p className="text-xs text-stone-600 mt-1 italic">{outcome.hint}</p>}
-          </div>
+          <OutcomePicker
+            legend={mode === 'call' ? 'How did the call go?' : 'How did the visit go?'}
+            options={catalog}
+            value={outcomeKey}
+            onChange={setOutcomeKey}
+          />
+          {mode === 'call' && (
+            <p className="text-stone-600 text-[11px] italic">
+              Booking an appointment? Use the Schedule button on the card — it sets the date too.
+            </p>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-stone-700 mb-1">
-              Notes {outcome?.requiresNote && <span className="text-red-600">*</span>}
+              Notes {outcome?.note === 'required' && <span className="text-red-600">*</span>}
             </label>
             <textarea
               className={inputCls}
               rows={3}
               value={note}
               onChange={e => setNote(e.target.value)}
-              placeholder={outcome?.requiresNote ? 'Required — say briefly why.' : 'Optional — anything worth remembering.'}
-            aria-label={outcome?.requiresNote ? 'Required — say briefly why.' : 'Optional — anything worth remembering.'} />
+              placeholder={outcome?.note === 'required' ? 'Required — say briefly why.' : 'Optional — anything worth remembering.'}
+            aria-label={outcome?.note === 'required' ? 'Required — say briefly why.' : 'Optional — anything worth remembering.'} />
           </div>
 
           {outcome && outcome.followupDays !== null && (
@@ -2731,9 +2738,9 @@ function LogOutcomeDialog({
           </button>
           <button
             onClick={submit}
-            disabled={busy || !outcome}
+            disabled={busy}
             className="px-4 py-2 text-xs font-bold text-white bg-nikki-blue hover:bg-nikki-navy disabled:opacity-40 disabled:cursor-not-allowed rounded-xl shadow-md">
-            {busy ? 'Saving…' : 'Save & advance'}
+            {busy ? 'Saving…' : outcome ? `Save: ${outcome.label}` : 'Save & advance'}
           </button>
         </div>
       </div>

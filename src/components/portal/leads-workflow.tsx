@@ -9,6 +9,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../lib/toast';
 import { inputCls, btnCls, cardCls, LeadsBoard, SegmentTabs, AddLeadModal, RescheduleModal } from './shared';
 import { stageLabel, describeDbError, describeReadError } from './shared-utils';
+import {
+  CALL_OUTCOMES, VISIT_OUTCOMES, callOutcome, visitOutcome,
+  releasesToPool, isClosed, WON_REMARK_PREFIXES,
+} from './outcomes';
+import { OutcomePicker } from '../ui/OutcomePicker';
 import { normalizePhone, waLink } from '../../lib/phone';
 import { enqueue, flushQueue, listQueued, listDropped, retryDropped, removeQueued, queueCount, startAutoFlush, type QueuedVisit } from '../../lib/offlineQueue';
 import { getPosition, reverseGeocode } from '../../lib/geo';
@@ -42,12 +47,25 @@ export function TelecallerStatsDashboard() {
           supabase.from('marketing_leads').select('id', { count: 'exact', head: true }).eq('transfer_requested_by', user.id).eq('transfer_status', 'pending'),
         ]);
 
-        const { data: convRemarks } = await supabase.from('lead_remarks')
-          .select('lead_id')
-          .eq('user_id', user.id)
-          .ilike('remark', '[Converted / Closed]%')
-          .gte('created_at', monthStart.toISOString());
-        const convertedMonth = new Set((convRemarks || []).map((r: { lead_id: string }) => r.lead_id)).size;
+        // Conversions are counted from remark TEXT because a won lead is
+        // released to the unassigned pool, so it can no longer be attributed
+        // through assigned_to. That makes the wording load-bearing: this used
+        // to be a hardcoded '[Converted / Closed]%', and renaming that button
+        // would have dropped the number to zero with nothing failing. The
+        // prefixes live in the catalog next to the label, and every historical
+        // wording is queried so past months keep counting.
+        const convRemarkSets = await Promise.all(
+          WON_REMARK_PREFIXES.map(prefix =>
+            supabase.from('lead_remarks')
+              .select('lead_id')
+              .eq('user_id', user.id)
+              .ilike('remark', `[${prefix}]%`)
+              .gte('created_at', monthStart.toISOString())
+          )
+        );
+        const convertedMonth = new Set(
+          convRemarkSets.flatMap(r => (r.data || []).map((x: { lead_id: string }) => x.lead_id))
+        ).size;
 
         return {
           assigned: assigned || 0, calledToday: calledToday || 0, callbacks: callbacks || 0,
@@ -82,14 +100,6 @@ export function TelecallerStatsDashboard() {
 }
 
 // ─────────────────────────── Telecaller: active call queue (click-to-call, quick remark, transfer request)
-const OUTCOMES = [
-  { value: 'contacted', label: 'Spoke — Interested' },
-  { value: 'appointment', label: 'Appointment Booked' },
-  { value: 'not_answered', label: 'Not Answered' },
-  { value: 'lost', label: 'Not Interested' },
-  { value: 'callback', label: 'Callback Requested' },
-  { value: 'won', label: 'Converted / Closed' },
-];
 
 export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Segment[]; openAddLeadSignal?: number }) {
   const { user, hasPermission } = useAuth();
@@ -98,7 +108,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
   const [executives, setExecutives] = useState<{ id: string; full_name: string; segments: string[]; role?: string; is_active?: boolean }[]>([]);
   const [active, setActive] = useState<Lead | null>(null);
   const [history, setHistory] = useState<LeadRemark[]>([]);
-  const [outcome, setOutcome] = useState('contacted');
+  const [outcome, setOutcome] = useState('');
   const [remark, setRemark] = useState('');
   const [callbackDate, setCallbackDate] = useState('');
   const [appointmentDate, setAppointmentDate] = useState('');
@@ -147,7 +157,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
 
   async function openLead(lead: Lead) {
     setActive(lead);
-    setOutcome('contacted');
+    setOutcome('');
     setRemark('');
     setCallbackDate('');
     setTransferTo('');
@@ -160,22 +170,34 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
   }
 
   async function submitOutcome() {
-    if (!active || !user || !remark.trim()) { toast.error('Please add a remark before saving'); return; }
-    const isCallback = outcome === 'callback';
-    const isAppointment = outcome === 'appointment';
+    if (!active || !user) return;
+    const meta = callOutcome(outcome);
+    // Nothing pre-selected, so nothing is assumed. Saying so is better than
+    // a disabled button, which leaves you guessing what is missing.
+    if (!meta) { toast.error('Pick what happened on the call first.'); return; }
+    // A note is demanded only where the note IS the information. "No answer"
+    // and "Asked to call back" already say everything they can say — the old
+    // blanket requirement meant the caller typed "." to get past it, or gave
+    // up logging entirely, and an unlogged "no answer" never releases the
+    // lead back to the pool for someone else to try.
+    if (meta.note === 'required' && !remark.trim()) {
+      toast.error(`Add a short note so the next person knows what happened — "${meta.label}" needs one.`);
+      return;
+    }
+    const isCallback = meta.schedules === 'callback';
+    const isAppointment = meta.schedules === 'appointment';
     if (isAppointment && !appointmentDate) { toast.error('Please pick the appointment date and time'); return; }
     if (isAppointment && new Date(appointmentDate) < new Date()) { toast.error('Appointment must be in the future'); return; }
     setBusy(true);
-    // Only terminal outcomes (won / lost / not-answered) release the lead back to
-    // the unassigned pool. "Interested" and callbacks stay with the caller so the
-    // lead never disappears into a pool that restricted staff can't see.
-    const releasesToPool = outcome === 'won' || outcome === 'lost' || outcome === 'not_answered';
+    // The stage an outcome means is the catalog's to decide, not this
+    // function's. It used to be a ternary here and a different ternary on the
+    // leads board, which is how the same call came to record a different
+    // funnel position depending on which screen logged it.
+    const releases = releasesToPool(meta);
     const patch: Record<string, unknown> = {
-      stage: outcome === 'won' ? 'won' : outcome === 'lost' ? 'lost'
-           : outcome === 'not_answered' ? 'not_answered'
-           : isAppointment ? 'qualified' : 'contacted',
+      stage: meta.stage,
       callback_at: isCallback && callbackDate ? new Date(callbackDate).toISOString() : null,
-      assigned_to: releasesToPool ? null : user.id,
+      assigned_to: releases ? null : user.id,
       updated_at: new Date().toISOString(),
     };
     if (isAppointment) {
@@ -200,8 +222,10 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     // Writing the remark first means the lead is still assigned to this caller
     // when the policy is evaluated, so the note always lands.
     const { error: remarkErr } = await supabase.from('lead_remarks').insert({
-      lead_id: active.id, user_id: user.id, call_type: 'outgoing',
-      remark: `[${OUTCOMES.find(o => o.value === outcome)?.label}] ${remark}`
+      lead_id: active.id, user_id: user.id, call_type: meta.callType,
+      // With no typed note this is just "[No answer]", which already reads
+      // as a complete statement in the history.
+      remark: `[${meta.label}] ${remark.trim()}`.trim()
         + (isAppointment ? ` — appointment ${new Date(appointmentDate).toLocaleString('en-IN')}` : ''),
     } as never);
     if (remarkErr) {
@@ -226,7 +250,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     toast.success(
       isAppointment ? 'Appointment booked — your manager has been notified to assign an executive'
       : isCallback ? 'Callback scheduled — stays in your queue'
-      : releasesToPool ? 'Saved — lead released to the unassigned pool'
+      : releases ? 'Saved — lead released to the unassigned pool'
       : 'Saved — lead stays in your queue for follow-up'
     );
     setActive(null);
@@ -256,6 +280,7 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
     load();
   }
 
+  const callMeta = callOutcome(outcome);
   return (
     <div>
       <TelecallerStatsDashboard />
@@ -351,13 +376,36 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
             </button>
             <p className="text-stone-700 text-xs">{active.interested_in}</p>
 
-            <select aria-label="Call outcome" className={inputCls} value={outcome} onChange={e => setOutcome(e.target.value)}>
-              {OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            {outcome === 'callback' && (
+            {/*
+              Previous history sits ABOVE the form now. Its own label said
+              "read before calling", but it was the last thing in the modal,
+              below every field you only fill in afterwards — so reading it
+              first meant scrolling past the entire form, and nobody does
+              that on a phone mid-dial. What you need before the call now
+              comes before the call.
+            */}
+            {history.length > 0 && (
+              <div className="rounded-xl bg-stone-50 border border-nikki-border p-3 space-y-2 max-h-40 overflow-y-auto">
+                <p className="text-stone-700 text-xs font-semibold">Before you call — what happened last time</p>
+                {history.map(h => {
+                  const isSystem = h.remark.startsWith('Stage changed:') || h.remark.startsWith('Reassigned:');
+                  return (
+                    <div key={h.id} className={`text-xs ${isSystem ? 'pl-2 border-l-2 border-stone-300' : ''}`}>
+                      <p className="text-stone-600">
+                        {new Date(h.created_at ?? '').toLocaleString()} • {h.author_name || 'System'}{h.author_staff_code ? ` (${h.author_staff_code})` : ''}
+                      </p>
+                      <p className={isSystem ? 'text-stone-600 italic' : 'text-stone-800'}>{h.remark}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <OutcomePicker legend="How did the call go?" options={CALL_OUTCOMES} value={outcome} onChange={setOutcome} />
+            {callMeta?.schedules === 'callback' && (
               <input type="datetime-local" className={inputCls} value={callbackDate} onChange={e => setCallbackDate(e.target.value)} aria-label="Callback date and time" />
             )}
-            {outcome === 'appointment' && (
+            {callMeta?.schedules === 'appointment' && (
               <div className="space-y-2 rounded-lg border border-nikki-royal/30 bg-nikki-royal/5 p-3">
                 <p className="text-nikki-blue text-xs font-medium">Appointment date &amp; time *</p>
                 <input type="datetime-local" className={inputCls} value={appointmentDate} aria-label="Appointment date and time"
@@ -368,8 +416,17 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
                 <p className="text-stone-700 text-[11px]">Your manager will be notified to assign a field executive.</p>
               </div>
             )}
-            <textarea className={inputCls} rows={2} placeholder="Remark *" value={remark} onChange={e => setRemark(e.target.value)} aria-label="Remark" />
-            <button className={btnCls + ' w-full'} disabled={busy} onClick={submitOutcome}>Save Outcome</button>
+            <textarea
+              className={inputCls}
+              rows={2}
+              placeholder={!callMeta ? 'Notes' : callMeta.note === 'required' ? 'What did they say? *' : 'Anything to add? (optional)'}
+              aria-label={!callMeta ? 'Notes' : callMeta.note === 'required' ? 'What did they say? Required' : 'Anything to add? Optional'}
+              value={remark}
+              onChange={e => setRemark(e.target.value)}
+            />
+            <button className={btnCls + ' w-full min-h-[44px]'} disabled={busy} onClick={submitOutcome}>
+              {busy ? 'Saving…' : callMeta ? `Save call: ${callMeta.label}` : 'Save call'}
+            </button>
 
             <div className="border-t border-stone-800 pt-3">
               <p className="text-stone-700 text-xs mb-2 flex items-center gap-1.5"><ArrowRightLeft className="w-3.5 h-3.5" /> Appointment fixed? Hand off to a field executive:</p>
@@ -382,22 +439,6 @@ export function TelecallerQueue({ segments, openAddLeadSignal }: { segments: Seg
               </button>
             </div>
 
-            {history.length > 0 && (
-              <div className="border-t border-stone-800 pt-3 space-y-2 max-h-48 overflow-y-auto">
-                <p className="text-stone-700 text-xs font-medium">Previous History {history.length > 0 && '— read before calling'}</p>
-                {history.map(h => {
-                  const isSystem = h.remark.startsWith('Stage changed:') || h.remark.startsWith('Reassigned:');
-                  return (
-                    <div key={h.id} className={`text-xs ${isSystem ? 'pl-2 border-l-2 border-stone-800' : ''}`}>
-                      <p className="text-stone-700">
-                        {new Date(h.created_at ?? '').toLocaleString()} • {h.author_name || 'System'}{h.author_staff_code ? ` (${h.author_staff_code})` : ''}
-                      </p>
-                      <p className={isSystem ? 'text-stone-700 italic' : 'text-stone-700'}>{h.remark}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </ModalOverlay>
       )}
@@ -1411,13 +1452,6 @@ export function LeadsWorkspace({ segments, focusLeadId, initialSegFilter, initia
 
 // ─────────────────────────── Marketing Executive: field visits (photo + GPS + auto-address + notes)
 
-const VISIT_OUTCOMES = [
-  { value: 'contacted', label: 'Follow-up needed' },
-  { value: 'qualified', label: 'Interested — quoting' },
-  { value: 'won', label: 'Closed — Won' },
-  { value: 'lost', label: 'Closed — Lost' },
-];
-
 export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const { user } = useAuth();
   const toast = useToast();
@@ -1430,7 +1464,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
-  const [outcome, setOutcome] = useState('contacted');
+  const [outcome, setOutcome] = useState('');
   const [remark, setRemark] = useState('');
   const [busy, setBusy] = useState(false);
   const [showAddLead, setShowAddLead] = useState(false);
@@ -1538,7 +1572,7 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
 
   async function openLead(lead: Lead) {
     setActive(lead);
-    setOutcome('contacted');
+    setOutcome('');
     setRemark('');
     setPhotoDataUrl(null);
     setLocation(null);
@@ -1609,13 +1643,25 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
   }
 
   async function saveVisit() {
-    if (!active || !user || !remark.trim()) { toast.error('Add a visit note before saving'); return; }
+    if (!active || !user) return;
+    // A note is demanded only where the note IS the record. "Nobody there"
+    // has nothing to write, and the old blanket block on every outcome is
+    // precisely why an absent customer got logged as "Follow-up needed"
+    // instead: that was the cheapest option that would let the form save.
+    const meta = visitOutcome(outcome);
+    // Nothing pre-selected, so nothing is assumed. Saying so is better than
+    // a disabled button, which leaves you guessing what is missing.
+    if (!meta) { toast.error('Pick what happened on the visit first.'); return; }
+    if (meta.note === 'required' && !remark.trim()) {
+      toast.error(`Add a short note so the next person knows what happened — "${meta.label}" needs one.`);
+      return;
+    }
     setBusy(true);
 
     const photoBlob = photoDataUrl ? await (await fetch(photoDataUrl)).blob() : null;
 
-    const isClosed = outcome === 'won' || outcome === 'lost';
-    const patch: Record<string, unknown> = { stage: outcome, updated_at: new Date().toISOString() };
+    const closed = isClosed(meta);
+    const patch: Record<string, unknown> = { stage: meta.stage, updated_at: new Date().toISOString() };
     if (location) {
       patch.latitude = location.lat; patch.longitude = location.lng;
       if (location.address) patch.address = location.address;
@@ -1628,18 +1674,18 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       if (cleaned.length >= 10) patch.phone = cleaned;
     }
     if (dealValue) {
-      if (outcome === 'won') patch.invoice_amount = Number(dealValue);
+      if (meta.stage === 'won') patch.invoice_amount = Number(dealValue);
       else patch.estimated_value = Number(dealValue);
     }
     // Field staff schedule their own next touch; closing clears it so a won
     // deal doesn't keep nagging.
-    patch.next_followup_at = isClosed ? null : (nextFollowup ? new Date(nextFollowup).toISOString() : null);
+    patch.next_followup_at = closed ? null : (nextFollowup ? new Date(nextFollowup).toISOString() : null);
     // The executive can move or set the appointment themselves after meeting
     // the customer — they're the one who agreed the new time.
     if (apptAt) {
       patch.appointment_at = new Date(apptAt).toISOString();
       patch.appointment_set_by = user.id;
-    } else if (isClosed) {
+    } else if (closed) {
       patch.appointment_at = null;
     }
     // Ownership is retained on close. Releasing it used to wipe the closer's
@@ -1655,8 +1701,11 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
       leadId: active.id,
       leadName: active.customer_name,
       userId: user.id,
-      remark,
-      callType: 'visit',
+      // Same shape as a logged call: the bracketed outcome makes the history
+      // self-describing, and with no typed note "[Nobody there]" already
+      // reads as a complete statement.
+      remark: `[${meta.label}] ${remark.trim()}`.trim(),
+      callType: meta.callType,
       occurredAt: new Date().toISOString(),
       latitude: location?.lat ?? null,
       longitude: location?.lng ?? null,
@@ -1672,13 +1721,23 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
     if (result.remaining > 0) {
       toast.success(`Visit saved on your phone — will sync automatically (${result.remaining} pending)`);
     } else {
-      toast.success(isClosed ? 'Visit logged — lead closed' : 'Visit logged');
+      toast.success(closed ? 'Visit logged — lead closed' : 'Visit logged');
     }
     setActive(null);
     setDealValue(''); setVisitRequirement(''); setNextFollowup(''); setApptAt('');
     load();
   }
 
+  const visitMeta = visitOutcome(outcome);
+  const noteRequired = visitMeta?.note === 'required';
+  // "Estimated deal value" is the wrong words once a number has actually been
+  // quoted to the customer, and the wrong words again for a closed deal.
+  const dealValueLabel = visitMeta?.stage === 'won' ? 'Final invoice amount (₹)'
+    : visitMeta?.stage === 'quoted' ? 'Amount you quoted (₹)'
+    : 'Estimated deal value (₹)';
+  // With nothing chosen the visit is not closed, so the follow-up and
+  // appointment fields stay visible rather than flickering in on first tap.
+  const visitClosed = !!visitMeta && isClosed(visitMeta);
 
   return (
     <div>
@@ -1814,60 +1873,16 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               <input className={inputCls} placeholder="Enter 10-digit phone number collected from owner" value={collectedPhone} onChange={e => setCollectedPhone(e.target.value)} aria-label="Enter 10-digit phone number collected from owner" />
             </div>
 
-            <div className="border-t border-stone-800 pt-3">
-              <p className="text-stone-700 text-sm font-medium mb-2">Log a Visit</p>
-
-              {photoDataUrl ? (
-                <img src={photoDataUrl} alt="Captured" className="w-full rounded-lg mb-2" />
-              ) : (
-                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" onClick={() => setCapturing(true)}>
-                  <Camera className="w-4 h-4" /> Take Client/Site Photo
-                </button>
-              )}
-
-              {location ? (
-                <div className="mb-2 px-3 py-2 rounded-lg bg-stone-50 border border-stone-800">
-                  <p className="text-emerald-700 text-xs">📍 {location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
-                  <button className="text-nikki-blue text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
-                </div>
-              ) : (
-                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={() => captureLocation()}>
-                  <MapPin className="w-4 h-4" /> {locating ? 'Getting location…' : 'Capture Location & Address'}
-                </button>
-              )}
-
-              <select aria-label="Visit outcome" className={inputCls + ' mb-2'} value={outcome} onChange={e => setOutcome(e.target.value)}>
-                {VISIT_OUTCOMES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <input className={inputCls + ' mb-2'} placeholder="What they actually need (updates the lead)"
-                value={visitRequirement} onChange={e => setVisitRequirement(e.target.value)} aria-label="What they actually need (updates the lead)" />
-              <input className={inputCls + ' mb-2'} type="number" min={0}
-                placeholder={outcome === 'won' ? 'Final invoice amount (₹)' : 'Estimated deal value (₹)'}
-                value={dealValue} onChange={e => setDealValue(e.target.value)} aria-label={outcome === 'won' ? 'Final invoice amount (₹)' : 'Estimated deal value (₹)'} />
-              <textarea className={inputCls} rows={2} placeholder="Visit notes / conversation summary *" value={remark} onChange={e => setRemark(e.target.value)} aria-label="Visit notes / conversation summary" />
-              {outcome !== 'won' && outcome !== 'lost' && (
-                <div className="grid grid-cols-1 gap-2 mt-2">
-                  <div>
-                    <p className="text-stone-700 text-xs mb-1">Next follow-up (reminds you)</p>
-                    <input type="datetime-local" className={inputCls} value={nextFollowup} aria-label="Next follow-up"
-                      onChange={e => setNextFollowup(e.target.value)} />
-                  </div>
-                  <div>
-                    <p className="text-stone-700 text-xs mb-1">Next appointment (visible to manager)</p>
-                    <input type="datetime-local" className={inputCls} value={apptAt} aria-label="Next appointment"
-                      onChange={e => setApptAt(e.target.value)} />
-                  </div>
-                </div>
-              )}
-              <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>{busy ? 'Saving…' : 'Save Visit'}</button>
-            </div>
-
             {/* Visits that haven't reached the server yet live only in
                 IndexedDB, so they used to be completely absent from this
                 panel — the executive typed a summary, saw it vanish, and had
-                no way to confirm it still existed. Show them first, clearly
-                marked, so "saved on your phone" is something you can actually
-                see on the record it belongs to. */}
+                no way to confirm it still existed.
+
+                They belong here, with the rest of the history and above the
+                form, because they ARE the history: the most recent visit is
+                the likeliest one still waiting for signal, so showing it only
+                below the form meant "what happened last time" could come up
+                empty precisely when the last visit was the one that mattered. */}
             {(() => {
               const unsent = [...pendingItems, ...droppedItems].filter(p => p.leadId === active.id);
               if (unsent.length === 0) return null;
@@ -1909,9 +1924,14 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
               );
             })()}
 
+            {/* Last visit's notes and site photo are what you need while walking
+                up to the door, so they come before the form. They used to sit
+                underneath it, below the outcome picker, the requirement, the
+                deal value, the notes box and two datetime pickers — a scroll
+                nobody does one-handed on a doorstep. */}
             {remarks.length > 0 && (
-              <div className="border-t border-stone-800 pt-3 space-y-2">
-                <p className="text-stone-700 text-xs font-medium">Full History</p>
+              <div className="rounded-xl bg-stone-50 border border-nikki-border p-3 space-y-2 max-h-40 overflow-y-auto">
+                <p className="text-stone-700 text-xs font-semibold">Before you go in — what happened last time</p>
                 {remarks.map(r => (
                   <div key={r.id} className="text-xs">
                     <p className="text-stone-700">{new Date(r.created_at ?? '').toLocaleString()} • {r.author_name || 'System'}{r.author_staff_code ? ` (${r.author_staff_code})` : ''} • {(r.call_type ?? '')}</p>
@@ -1932,6 +1952,60 @@ export function ExecutiveFieldVisits({ segments }: { segments: Segment[] }) {
                 ))}
               </div>
             )}
+
+            <div className="border-t border-stone-800 pt-3">
+              <p className="text-stone-700 text-sm font-medium mb-2">Log a Visit</p>
+
+              {photoDataUrl ? (
+                <img src={photoDataUrl} alt="Captured" className="w-full rounded-lg mb-2" />
+              ) : (
+                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" onClick={() => setCapturing(true)}>
+                  <Camera className="w-4 h-4" /> Take Client/Site Photo
+                </button>
+              )}
+
+              {location ? (
+                <div className="mb-2 px-3 py-2 rounded-lg bg-stone-50 border border-stone-800">
+                  <p className="text-emerald-700 text-xs">📍 {location.address || `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}</p>
+                  <button className="text-nikki-blue text-xs mt-1" onClick={openMaps}>Open in Google Maps</button>
+                </div>
+              ) : (
+                <button className="w-full py-2.5 rounded-lg border border-nikki-border text-stone-700 text-sm flex items-center justify-center gap-1.5 mb-2" disabled={locating} onClick={() => captureLocation()}>
+                  <MapPin className="w-4 h-4" /> {locating ? 'Getting location…' : 'Capture Location & Address'}
+                </button>
+              )}
+
+              <div className="mb-2">
+                <OutcomePicker legend="How did the visit go?" options={VISIT_OUTCOMES} value={outcome} onChange={setOutcome} />
+              </div>
+              <input className={inputCls + ' mb-2'} placeholder="What they actually need (updates the lead)"
+                value={visitRequirement} onChange={e => setVisitRequirement(e.target.value)} aria-label="What they actually need (updates the lead)" />
+              <input className={inputCls + ' mb-2'} type="number" min={0}
+                placeholder={dealValueLabel} value={dealValue}
+                onChange={e => setDealValue(e.target.value)} aria-label={dealValueLabel} />
+              <textarea className={inputCls} rows={2} value={remark} onChange={e => setRemark(e.target.value)}
+                placeholder={!visitMeta ? 'Notes' : noteRequired ? 'What happened on the visit? *' : 'Anything to add? (optional)'}
+                aria-label={!visitMeta ? 'Notes' : noteRequired ? 'What happened on the visit? Required' : 'Anything to add? Optional'} />
+              {!visitClosed && (
+                <div className="grid grid-cols-1 gap-2 mt-2">
+                  <div>
+                    <p className="text-stone-700 text-xs mb-1">Next follow-up (reminds you)</p>
+                    <input type="datetime-local" className={inputCls} value={nextFollowup} aria-label="Next follow-up"
+                      onChange={e => setNextFollowup(e.target.value)} />
+                  </div>
+                  <div>
+                    <p className="text-stone-700 text-xs mb-1">Next appointment (visible to manager)</p>
+                    <input type="datetime-local" className={inputCls} value={apptAt} aria-label="Next appointment"
+                      onChange={e => setApptAt(e.target.value)} />
+                  </div>
+                </div>
+              )}
+              <button className={btnCls + ' w-full mt-2'} disabled={busy} onClick={saveVisit}>
+                {busy ? 'Saving…' : visitMeta ? `Save visit: ${visitMeta.label}` : 'Save visit'}
+              </button>
+            </div>
+
+
           </div>
         </ModalOverlay>
       )}

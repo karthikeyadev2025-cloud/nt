@@ -1,3 +1,4 @@
+import type { LeadStage } from './outcomes';
 // Pure helpers and constants used across the Leads/CRM module — split out
 // of shared.tsx specifically because it also exports React components, and
 // mixing the two in one file defeats Vite's fast-refresh (every edit to a
@@ -90,38 +91,23 @@ export const STAGE_LABELS: Record<string, string> = {
   new: 'New',
   contacted: 'Called',
   qualified: 'Interested',
-  quoted: 'Quote Sent',
+  quoted: 'Quote sent',
   won: 'Won',
   lost: 'Lost',
-  not_answered: 'Callback later',
+  // Was "Callback later", which named a different thing: a callback is a
+  // promise to ring back, and the lead book has callback_at for that. This
+  // stage means nobody picked up, and now that "Asked to call back" records
+  // contact as made (stage 'contacted'), a lead sitting at not_answered is
+  // precisely one that was never reached. It reads the same as the outcome
+  // button that produces it.
+  not_answered: 'No answer',
 };
 export const stageLabel = (stage: string) => STAGE_LABELS[stage] ?? stage.replace('_', ' ');
 
-export type Outcome = {
-  key: string;
-  label: string;
-  stage: string;
-  callType: 'outgoing' | 'incoming' | 'visit' | 'whatsapp' | 'email' | 'note';
-  followupDays: number | null;   // null = no follow-up (deal closed)
-  requiresNote?: boolean;
-  hint?: string;
-};
+// Board order for the stage buttons and filters. Lives here, beside the
+// labels, so anything that needs to name the stages — the leads board, the
+// training manual — reads one list instead of retyping it in prose.
+export const stages: LeadStage[] = ['new', 'contacted', 'qualified', 'quoted', 'won', 'lost', 'not_answered'];
 
-export const CALL_OUTCOMES: Outcome[] = [
-  { key: 'no_answer',        label: 'No answer',              stage: 'not_answered', callType: 'outgoing', followupDays: 1 },
-  { key: 'voicemail',        label: 'Left voicemail',         stage: 'contacted',    callType: 'outgoing', followupDays: 1 },
-  { key: 'callback_later',   label: 'Asked to call back',     stage: 'not_answered', callType: 'outgoing', followupDays: 2, hint: 'Pick a specific follow-up time below.' },
-  { key: 'interested',       label: 'Spoke — interested',     stage: 'qualified',    callType: 'outgoing', followupDays: 3 },
-  { key: 'not_interested',   label: 'Spoke — not interested', stage: 'lost',         callType: 'outgoing', followupDays: null, requiresNote: true, hint: 'Say briefly why so we can learn from it.' },
-  { key: 'quote_sent',       label: 'Sent quote',             stage: 'quoted',       callType: 'outgoing', followupDays: 7 },
-  { key: 'deal_won',         label: 'Deal won 🎉',            stage: 'won',          callType: 'note',     followupDays: null, requiresNote: true },
-  { key: 'deal_lost',        label: 'Deal lost',              stage: 'lost',         callType: 'note',     followupDays: null, requiresNote: true, hint: 'Say briefly why so we can learn from it.' },
-];
-
-export const VISIT_OUTCOMES: Outcome[] = [
-  { key: 'visit_interested',  label: 'Met — interested',      stage: 'qualified', callType: 'visit', followupDays: 3 },
-  { key: 'visit_not_interested', label: 'Met — not interested', stage: 'lost',    callType: 'visit', followupDays: null, requiresNote: true },
-  { key: 'visit_absent',      label: 'Nobody home',           stage: 'not_answered', callType: 'visit', followupDays: 1 },
-  { key: 'visit_quoted',      label: 'Quoted on site',        stage: 'quoted',    callType: 'visit', followupDays: 7 },
-  { key: 'visit_won',         label: 'Closed deal on site 🎉', stage: 'won',      callType: 'visit', followupDays: null, requiresNote: true },
-];
+// The outcome catalogs used to live here. They are in outcomes.ts now,
+// shared with the telecaller queue and the field-visit form.
