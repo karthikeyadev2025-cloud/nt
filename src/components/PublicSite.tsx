@@ -1057,7 +1057,7 @@ const DEFAULT_FALLBACK_PRODUCTS: Product[] = [
     logo_url: null, created_at: null, updated_at: null,
     screenshots: [],
     status: 'active',
-    external_url: 'https://mystoreos.com',
+    external_url: 'https://mystoreos.in',
     demo_cta: 'Explore MyStore OS',
     order_index: 1,
     features: [
@@ -1075,7 +1075,7 @@ const DEFAULT_FALLBACK_PRODUCTS: Product[] = [
     logo_url: null, created_at: null, updated_at: null,
     screenshots: [],
     status: 'active',
-    external_url: 'https://punchly.app',
+    external_url: 'https://punchly.online',
     demo_cta: 'Explore Punchly',
     order_index: 2,
     features: [
